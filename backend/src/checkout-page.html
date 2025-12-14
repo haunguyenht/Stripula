@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Checkout</title>
+    <script src="https://js.stripe.com/v3/"></script>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        #card-element { border: 1px solid #ccc; padding: 10px; border-radius: 4px; }
+        #result { margin-top: 20px; padding: 10px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <h2>Card Payment</h2>
+    <div id="card-element"></div>
+    
+    <!-- Hidden billing fields for automation -->
+    <input type="hidden" id="billing-name" value="">
+    <input type="hidden" id="billing-email" value="">
+    <input type="hidden" id="billing-street" value="">
+    <input type="hidden" id="billing-city" value="">
+    <input type="hidden" id="billing-state" value="">
+    <input type="hidden" id="billing-zip" value="">
+    <input type="hidden" id="billing-country" value="US">
+    
+    <button id="submit-btn" style="margin-top: 15px; padding: 10px 20px;">Create Payment Method</button>
+    <div id="result"></div>
+
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const pkKey = params.get('pk') || 'pk_test_xxx';
+        
+        // Get billing info from URL params
+        const billingName = params.get('name') || '';
+        const billingEmail = params.get('email') || '';
+        const billingStreet = params.get('street') || '';
+        const billingCity = params.get('city') || '';
+        const billingState = params.get('state') || '';
+        const billingZip = params.get('zip') || '';
+        const billingCountry = params.get('country') || 'US';
+        
+        // Set hidden fields
+        document.getElementById('billing-name').value = billingName;
+        document.getElementById('billing-email').value = billingEmail;
+        document.getElementById('billing-street').value = billingStreet;
+        document.getElementById('billing-city').value = billingCity;
+        document.getElementById('billing-state').value = billingState;
+        document.getElementById('billing-zip').value = billingZip;
+        document.getElementById('billing-country').value = billingCountry;
+        
+        const stripe = Stripe(pkKey);
+        const elements = stripe.elements();
+        
+        const card = elements.create('card', {
+            style: {
+                base: {
+                    fontSize: '16px',
+                    color: '#32325d',
+                }
+            },
+            hidePostalCode: true
+        });
+        card.mount('#card-element');
+
+        window.stripeResult = undefined;
+        
+        async function submitCard() {
+            const resultDiv = document.getElementById('result');
+            const submitBtn = document.getElementById('submit-btn');
+            
+            window.stripeResult = undefined;
+            resultDiv.textContent = 'Processing...';
+            resultDiv.className = '';
+            submitBtn.disabled = true;
+
+            try {
+                const name = document.getElementById('billing-name').value;
+                const email = document.getElementById('billing-email').value;
+                const street = document.getElementById('billing-street').value;
+                const city = document.getElementById('billing-city').value;
+                const state = document.getElementById('billing-state').value;
+                const zip = document.getElementById('billing-zip').value;
+                const country = document.getElementById('billing-country').value;
+                
+                // Create Radar Session for device fingerprinting
+                let radarSession = null;
+                try {
+                    const radarResult = await stripe.createRadarSession();
+                    if (radarResult.radarSession) {
+                        radarSession = radarResult.radarSession.id;
+                        console.log('[Radar] Session created:', radarSession);
+                    }
+                } catch (radarErr) {
+                    console.warn('[Radar] Failed to create session:', radarErr.message);
+                }
+                
+                // Build full billing details
+                const billingDetails = {};
+                if (name) billingDetails.name = name;
+                if (email) billingDetails.email = email;
+                
+                if (street || city || state || zip || country) {
+                    billingDetails.address = {};
+                    if (street) billingDetails.address.line1 = street;
+                    if (city) billingDetails.address.city = city;
+                    if (state) billingDetails.address.state = state;
+                    if (zip) billingDetails.address.postal_code = zip;
+                    if (country) billingDetails.address.country = country;
+                }
+                
+                const { paymentMethod, error } = await stripe.createPaymentMethod({
+                    type: 'card',
+                    card: card,
+                    billing_details: Object.keys(billingDetails).length > 0 ? billingDetails : undefined
+                });
+
+                if (error) {
+                    resultDiv.textContent = 'ERROR:' + error.message;
+                    resultDiv.className = 'error';
+                    window.stripeResult = { error: error.message };
+                } else {
+                    resultDiv.textContent = 'SUCCESS:' + paymentMethod.id;
+                    resultDiv.className = 'success';
+                    window.stripeResult = { 
+                        paymentMethodId: paymentMethod.id,
+                        card: paymentMethod.card,
+                        radarSession: radarSession
+                    };
+                }
+            } catch (e) {
+                resultDiv.textContent = 'ERROR:' + e.message;
+                resultDiv.className = 'error';
+                window.stripeResult = { error: e.message };
+            } finally {
+                submitBtn.disabled = false;
+            }
+        }
+        
+        document.getElementById('submit-btn').addEventListener('click', submitCard);
+    </script>
+</body>
+</html>

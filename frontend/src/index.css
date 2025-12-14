@@ -1,0 +1,402 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* =========================================
+   PREMIUM DARK GLASS THEME 2025
+   Ultra modern with refined aesthetics
+   ========================================= */
+
+:root {
+  /* Background - Deep space black */
+  --background: 230 25% 5%;
+  --background-secondary: 230 20% 8%;
+  --surface: 230 18% 11%;
+  
+  /* Liquid Glass Materials */
+  --glass-light: 220 20% 98% / 0.04;
+  --glass-dark: 230 30% 3% / 0.75;
+  --glass-blur: 24px;
+  --glass-saturation: 150%;
+  
+  /* Text Colors */
+  --foreground: 0 0% 98%;
+  --foreground-muted: 230 10% 55%;
+  --foreground-dim: 230 10% 40%;
+  
+  /* Card Colors */
+  --card: 230 18% 9% / 0.95;
+  --card-foreground: 0 0% 98%;
+  
+  /* Primary - Electric Indigo */
+  --primary: 240 80% 65%;
+  --primary-foreground: 0 0% 100%;
+  
+  /* Secondary - Soft Purple */
+  --secondary: 280 70% 60%;
+  --secondary-foreground: 0 0% 100%;
+  
+  /* Accent - Neon Cyan */
+  --accent: 185 100% 55%;
+  --accent-foreground: 0 0% 0%;
+  
+  /* Status Colors */
+  --success: 155 75% 50%;
+  --success-foreground: 0 0% 100%;
+  
+  --destructive: 0 75% 55%;
+  --destructive-foreground: 0 0% 100%;
+  
+  --declined: 345 80% 55%;
+  --declined-foreground: 0 0% 100%;
+  
+  --warning: 40 95% 55%;
+  --warning-foreground: 0 0% 0%;
+  
+  --info: 200 95% 55%;
+  --info-foreground: 0 0% 0%;
+  
+  /* Muted */
+  --muted: 230 15% 15%;
+  --muted-foreground: 230 10% 50%;
+  
+  /* Border & Input */
+  --border: 230 15% 20% / 0.5;
+  --input: 230 18% 10% / 0.95;
+  --ring: 240 80% 65%;
+  
+  /* Radius */
+  --radius: 0.875rem;
+}
+
+/* =========================================
+   BASE STYLES
+   ========================================= */
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(129, 140, 248, 0.2) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: rgba(129, 140, 248, 0.2);
+  border-radius: 4px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(129, 140, 248, 0.35);
+}
+
+html, body, #root {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  @apply bg-background text-foreground antialiased;
+  font-family: 'Inter', 'SF Pro Display', system-ui, -apple-system, sans-serif;
+}
+
+/* Deep space gradient background */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -2;
+  background:
+    /* Primary glow - top left */
+    radial-gradient(ellipse 60% 40% at 5% 5%, rgba(99, 102, 241, 0.12), transparent 50%),
+    /* Secondary glow - top right */
+    radial-gradient(ellipse 50% 40% at 95% 10%, rgba(168, 85, 247, 0.08), transparent 45%),
+    /* Accent glow - bottom center */
+    radial-gradient(ellipse 70% 35% at 50% 100%, rgba(6, 182, 212, 0.06), transparent 50%),
+    /* Base */
+    linear-gradient(180deg, hsl(230, 25%, 5%) 0%, hsl(230, 28%, 3%) 100%);
+}
+
+/* Subtle noise texture overlay */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  opacity: 0.015;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+}
+
+/* =========================================
+   PREMIUM GLASS UTILITIES
+   ========================================= */
+
+@layer utilities {
+  /* Base glass surface */
+  .glass {
+    background: linear-gradient(
+      145deg,
+      rgba(17, 17, 27, 0.9) 0%,
+      rgba(12, 12, 20, 0.95) 100%
+    );
+    backdrop-filter: blur(20px) saturate(150%);
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    box-shadow:
+      0 4px 24px -4px rgba(0, 0, 0, 0.6),
+      inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  }
+  
+  .glass-sm {
+    background: linear-gradient(
+      145deg,
+      rgba(17, 17, 27, 0.75) 0%,
+      rgba(12, 12, 20, 0.8) 100%
+    );
+    backdrop-filter: blur(12px) saturate(140%);
+    -webkit-backdrop-filter: blur(12px) saturate(140%);
+    border: 1px solid rgba(255, 255, 255, 0.03);
+    box-shadow: 0 2px 12px -2px rgba(0, 0, 0, 0.5);
+  }
+  
+  .glass-lg {
+    background: linear-gradient(
+      145deg,
+      rgba(17, 17, 27, 0.95) 0%,
+      rgba(12, 12, 20, 0.98) 100%
+    );
+    backdrop-filter: blur(32px) saturate(160%);
+    -webkit-backdrop-filter: blur(32px) saturate(160%);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow:
+      0 8px 40px -8px rgba(0, 0, 0, 0.7),
+      inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  }
+  
+  /* Glass hover state */
+  .glass-hover {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .glass-hover:hover {
+    border-color: rgba(129, 140, 248, 0.15);
+    box-shadow:
+      0 8px 32px -8px rgba(0, 0, 0, 0.7),
+      0 0 0 1px rgba(129, 140, 248, 0.08) inset,
+      0 0 32px -8px rgba(129, 140, 248, 0.1);
+    transform: translateY(-1px);
+  }
+  
+  /* Status glass variants */
+  .glass-success {
+    background: linear-gradient(145deg, rgba(16, 185, 129, 0.08) 0%, rgba(12, 12, 20, 0.95) 100%);
+    border-color: rgba(16, 185, 129, 0.15);
+  }
+  
+  .glass-error {
+    background: linear-gradient(145deg, rgba(239, 68, 68, 0.06) 0%, rgba(12, 12, 20, 0.95) 100%);
+    border-color: rgba(239, 68, 68, 0.12);
+  }
+  
+  .glass-warning {
+    background: linear-gradient(145deg, rgba(245, 158, 11, 0.06) 0%, rgba(12, 12, 20, 0.95) 100%);
+    border-color: rgba(245, 158, 11, 0.12);
+  }
+  
+  .glass-primary {
+    background: linear-gradient(145deg, rgba(99, 102, 241, 0.08) 0%, rgba(12, 12, 20, 0.95) 100%);
+    border-color: rgba(99, 102, 241, 0.15);
+  }
+  
+  .glass-info {
+    background: linear-gradient(145deg, rgba(6, 182, 212, 0.06) 0%, rgba(12, 12, 20, 0.95) 100%);
+    border-color: rgba(6, 182, 212, 0.12);
+  }
+  
+  /* Glow effects */
+  .glow-primary {
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.35), 0 0 50px rgba(99, 102, 241, 0.1);
+  }
+  
+  .glow-success {
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.35), 0 0 50px rgba(16, 185, 129, 0.1);
+  }
+  
+  .glow-error {
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.35), 0 0 50px rgba(239, 68, 68, 0.1);
+  }
+  
+  /* Gradient text */
+  .text-gradient {
+    background: linear-gradient(135deg, #818cf8 0%, #c084fc 50%, #22d3ee 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  
+  .text-gradient-primary {
+    background: linear-gradient(135deg, #818cf8 0%, #a78bfa 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+}
+
+/* =========================================
+   ANIMATIONS
+   ========================================= */
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 2s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  animation: shimmer 3s ease-in-out infinite;
+  background-size: 200% 100%;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-glow-pulse {
+  animation: glow-pulse 2s ease-in-out infinite;
+}
+
+/* =========================================
+   FILTER TABS - Modern Pill Style
+   ========================================= */
+
+@layer components {
+  .filter-tabs {
+    @apply flex gap-1.5 p-1.5 rounded-2xl;
+    background: rgba(12, 12, 20, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+  }
+  
+  .filter-tab {
+    @apply px-4 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer;
+    color: rgba(255, 255, 255, 0.4);
+    background: transparent;
+  }
+  
+  .filter-tab:hover {
+    color: rgba(255, 255, 255, 0.7);
+    background: rgba(255, 255, 255, 0.04);
+  }
+  
+  .filter-tab.active {
+    color: #fff;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(168, 85, 247, 0.15) 100%);
+    border: 1px solid rgba(129, 140, 248, 0.2);
+    box-shadow: 0 2px 12px rgba(99, 102, 241, 0.15);
+  }
+}
+
+/* =========================================
+   PROGRESS BAR
+   ========================================= */
+
+@layer components {
+  .progress-bar-bg {
+    @apply h-1.5 rounded-full overflow-hidden;
+    background: rgba(255, 255, 255, 0.05);
+  }
+  
+  .progress-fill {
+    @apply h-full rounded-full transition-all duration-300;
+    background: linear-gradient(90deg, #818cf8 0%, #a78bfa 50%, #c084fc 100%);
+    box-shadow: 0 0 12px rgba(129, 140, 248, 0.4);
+  }
+}
+
+/* =========================================
+   CONFIG LABELS
+   ========================================= */
+
+@layer components {
+  .config-label {
+    @apply text-[10px] font-bold uppercase tracking-widest mb-2 block;
+    color: rgba(255, 255, 255, 0.35);
+  }
+  
+  .config-divider {
+    @apply h-px my-5;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.06), transparent);
+  }
+}
+
+/* =========================================
+   CUSTOM SCROLLBAR
+   ========================================= */
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 4px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  @apply bg-white/10 rounded-full;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  @apply bg-white/20;
+}
+
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+}
+
+/* =========================================
+   SELECTION
+   ========================================= */
+
+::selection {
+  background: rgba(129, 140, 248, 0.3);
+  color: #fff;
+}
+
+/* =========================================
+   INPUT AUTOFILL
+   ========================================= */
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 1000px rgba(17, 17, 27, 0.95) inset !important;
+  -webkit-text-fill-color: #fff !important;
+  caret-color: #fff;
+}
