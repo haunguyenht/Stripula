@@ -28,24 +28,25 @@ export function Button({
     `;
 
     const variants = {
-        // Primary - Refined gradient with glow
+        // Primary - Warm orange gradient
         primary: `
             text-white font-semibold
-            bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500
-            shadow-[0_2px_20px_-4px_rgba(99,102,241,0.5)]
-            hover:shadow-[0_4px_28px_-4px_rgba(99,102,241,0.6)]
+            bg-gradient-to-r from-orange-500 to-orange-400
+            shadow-[0_2px_20px_-4px_rgba(255,107,53,0.4)]
+            hover:shadow-[0_4px_28px_-4px_rgba(255,107,53,0.5)]
             hover:brightness-110
             active:scale-[0.98] active:brightness-95
-            border border-white/10
+            border border-orange-400/50
         `,
-        // Secondary - Subtle glass
+        // Secondary - Light warm
         secondary: `
-            text-white/70 font-medium
-            bg-white/[0.04]
-            border border-white/[0.06]
-            hover:text-white hover:bg-white/[0.08]
-            hover:border-white/[0.1]
+            text-gray-600 font-medium
+            bg-white/80
+            border border-orange-200/50
+            hover:text-gray-800 hover:bg-white
+            hover:border-orange-300/60
             active:scale-[0.98]
+            shadow-sm
         `,
         // Destructive - Red gradient
         destructive: `
@@ -55,13 +56,13 @@ export function Button({
             hover:shadow-[0_4px_28px_-4px_rgba(239,68,68,0.5)]
             hover:brightness-110
             active:scale-[0.98]
-            border border-white/10
+            border border-red-400/50
         `,
-        // Ghost - Minimal
+        // Ghost - Minimal warm
         ghost: `
             bg-transparent
-            text-white/50 hover:text-white
-            hover:bg-white/[0.04]
+            text-gray-500 hover:text-gray-700
+            hover:bg-orange-50
             active:scale-[0.98]
         `,
         // Success - Green gradient
@@ -72,15 +73,15 @@ export function Button({
             hover:shadow-[0_4px_28px_-4px_rgba(16,185,129,0.5)]
             hover:brightness-110
             active:scale-[0.98]
-            border border-white/10
+            border border-emerald-400/50
         `,
-        // Outline - Border only
+        // Outline - Border only warm
         outline: `
-            text-white/70 font-medium
+            text-gray-600 font-medium
             bg-transparent
-            border border-white/[0.1]
-            hover:text-white hover:bg-white/[0.04]
-            hover:border-indigo-500/30
+            border border-orange-200
+            hover:text-gray-800 hover:bg-orange-50
+            hover:border-orange-300
             active:scale-[0.98]
         `,
     };
@@ -111,21 +112,22 @@ export function Button({
     );
 }
 
-// Icon button - Minimal and clean
+// Icon button - Warm theme
 export function IconButton({ children, className, variant = 'default', ...props }) {
     const variants = {
         default: `
-            text-white/40 hover:text-white
-            bg-transparent hover:bg-white/[0.06]
+            text-gray-400 hover:text-gray-600
+            bg-transparent hover:bg-orange-50
         `,
         ghost: `
-            text-white/40 hover:text-white
+            text-gray-400 hover:text-gray-600
             bg-transparent
         `,
         glass: `
-            text-white/50 hover:text-white
-            bg-white/[0.03] hover:bg-white/[0.08]
-            border border-white/[0.04] hover:border-white/[0.08]
+            text-gray-500 hover:text-gray-700
+            bg-white/60 hover:bg-white
+            border border-orange-200/50 hover:border-orange-300/60
+            shadow-sm
         `,
     };
 
