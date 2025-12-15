@@ -7,35 +7,36 @@ import { motion } from 'framer-motion';
  */
 export function Badge({ children, variant = 'default', className, animated = false, size = 'default' }) {
     const variants = {
-        default: "text-white/50 bg-white/[0.04] border-white/[0.06]",
+        default: "text-gray-500 bg-gray-100 border-gray-200",
         
         // Live/Success variants
-        live: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
-        live_plus: "text-emerald-300 bg-emerald-500/15 border-emerald-500/30 font-bold",
-        live_zero: "text-amber-400 bg-amber-500/10 border-amber-500/15",
-        live_neg: "text-amber-500/70 bg-amber-500/5 border-amber-500/10",
+        live: "text-emerald-600 bg-emerald-100 border-emerald-200",
+        live_plus: "text-emerald-700 bg-emerald-100 border-emerald-300 font-bold",
+        live_zero: "text-amber-600 bg-amber-100 border-amber-200",
+        live_neg: "text-amber-500 bg-amber-50 border-amber-200",
         
         // Die/Dead variants
-        die: "text-rose-400 bg-rose-500/10 border-rose-500/20",
-        dead: "text-rose-500/60 bg-rose-500/5 border-rose-500/10",
+        die: "text-rose-600 bg-rose-100 border-rose-200",
+        dead: "text-rose-500 bg-rose-50 border-rose-200",
         
         // Status variants
-        error: "text-amber-400 bg-amber-500/10 border-amber-500/15",
-        retry: "text-purple-400 bg-purple-500/10 border-purple-500/15",
+        error: "text-amber-600 bg-amber-100 border-amber-200",
+        retry: "text-purple-600 bg-purple-100 border-purple-200",
         
         // Success/Approved
-        approved: "text-indigo-300 bg-indigo-500/15 border-indigo-500/25 font-bold",
-        success: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
+        approved: "text-orange-600 bg-orange-100 border-orange-200 font-bold",
+        success: "text-emerald-600 bg-emerald-100 border-emerald-200",
         
         // Other variants
-        outline: "text-white/50 bg-transparent border-white/[0.08]",
-        primary: "text-indigo-400 bg-indigo-500/10 border-indigo-500/20",
-        info: "text-cyan-400 bg-cyan-500/10 border-cyan-500/15",
-        secondary: "text-purple-400 bg-purple-500/10 border-purple-500/15",
-        warning: "text-amber-400 bg-amber-500/10 border-amber-500/15",
+        outline: "text-gray-500 bg-transparent border-gray-300",
+        primary: "text-orange-600 bg-orange-100 border-orange-200",
+        info: "text-cyan-600 bg-cyan-100 border-cyan-200",
+        secondary: "text-purple-600 bg-purple-100 border-purple-200",
+        warning: "text-amber-600 bg-amber-100 border-amber-200",
     };
 
     const sizes = {
+        xs: "px-1.5 py-0.5 text-[9px]",
         sm: "px-2 py-0.5 text-[10px]",
         default: "px-2.5 py-1 text-[11px]",
         lg: "px-3 py-1.5 text-xs",
@@ -67,13 +68,13 @@ export function Badge({ children, variant = 'default', className, animated = fal
 // Status dot indicator
 export function StatusDot({ status = 'default', pulse = false, size = 'default', className }) {
     const colors = {
-        default: 'bg-white/30',
-        live: 'bg-emerald-400',
-        die: 'bg-rose-400',
-        error: 'bg-amber-400',
-        approved: 'bg-indigo-400',
-        warning: 'bg-amber-400',
-        info: 'bg-cyan-400',
+        default: 'bg-gray-400',
+        live: 'bg-emerald-500',
+        die: 'bg-rose-500',
+        error: 'bg-amber-500',
+        approved: 'bg-orange-500',
+        warning: 'bg-amber-500',
+        info: 'bg-cyan-500',
     };
 
     const sizes = {

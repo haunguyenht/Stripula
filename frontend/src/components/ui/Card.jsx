@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 const MotionDiv = motion.div;
 
 /**
- * Card Component - Premium Glass 2025
+ * Card Component - Warm Theme 2025
  * Clean surfaces with subtle depth
  */
 export function Card({ 
@@ -16,12 +16,12 @@ export function Card({
     ...props 
 }) {
     const variants = {
-        default: "glass",
-        flat: "glass-sm",
-        elevated: "glass-lg",
+        default: "bg-white/80 border border-orange-200/40 shadow-sm",
+        flat: "bg-white/60 border border-orange-200/30",
+        elevated: "bg-white border border-orange-200/50 shadow-md",
     };
 
-    const hoverStyles = hover ? 'glass-hover cursor-pointer' : '';
+    const hoverStyles = hover ? 'hover:bg-white hover:shadow-md hover:border-orange-300/50 cursor-pointer transition-all duration-200' : '';
 
     const Component = animated ? MotionDiv : 'div';
     const motionProps = animated ? {
@@ -49,7 +49,7 @@ export function Card({
 export function CardHeader({ children, className, ...props }) {
     return (
         <div 
-            className={cn("p-5 pb-4 border-b border-white/[0.04]", className)} 
+            className={cn("p-5 pb-4 border-b border-orange-200/30", className)} 
             {...props}
         >
             {children}
@@ -60,7 +60,7 @@ export function CardHeader({ children, className, ...props }) {
 export function CardTitle({ children, className, ...props }) {
     return (
         <h3 
-            className={cn("text-base font-semibold text-white", className)} 
+            className={cn("text-base font-semibold text-gray-800", className)} 
             {...props}
         >
             {children}
@@ -71,7 +71,7 @@ export function CardTitle({ children, className, ...props }) {
 export function CardDescription({ children, className, ...props }) {
     return (
         <p 
-            className={cn("text-sm text-white/40 mt-1", className)} 
+            className={cn("text-sm text-gray-500 mt-1", className)} 
             {...props}
         >
             {children}
@@ -90,7 +90,7 @@ export function CardContent({ children, className, ...props }) {
 export function CardFooter({ children, className, ...props }) {
     return (
         <div 
-            className={cn("flex items-center p-5 pt-0 border-t border-white/[0.04]", className)} 
+            className={cn("flex items-center p-5 pt-0 border-t border-orange-200/30", className)} 
             {...props}
         >
             {children}
@@ -98,7 +98,7 @@ export function CardFooter({ children, className, ...props }) {
     );
 }
 
-// Result card with status accent
+// Result card with status accent - Warm theme
 export function ResultCard({ 
     children, 
     status = 'default', 
@@ -107,24 +107,24 @@ export function ResultCard({
     ...props 
 }) {
     const statusStyles = {
-        default: 'border-l-white/10',
-        live: 'border-l-emerald-500/60',
-        die: 'border-l-rose-500/50 opacity-70',
-        error: 'border-l-amber-500/50',
-        approved: 'border-l-indigo-500/60',
-        warning: 'border-l-amber-500/50',
-        info: 'border-l-cyan-500/50',
+        default: 'border-l-gray-300',
+        live: 'border-l-emerald-500',
+        die: 'border-l-rose-400 opacity-80',
+        error: 'border-l-amber-500',
+        approved: 'border-l-orange-500',
+        warning: 'border-l-amber-500',
+        info: 'border-l-cyan-500',
     };
 
     return (
         <MotionDiv
             className={cn(
                 "p-4 rounded-xl",
-                "bg-[rgba(17,17,27,0.6)]",
-                "border border-white/[0.04]",
+                "bg-white/80",
+                "border border-orange-200/40",
                 "border-l-[3px]",
                 "transition-all duration-200",
-                "hover:bg-[rgba(22,22,35,0.7)] hover:border-white/[0.06]",
+                "hover:bg-white hover:border-orange-300/50 hover:shadow-sm",
                 onClick && "cursor-pointer",
                 statusStyles[status],
                 className
@@ -139,12 +139,12 @@ export function ResultCard({
     );
 }
 
-// Floating card with enhanced elevation
+// Floating card with enhanced elevation - Warm theme
 export function FloatingCard({ children, className, ...props }) {
     return (
         <MotionDiv
             className={cn(
-                "rounded-2xl glass-lg",
+                "rounded-2xl bg-white border border-orange-200/50 shadow-lg",
                 className
             )}
             initial={{ opacity: 0, y: 8 }}

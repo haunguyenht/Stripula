@@ -1,24 +1,16 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { IconRail } from '../navigation/IconRail';
-import { BottomNav } from '../navigation/BottomNav';
+import { TopTabBar } from '../navigation/TopTabBar';
 import StripeOwn from '../StripeOwn';
-import { useBreakpoint } from '../../hooks/useMediaQuery';
 
 /**
- * AppLayout - Main application layout with responsive navigation
- * - Desktop (lg+): IconRail sidebar only
- * - Mobile/Tablet (< lg): Bottom navigation only
- * Glassmorphic theme 2025-2026
+ * AppLayout - Main application layout matching reference design
+ * Full-page horizontal gradient + floating cards
  */
 export function AppLayout() {
-    const { isDesktop } = useBreakpoint();
-    
     const [activeRoute, setActiveRoute] = useState(() => 
         localStorage.getItem('appActiveRoute') || 'stripe-charge-1'
     );
-    
-    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
     const handleNavigate = (routeId) => {
         setActiveRoute(routeId);
@@ -35,8 +27,6 @@ export function AppLayout() {
                 return <PlaceholderPage title="Stripe Charge v2" description="Alternative charge validation method" icon="⚡" />;
             case 'braintree-auth':
                 return <PlaceholderPage title="Braintree Auth" description="Braintree authentication" icon="🌳" />;
-            case 'settings':
-                return <PlaceholderPage title="Settings" description="Application settings" icon="⚙️" />;
             case 'help':
                 return <PlaceholderPage title="Help" description="Documentation and support" icon="❓" />;
             default:
@@ -45,18 +35,20 @@ export function AppLayout() {
     };
 
     return (
-        <div className="flex h-screen w-screen overflow-hidden bg-background text-foreground">
-            {/* Desktop: Icon Rail */}
-            {isDesktop && (
-                <IconRail 
-                    activeRoute={activeRoute} 
-                    onNavigate={handleNavigate}
-                    onSettingsOpen={() => setIsSettingsOpen(true)}
-                />
-            )}
+        <div 
+            className="h-screen w-screen overflow-hidden flex flex-col"
+            style={{ 
+                background: 'linear-gradient(135deg, #FFF8E7 0%, #FFEDD5 30%, #FFE4E6 70%, #FCE7F3 100%)'
+            }}
+        >
+            {/* Compact Header */}
+            <TopTabBar 
+                activeRoute={activeRoute} 
+                onNavigate={handleNavigate}
+            />
             
-            {/* Main Content */}
-            <main className="flex-1 flex flex-col overflow-hidden relative">
+            {/* Content */}
+            <main className="flex-1 flex flex-col overflow-hidden">
                 <AnimatePresence mode="wait">
                     <motion.div
                         key={activeRoute}
@@ -64,21 +56,12 @@ export function AppLayout() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        transition={{ duration: 0.2 }}
+                        transition={{ duration: 0.15 }}
                     >
                         {renderContent()}
                     </motion.div>
                 </AnimatePresence>
             </main>
-
-            {/* Mobile/Tablet: Bottom Navigation */}
-            {!isDesktop && (
-                <BottomNav
-                    activeRoute={activeRoute}
-                    onNavigate={handleNavigate}
-                    onSettingsOpen={() => setIsSettingsOpen(true)}
-                />
-            )}
         </div>
     );
 }
@@ -91,7 +74,7 @@ function PlaceholderPage({ title, description, icon }) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
         >
-            <div className="text-center glass-lg rounded-2xl p-8 max-w-md">
+            <div className="text-center bg-white/80 border border-orange-200/50 shadow-lg rounded-2xl p-8 max-w-md">
                 <motion.div 
                     className="text-6xl mb-6"
                     initial={{ scale: 0 }}
@@ -100,14 +83,14 @@ function PlaceholderPage({ title, description, icon }) {
                 >
                     {icon}
                 </motion.div>
-                <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-3">
+                <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-3">
                     {title}
                 </h1>
-                <p className="text-muted-foreground text-sm md:text-base">
+                <p className="text-gray-500 text-sm md:text-base">
                     {description}
                 </p>
                 <motion.p 
-                    className="text-primary/50 text-xs md:text-sm mt-6 font-mono"
+                    className="text-orange-400 text-xs md:text-sm mt-6 font-mono"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.3 }}
