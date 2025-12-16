@@ -1,4 +1,4 @@
-import { useState, useEffect, useSyncExternalStore } from 'react';
+import { useState, useEffect, useSyncExternalStore, useCallback, useRef } from 'react';
 
 /**
  * Custom hook for responsive breakpoint detection
@@ -18,6 +18,67 @@ export function useMediaQuery(query) {
     const getServerSnapshot = () => false;
 
     return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+}
+
+/**
+ * Hook to detect if content overflows its container
+ * Returns true if the content needs more space than available
+ * 
+ * @param {Object} options
+ * @param {number} options.buffer - Extra buffer space to consider (default: 20px)
+ * @param {number} options.debounceMs - Debounce time for resize events (default: 100ms)
+ */
+export function useContentOverflow(options = {}) {
+    const { buffer = 20, debounceMs = 100 } = options;
+    const containerRef = useRef(null);
+    const contentRef = useRef(null);
+    const [isOverflowing, setIsOverflowing] = useState(false);
+    const timeoutRef = useRef(null);
+
+    const checkOverflow = useCallback(() => {
+        if (!containerRef.current || !contentRef.current) return;
+
+        const containerWidth = containerRef.current.offsetWidth;
+        const contentWidth = contentRef.current.scrollWidth;
+        
+        // Check if content is wider than container (with buffer)
+        const overflows = contentWidth > containerWidth - buffer;
+        setIsOverflowing(overflows);
+    }, [buffer]);
+
+    useEffect(() => {
+        const debouncedCheck = () => {
+            if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current);
+            }
+            timeoutRef.current = setTimeout(checkOverflow, debounceMs);
+        };
+
+        // Initial check
+        checkOverflow();
+
+        // Check on resize
+        window.addEventListener('resize', debouncedCheck);
+        
+        // Use ResizeObserver for more accurate detection
+        const resizeObserver = new ResizeObserver(debouncedCheck);
+        if (containerRef.current) {
+            resizeObserver.observe(containerRef.current);
+        }
+        if (contentRef.current) {
+            resizeObserver.observe(contentRef.current);
+        }
+
+        return () => {
+            window.removeEventListener('resize', debouncedCheck);
+            resizeObserver.disconnect();
+            if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current);
+            }
+        };
+    }, [checkOverflow, debounceMs]);
+
+    return { containerRef, contentRef, isOverflowing, checkOverflow };
 }
 
 /**

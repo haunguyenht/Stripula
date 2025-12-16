@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Key, Trash2, Copy, Check, CheckCircle2, XCircle, Mail, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '../../../hooks/useToast';
+import { useKeyFilters } from '../../../hooks/useKeyFilters';
 
 // Layout
 import { TwoPanelLayout } from '../../layout/TwoPanelLayout';
@@ -31,6 +32,9 @@ export function KeysValidationPanel({
     setCurrentItem,
     abortRef,
     modeSwitcher,
+    // Drawer state lifted from parent to persist across mode switches
+    drawerOpen,
+    onDrawerOpenChange,
 }) {
     const [copiedKey, setCopiedKey] = useState(null);
     const [filter, setFilter] = useState('all');
@@ -262,7 +266,6 @@ export function KeysValidationPanel({
         setRefreshingKeys(new Set(allIndices));
         
         let completedCount = 0;
-        let refreshedCount = 0;
         
         // Create refresh promise for each key
         const refreshPromises = keyResults.map(async (result, index) => {
@@ -302,7 +305,6 @@ export function KeysValidationPanel({
                 setCurrentItem(`Refreshed ${completedCount}/${keyResults.length}`);
                 
                 if (data.status) {
-                    refreshedCount++;
                     return { index, data, fullKey: result.fullKey };
                 }
                 return null;
@@ -363,12 +365,7 @@ export function KeysValidationPanel({
 
     const keyCount = skKeys.split('\n').filter(l => l.trim() && l.trim().startsWith('sk_')).length;
 
-    const filteredResults = keyResults.filter(r => {
-        if (filter === 'all') return true;
-        if (filter === 'live') return r.status?.startsWith('LIVE');
-        if (filter === 'dead') return r.status === 'DEAD';
-        return true;
-    });
+    const filteredResults = useKeyFilters(keyResults, filter);
 
     const totalPages = Math.ceil(filteredResults.length / pageSize);
     const paginatedResults = filteredResults.slice((page - 1) * pageSize, page * pageSize);
@@ -383,8 +380,76 @@ export function KeysValidationPanel({
     // RENDER
     // ══════════════════════════════════════════════════════════════════
 
+    // Config panel content (without mode switcher) - used in drawer body
+    const configContent = (
+        <div className="panel-input-section">
+            {/* Combined Input Container */}
+            <div className={`input-container-unified border-luma-coral-15 hover:border-luma-coral-25 transition-opacity ${isLoading ? 'input-container-loading' : ''}`}>
+                <textarea
+                    className={`input-textarea h-20 md:h-24 ${isLoading ? 'input-textarea-disabled' : ''}`}
+                    placeholder="Enter SK keys (one per line)&#10;sk_live_xxxxx"
+                    value={skKeys}
+                    onChange={(e) => setSkKeys(e.target.value)}
+                    disabled={isLoading}
+                />
+                {/* Bottom toolbar inside input */}
+                <div className="input-toolbar">
+                    <div className="flex items-center gap-2">
+                        {keyCount > 0 && (
+                            <span className="count-badge">
+                                {keyCount} keys
+                            </span>
+                        )}
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="w-8 h-8 rounded-full hover:bg-luma-coral-10"
+                            onClick={clearResults}
+                            disabled={isLoading}
+                            title="Clear"
+                        >
+                            <Trash2 size={14} className="text-gray-400 dark:text-gray-500" />
+                        </Button>
+                    </div>
+                    {isLoading ? (
+                        <button 
+                            className="input-action-btn input-action-btn-stop"
+                            onClick={handleStop}
+                        >
+                            <span className="w-2.5 h-2.5 bg-white rounded-sm" />
+                        </button>
+                    ) : (
+                        <button 
+                            className="input-action-btn input-action-btn-primary"
+                            onClick={handleCheckKeys}
+                        >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M5 12h14M12 5l7 7-7 7"/>
+                            </svg>
+                        </button>
+                    )}
+                </div>
+            </div>
+
+            {/* Progress */}
+            <AnimatePresence>
+                {isLoading && progress.total > 0 && (
+                    <ProgressBar current={progress.current} total={progress.total} />
+                )}
+            </AnimatePresence>
+        </div>
+    );
+
     return (
         <TwoPanelLayout
+            modeSwitcher={modeSwitcher}
+            drawerOpen={drawerOpen}
+            onDrawerOpenChange={onDrawerOpenChange}
+            configPanelWithoutSwitcher={
+                <div className="flex flex-col">
+                    {configContent}
+                </div>
+            }
             configPanel={
                 <div className="flex flex-col h-full">
                     {/* Card Header with Mode Switcher */}
@@ -393,64 +458,7 @@ export function KeysValidationPanel({
                             {modeSwitcher}
                         </div>
                     )}
-
-                    {/* Input Section with embedded buttons */}
-                    <div className="panel-input-section">
-                        {/* Combined Input Container */}
-                        <div className={`input-container-unified border-luma-coral-15 hover:border-luma-coral-25 transition-opacity ${isLoading ? 'input-container-loading' : ''}`}>
-                            <textarea
-                                className={`input-textarea h-20 md:h-24 ${isLoading ? 'input-textarea-disabled' : ''}`}
-                                placeholder="Enter SK keys (one per line)&#10;sk_live_xxxxx"
-                                value={skKeys}
-                                onChange={(e) => setSkKeys(e.target.value)}
-                                disabled={isLoading}
-                            />
-                            {/* Bottom toolbar inside input */}
-                            <div className="input-toolbar">
-                                <div className="flex items-center gap-2">
-                                    {keyCount > 0 && (
-                                        <span className="count-badge">
-                                            {keyCount} keys
-                                        </span>
-                                    )}
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="w-8 h-8 rounded-full hover:bg-luma-coral-10"
-                                        onClick={clearResults}
-                                        disabled={isLoading}
-                                        title="Clear"
-                                    >
-                                        <Trash2 size={14} className="text-gray-400 dark:text-gray-500" />
-                                    </Button>
-                                </div>
-                                {isLoading ? (
-                                    <button 
-                                        className="input-action-btn input-action-btn-stop"
-                                        onClick={handleStop}
-                                    >
-                                        <span className="w-2.5 h-2.5 bg-white rounded-sm" />
-                                    </button>
-                                ) : (
-                                    <button 
-                                        className="input-action-btn input-action-btn-primary"
-                                        onClick={handleCheckKeys}
-                                    >
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                            <path d="M5 12h14M12 5l7 7-7 7"/>
-                                        </svg>
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Progress */}
-                        <AnimatePresence>
-                            {isLoading && progress.total > 0 && (
-                                <ProgressBar current={progress.current} total={progress.total} />
-                            )}
-                        </AnimatePresence>
-                    </div>
+                    {configContent}
                 </div>
             }
             resultsPanel={
@@ -553,7 +561,7 @@ function KeyResultCard({ result, isSelected, isCopied, isRefreshing, onSelect, o
                                 onClick={handleCopyPk}
                                 className="icon-btn-sm"
                             >
-                                {pkCopied ? <Check size={9} className="text-emerald-500" /> : <Copy size={9} className="text-luma-coral" />}
+                                {pkCopied ? <Check size={9} className="text-status-success" /> : <Copy size={9} className="text-luma-coral" />}
                             </button>
                         </div>
                     )}
@@ -586,7 +594,7 @@ function KeyResultCard({ result, isSelected, isCopied, isRefreshing, onSelect, o
                         <RefreshCw size={11} className={isRefreshing ? 'animate-spin text-luma-coral' : ''} />
                     </IconButton>
                     <IconButton variant="ghost" onClick={(e) => { e.stopPropagation(); onCopy(); }} title="Copy SK">
-                        {isCopied ? <Check size={11} className="text-emerald-500" /> : <Copy size={11} />}
+                        {isCopied ? <Check size={11} className="text-status-success" /> : <Copy size={11} />}
                     </IconButton>
                     <IconButton variant="ghost" onClick={(e) => { e.stopPropagation(); onDelete(); }} title="Delete">
                         <Trash2 size={11} />

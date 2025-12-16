@@ -33,6 +33,10 @@ export function AppLayout() {
             case 'braintree-auth':
                 return <PlaceholderPage title="Braintree Auth" description="Braintree authentication" Icon={TreeDeciduous} />;
             
+            // PayPal routes
+            case 'paypal-charge':
+                return <PlaceholderPage title="PayPal Charge" description="PayPal payment check" Icon={Wallet} />;
+            
             // Adyen routes (coming soon)
             case 'adyen-auth':
                 return <PlaceholderPage title="Adyen Auth" description="Adyen authentication" Icon={Wallet} comingSoon />;
@@ -130,7 +134,7 @@ function PlaceholderPage({ title, description, Icon, comingSoon = false }) {
                         animate={{ opacity: 1 }}
                         transition={{ delay: 0.3 }}
                     >
-                        <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-amber-100 dark:bg-pink-500/20 text-xs font-bold text-amber-600 dark:text-pink-400 uppercase">
+                        <span className="inline-flex items-center px-3 py-1.5 rounded-full badge-coming-soon text-xs font-bold uppercase">
                             Coming Soon
                         </span>
                     </motion.div>

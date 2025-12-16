@@ -28,6 +28,11 @@ const filterMotionProps = (props) => {
     onAnimationComplete,
     ...filteredProps
   } = props;
+  // Intentionally destructure motion props to exclude them from DOM
+  void whileHover; void whileTap; void whileFocus; void whileDrag; void whileInView;
+  void initial; void animate; void exit; void transition; void variants;
+  void layout; void layoutId; void drag; void dragConstraints; void dragElastic;
+  void dragMomentum; void onDragStart; void onDragEnd; void onAnimationStart; void onAnimationComplete;
   return filteredProps;
 };
 

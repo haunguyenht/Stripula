@@ -98,18 +98,17 @@ export function ResultCard({
     onClick,
     ...props 
 }) {
-    // Status classes with warm background tints matching test expectations
-    // Uses Tailwind classes for consistent styling
+    // Status classes - uses centralized result-status-* classes from index.css
     // Dark mode: clean look with just left indicator, no background tint
     const statusClass = {
-        default: 'border-l-[3px] border-l-gray-300 dark:border-l-gray-500 bg-gray-50/50 dark:bg-transparent',
-        live: 'border-l-[3px] border-l-emerald-500 dark:border-l-emerald-400 bg-emerald-50/30 dark:bg-transparent',
-        die: 'border-l-[3px] border-l-rose-400 dark:border-l-rose-400 bg-rose-50/30 dark:bg-transparent',
-        dead: 'border-l-[3px] border-l-rose-400 dark:border-l-rose-400 bg-rose-50/30 dark:bg-transparent',
-        error: 'border-l-[3px] border-l-amber-500 dark:border-l-pink-400 bg-amber-50/30 dark:bg-transparent',
+        default: 'result-status-default',
+        live: 'result-status-live',
+        die: 'result-status-die',
+        dead: 'result-status-dead',
+        error: 'result-status-error',
         approved: 'border-l-[3px] border-l-luma-coral dark:border-l-pink-400 bg-luma-coral-10 dark:bg-transparent',
-        warning: 'border-l-[3px] border-l-amber-500 dark:border-l-pink-400 bg-amber-50/30 dark:bg-transparent',
-        info: 'border-l-[3px] border-l-cyan-500 dark:border-l-cyan-400 bg-cyan-50/30 dark:bg-transparent',
+        warning: 'result-status-warning',
+        info: 'result-status-info',
     };
 
     // Selected state with ring highlight using CSS variable for theme-aware color

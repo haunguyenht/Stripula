@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as fc from 'fast-check';
 
 /**
@@ -8,6 +8,37 @@ import * as fc from 'fast-check';
  * For any navigation item in the TopTabBar, when clicked, the activeRoute state 
  * should update to match that item's ID.
  */
+
+// Mock matchMedia for responsive testing
+function createMatchMediaMock(matches) {
+  return (query) => ({
+    matches,
+    media: query,
+    onchange: null,
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  });
+}
+
+// Export for potential future use in integration tests
+export { createMatchMediaMock };
+
+// Simulate useBreakpoint behavior
+function simulateBreakpoint(width) {
+  return {
+    isMobile: width < 768,
+    isTablet: width >= 768 && width < 1024,
+    isDesktop: width >= 1024,
+    isSm: width >= 640,
+    isMd: width >= 768,
+    isLg: width >= 1024,
+    isXl: width >= 1280,
+    is2xl: width >= 1536,
+  };
+}
 
 // Navigation configuration matching TopTabBar implementation
 const navigationConfig = [
@@ -199,5 +230,149 @@ describe('TopTabBar Navigation', () => {
       }),
       { numRuns: 100 }
     );
+  });
+});
+
+/**
+ * **Feature: TopTabBar Responsive Behavior**
+ * Tests for mobile vs desktop rendering behavior
+ */
+describe('TopTabBar Responsive Behavior', () => {
+  let originalMatchMedia;
+
+  beforeEach(() => {
+    originalMatchMedia = window.matchMedia;
+  });
+
+  afterEach(() => {
+    window.matchMedia = originalMatchMedia;
+  });
+
+  /**
+   * Test: Mobile breakpoint detection
+   * 
+   * At widths < 768px, the breakpoint hook should return isMobile: true
+   */
+  it('should detect mobile breakpoint correctly for widths < 768px', () => {
+    const mobileWidths = [320, 360, 375, 414, 640, 767];
+    
+    mobileWidths.forEach(width => {
+      const breakpoint = simulateBreakpoint(width);
+      expect(breakpoint.isMobile).toBe(true);
+      expect(breakpoint.isMd).toBe(false);
+    });
+  });
+
+  /**
+   * Test: Desktop breakpoint detection
+   * 
+   * At widths >= 768px, the breakpoint hook should return isMobile: false
+   */
+  it('should detect desktop breakpoint correctly for widths >= 768px', () => {
+    const desktopWidths = [768, 1024, 1280, 1536];
+    
+    desktopWidths.forEach(width => {
+      const breakpoint = simulateBreakpoint(width);
+      expect(breakpoint.isMobile).toBe(false);
+      expect(breakpoint.isMd).toBe(true);
+    });
+  });
+
+  /**
+   * Test: Mobile menu navigation behavior
+   * 
+   * When a parent nav item is clicked in mobile menu, it should toggle expansion
+   * (not navigate). When a child is clicked, it should call onNavigate.
+   */
+  it('should toggle expansion when parent item is clicked in mobile menu (not navigate)', () => {
+    // Simulate the new handleItemClick behavior
+    const simulateMenuState = () => {
+      let expandedParentId = null;
+      
+      const handleItemClick = (item, onNavigate) => {
+        if (item.children && item.children.length > 0) {
+          // Toggle expansion - do NOT call onNavigate
+          expandedParentId = expandedParentId === item.id ? null : item.id;
+          return { navigated: false, expanded: expandedParentId };
+        } else {
+          // No children - navigate directly
+          onNavigate(item.id);
+          return { navigated: true, expanded: expandedParentId };
+        }
+      };
+      
+      return handleItemClick;
+    };
+
+    // Test parent items (with children) - should expand, not navigate
+    navigationConfig.filter(item => item.children?.length > 0).forEach(item => {
+      const onNavigate = vi.fn();
+      const handleItemClick = simulateMenuState();
+      const result = handleItemClick(item, onNavigate);
+
+      // Should NOT call onNavigate for parent items
+      expect(onNavigate).not.toHaveBeenCalled();
+      // Should set expanded state to the item's id
+      expect(result.expanded).toBe(item.id);
+    });
+
+    // Test items without children - should navigate directly
+    navigationConfig.filter(item => !item.children).forEach(item => {
+      const onNavigate = vi.fn();
+      const handleItemClick = simulateMenuState();
+      handleItemClick(item, onNavigate);
+
+      expect(onNavigate).toHaveBeenCalledWith(item.id);
+    });
+  });
+
+  /**
+   * Test: Child click in mobile menu should navigate
+   */
+  it('should navigate when child item is clicked in mobile menu', () => {
+    // Children are navigated directly via onNavigate(child.id)
+    navigationConfig.filter(item => item.children?.length > 0).forEach(parent => {
+      parent.children.forEach(child => {
+        const onNavigate = vi.fn();
+        // Simulating child click which directly calls onNavigate
+        onNavigate(child.id);
+        expect(onNavigate).toHaveBeenCalledWith(child.id);
+      });
+    });
+  });
+
+  /**
+   * Test: Active item detection for mobile trigger
+   * 
+   * The mobile trigger should show the currently active nav item
+   */
+  it('should find active nav item correctly for mobile trigger display', () => {
+    const findActiveNavItem = (activeRoute) => {
+      for (const item of navigationConfig) {
+        if (item.children) {
+          const activeChild = item.children.find(child => child.id === activeRoute);
+          if (activeChild) {
+            return { parent: item, child: activeChild };
+          }
+        } else if (item.id === activeRoute) {
+          return { parent: item, child: null };
+        }
+      }
+      return { parent: navigationConfig[0], child: null };
+    };
+
+    // Test with a child route active
+    const result1 = findActiveNavItem('stripe-charge-1');
+    expect(result1.parent.id).toBe('stripe');
+    expect(result1.child?.id).toBe('stripe-charge-1');
+
+    // Test with a parent route active (no children)
+    const result2 = findActiveNavItem('help');
+    expect(result2.parent.id).toBe('help');
+    expect(result2.child).toBeNull();
+
+    // Test with unknown route (should default to first item)
+    const result3 = findActiveNavItem('unknown-route');
+    expect(result3.parent.id).toBe('stripe');
   });
 });

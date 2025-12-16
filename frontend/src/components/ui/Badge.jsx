@@ -94,20 +94,21 @@ export function Badge({ children, variant = 'default', className, animated = fal
  * - error/warning: Amber (#F59E0B) - var(--luma-warning)
  */
 export function StatusDot({ status = 'default', pulse = false, size = 'default', className }) {
+    // Uses centralized status-dot-* classes from index.css
     const colors = {
         default: 'bg-gray-400',
         // Live status - Emerald (Requirement 6.1)
-        live: 'bg-emerald-500',
+        live: 'status-dot-live',
         // Die/Dead status - Rose (Requirement 6.2)
-        die: 'bg-rose-500',
-        dead: 'bg-rose-500',
+        die: 'status-dot-die',
+        dead: 'status-dot-dead',
         // Error/Warning status - Amber (Requirement 6.3)
-        error: 'bg-amber-500',
-        warning: 'bg-amber-500',
+        error: 'status-dot-error',
+        warning: 'status-dot-warning',
         // Approved - Luma coral
         approved: 'bg-luma-coral',
         // Info - Sky blue
-        info: 'bg-sky-500',
+        info: 'status-dot-info',
     };
 
     const sizes = {

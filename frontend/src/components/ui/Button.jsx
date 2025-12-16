@@ -20,13 +20,14 @@ export function Button({
     animated = true,
     ...props 
 }) {
+    // Uses centralized btn-* classes from index.css
     const variants = {
         primary: "btn-primary focus-visible:ring-orange-500",
         secondary: "btn-secondary focus-visible:ring-stone-400",
         destructive: "btn-destructive focus-visible:ring-rose-500",
         ghost: "btn-ghost focus-visible:ring-stone-400",
         outline: "btn-secondary focus-visible:ring-stone-400",
-        success: "btn-primary bg-emerald-500 hover:bg-emerald-600 focus-visible:ring-emerald-500",
+        success: "btn-success focus-visible:ring-emerald-500",
     };
 
     const sizes = {

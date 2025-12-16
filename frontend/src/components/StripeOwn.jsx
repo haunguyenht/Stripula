@@ -9,26 +9,8 @@ import { CardsValidationPanel } from './stripe/panels/CardsValidationPanel';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { cn } from '../lib/utils';
 
-/**
- * Transform legacy card results that stored card as object
- * Converts { card: { number, last4, expMonth, expYear } } to { card: "****1234", fullCard: "..." }
- */
-function transformLegacyCardResults(results) {
-    if (!Array.isArray(results)) return [];
-    return results.map(r => {
-        if (r.card && typeof r.card === 'object') {
-            const cardInfo = r.card;
-            return {
-                ...r,
-                card: `****${cardInfo.last4 || '****'}`,
-                fullCard: cardInfo.number 
-                    ? `${cardInfo.number}|${cardInfo.expMonth}|${cardInfo.expYear}`
-                    : r.fullCard
-            };
-        }
-        return r;
-    });
-}
+// Utils
+import { transformLegacyCardResults } from '../utils/stripe';
 
 /**
  * StripeOwn - Main Component
@@ -78,18 +60,23 @@ export default function StripeOwn() {
     const [isLoading, setIsLoading] = useState(false);
     const [currentItem, setCurrentItem] = useState(null);
     const [progress, setProgress] = useState({ current: 0, total: 0 });
+    
+    // Mobile drawer state - lifted here to persist across mode switches
+    const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
     // Refs
     const abortRef = useRef(false);
     const abortControllerRef = useRef(null);
 
-    // Get active SK key
-    const getActiveSkKey = () => {
+    // Get active SK key (used by child components via settings)
+    const _getActiveSkKey = () => {
         if (selectedKeyIndex >= 0 && keyResults[selectedKeyIndex]) {
             return keyResults[selectedKeyIndex].fullKey;
         }
         return settings.skKey;
     };
+    // Suppress unused warning - function available for future use
+    void _getActiveSkKey;
 
     // Handle key selection - auto-update settings with selected key's SK and PK
     const handleKeySelect = (index) => {
@@ -113,27 +100,27 @@ export default function StripeOwn() {
 
     // Mode switcher component to pass to panels
     const modeSwitcher = (
-        <div className="flex items-center justify-between">
-            {/* Mode Toggle */}
-            <div className="inline-flex items-center gap-1 p-1.5 md:p-2 rounded-2xl liquid-blur">
+        <div className="flex items-center justify-center gap-4">
+            {/* Mode Toggle - Liquid Glass */}
+            <div className="liquid-tab-container liquid-blur">
                 <ModeTab
                     active={activeTab === 'keys'}
                     onClick={() => setActiveTab('keys')}
                     icon={Key}
                     label="Keys"
-                    iconColor={activeTab === 'keys' ? "text-amber-500 dark:text-cyan-400" : undefined}
+                    iconColor={activeTab === 'keys' ? "mode-icon-keys" : undefined}
                 />
                 <ModeTab
                     active={activeTab === 'cards'}
                     onClick={() => setActiveTab('cards')}
                     icon={CreditCard}
                     label="Cards"
-                    iconColor={activeTab === 'cards' ? "text-[#E8836B] dark:text-pink-400" : undefined}
+                    iconColor={activeTab === 'cards' ? "mode-icon-cards" : undefined}
                 />
             </div>
 
             {/* Mode indicator text */}
-            <span className="text-[9px] md:text-[10px] text-gray-400 font-medium hidden md:block">
+            <span className="mode-indicator">
                 {activeTab === 'keys' ? 'SK Validation' : 'Card Check'}
             </span>
         </div>
@@ -157,6 +144,9 @@ export default function StripeOwn() {
                     setCurrentItem={setCurrentItem}
                     abortRef={abortRef}
                     modeSwitcher={modeSwitcher}
+                    // Pass drawer state to persist across mode switches
+                    drawerOpen={mobileDrawerOpen}
+                    onDrawerOpenChange={setMobileDrawerOpen}
                 />
             ) : (
                 <CardsValidationPanel
@@ -180,6 +170,9 @@ export default function StripeOwn() {
                     abortRef={abortRef}
                     abortControllerRef={abortControllerRef}
                     modeSwitcher={modeSwitcher}
+                    // Pass drawer state to persist across mode switches
+                    drawerOpen={mobileDrawerOpen}
+                    onDrawerOpenChange={setMobileDrawerOpen}
                 />
             )}
         </div>
@@ -187,23 +180,19 @@ export default function StripeOwn() {
 }
 
 /**
- * ModeTab - Mode toggle with icon and label (responsive) - Apple style
+ * ModeTab - Compact liquid glass tab using centralized CSS
+ * Uses mode-icon-* classes from index.css
  */
 function ModeTab({ active, onClick, icon: Icon, label, iconColor }) {
-    const defaultIconColor = active ? "text-[#E8836B] dark:text-pink-400" : "text-gray-400 dark:text-gray-500";
+    const defaultIconColor = active ? "mode-icon-cards" : undefined;
     
     return (
         <button
-            className={cn(
-                "flex items-center gap-1.5 px-3 py-2 md:gap-2 md:px-4 md:py-2.5 rounded-apple text-xs md:text-sm font-apple-medium transition-all duration-200",
-                active
-                    ? "bg-white dark:bg-white/10 text-gray-800 dark:text-gray-100 shadow-[0_1px_3px_rgba(0,0,0,0.08)] dark:shadow-[0_1px_3px_rgba(0,0,0,0.3)]"
-                    : "text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-white/50 dark:hover:bg-white/5"
-            )}
+            className={cn("liquid-tab", active && "liquid-tab-active")}
             onClick={onClick}
         >
-            <Icon size={14} className={cn("md:w-4 md:h-4", iconColor || defaultIconColor)} />
-            <span>{label}</span>
+            <Icon className={cn("liquid-tab-icon", iconColor || defaultIconColor)} />
+            <span className="liquid-tab-label">{label}</span>
         </button>
     );
 }

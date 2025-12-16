@@ -1,60 +1,173 @@
+import { useState, useRef, useEffect } from 'react';
+import { Settings } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { Drawer } from '../ui/Drawer';
+import { Button } from '../ui/Button';
+import { useBreakpoint } from '../../hooks/useMediaQuery';
 
 /**
  * TwoPanelLayout Component
  * Responsive two-panel layout with config (left) and results (right)
  * 
- * Desktop (≥768px): Side-by-side panels with floating cards
- * Mobile (<768px): Stacked vertically (config above results)
+ * Uses dynamic content-aware detection to switch between:
+ * - Desktop: Side-by-side panels with floating cards
+ * - Mobile: Results first, Config opens as drawer
  * 
  * Uses Luma theme with white/cream backgrounds and warm-toned borders
  * The results panel scales based on content - shrinks when few results, expands when many
  */
 export function TwoPanelLayout({ 
-    configPanel, 
+    configPanel,
+    configPanelWithoutSwitcher, // Config panel content without the mode switcher (for drawer body)
+    modeSwitcher, // Mode switcher component (Keys/Cards tabs) - shown in drawer header on mobile
     resultsPanel,
     className,
+    // Controlled drawer state (lifted from parent to persist across mode switches)
+    drawerOpen: controlledDrawerOpen,
+    onDrawerOpenChange,
 }) {
-    return (
-        <div className={cn(
-            // Base layout - uses Luma background
-            "h-full flex gap-3 p-3 overflow-auto bg-luma",
-            // Mobile (<768px): stack vertically, align to top
-            "flex-col items-start",
-            // Desktop (≥768px): side by side, align to top
-            "md:flex-row md:items-start md:gap-4 md:p-4",
-            className
-        )}>
-            {/* Config Panel - Apple style card */}
-            <aside className={cn(
-                "flex flex-col shrink-0",
-                "w-full", // Mobile: full width, auto height
-                "md:w-[360px] lg:w-[400px]" // Desktop: fixed width, auto height
-            )}>
-                <div className={cn(
-                    "flex flex-col floating-panel",
-                    "bg-luma-surface"
-                )}>
-                    <div className="overflow-y-auto custom-scrollbar max-h-[calc(100vh-120px)]">
-                        {configPanel}
-                    </div>
-                </div>
-            </aside>
+    // Use controlled state if provided, otherwise use internal state
+    const [internalDrawerOpen, setInternalDrawerOpen] = useState(false);
+    const drawerOpen = controlledDrawerOpen !== undefined ? controlledDrawerOpen : internalDrawerOpen;
+    const setDrawerOpen = onDrawerOpenChange || setInternalDrawerOpen;
+    
+    // Use breakpoint hook for responsive detection
+    const { isMobile } = useBreakpoint();
+    
+    // Dynamic layout detection with hysteresis to prevent feedback loops
+    // Minimum width needed for side-by-side: config (320px) + results (300px min) + gaps (32px)
+    const REQUIRED_DESKTOP_WIDTH = 652;
+    const HYSTERESIS_BUFFER = 50; // Extra buffer before switching back to desktop
+    
+    const containerRef = useRef(null);
+    const [containerWidth, setContainerWidth] = useState(0);
+    const [shouldUseMobileLayout, setShouldUseMobileLayout] = useState(isMobile);
+    
+    // Track container width with debounce
+    useEffect(() => {
+        if (!containerRef.current) return;
+        
+        let rafId;
+        let timeoutId;
+        
+        const measureWidth = () => {
+            if (containerRef.current) {
+                setContainerWidth(containerRef.current.offsetWidth);
+            }
+        };
+        
+        // Debounced measurement to prevent rapid updates
+        const debouncedMeasure = () => {
+            cancelAnimationFrame(rafId);
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => {
+                rafId = requestAnimationFrame(measureWidth);
+            }, 150); // 150ms debounce
+        };
+        
+        // Initial measurement
+        measureWidth();
+        
+        window.addEventListener('resize', debouncedMeasure);
+        
+        return () => {
+            window.removeEventListener('resize', debouncedMeasure);
+            cancelAnimationFrame(rafId);
+            clearTimeout(timeoutId);
+        };
+    }, []);
+    
+    // Determine layout mode with hysteresis
+    useEffect(() => {
+        if (isMobile) {
+            setShouldUseMobileLayout(true);
+            return;
+        }
+        
+        if (containerWidth === 0) return;
+        
+        setShouldUseMobileLayout(prev => {
+            if (prev) {
+                // Currently mobile - only switch to desktop if significantly larger
+                return containerWidth < (REQUIRED_DESKTOP_WIDTH + HYSTERESIS_BUFFER);
+            } else {
+                // Currently desktop - switch to mobile if too small
+                return containerWidth < REQUIRED_DESKTOP_WIDTH;
+            }
+        });
+    }, [isMobile, containerWidth]);
 
-            {/* Results Panel - Apple style card */}
-            <main className={cn(
-                "flex flex-col min-w-0 w-full",
-                "min-h-[200px] max-h-full", // Min height, but cap at container
-                "md:flex-1" // On desktop, can grow to fill space if needed
-            )}>
-                <div className={cn(
-                    "flex flex-col floating-panel h-fit max-h-full",
-                    "bg-luma-surface"
-                )}>
-                    {resultsPanel}
+    return (
+        <>
+            <div 
+                ref={containerRef}
+                className={cn(
+                    // Base layout - uses Luma background
+                    "h-full flex gap-3 p-3 overflow-auto bg-luma",
+                    // Dynamic layout based on content fit
+                    shouldUseMobileLayout 
+                        ? "flex-col items-start" 
+                        : "flex-row items-start gap-4 p-4",
+                    className
+                )}
+            >
+                {/* Config Panel - hidden when using mobile layout */}
+                {!shouldUseMobileLayout && (
+                    <aside className="flex flex-col shrink-0 w-[320px] md:w-[360px] lg:w-[400px]">
+                        <div className={cn(
+                            "flex flex-col floating-panel",
+                            "bg-luma-surface"
+                        )}>
+                            <div className="panel-scroll custom-scrollbar">
+                                {configPanel}
+                            </div>
+                        </div>
+                    </aside>
+                )}
+
+                {/* Mobile Config Button - only shown when using mobile layout */}
+                {shouldUseMobileLayout && (
+                    <div className="w-full flex justify-end mb-2 shrink-0">
+                        <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => setDrawerOpen(true)}
+                            className="surface-glass gap-2"
+                            aria-label="Open settings"
+                        >
+                            <Settings size={16} />
+                            Config
+                        </Button>
+                    </div>
+                )}
+
+                {/* Results Panel - Apple style card */}
+                <main className={cn(
+                    "flex flex-col min-w-0 w-full",
+                    "min-h-[200px]",
+                    !shouldUseMobileLayout && "flex-1"
+                )} style={{ maxHeight: 'var(--app-dvh)' }}>
+                    <div className={cn(
+                        "flex flex-col floating-panel h-fit",
+                        "bg-luma-surface"
+                    )} style={{ maxHeight: 'var(--app-dvh)' }}>
+                        {resultsPanel}
+                    </div>
+                </main>
+            </div>
+
+            {/* Drawer for config on mobile - mode switcher in header */}
+            <Drawer
+                isOpen={drawerOpen}
+                onClose={() => setDrawerOpen(false)}
+                headerContent={modeSwitcher}
+                position="right"
+            >
+                <div className="min-h-0 flex flex-col">
+                    {configPanelWithoutSwitcher || configPanel}
                 </div>
-            </main>
-        </div>
+            </Drawer>
+        </>
     );
 }
 
@@ -117,7 +230,7 @@ export function ResultsHeader({
 }) {
     return (
         <div className={cn(
-            "px-5 py-4 md:px-6 md:py-5",
+            "px-3 py-3 sm:px-5 sm:py-4 md:px-6 md:py-5",
             "border-b border-black/5 dark:border-white/5",
             "bg-white/50 dark:bg-white/5",
             className
@@ -138,8 +251,7 @@ export function ResultsContent({
 }) {
     return (
         <div className={cn(
-            "overflow-y-auto px-4 py-3 md:px-6 md:py-4 custom-scrollbar",
-            "max-h-[60vh] md:max-h-[calc(100vh-280px)]", // Cap height, allow scrolling when needed
+            "results-scroll px-4 py-3 md:px-6 md:py-4 custom-scrollbar",
             "bg-luma-surface rounded-3xl",
             className
         )}>

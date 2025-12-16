@@ -280,11 +280,32 @@ describe('Property 3: Filter shows only matching items', () => {
         );
     });
 
-    it('filtered results are a subset of original results', () => {
+    it('filtered key results are a subset of original results', () => {
         fc.assert(
             fc.property(
                 fc.array(keyResultArb, { minLength: 0, maxLength: 100 }),
                 keyFilterArb,
+                (results, filter) => {
+                    const filtered = filterResults(results, filter);
+                    
+                    // Filtered length should be <= original length
+                    expect(filtered.length).toBeLessThanOrEqual(results.length);
+                    
+                    // Every filtered item should exist in original
+                    for (const item of filtered) {
+                        expect(results).toContain(item);
+                    }
+                }
+            ),
+            { numRuns: 100 }
+        );
+    });
+
+    it('filtered card results are a subset of original results', () => {
+        fc.assert(
+            fc.property(
+                fc.array(cardResultArb, { minLength: 0, maxLength: 100 }),
+                cardFilterArb,
                 (results, filter) => {
                     const filtered = filterResults(results, filter);
                     
@@ -520,6 +541,10 @@ describe('Property 6: Delete removes result and updates stats', () => {
                     const { newResults } = deleteResultAndUpdateStats(results, index, 'keys');
                     
                     // The specific item at that index should be removed
+                    // Verify the deleted item is not at its original position
+                    if (newResults.length > 0 && index < newResults.length) {
+                        expect(newResults[index]).not.toBe(deletedItem);
+                    }
                     // Check that the item before and after the deleted index are now adjacent
                     if (index > 0 && index < results.length - 1) {
                         expect(newResults[index - 1]).toBe(results[index - 1]);

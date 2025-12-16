@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { 
     CreditCard, 
     TreeDeciduous, 
@@ -18,11 +18,13 @@ import {
     Hash,
     KeyRound,
     ShoppingCart,
+    X,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../lib/utils';
 import { UserProfileBadge } from '../ui/UserProfileBadge';
 import { ThemeToggle } from '../ui/ThemeToggle';
+import { useBreakpoint } from '../../hooks/useMediaQuery';
 
 // Default user data
 const defaultUser = {
@@ -32,12 +34,12 @@ const defaultUser = {
     tier: 'gold',
 };
 
-// Tier config with dark mode support
+// Tier config - uses centralized .tier-badge-* classes from index.css
 const tierConfig = {
-    bronze: { icon: Shield, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-500/10 dark:bg-amber-500/20', border: 'border-amber-500/20 dark:border-amber-500/30' },
-    silver: { icon: Award, color: 'text-gray-500 dark:text-gray-400', bg: 'bg-gray-500/10 dark:bg-gray-500/20', border: 'border-gray-500/20 dark:border-gray-500/30' },
-    gold: { icon: Crown, color: 'text-yellow-600 dark:text-yellow-400', bg: 'bg-yellow-500/10 dark:bg-yellow-500/20', border: 'border-yellow-500/20 dark:border-yellow-500/30' },
-    diamond: { icon: Gem, color: 'text-cyan-500 dark:text-cyan-400', bg: 'bg-cyan-500/10 dark:bg-cyan-500/20', border: 'border-cyan-500/20 dark:border-cyan-500/30' },
+    bronze: { icon: Shield, badgeClass: 'tier-badge-bronze' },
+    silver: { icon: Award, badgeClass: 'tier-badge-silver' },
+    gold: { icon: Crown, badgeClass: 'tier-badge-gold' },
+    diamond: { icon: Gem, badgeClass: 'tier-badge-diamond' },
 };
 
 /**
@@ -53,7 +55,94 @@ export function TopTabBar({
     onLogoutClick,
 }) {
     const [openDropdown, setOpenDropdown] = useState(null);
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const dropdownRef = useRef(null);
+    const navContainerRef = useRef(null);
+    const navContentRef = useRef(null);
+    const { isMobile: isMobileBreakpoint } = useBreakpoint();
+    
+    // Dynamic overflow detection with hysteresis to prevent feedback loops
+    // We measure the desktop nav content width ONCE and store it as the required width
+    const [requiredNavWidth, setRequiredNavWidth] = useState(0);
+    const [containerWidth, setContainerWidth] = useState(0);
+    const [shouldUseMobileNav, setShouldUseMobileNav] = useState(isMobileBreakpoint);
+    const hasInitializedRef = useRef(false);
+    
+    // Measure the desktop nav content width once on mount
+    useEffect(() => {
+        if (hasInitializedRef.current || !navContentRef.current || shouldUseMobileNav) return;
+        
+        // Wait for the desktop nav to render and measure its width
+        const timer = setTimeout(() => {
+            if (navContentRef.current) {
+                const contentWidth = navContentRef.current.scrollWidth;
+                // Add buffer for comfortable spacing
+                setRequiredNavWidth(contentWidth + 60);
+                hasInitializedRef.current = true;
+            }
+        }, 100);
+        
+        return () => clearTimeout(timer);
+    }, [shouldUseMobileNav]);
+    
+    // Track container width with debounce
+    useEffect(() => {
+        if (!navContainerRef.current) return;
+        
+        let rafId;
+        let timeoutId;
+        
+        const measureWidth = () => {
+            if (navContainerRef.current) {
+                setContainerWidth(navContainerRef.current.offsetWidth);
+            }
+        };
+        
+        const debouncedMeasure = () => {
+            cancelAnimationFrame(rafId);
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => {
+                rafId = requestAnimationFrame(measureWidth);
+            }, 150); // 150ms debounce
+        };
+        
+        // Initial measurement
+        measureWidth();
+        
+        window.addEventListener('resize', debouncedMeasure);
+        
+        return () => {
+            window.removeEventListener('resize', debouncedMeasure);
+            cancelAnimationFrame(rafId);
+            clearTimeout(timeoutId);
+        };
+    }, []);
+    
+    // Determine layout mode with hysteresis
+    // Switch to mobile when container is smaller than required
+    // Switch back to desktop only when container is significantly larger (adds 50px buffer)
+    useEffect(() => {
+        if (isMobileBreakpoint) {
+            setShouldUseMobileNav(true);
+            return;
+        }
+        
+        // If we haven't measured the required width yet, stay in current mode
+        if (requiredNavWidth === 0 || containerWidth === 0) return;
+        
+        const switchToMobileThreshold = requiredNavWidth;
+        const switchToDesktopThreshold = requiredNavWidth + 50; // Hysteresis buffer
+        
+        setShouldUseMobileNav(prev => {
+            if (prev) {
+                // Currently mobile - only switch to desktop if significantly larger
+                return containerWidth < switchToDesktopThreshold;
+            } else {
+                // Currently desktop - switch to mobile if too small
+                return containerWidth < switchToMobileThreshold;
+            }
+        });
+    }, [isMobileBreakpoint, containerWidth, requiredNavWidth]);
 
     const tier = tierConfig[user?.tier] || tierConfig.bronze;
     const TierIcon = tier.icon;
@@ -80,7 +169,16 @@ export function TopTabBar({
             ]
         },
         { 
-            id: 'adyen', 
+            id: 'paypal', 
+            label: 'PayPal', 
+            icon: Wallet,
+            color: 'amber',
+            children: [
+                { id: 'paypal-charge', label: 'Charge', icon: Zap, desc: 'Payment check', color: 'amber' },
+            ]
+        },
+        { 
+            id: 'adyen',
             label: 'Adyen', 
             icon: Wallet,
             color: 'orange',
@@ -162,77 +260,128 @@ export function TopTabBar({
         return activeRoute === item.id;
     };
 
+    // Find active nav item for mobile trigger
+    const findActiveNavItem = () => {
+        // First check if a child route is active
+        for (const item of navItems) {
+            if (item.children) {
+                const activeChild = item.children.find(child => child.id === activeRoute);
+                if (activeChild) {
+                    return { parent: item, child: activeChild };
+                }
+            } else if (item.id === activeRoute) {
+                return { parent: item, child: null };
+            }
+        }
+        // Default to first item if nothing matches
+        return { parent: navItems[0], child: null };
+    };
+
+    const activeNavInfo = findActiveNavItem();
+    const ActiveIcon = activeNavInfo.child?.icon || activeNavInfo.parent?.icon || CreditCard;
+    const activeParentLabel = activeNavInfo.parent?.label || 'Stripe';
+    const activeChildLabel = activeNavInfo.child?.label || null;
+    const activeColor = activeNavInfo.child?.color || activeNavInfo.parent?.color || 'violet';
+
+    // Close mobile menu when route changes
+    useEffect(() => {
+        setMobileMenuOpen(false);
+    }, [activeRoute]);
+
     return (
         <header 
-            className={cn(
-                "sticky top-0 z-40 w-full",
-                "flex items-center justify-between px-4 py-3 md:px-6",
-                "bg-transparent",
-                className
-            )}
+            className={cn("topbar", className)}
         >
-            {/* Left: User Name + Tier Badge */}
-            <motion.div 
-                className="nav-user-container"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.4 }}
-            >
-                <span className="nav-user-name">
+            {/* Left: User Name + Tier Badge - hide name on mobile, icon-only tier on mobile */}
+            <div className="nav-user-container">
+                <span className="nav-user-name hidden md:inline truncate max-w-[80px] lg:max-w-none">
                     {user?.name || 'User'}
                 </span>
-                <div className={cn(
-                    "flex items-center gap-1.5 px-2 py-1 rounded-lg",
-                    tier.bg, tier.border, "border"
-                )}>
-                    <TierIcon size={12} className={tier.color} />
-                    <span className={cn("text-[10px] font-bold uppercase tracking-wide", tier.color)}>
-                        {user?.tier || 'Bronze'}
-                    </span>
+                <div className={cn("tier-badge", tier.badgeClass)} title={user?.tier || 'Bronze'}>
+                    <TierIcon className="tier-badge-icon" />
+                    <span className="tier-badge-label hidden sm:inline">{user?.tier || 'Bronze'}</span>
                 </div>
-            </motion.div>
+            </div>
 
-            {/* Center: Navigation */}
-            <motion.nav 
-                ref={dropdownRef} 
-                className="nav-container"
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.1 }}
-            >
-                {navItems.map((item) => {
-                    const isActive = isGroupActive(item);
-                    const isOpen = openDropdown === item.id;
-                    
-                    return (
-                        <div key={item.id} className="relative">
-                            <NavButton
-                                icon={item.icon}
-                                label={item.label}
-                                color={item.color}
-                                active={isActive}
-                                hasDropdown={!!item.children}
-                                isOpen={isOpen}
-                                comingSoon={item.comingSoon}
-                                onClick={() => handleClick(item)}
-                            />
-                            
-                            <AnimatePresence>
-                                {item.children && isOpen && (
-                                    <DropdownMenu
-                                        items={item.children}
-                                        activeRoute={activeRoute}
-                                        onSelect={handleChildClick}
-                                    />
+            {/* Center: Navigation - Desktop or Mobile (dynamic based on content fit) */}
+            <div ref={navContainerRef} className="flex-1 min-w-0 flex justify-center">
+                {shouldUseMobileNav ? (
+                    <>
+                        <button
+                            className="nav-mobile-trigger"
+                            onClick={() => setMobileMenuOpen(true)}
+                        >
+                            <div className={cn("nav-mobile-trigger-icon", iconColors[activeColor]?.bg || iconColors.blue.bg)}>
+                                <ActiveIcon size={14} className={cn(iconColors[activeColor]?.icon || iconColors.blue.icon)} />
+                            </div>
+                            <div className="nav-mobile-trigger-labels">
+                                {activeChildLabel ? (
+                                    <>
+                                        <span className="nav-mobile-trigger-parent">{activeParentLabel}</span>
+                                        <span className="nav-mobile-trigger-child">{activeChildLabel}</span>
+                                    </>
+                                ) : (
+                                    <span className="nav-mobile-trigger-label">{activeParentLabel}</span>
                                 )}
-                            </AnimatePresence>
-                        </div>
-                    );
-                })}
-            </motion.nav>
+                            </div>
+                            <ChevronDown size={12} className="shrink-0 ml-1" />
+                        </button>
+
+                        <AnimatePresence>
+                            {mobileMenuOpen && (
+                                <MobileNavMenu
+                                    navItems={navItems}
+                                    activeRoute={activeRoute}
+                                    onNavigate={(routeId) => {
+                                        onNavigate(routeId);
+                                        setMobileMenuOpen(false);
+                                    }}
+                                    onClose={() => setMobileMenuOpen(false)}
+                                    isGroupActive={isGroupActive}
+                                />
+                            )}
+                        </AnimatePresence>
+                    </>
+                ) : (
+                    <nav 
+                        ref={(el) => { dropdownRef.current = el; navContentRef.current = el; }}
+                        className="nav-container"
+                    >
+                        {navItems.map((item) => {
+                            const isActive = isGroupActive(item);
+                            const isOpen = openDropdown === item.id;
+                            
+                            return (
+                                <div key={item.id} className="relative">
+                                    <NavButton
+                                        icon={item.icon}
+                                        label={item.label}
+                                        color={item.color}
+                                        active={isActive}
+                                        hasDropdown={!!item.children}
+                                        isOpen={isOpen}
+                                        comingSoon={item.comingSoon}
+                                        onClick={() => handleClick(item)}
+                                    />
+                                    
+                                    <AnimatePresence>
+                                        {item.children && isOpen && (
+                                            <DropdownMenu
+                                                items={item.children}
+                                                activeRoute={activeRoute}
+                                                onSelect={handleChildClick}
+                                            />
+                                        )}
+                                    </AnimatePresence>
+                                </div>
+                            );
+                        })}
+                    </nav>
+                )}
+            </div>
 
             {/* Right: Theme Toggle + User Profile */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1 sm:gap-2 md:gap-3 shrink-0">
                 <ThemeToggle />
                 <UserProfileBadge
                     user={user}
@@ -256,29 +405,30 @@ function NavButton({ icon: Icon, label, color = 'blue', active, hasDropdown, isO
                 active && "nav-btn-active",
                 comingSoon && "nav-btn-coming-soon"
             )}
-            whileHover={{ scale: 1.02 }}
+            whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.98 }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
         >
-            {/* Always show colorful icon background */}
+            {/* Colorful icon */}
             <div className={cn(
                 "nav-icon-container",
                 active ? colorConfig.activeBg : colorConfig.bg
             )}>
                 <Icon 
-                    size={15} 
+                    size={12} 
                     className={active ? colorConfig.activeIcon : colorConfig.icon} 
                 />
             </div>
-            <span className={cn("nav-btn-label hidden md:inline")}>{label}</span>
+            <span className={cn("nav-btn-label hidden md:inline text-[10px]")}>{label}</span>
             {comingSoon && (
                 <span className="nav-badge-soon">Soon</span>
             )}
             {hasDropdown && (
                 <motion.div
                     animate={{ rotate: isOpen ? 180 : 0 }}
-                    transition={{ duration: 0.2 }}
+                    transition={{ duration: 0.15 }}
                 >
-                    <ChevronDown size={12} className="nav-chevron" />
+                    <ChevronDown size={8} className="nav-chevron" />
                 </motion.div>
             )}
         </motion.button>
@@ -311,18 +461,18 @@ function DropdownMenu({ items, activeRoute, onSelect }) {
     );
 }
 
-// Color configurations for icons - all nav items get colorful icons
+// Color configurations for icons - uses centralized CSS classes (.nav-icon-*) from index.css
 const iconColors = {
-    blue: { bg: 'bg-blue-100 dark:bg-blue-500/20', icon: 'text-blue-600 dark:text-blue-400', activeBg: 'bg-blue-500', activeIcon: 'text-white' },
-    amber: { bg: 'bg-amber-100 dark:bg-amber-500/20', icon: 'text-amber-600 dark:text-amber-400', activeBg: 'bg-amber-500', activeIcon: 'text-white' },
-    purple: { bg: 'bg-purple-100 dark:bg-purple-500/20', icon: 'text-purple-600 dark:text-purple-400', activeBg: 'bg-purple-500', activeIcon: 'text-white' },
-    emerald: { bg: 'bg-emerald-100 dark:bg-emerald-500/20', icon: 'text-emerald-600 dark:text-emerald-400', activeBg: 'bg-emerald-500', activeIcon: 'text-white' },
-    teal: { bg: 'bg-teal-100 dark:bg-teal-500/20', icon: 'text-teal-600 dark:text-teal-400', activeBg: 'bg-teal-500', activeIcon: 'text-white' },
-    orange: { bg: 'bg-orange-100 dark:bg-orange-500/20', icon: 'text-orange-600 dark:text-orange-400', activeBg: 'bg-orange-500', activeIcon: 'text-white' },
-    violet: { bg: 'bg-violet-100 dark:bg-violet-500/20', icon: 'text-violet-600 dark:text-violet-400', activeBg: 'bg-violet-500', activeIcon: 'text-white' },
-    rose: { bg: 'bg-rose-100 dark:bg-rose-500/20', icon: 'text-rose-600 dark:text-rose-400', activeBg: 'bg-rose-500', activeIcon: 'text-white' },
-    pink: { bg: 'bg-pink-100 dark:bg-pink-500/20', icon: 'text-pink-600 dark:text-pink-400', activeBg: 'bg-pink-500', activeIcon: 'text-white' },
-    green: { bg: 'bg-green-100 dark:bg-green-500/20', icon: 'text-green-600 dark:text-green-400', activeBg: 'bg-green-500', activeIcon: 'text-white' },
+    blue: { bg: 'nav-icon-blue', icon: 'nav-icon-blue-icon', activeBg: 'nav-icon-blue-active', activeIcon: 'nav-icon-blue-active-icon' },
+    amber: { bg: 'nav-icon-amber', icon: 'nav-icon-amber-icon', activeBg: 'nav-icon-amber-active', activeIcon: 'nav-icon-amber-active-icon' },
+    purple: { bg: 'nav-icon-purple', icon: 'nav-icon-purple-icon', activeBg: 'nav-icon-purple-active', activeIcon: 'nav-icon-purple-active-icon' },
+    emerald: { bg: 'nav-icon-emerald', icon: 'nav-icon-emerald-icon', activeBg: 'nav-icon-emerald-active', activeIcon: 'nav-icon-emerald-active-icon' },
+    teal: { bg: 'nav-icon-teal', icon: 'nav-icon-teal-icon', activeBg: 'nav-icon-teal-active', activeIcon: 'nav-icon-teal-active-icon' },
+    orange: { bg: 'nav-icon-orange', icon: 'nav-icon-orange-icon', activeBg: 'nav-icon-orange-active', activeIcon: 'nav-icon-orange-active-icon' },
+    violet: { bg: 'nav-icon-violet', icon: 'nav-icon-violet-icon', activeBg: 'nav-icon-violet-active', activeIcon: 'nav-icon-violet-active-icon' },
+    rose: { bg: 'nav-icon-rose', icon: 'nav-icon-rose-icon', activeBg: 'nav-icon-rose-active', activeIcon: 'nav-icon-rose-active-icon' },
+    pink: { bg: 'nav-icon-pink', icon: 'nav-icon-pink-icon', activeBg: 'nav-icon-pink-active', activeIcon: 'nav-icon-pink-active-icon' },
+    green: { bg: 'nav-icon-green', icon: 'nav-icon-green-icon', activeBg: 'nav-icon-green-active', activeIcon: 'nav-icon-green-active-icon' },
 };
 
 function DropdownItem({ icon: Icon, label, desc, active, onClick, index, color = 'blue', comingSoon }) {
@@ -388,5 +538,185 @@ function DropdownItem({ icon: Icon, label, desc, active, onClick, index, color =
                 )}
             </AnimatePresence>
         </motion.button>
+    );
+}
+
+/**
+ * MobileNavMenu - Full-screen mobile navigation menu
+ * Allows expanding parent items to see children without navigating away
+ */
+function MobileNavMenu({ navItems, activeRoute, onNavigate, onClose, isGroupActive }) {
+    // Track which parent is expanded - start with active group expanded
+    const getInitialExpandedId = () => {
+        for (const item of navItems) {
+            if (item.children) {
+                const hasActiveChild = item.children.some(child => child.id === activeRoute);
+                if (hasActiveChild) return item.id;
+            }
+        }
+        return null;
+    };
+    
+    const [expandedParentId, setExpandedParentId] = useState(getInitialExpandedId);
+
+    useEffect(() => {
+        // Lock body scroll when menu is open
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, []);
+
+    useEffect(() => {
+        const handleEscape = (e) => {
+            if (e.key === 'Escape') {
+                onClose();
+            }
+        };
+        document.addEventListener('keydown', handleEscape);
+        return () => document.removeEventListener('keydown', handleEscape);
+    }, [onClose]);
+
+    const handleItemClick = (item) => {
+        if (item.children && item.children.length > 0) {
+            // Toggle expansion without navigating
+            setExpandedParentId(prev => prev === item.id ? null : item.id);
+        } else {
+            // No children - navigate directly
+            onNavigate(item.id);
+        }
+    };
+
+    return (
+        <motion.div
+            className="nav-mobile-menu"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            onClick={(e) => {
+                if (e.target === e.currentTarget) {
+                    onClose();
+                }
+            }}
+        >
+            {/* Minimal close button - floating top right */}
+            <motion.button
+                className="nav-mobile-menu-close-floating"
+                onClick={onClose}
+                aria-label="Close menu"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+            >
+                <X size={20} />
+            </motion.button>
+
+            <div className="nav-mobile-menu-content">
+                {navItems.map((item) => {
+                    const isActive = isGroupActive(item);
+                    const isExpanded = expandedParentId === item.id;
+                    const hasChildren = item.children && item.children.length > 0;
+                    const colorConfig = iconColors[item.color] || iconColors.blue;
+                    const ItemIcon = item.icon;
+
+                    return (
+                        <div key={item.id}>
+                            <button
+                                className={cn(
+                                    "nav-mobile-menu-item",
+                                    isActive && "nav-mobile-menu-item-active"
+                                )}
+                                onClick={() => handleItemClick(item)}
+                            >
+                                <div className={cn(
+                                    "nav-dropdown-icon",
+                                    isActive ? colorConfig.activeBg : colorConfig.bg
+                                )}>
+                                    <ItemIcon 
+                                        size={20} 
+                                        className={isActive ? colorConfig.activeIcon : colorConfig.icon} 
+                                    />
+                                </div>
+                                <div className="flex-1 min-w-0 text-left">
+                                    <div className="flex items-center gap-2">
+                                        <span className="font-medium">{item.label}</span>
+                                        {item.comingSoon && (
+                                            <span className="nav-badge-soon">Soon</span>
+                                        )}
+                                    </div>
+                                </div>
+                                {/* Chevron for expandable items */}
+                                {hasChildren && (
+                                    <motion.div
+                                        animate={{ rotate: isExpanded ? 180 : 0 }}
+                                        transition={{ duration: 0.15 }}
+                                        className="shrink-0"
+                                    >
+                                        <ChevronDown size={16} className="text-luma-secondary" />
+                                    </motion.div>
+                                )}
+                                {/* Check mark for active items without children */}
+                                {!hasChildren && isActive && (
+                                    <Check size={16} className="text-luma-coral shrink-0" />
+                                )}
+                            </button>
+
+                            {/* Show children when expanded */}
+                            <AnimatePresence>
+                                {isExpanded && hasChildren && (
+                                    <motion.div
+                                        initial={{ height: 0, opacity: 0 }}
+                                        animate={{ height: 'auto', opacity: 1 }}
+                                        exit={{ height: 0, opacity: 0 }}
+                                        transition={{ duration: 0.2 }}
+                                        className="overflow-hidden"
+                                    >
+                                        <div className="ml-12 space-y-1 mt-1 pb-1">
+                                            {item.children.map((child) => {
+                                                const childColorConfig = iconColors[child.color] || iconColors.blue;
+                                                const ChildIcon = child.icon;
+                                                const childActive = activeRoute === child.id;
+
+                                                return (
+                                                    <button
+                                                        key={child.id}
+                                                        className={cn(
+                                                            "nav-mobile-menu-item text-sm",
+                                                            childActive && "nav-mobile-menu-item-active"
+                                                        )}
+                                                        onClick={() => onNavigate(child.id)}
+                                                    >
+                                                        <div className={cn(
+                                                            "nav-dropdown-icon w-8 h-8",
+                                                            childActive ? childColorConfig.activeBg : childColorConfig.bg
+                                                        )}>
+                                                            <ChildIcon 
+                                                                size={16} 
+                                                                className={childActive ? childColorConfig.activeIcon : childColorConfig.icon} 
+                                                            />
+                                                        </div>
+                                                        <div className="flex-1 min-w-0 text-left">
+                                                            <div className="font-medium">{child.label}</div>
+                                                            {child.desc && (
+                                                                <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                                                    {child.desc}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        {childActive && (
+                                                            <Check size={14} className="text-luma-coral shrink-0" />
+                                                        )}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
+                    );
+                })}
+            </div>
+        </motion.div>
     );
 }

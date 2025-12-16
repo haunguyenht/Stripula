@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Loader2, Trash2, RefreshCw, LayoutGrid, Key } from 'lucide-react';
 import { ResultsHeader, ResultsContent, ResultsFooter } from '../layout/TwoPanelLayout';
@@ -7,7 +7,7 @@ import { cn } from '../../lib/utils';
 
 /**
  * ResultsPanel - Results panel with gallery header, stats bar, list, and pagination
- * Matches the reference layout: Title + Mode Badge + Clear + Stats bar (sticky) + Results grid + Pagination
+ * Uses dynamic width detection to hide title when space is limited
  */
 export function ResultsPanel({
     // Stats configuration
@@ -38,87 +38,163 @@ export function ResultsPanel({
     className,
 }) {
     const safeStats = Array.isArray(stats) ? stats : [];
-    // Use the "all" stat value for total count, or find the first stat with id "all"
     const allStat = safeStats.find(stat => stat.id === 'all');
     const totalCount = allStat ? Number(allStat.value) || 0 : safeStats.reduce((sum, stat) => sum + (Number(stat.value) || 0), 0);
     const isChecking = Boolean(isLoading);
 
+    // Dynamic width detection for showing/hiding title
+    const headerRef = useRef(null);
+    const titleRef = useRef(null);
+    const pillsRef = useRef(null);
+    const actionsRef = useRef(null);
+    const [showTitle, setShowTitle] = useState(true);
+    const measuredWidthsRef = useRef({ title: 0, pills: 0, actions: 0 });
+    
+    // Measure actual content widths once title is visible
+    useEffect(() => {
+        if (!showTitle) return;
+        
+        // Measure after render
+        const measureTimeout = setTimeout(() => {
+            if (titleRef.current) {
+                measuredWidthsRef.current.title = titleRef.current.offsetWidth;
+            }
+            if (pillsRef.current) {
+                measuredWidthsRef.current.pills = pillsRef.current.offsetWidth;
+            }
+            if (actionsRef.current) {
+                measuredWidthsRef.current.actions = actionsRef.current.offsetWidth;
+            }
+        }, 50);
+        
+        return () => clearTimeout(measureTimeout);
+    }, [showTitle, safeStats]); // Re-measure when stats change
+    
+    useEffect(() => {
+        if (!headerRef.current) return;
+        
+        let rafId;
+        let timeoutId;
+        
+        const checkWidth = () => {
+            if (!headerRef.current) return;
+            
+            const containerWidth = headerRef.current.offsetWidth;
+            const { title, pills, actions } = measuredWidthsRef.current;
+            
+            // Calculate required width: measured widths + gaps (16px between each element)
+            const GAP = 16;
+            const PADDING = 8; // Extra breathing room
+            const requiredWidth = title + pills + actions + (GAP * 2) + PADDING;
+            
+            // Hysteresis: need 40px more space to show title again
+            const HYSTERESIS = 40;
+            
+            setShowTitle(prev => {
+                if (prev) {
+                    // Currently showing - hide if container is smaller than required
+                    return containerWidth >= requiredWidth;
+                } else {
+                    // Currently hidden - show only if significantly wider
+                    // Use measured pills + actions + estimated title width for comparison
+                    const estimatedRequired = (title || 180) + pills + actions + (GAP * 2) + PADDING;
+                    return containerWidth >= estimatedRequired + HYSTERESIS;
+                }
+            });
+        };
+        
+        const debouncedCheck = () => {
+            cancelAnimationFrame(rafId);
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => {
+                rafId = requestAnimationFrame(checkWidth);
+            }, 100);
+        };
+        
+        // Initial check after a short delay to allow measurement
+        const initialTimeout = setTimeout(checkWidth, 100);
+        
+        // Observe resize
+        const resizeObserver = new ResizeObserver(debouncedCheck);
+        resizeObserver.observe(headerRef.current);
+        
+        return () => {
+            resizeObserver.disconnect();
+            cancelAnimationFrame(rafId);
+            clearTimeout(timeoutId);
+            clearTimeout(initialTimeout);
+        };
+    }, [safeStats]); // Re-run when stats change as pills width may change
+
     return (
         <div className={cn("flex flex-col", className)}>
-            {/* Header - Modern Glass Style */}
+            {/* Header - Single row: Title (dynamic) | Pills | Actions */}
             <ResultsHeader>
-                {/* Title Row */}
-                <div className="flex items-center justify-between mb-5">
-                    <motion.div 
-                        className="flex items-center gap-4"
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.4 }}
-                    >
-                        <motion.div 
-                            className="results-header-icon"
-                            whileHover={{ scale: 1.05, rotate: 5 }}
-                            transition={{ type: "spring", stiffness: 400, damping: 20 }}
-                        >
-                            <LayoutGrid size={22} className="text-white" />
-                        </motion.div>
-                        <div>
-                            <h2 className="results-title">{title}</h2>
-                            {isChecking ? (
-                                <motion.p 
-                                    className="results-processing"
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                >
-                                    <Loader2 size={12} className="animate-spin" />
-                                    <span>Processing...</span>
-                                </motion.p>
-                            ) : (
-                                <p className="results-subtitle">{totalCount} total results</p>
-                            )}
+                <div ref={headerRef} className="flex items-center justify-between gap-4">
+                    {/* Left: Icon + Title - dynamically hidden based on available width */}
+                    {showTitle && (
+                        <div ref={titleRef} className="flex items-center gap-2 min-w-0 shrink-0">
+                            <div className="results-header-icon shrink-0">
+                                <LayoutGrid size={18} className="text-white" />
+                            </div>
+                            <div className="min-w-0">
+                                <h2 className="results-title truncate text-sm whitespace-nowrap">{title}</h2>
+                                {isChecking ? (
+                                    <p className="results-processing">
+                                        <Loader2 size={10} className="animate-spin" />
+                                        <span className="text-[10px]">Processing...</span>
+                                    </p>
+                                ) : (
+                                    <p className="results-subtitle text-[10px] whitespace-nowrap">{totalCount} results</p>
+                                )}
+                            </div>
                         </div>
-                    </motion.div>
+                    )}
 
-                    <motion.div 
-                        className="flex items-center gap-2"
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.4, delay: 0.1 }}
+                    {/* Center: Filter Pills - centered in available space */}
+                    <div 
+                        ref={pillsRef}
+                        className="flex-1 flex justify-center min-w-0"
                     >
+                        <StatPillGroup
+                            stats={safeStats}
+                            activeFilter={activeFilter}
+                            onFilterChange={onFilterChange}
+                        />
+                    </div>
+
+                    {/* Right: Actions */}
+                    <div ref={actionsRef} className="flex items-center gap-1 shrink-0">
                         {onRefresh && (
-                            <motion.button
+                            <button
                                 onClick={onRefresh}
-                                className={cn("action-btn-glass action-btn-refresh", isLoading && "loading")}
+                                className={cn(
+                                    "action-btn-glass action-btn-refresh",
+                                    "!px-2 !py-1.5",
+                                    isLoading && "loading"
+                                )}
                                 disabled={isLoading}
-                                title={isLoading ? "Refreshing..." : "Refresh all"}
-                                whileHover={!isLoading ? { scale: 1.02 } : {}}
-                                whileTap={!isLoading ? { scale: 0.98 } : {}}
+                                title="Refresh all"
                             >
-                                <RefreshCw size={15} className={isLoading ? "animate-spin" : ""} />
-                                <span className="hidden sm:inline">{isLoading ? "Refreshing..." : "Refresh"}</span>
-                            </motion.button>
+                                <RefreshCw size={14} className={isLoading ? "animate-spin" : ""} />
+                            </button>
                         )}
                         {onClear && (
-                            <motion.button
+                            <button
                                 onClick={onClear}
-                                className={cn("action-btn-glass action-btn-clear", isLoading && "loading")}
+                                className={cn(
+                                    "action-btn-glass action-btn-clear",
+                                    "!px-2 !py-1.5",
+                                    isLoading && "loading"
+                                )}
                                 disabled={isLoading}
-                                whileHover={!isLoading ? { scale: 1.02 } : {}}
-                                whileTap={!isLoading ? { scale: 0.98 } : {}}
+                                title="Clear results"
                             >
-                                <Trash2 size={15} />
-                                <span className="hidden sm:inline">Clear</span>
-                            </motion.button>
+                                <Trash2 size={14} />
+                            </button>
                         )}
-                    </motion.div>
+                    </div>
                 </div>
-
-                {/* Filter Pills - Modern Glass Style */}
-                <StatPillGroup
-                    stats={safeStats}
-                    activeFilter={activeFilter}
-                    onFilterChange={onFilterChange}
-                />
             </ResultsHeader>
 
             {/* Results List */}
@@ -155,37 +231,29 @@ export function ResultsPanel({
  */
 function Pagination({ currentPage, totalPages, onPageChange }) {
     return (
-        <motion.div 
-            className="flex items-center justify-center gap-2"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-        >
-            <motion.button
+        <div className="flex items-center justify-center gap-1.5 sm:gap-2">
+            <button
                 onClick={() => onPageChange(Math.max(1, currentPage - 1))}
                 disabled={currentPage === 1}
                 className="pagination-btn"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
             >
-                <ChevronLeft size={16} />
-            </motion.button>
+                <ChevronLeft size={14} className="sm:w-4 sm:h-4" />
+            </button>
             
             <div className="pagination-info">
-                <span className="text-sm font-bold text-gray-800 dark:text-gray-100">{currentPage}</span>
-                <span className="text-sm text-gray-400">/</span>
-                <span className="text-sm font-medium text-gray-500 dark:text-gray-400">{totalPages}</span>
+                <span className="pagination-text pagination-text-current">{currentPage}</span>
+                <span className="pagination-text pagination-text-divider">/</span>
+                <span className="pagination-text">{totalPages}</span>
             </div>
             
-            <motion.button
+            <button
                 onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
                 disabled={currentPage === totalPages}
                 className="pagination-btn"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
             >
-                <ChevronRight size={16} />
-            </motion.button>
-        </motion.div>
+                <ChevronRight size={14} className="sm:w-4 sm:h-4" />
+            </button>
+        </div>
     );
 }
 
@@ -206,8 +274,8 @@ function DefaultEmptyState() {
                 animate={{ y: [0, -8, 0] }}
                 transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
             >
-                <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-luma-coral/20 to-luma-coral-dark/10 blur-xl" />
-                <div className="empty-state-icon empty-state-icon-lg relative bg-gradient-to-br from-white to-gray-50 dark:from-luma-surface dark:to-luma-surface-muted border-white/60 dark:border-white/10 shadow-lg">
+                <div className="absolute inset-0 rounded-3xl bg-luma-coral-20 blur-xl" />
+                <div className="empty-state-icon empty-state-icon-lg relative surface-glass-strong">
                     <Key size={32} className="text-luma-coral" />
                 </div>
             </motion.div>
@@ -272,7 +340,6 @@ export const ResultItem = React.forwardRef(function ResultItem({ children, id },
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.15 }}
-            layout
         >
             {children}
         </motion.div>

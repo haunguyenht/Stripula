@@ -3,37 +3,30 @@ import { Shield, Award, Crown, Gem, ChevronDown, Settings, HelpCircle, LogOut, U
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../lib/utils';
 
+// Tier config - uses centralized .tier-badge-* classes from index.css
 const tierConfig = {
     bronze: {
         label: 'Bronze',
         icon: Shield,
-        bgColor: 'bg-amber-500/10',
-        textColor: 'text-amber-700',
-        borderColor: 'border-amber-500/20',
+        badgeClass: 'tier-badge-bronze',
         iconColor: '#CD7F32',
     },
     silver: {
         label: 'Silver',
         icon: Award,
-        bgColor: 'bg-gray-500/10',
-        textColor: 'text-gray-600',
-        borderColor: 'border-gray-500/20',
+        badgeClass: 'tier-badge-silver',
         iconColor: '#C0C0C0',
     },
     gold: {
         label: 'Gold',
         icon: Crown,
-        bgColor: 'bg-yellow-500/10',
-        textColor: 'text-yellow-700',
-        borderColor: 'border-yellow-500/20',
+        badgeClass: 'tier-badge-gold',
         iconColor: '#FFD700',
     },
     diamond: {
         label: 'Diamond',
         icon: Gem,
-        bgColor: 'bg-cyan-500/10',
-        textColor: 'text-cyan-700',
-        borderColor: 'border-cyan-500/20',
+        badgeClass: 'tier-badge-diamond',
         iconColor: '#B9F2FF',
     },
 };
@@ -83,35 +76,35 @@ export function UserProfileBadge({
     ];
 
     return (
-        <div ref={dropdownRef} className={cn("relative", className)}>
-            {/* Simplified Profile Button: Avatar + Credits only */}
+        <div ref={dropdownRef} className={cn("relative shrink-0", className)}>
+            {/* Simplified Profile Button: Avatar only on mobile, Avatar + Credits on larger screens */}
             <motion.button
                 onClick={handleDropdownToggle}
-                className="nav-pill flex items-center gap-2 px-2 py-1.5 cursor-pointer"
+                className="nav-pill flex items-center gap-1 sm:gap-2 px-1 sm:px-2 py-1 sm:py-1.5 cursor-pointer"
                 aria-expanded={isDropdownOpen}
                 aria-haspopup="true"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.96 }}
                 transition={{ type: "spring", stiffness: 400, damping: 25 }}
             >
-                {/* Avatar */}
-                <div className="w-7 h-7 flex items-center justify-center rounded-apple bg-orange-400 dark:bg-pink-500 shadow-sm">
-                    <User size={14} className="text-white" />
+                {/* Avatar - uses centralized avatar-bg class */}
+                <div className="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded-lg sm:rounded-apple avatar-bg shadow-sm shrink-0">
+                    <User size={12} className="sm:w-[14px] sm:h-[14px] text-white" />
                 </div>
 
-                {/* Credits Display */}
-                <div className="flex items-center gap-1">
-                    <Coins size={12} className="text-yellow-500 dark:text-pink-400" />
-                    <span className="text-xs font-apple-semibold text-gray-700 dark:text-gray-200">
+                {/* Credits Display - hidden on mobile (<640px) */}
+                <div className="hidden sm:flex items-center gap-1">
+                    <Coins size={10} className="sm:w-3 sm:h-3 credits-icon" />
+                    <span className="text-[10px] sm:text-xs font-apple-semibold text-gray-700 dark:text-gray-200">
                         {(user?.credits ?? 0).toLocaleString()}
                     </span>
                 </div>
 
-                {/* Dropdown Arrow */}
+                {/* Dropdown Arrow - hidden on mobile */}
                 <ChevronDown 
-                    size={12} 
+                    size={10} 
                     className={cn(
-                        "text-gray-400 dark:text-gray-500 transition-transform duration-200",
+                        "hidden sm:block sm:w-3 sm:h-3 text-gray-400 dark:text-gray-500 transition-transform duration-200 shrink-0",
                         isDropdownOpen && "rotate-180"
                     )}
                 />
@@ -130,7 +123,7 @@ export function UserProfileBadge({
                         {/* User Info Header in Dropdown */}
                         <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 flex items-center justify-center rounded-xl bg-orange-400 dark:bg-pink-500 shadow-sm">
+                                <div className="w-10 h-10 flex items-center justify-center rounded-xl avatar-bg shadow-sm">
                                     <User size={18} className="text-white" />
                                 </div>
                                 <div>
@@ -140,16 +133,13 @@ export function UserProfileBadge({
                                     )}
                                 </div>
                             </div>
-                            {/* Tier Badge in Dropdown */}
+                            {/* Tier Badge in Dropdown - uses centralized tier-badge classes */}
                             <div className={cn(
-                                "mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg",
-                                tier.bgColor,
-                                tier.textColor,
-                                "border",
-                                tier.borderColor
+                                "tier-badge mt-3",
+                                tier.badgeClass
                             )}>
-                                <TierIcon size={12} style={{ color: tier.iconColor }} />
-                                <span className="text-[10px] font-bold uppercase tracking-wide">{tier.label}</span>
+                                <TierIcon className="tier-badge-icon" style={{ color: tier.iconColor }} />
+                                <span className="tier-badge-label">{tier.label}</span>
                             </div>
                         </div>
 
@@ -163,14 +153,14 @@ export function UserProfileBadge({
                                         "w-full flex items-center gap-3 px-4 py-2.5",
                                         "text-left text-sm font-apple-medium transition-all duration-150",
                                         item.destructive
-                                            ? "text-rose-600 hover:bg-rose-500/10"
-                                            : "text-gray-700 dark:text-gray-200 hover:bg-black/5 dark:hover:bg-white/5"
+                                            ? "menu-item-destructive"
+                                            : "text-gray-700 dark:text-gray-200 menu-item-default"
                                     )}
                                     whileTap={{ scale: 0.98, opacity: 0.9 }}
                                 >
                                     <item.icon 
                                         size={16} 
-                                        className={item.destructive ? "text-rose-500" : "text-gray-400 dark:text-gray-500"}
+                                        className={item.destructive ? "menu-item-destructive-icon" : "text-gray-400 dark:text-gray-500"}
                                     />
                                     <span className="font-apple-medium">{item.label}</span>
                                 </motion.button>
@@ -198,8 +188,8 @@ export function TierBadge({ tier = 'bronze', size = 'default', className }) {
 
     return (
         <div className={cn(
-            "inline-flex items-center rounded-lg font-bold uppercase tracking-wide border",
-            config.bgColor, config.textColor, config.borderColor,
+            "tier-badge",
+            config.badgeClass,
             sizes[size],
             className
         )}>
@@ -225,7 +215,7 @@ export function CreditsBadge({ credits = 0, size = 'default', className }) {
             sizes[size],
             className
         )}>
-            <Coins size={iconSizes[size]} className="text-yellow-500 dark:text-pink-400" />
+            <Coins size={iconSizes[size]} className="credits-icon" />
             <span>{credits.toLocaleString()}</span>
         </div>
     );

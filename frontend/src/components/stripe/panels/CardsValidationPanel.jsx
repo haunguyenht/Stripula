@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { CreditCard, Trash2, Copy, Check, Zap, Key, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '../../../hooks/useToast';
+import { useCardFilters } from '../../../hooks/useCardFilters';
 
 // Layout
 import { TwoPanelLayout } from '../../layout/TwoPanelLayout';
@@ -36,13 +37,16 @@ export function CardsValidationPanel({
     onKeySelect,
     isLoading,
     setIsLoading,
-    currentItem,
+    // currentItem - received but not displayed in this panel
     setCurrentItem,
     progress,
     setProgress,
     abortRef,
     abortControllerRef,
     modeSwitcher,
+    // Drawer state lifted from parent to persist across mode switches
+    drawerOpen,
+    onDrawerOpenChange,
 }) {
     const [copiedCard, setCopiedCard] = useState(null);
     const [filter, setFilter] = useState('all');
@@ -126,7 +130,7 @@ export function CardsValidationPanel({
             let newResults = [...cardResults];
             let stats = { ...cardStats };
 
-            while (true) {
+            for (;;) {
                 const { done, value } = await reader.read();
                 if (done) break;
 
@@ -218,13 +222,7 @@ export function CardsValidationPanel({
 
     const cardCount = cards.split('\n').filter(l => l.trim()).length;
 
-    const filteredResults = cardResults.filter(r => {
-        if (filter === 'all') return true;
-        if (filter === 'live') return r.status === 'LIVE' || r.status === 'APPROVED';
-        if (filter === 'die') return r.status === 'DIE';
-        if (filter === 'error') return r.status === 'ERROR' || r.status === 'RETRY';
-        return true;
-    });
+    const filteredResults = useCardFilters(cardResults, filter);
 
     const totalPages = Math.ceil(filteredResults.length / pageSize);
     const paginatedResults = filteredResults.slice((page - 1) * pageSize, page * pageSize);
@@ -247,8 +245,195 @@ export function CardsValidationPanel({
     // RENDER
     // ══════════════════════════════════════════════════════════════════
 
+    // Config panel content (without mode switcher) - used in drawer body
+    const configContent = (
+        <>
+            {/* Input Section with embedded buttons */}
+            <div className="panel-input-section">
+                {/* Combined Input Container */}
+                <div className={`input-container-unified border-luma-coral-15 hover:border-luma-coral-25 ${isLoading ? 'input-container-loading' : ''}`}>
+                    <textarea
+                        className={`input-textarea h-16 md:h-20 ${isLoading ? 'input-textarea-disabled' : ''}`}
+                        placeholder="Enter cards (one per line)&#10;4111111111111111|01|2025|123"
+                        value={cards}
+                        onChange={(e) => setCards(e.target.value)}
+                        disabled={isLoading}
+                    />
+                    {/* Bottom toolbar inside input */}
+                    <div className="input-toolbar">
+                        <div className="flex items-center gap-2">
+                            {cardCount > 0 && (
+                                <span className="count-badge">
+                                    {cardCount} cards
+                                </span>
+                            )}
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="w-8 h-8 rounded-full hover:bg-luma-coral-10"
+                                onClick={clearResults}
+                                disabled={isLoading}
+                                title="Clear"
+                            >
+                                <Trash2 size={14} className="text-gray-400 dark:text-gray-500" />
+                            </Button>
+                        </div>
+                        {isLoading ? (
+                            <button 
+                                className="input-action-btn input-action-btn-stop"
+                                onClick={handleStop}
+                            >
+                                <span className="w-2.5 h-2.5 bg-white rounded-sm" />
+                            </button>
+                        ) : (
+                            <button 
+                                className="input-action-btn input-action-btn-primary"
+                                onClick={handleCheckCards}
+                            >
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M5 12h14M12 5l7 7-7 7"/>
+                                </svg>
+                            </button>
+                        )}
+                    </div>
+                </div>
+
+                {/* Progress */}
+                <AnimatePresence>
+                    {isLoading && progress.total > 0 && (
+                        <ProgressBar current={progress.current} total={progress.total} />
+                    )}
+                </AnimatePresence>
+            </div>
+
+            {/* Settings Section - Scrollable, compact */}
+            <div className="settings-section">
+                {/* API Keys */}
+                <div className="settings-card settings-card-inner border-luma-coral-10">
+                    <div className="settings-header">
+                        <div className="settings-header-icon settings-header-icon-amber">
+                            <Key size={12} className="text-white" />
+                        </div>
+                        Keys
+                    </div>
+                    
+                    {/* Key Selection Dropdown */}
+                    <div className="relative">
+                        <select
+                            value={selectedKeyIndex}
+                            onChange={(e) => {
+                                const val = e.target.value;
+                                onKeySelect?.(val === 'manual' ? -1 : parseInt(val));
+                            }}
+                            disabled={isLoading}
+                            className="w-full h-8 px-3 pr-8 text-[10px] font-medium bg-white dark:bg-luma-surface border border-luma-coral/20 rounded-xl appearance-none cursor-pointer focus:outline-none focus:border-luma-coral/40 focus:ring-2 focus:ring-luma-coral/10 text-gray-700 dark:text-gray-200"
+                        >
+                            <option value="manual">Manual Input</option>
+                            {liveKeys.map((key) => {
+                                const originalIdx = keyResults.indexOf(key);
+                                return (
+                                    <option key={originalIdx} value={originalIdx}>
+                                        {key.status} • {key.key} {key.accountEmail && key.accountEmail !== 'N/A' ? `• ${key.accountEmail}` : ''}
+                                    </option>
+                                );
+                            })}
+                        </select>
+                        <ChevronDown size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 pointer-events-none" />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-1.5">
+                        <Input
+                            placeholder="sk_live_..."
+                            value={settings?.skKey || ''}
+                            onChange={(e) => handleSettingChange('skKey', e.target.value)}
+                            disabled={isLoading || !isManualInput}
+                            className={cn(
+                                "text-[10px] h-7 md:h-8 border-luma-coral-15 focus:border-luma-coral-40",
+                                !isManualInput && "opacity-60 bg-gray-100 dark:bg-gray-800"
+                            )}
+                        />
+                        <Input
+                            placeholder="pk_live_..."
+                            value={settings?.pkKey || ''}
+                            onChange={(e) => handleSettingChange('pkKey', e.target.value)}
+                            disabled={isLoading || !isManualInput}
+                            className={cn(
+                                "text-[10px] h-7 md:h-8 border-luma-coral-15 focus:border-luma-coral-40",
+                                !isManualInput && "opacity-60 bg-gray-100 dark:bg-gray-800"
+                            )}
+                        />
+                    </div>
+                    <Input
+                        placeholder="Proxy (optional)"
+                        value={settings?.proxy || ''}
+                        onChange={(e) => handleSettingChange('proxy', e.target.value)}
+                        disabled={isLoading}
+                        className="text-[10px] h-7 md:h-8 border-[#E8836B]/15 focus:border-[#E8836B]/40"
+                    />
+                </div>
+
+                {/* Validation Options */}
+                <div className="settings-card settings-card-inner border-luma-coral-10">
+                    <div className="settings-header mb-2">
+                        <div className="settings-header-icon settings-header-icon-rose">
+                            <Zap size={12} className="text-white" />
+                        </div>
+                        Method
+                    </div>
+                    
+                    {/* Method pills - 2x2 grid */}
+                    <div className="grid grid-cols-2 gap-1.5 mb-2">
+                        {[
+                            { value: 'charge', label: 'Charge' },
+                            { value: 'nocharge', label: 'No Charge' },
+                            { value: 'setup', label: 'Checkout' },
+                            { value: 'direct', label: 'Direct' },
+                        ].map((method) => (
+                            <button
+                                key={method.value}
+                                onClick={() => handleSettingChange('validationMethod', method.value)}
+                                disabled={isLoading}
+                                className={cn(
+                                    "method-pill px-2 py-1.5 text-[10px]",
+                                    settings?.validationMethod === method.value && "active"
+                                )}
+                            >
+                                {method.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Concurrency */}
+                    <div className="flex items-center gap-2 pt-2 border-t border-luma-coral-10">
+                        <span className="text-[9px] text-gray-500 dark:text-gray-400">Threads</span>
+                        <div className="flex-1">
+                            <RangeSlider
+                                min="1"
+                                max="10"
+                                value={settings?.concurrency || 3}
+                                onChange={(e) => handleSettingChange('concurrency', parseInt(e.target.value))}
+                                disabled={isLoading}
+                            />
+                        </div>
+                        <span className="w-5 text-center text-[10px] font-mono text-gray-800 dark:text-gray-200">
+                            {settings?.concurrency || 3}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </>
+    );
+
     return (
         <TwoPanelLayout
+            modeSwitcher={modeSwitcher}
+            drawerOpen={drawerOpen}
+            onDrawerOpenChange={onDrawerOpenChange}
+            configPanelWithoutSwitcher={
+                <div className="flex flex-col">
+                    {configContent}
+                </div>
+            }
             configPanel={
                 <div className="flex flex-col h-full">
                     {/* Card Header with Mode Switcher */}
@@ -257,180 +442,7 @@ export function CardsValidationPanel({
                             {modeSwitcher}
                         </div>
                     )}
-
-                    {/* Input Section with embedded buttons */}
-                    <div className="p-3 md:p-4 space-y-3 bg-white dark:bg-luma-surface">
-                        {/* Combined Input Container */}
-                        <div className={`input-container-unified border-luma-coral-15 hover:border-luma-coral-25 ${isLoading ? 'input-container-loading' : ''}`}>
-                            <textarea
-                                className={`input-textarea h-16 md:h-20 ${isLoading ? 'input-textarea-disabled' : ''}`}
-                                placeholder="Enter cards (one per line)&#10;4111111111111111|01|2025|123"
-                                value={cards}
-                                onChange={(e) => setCards(e.target.value)}
-                                disabled={isLoading}
-                            />
-                            {/* Bottom toolbar inside input */}
-                            <div className="input-toolbar">
-                                <div className="flex items-center gap-2">
-                                    {cardCount > 0 && (
-                                        <span className="count-badge">
-                                            {cardCount} cards
-                                        </span>
-                                    )}
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="w-8 h-8 rounded-full hover:bg-luma-coral-10"
-                                        onClick={clearResults}
-                                        disabled={isLoading}
-                                        title="Clear"
-                                    >
-                                        <Trash2 size={14} className="text-gray-400 dark:text-gray-500" />
-                                    </Button>
-                                </div>
-                                {isLoading ? (
-                                    <button 
-                                        className="input-action-btn input-action-btn-stop"
-                                        onClick={handleStop}
-                                    >
-                                        <span className="w-2.5 h-2.5 bg-white rounded-sm" />
-                                    </button>
-                                ) : (
-                                    <button 
-                                        className="input-action-btn input-action-btn-primary"
-                                        onClick={handleCheckCards}
-                                    >
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                            <path d="M5 12h14M12 5l7 7-7 7"/>
-                                        </svg>
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Progress */}
-                        <AnimatePresence>
-                            {isLoading && progress.total > 0 && (
-                                <ProgressBar current={progress.current} total={progress.total} />
-                            )}
-                        </AnimatePresence>
-                    </div>
-
-                    {/* Settings Section - Scrollable, compact */}
-                    <div className="settings-section">
-                        {/* API Keys */}
-                        <div className="settings-card settings-card-inner border-luma-coral-10">
-                            <div className="settings-header">
-                                <div className="settings-header-icon settings-header-icon-amber">
-                                    <Key size={10} className="text-white" />
-                                </div>
-                                Keys
-                            </div>
-                            
-                            {/* Key Selection Dropdown */}
-                            <div className="relative">
-                                <select
-                                    value={selectedKeyIndex}
-                                    onChange={(e) => {
-                                        const val = e.target.value;
-                                        onKeySelect?.(val === 'manual' ? -1 : parseInt(val));
-                                    }}
-                                    disabled={isLoading}
-                                    className="w-full h-8 px-3 pr-8 text-[10px] font-medium bg-white dark:bg-luma-surface border border-luma-coral/20 rounded-xl appearance-none cursor-pointer focus:outline-none focus:border-luma-coral/40 focus:ring-2 focus:ring-luma-coral/10 text-gray-700 dark:text-gray-200"
-                                >
-                                    <option value="manual">Manual Input</option>
-                                    {liveKeys.map((key, idx) => {
-                                        const originalIdx = keyResults.indexOf(key);
-                                        return (
-                                            <option key={originalIdx} value={originalIdx}>
-                                                {key.status} • {key.key} {key.accountEmail && key.accountEmail !== 'N/A' ? `• ${key.accountEmail}` : ''}
-                                            </option>
-                                        );
-                                    })}
-                                </select>
-                                <ChevronDown size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 pointer-events-none" />
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-1.5">
-                                <Input
-                                    placeholder="sk_live_..."
-                                    value={settings?.skKey || ''}
-                                    onChange={(e) => handleSettingChange('skKey', e.target.value)}
-                                    disabled={isLoading || !isManualInput}
-                                    className={cn(
-                                        "text-[10px] h-7 md:h-8 border-luma-coral-15 focus:border-luma-coral-40",
-                                        !isManualInput && "opacity-60 bg-gray-100 dark:bg-gray-800"
-                                    )}
-                                />
-                                <Input
-                                    placeholder="pk_live_..."
-                                    value={settings?.pkKey || ''}
-                                    onChange={(e) => handleSettingChange('pkKey', e.target.value)}
-                                    disabled={isLoading || !isManualInput}
-                                    className={cn(
-                                        "text-[10px] h-7 md:h-8 border-luma-coral-15 focus:border-luma-coral-40",
-                                        !isManualInput && "opacity-60 bg-gray-100 dark:bg-gray-800"
-                                    )}
-                                />
-                            </div>
-                            <Input
-                                placeholder="Proxy (optional)"
-                                value={settings?.proxy || ''}
-                                onChange={(e) => handleSettingChange('proxy', e.target.value)}
-                                disabled={isLoading}
-                                className="text-[10px] h-7 md:h-8 border-[#E8836B]/15 focus:border-[#E8836B]/40"
-                            />
-                        </div>
-
-                        {/* Validation Options */}
-                        <div className="settings-card settings-card-inner border-luma-coral-10">
-                            <div className="settings-header mb-2">
-                                <div className="settings-header-icon settings-header-icon-rose">
-                                    <Zap size={10} className="text-white" />
-                                </div>
-                                Method
-                            </div>
-                            
-                            {/* Method pills - 2x2 grid */}
-                            <div className="grid grid-cols-2 gap-1.5 mb-2">
-                                {[
-                                    { value: 'charge', label: 'Charge' },
-                                    { value: 'nocharge', label: 'No Charge' },
-                                    { value: 'setup', label: 'Checkout' },
-                                    { value: 'direct', label: 'Direct' },
-                                ].map((method) => (
-                                    <button
-                                        key={method.value}
-                                        onClick={() => handleSettingChange('validationMethod', method.value)}
-                                        disabled={isLoading}
-                                        className={cn(
-                                            "method-pill px-2 py-1.5 text-[10px]",
-                                            settings?.validationMethod === method.value && "active"
-                                        )}
-                                    >
-                                        {method.label}
-                                    </button>
-                                ))}
-                            </div>
-
-                            {/* Concurrency */}
-                            <div className="flex items-center gap-2 pt-2 border-t border-luma-coral-10">
-                                <span className="text-[9px] text-gray-500 dark:text-gray-400">Threads</span>
-                                <div className="flex-1">
-                                    <RangeSlider
-                                        min="1"
-                                        max="10"
-                                        value={settings?.concurrency || 3}
-                                        onChange={(e) => handleSettingChange('concurrency', parseInt(e.target.value))}
-                                        disabled={isLoading}
-                                    />
-                                </div>
-                                <span className="w-5 text-center text-[10px] font-mono text-gray-800 dark:text-gray-200">
-                                    {settings?.concurrency || 3}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
+                    {configContent}
                 </div>
             }
             resultsPanel={
@@ -490,8 +502,8 @@ function CardResultCard({ result, isCopied, onCopy }) {
                 <Badge variant={getStatusVariant(result.status)} size="sm">
                     {result.status}
                 </Badge>
-                <IconButton variant="ghost" onClick={onCopy} className="hover:bg-[#FEF3C7] dark:hover:bg-luma-coral-10">
-                    {isCopied ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} className="text-luma-muted" />}
+            <IconButton variant="ghost" onClick={onCopy} className="hover:bg-[#FEF3C7] dark:hover:bg-luma-coral-10">
+                    {isCopied ? <Check size={12} className="text-status-success" /> : <Copy size={12} className="text-luma-muted" />}
                 </IconButton>
             </div>
             <p className="text-mono-sm text-[13px] dark:text-gray-200">{result.card}</p>

@@ -38,9 +38,9 @@ export function NavGroup({
                 title={isCollapsed ? label : undefined}
                 whileTap={{ scale: 0.98 }}
             >
-                <span className={cn(
+            <span className={cn(
                     "flex items-center justify-center shrink-0",
-                    isActive ? "text-indigo-400" : "text-white/40"
+                    isActive ? "nav-item-active-icon" : "text-white/40"
                 )}>
                     <Icon size={18} strokeWidth={isActive ? 2 : 1.5} />
                 </span>

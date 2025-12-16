@@ -8,7 +8,8 @@ import {
     ChevronRight,
     Zap,
     Shield,
-    Sparkles
+    Sparkles,
+    Wallet
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { NavGroup } from './NavGroup';
@@ -50,6 +51,14 @@ export function IconRail({
             icon: TreeDeciduous,
             children: [
                 { id: 'braintree-auth', label: 'Auth', icon: Shield },
+            ]
+        },
+        {
+            id: 'paypal',
+            label: 'PayPal',
+            icon: Wallet,
+            children: [
+                { id: 'paypal-charge', label: 'Charge', icon: Zap },
             ]
         },
     ];

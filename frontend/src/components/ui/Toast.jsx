@@ -18,30 +18,31 @@ import { CheckCircle, XCircle, AlertTriangle, Info, X } from 'lucide-react';
  * - warning: Amber (#FBBF24)
  * - info: Sky (#38BDF8)
  */
+// Toast type config - uses centralized CSS classes (.toast-*) from index.css
 const typeConfig = {
   success: {
     icon: CheckCircle,
-    iconClass: 'text-emerald-500 dark:text-emerald-400',
-    borderClass: 'border-l-emerald-500 dark:border-l-emerald-400',
-    bgClass: 'bg-emerald-50/50 dark:bg-emerald-500/10',
+    iconClass: 'toast-icon-success',
+    borderClass: 'toast-border-success',
+    bgClass: 'toast-bg-success',
   },
   error: {
     icon: XCircle,
-    iconClass: 'text-rose-500 dark:text-rose-400',
-    borderClass: 'border-l-rose-500 dark:border-l-rose-400',
-    bgClass: 'bg-rose-50/50 dark:bg-rose-500/10',
+    iconClass: 'toast-icon-error',
+    borderClass: 'toast-border-error',
+    bgClass: 'toast-bg-error',
   },
   warning: {
     icon: AlertTriangle,
-    iconClass: 'text-amber-500 dark:text-amber-400',
-    borderClass: 'border-l-amber-500 dark:border-l-amber-400',
-    bgClass: 'bg-amber-50/50 dark:bg-amber-500/10',
+    iconClass: 'toast-icon-warning',
+    borderClass: 'toast-border-warning',
+    bgClass: 'toast-bg-warning',
   },
   info: {
     icon: Info,
-    iconClass: 'text-sky-500 dark:text-sky-400',
-    borderClass: 'border-l-sky-500 dark:border-l-sky-400',
-    bgClass: 'bg-sky-50/50 dark:bg-sky-500/10',
+    iconClass: 'toast-icon-info',
+    borderClass: 'toast-border-info',
+    bgClass: 'toast-bg-info',
   },
 };
 
