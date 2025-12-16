@@ -44,3 +44,6 @@ backend/output/
 # Agents commands
 .agents/commands/*
 !.agents/commands/.gitignore
+
+# Kiro specs
+.kiro/

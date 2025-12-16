@@ -72,11 +72,110 @@ export class StripeAPIClient extends IStripeAPIClient {
         const currency = available.currency || accountData.default_currency || 'usd';
         const livemode = balanceData.livemode;
 
-        // Determine status
+        // Parse capabilities
+        const capabilities = accountData.capabilities || {};
+        const hasCardPayments = capabilities.card_payments === 'active';
+        const hasTransfers = capabilities.transfers === 'active';
+        const hasCardIssuing = capabilities.card_issuing === 'active';
+
+        // Determine status based on balance
         let status;
         if (availableAmount > 0) status = 'LIVE+';
         else if (availableAmount === 0) status = 'LIVE0';
         else status = 'LIVE-';
+
+        // Determine chargeable status from account capabilities (no card testing)
+        const isChargeable = accountData.charges_enabled && hasCardPayments;
+        const chargeableVerified = isChargeable;
+
+        // Get country info with flag
+        const countryInfo = this._getCountryInfo(accountData.country);
+
+        // Try to get PK key by creating a checkout session and decoding from URL fragment
+        let pkKey = null;
+        let canMakeLiveCharges = true;
+        try {
+            const checkoutRes = await axios.post(STRIPE_API.CHECKOUT_SESSIONS,
+                new URLSearchParams({
+                    'mode': 'setup',
+                    'success_url': 'https://example.com/success',
+                    'cancel_url': 'https://example.com/cancel',
+                    'payment_method_types[]': 'card'
+                }).toString(),
+                {
+                    headers: {
+                        ...headers,
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    }
+                }
+            );
+
+            if (checkoutRes.data?.url) {
+                const checkoutUrl = checkoutRes.data.url;
+                
+                // Extract pk_live from URL fragment (XOR encoded with key 5)
+                if (checkoutUrl.includes('#')) {
+                    const fragment = checkoutUrl.split('#')[1];
+                    const decoded = this._decodeStripeFragment(fragment);
+                    
+                    // Search for pk_live in decoded fragment
+                    const pkMatch = decoded.match(/pk_(live|test)_[a-zA-Z0-9_]+/);
+                    if (pkMatch) {
+                        pkKey = pkMatch[0];
+                    }
+                }
+                
+                // Fallback: fetch the page and search for pk_live
+                if (!pkKey) {
+                    try {
+                        const pageRes = await axios.get(checkoutUrl, {
+                            headers: { 
+                                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36',
+                                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+                            },
+                            maxRedirects: 5
+                        });
+                        
+                        const html = pageRes.data;
+                        
+                        // Try multiple patterns
+                        let pkMatch = html.match(/pk_(live|test)_[a-zA-Z0-9_]+/);
+                        if (pkMatch) {
+                            pkKey = pkMatch[0];
+                        }
+                        
+                        if (!pkKey) {
+                            pkMatch = html.match(/"publishableKey"\s*:\s*"(pk_(?:live|test)_[a-zA-Z0-9_]+)"/);
+                            if (pkMatch) {
+                                pkKey = pkMatch[1];
+                            }
+                        }
+                    } catch (e) {
+                        // Fallback failed
+                    }
+                }
+            }
+        } catch (e) {
+            const errorMessage = e.response?.data?.error?.message || e.message;
+            console.log('[StripeAPIClient] Checkout session creation failed:', errorMessage);
+            
+            // If account cannot make live charges, treat as DEAD
+            if (errorMessage.includes('cannot currently make live charges')) {
+                canMakeLiveCharges = false;
+            }
+        }
+
+        // If account cannot make live charges, return DEAD status
+        if (!canMakeLiveCharges) {
+            return {
+                status: 'DEAD',
+                message: 'Account cannot make live charges',
+                accountEmail: accountData.email || 'N/A',
+                country: accountData.country || 'N/A',
+                countryName: this._getCountryInfo(accountData.country).name,
+                countryFlag: this._getCountryInfo(accountData.country).flag,
+            };
+        }
 
         return {
             status,
@@ -85,14 +184,118 @@ export class StripeAPIClient extends IStripeAPIClient {
             accountName: accountData.business_profile?.name || accountData.settings?.dashboard?.display_name || 'N/A',
             accountEmail: accountData.email || 'N/A',
             country: accountData.country || 'N/A',
+            countryName: countryInfo.name,
+            countryFlag: countryInfo.flag,
             defaultCurrency: (accountData.default_currency || 'usd').toUpperCase(),
             currency: currency.toUpperCase(),
+            currencySymbol: this._getCurrencySymbol(currency),
             availableBalance: availableAmount,
             pendingBalance: pendingAmount,
             chargesEnabled: accountData.charges_enabled || false,
             payoutsEnabled: accountData.payouts_enabled || false,
+            isChargeable,
+            chargeableVerified,
+            capabilities: {
+                cardPayments: hasCardPayments,
+                transfers: hasTransfers,
+                cardIssuing: hasCardIssuing
+            },
+            pkKey,
             livemode
         };
+    }
+
+    /**
+     * Decode Stripe URL fragment to extract pk_live key
+     * Steps: URL decode → Base64 decode (URL-safe) → XOR with key 5
+     * @private
+     */
+    _decodeStripeFragment(encodedFragment) {
+        try {
+            // Step 1: URL decode
+            const urlDecoded = decodeURIComponent(encodedFragment);
+            
+            // Step 2: Base64 decode (URL-safe)
+            // Replace URL-safe chars and add padding
+            let base64 = urlDecoded
+                .replace(/-/g, '+')
+                .replace(/_/g, '/');
+            
+            // Add padding if needed
+            const padding = 4 - (base64.length % 4);
+            if (padding !== 4) {
+                base64 += '='.repeat(padding);
+            }
+            
+            // Decode base64 to bytes
+            const binaryStr = Buffer.from(base64, 'base64');
+            
+            // Step 3: XOR with key 5
+            const decoded = Buffer.alloc(binaryStr.length);
+            for (let i = 0; i < binaryStr.length; i++) {
+                decoded[i] = binaryStr[i] ^ 5;
+            }
+            
+            return decoded.toString('utf8');
+        } catch (e) {
+            console.log('[StripeAPIClient] Error decoding fragment:', e.message);
+            return '';
+        }
+    }
+
+    /**
+     * Get country info with flag emoji
+     * @private
+     */
+    _getCountryInfo(countryCode) {
+        const countries = {
+            'US': { name: 'United States', flag: '🇺🇸' },
+            'GB': { name: 'United Kingdom', flag: '🇬🇧' },
+            'CA': { name: 'Canada', flag: '🇨🇦' },
+            'AU': { name: 'Australia', flag: '🇦🇺' },
+            'DE': { name: 'Germany', flag: '🇩🇪' },
+            'FR': { name: 'France', flag: '🇫🇷' },
+            'JP': { name: 'Japan', flag: '🇯🇵' },
+            'IN': { name: 'India', flag: '🇮🇳' },
+            'SG': { name: 'Singapore', flag: '🇸🇬' },
+            'NZ': { name: 'New Zealand', flag: '🇳🇿' },
+            'AE': { name: 'United Arab Emirates', flag: '🇦🇪' },
+            'MX': { name: 'Mexico', flag: '🇲🇽' },
+            'BR': { name: 'Brazil', flag: '🇧🇷' },
+            'NL': { name: 'Netherlands', flag: '🇳🇱' },
+            'ES': { name: 'Spain', flag: '🇪🇸' },
+            'IT': { name: 'Italy', flag: '🇮🇹' },
+            'SE': { name: 'Sweden', flag: '🇸🇪' },
+            'CH': { name: 'Switzerland', flag: '🇨🇭' },
+            'AT': { name: 'Austria', flag: '🇦🇹' },
+            'BE': { name: 'Belgium', flag: '🇧🇪' },
+            'DK': { name: 'Denmark', flag: '🇩🇰' },
+            'FI': { name: 'Finland', flag: '🇫🇮' },
+            'IE': { name: 'Ireland', flag: '🇮🇪' },
+            'NO': { name: 'Norway', flag: '🇳🇴' },
+            'PL': { name: 'Poland', flag: '🇵🇱' },
+            'PT': { name: 'Portugal', flag: '🇵🇹' },
+            'HK': { name: 'Hong Kong', flag: '🇭🇰' },
+            'MY': { name: 'Malaysia', flag: '🇲🇾' },
+            'TH': { name: 'Thailand', flag: '🇹🇭' },
+            'PH': { name: 'Philippines', flag: '🇵🇭' },
+        };
+        return countries[countryCode] || { name: countryCode || 'Unknown', flag: '🌍' };
+    }
+
+    /**
+     * Get currency symbol
+     * @private
+     */
+    _getCurrencySymbol(currency) {
+        const symbols = {
+            'usd': '$', 'eur': '€', 'gbp': '£', 'jpy': '¥', 'cad': 'C$',
+            'aud': 'A$', 'inr': '₹', 'sgd': 'S$', 'nzd': 'NZ$', 'aed': 'د.إ',
+            'mxn': '$', 'brl': 'R$', 'chf': 'CHF', 'sek': 'kr', 'nok': 'kr',
+            'dkk': 'kr', 'pln': 'zł', 'hkd': 'HK$', 'thb': '฿', 'php': '₱',
+            'myr': 'RM'
+        };
+        return symbols[currency?.toLowerCase()] || currency?.toUpperCase() || '$';
     }
 
     /**

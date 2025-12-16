@@ -4,8 +4,7 @@ import { motion } from 'framer-motion';
 const MotionDiv = motion.div;
 
 /**
- * Card Component - Warm Theme 2025
- * Clean surfaces with subtle depth
+ * Card Components - Uses centralized CSS classes
  */
 export function Card({ 
     children, 
@@ -16,12 +15,14 @@ export function Card({
     ...props 
 }) {
     const variants = {
-        default: "bg-white/80 border border-orange-200/40 shadow-sm",
-        flat: "bg-white/60 border border-orange-200/30",
-        elevated: "bg-white border border-orange-200/50 shadow-md",
+        default: "card-3d",
+        flat: "bg-luma-surface rounded-apple-lg",
+        elevated: "card-3d",
+        "3d": "card-3d",
+        apple: "card-apple",
     };
 
-    const hoverStyles = hover ? 'hover:bg-white hover:shadow-md hover:border-orange-300/50 cursor-pointer transition-all duration-200' : '';
+    const hoverStyles = hover ? 'cursor-pointer' : '';
 
     const Component = animated ? MotionDiv : 'div';
     const motionProps = animated ? {
@@ -32,12 +33,7 @@ export function Card({
 
     return (
         <Component
-            className={cn(
-                "rounded-2xl",
-                variants[variant],
-                hoverStyles,
-                className
-            )}
+            className={cn(variants[variant], hoverStyles, className)}
             {...motionProps}
             {...props}
         >
@@ -48,10 +44,7 @@ export function Card({
 
 export function CardHeader({ children, className, ...props }) {
     return (
-        <div 
-            className={cn("p-5 pb-4 border-b border-orange-200/30", className)} 
-            {...props}
-        >
+        <div className={cn("p-5 pb-4 border-b border-hairline", className)} {...props}>
             {children}
         </div>
     );
@@ -59,10 +52,7 @@ export function CardHeader({ children, className, ...props }) {
 
 export function CardTitle({ children, className, ...props }) {
     return (
-        <h3 
-            className={cn("text-base font-semibold text-gray-800", className)} 
-            {...props}
-        >
+        <h3 className={cn("text-base font-apple-medium text-luma", className)} {...props}>
             {children}
         </h3>
     );
@@ -70,10 +60,7 @@ export function CardTitle({ children, className, ...props }) {
 
 export function CardDescription({ children, className, ...props }) {
     return (
-        <p 
-            className={cn("text-sm text-gray-500 mt-1", className)} 
-            {...props}
-        >
+        <p className={cn("text-sm text-luma-secondary mt-1", className)} {...props}>
             {children}
         </p>
     );
@@ -89,48 +76,66 @@ export function CardContent({ children, className, ...props }) {
 
 export function CardFooter({ children, className, ...props }) {
     return (
-        <div 
-            className={cn("flex items-center p-5 pt-0 border-t border-orange-200/30", className)} 
-            {...props}
-        >
+        <div className={cn("flex items-center p-5 pt-0 border-t border-luma", className)} {...props}>
             {children}
         </div>
     );
 }
 
-// Result card with status accent - Warm theme
+/**
+ * ResultCard - Uses warm Luma theme status colors
+ * - Live: Emerald left border (#10B981) with warm background tint (Requirements 6.1)
+ * - Dead/Die: Rose left border (#F43F5E) with warm background tint (Requirements 6.2)
+ * - Error: Amber left border with warm background tint (Requirements 6.3)
+ * - Hover: Elevation increase and translateY(-1px) (Requirements 6.4)
+ * - Selected: Coral ring highlight (Requirements 6.5)
+ */
 export function ResultCard({ 
     children, 
     status = 'default', 
+    isSelected = false,
     className,
     onClick,
     ...props 
 }) {
-    const statusStyles = {
-        default: 'border-l-gray-300',
-        live: 'border-l-emerald-500',
-        die: 'border-l-rose-400 opacity-80',
-        error: 'border-l-amber-500',
-        approved: 'border-l-orange-500',
-        warning: 'border-l-amber-500',
-        info: 'border-l-cyan-500',
+    // Status classes with warm background tints matching test expectations
+    // Uses Tailwind classes for consistent styling
+    // Dark mode: clean look with just left indicator, no background tint
+    const statusClass = {
+        default: 'border-l-[3px] border-l-gray-300 dark:border-l-gray-500 bg-gray-50/50 dark:bg-transparent',
+        live: 'border-l-[3px] border-l-emerald-500 dark:border-l-emerald-400 bg-emerald-50/30 dark:bg-transparent',
+        die: 'border-l-[3px] border-l-rose-400 dark:border-l-rose-400 bg-rose-50/30 dark:bg-transparent',
+        dead: 'border-l-[3px] border-l-rose-400 dark:border-l-rose-400 bg-rose-50/30 dark:bg-transparent',
+        error: 'border-l-[3px] border-l-amber-500 dark:border-l-pink-400 bg-amber-50/30 dark:bg-transparent',
+        approved: 'border-l-[3px] border-l-luma-coral dark:border-l-pink-400 bg-luma-coral-10 dark:bg-transparent',
+        warning: 'border-l-[3px] border-l-amber-500 dark:border-l-pink-400 bg-amber-50/30 dark:bg-transparent',
+        info: 'border-l-[3px] border-l-cyan-500 dark:border-l-cyan-400 bg-cyan-50/30 dark:bg-transparent',
     };
+
+    // Selected state with ring highlight using CSS variable for theme-aware color
+    const selectedStyles = isSelected 
+        ? 'ring-2 ring-luma-coral ring-offset-2 ring-offset-white dark:ring-offset-[#1a1625] shadow-[0_0_20px_rgba(232,131,107,0.3)] dark:shadow-[0_0_20px_rgba(255,107,157,0.4)]' 
+        : '';
+
+    // Get status class, fallback to default for unknown statuses
+    const appliedStatusClass = Object.hasOwn(statusClass, status) 
+        ? statusClass[status] 
+        : statusClass.default;
 
     return (
         <MotionDiv
             className={cn(
-                "p-4 rounded-xl",
-                "bg-white/80",
-                "border border-orange-200/40",
-                "border-l-[3px]",
-                "transition-all duration-200",
-                "hover:bg-white hover:border-orange-300/50 hover:shadow-sm",
+                "p-4 md:p-5",
+                "result-card-elevated",
+                "relative",
+                appliedStatusClass,
                 onClick && "cursor-pointer",
-                statusStyles[status],
+                selectedStyles,
                 className
             )}
-            whileHover={onClick ? { x: 2 } : undefined}
-            whileTap={onClick ? { scale: 0.995 } : undefined}
+            whileHover={onClick ? { scale: 1.02, y: -2 } : undefined}
+            whileTap={onClick ? { scale: 0.98 } : undefined}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
             onClick={onClick}
             {...props}
         >
@@ -139,14 +144,13 @@ export function ResultCard({
     );
 }
 
-// Floating card with enhanced elevation - Warm theme
+/**
+ * FloatingCard - Uses centralized CSS
+ */
 export function FloatingCard({ children, className, ...props }) {
     return (
         <MotionDiv
-            className={cn(
-                "rounded-2xl bg-white border border-orange-200/50 shadow-lg",
-                className
-            )}
+            className={cn("floating-panel", className)}
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ type: "spring", stiffness: 400, damping: 30 }}

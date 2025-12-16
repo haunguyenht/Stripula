@@ -1,17 +1,16 @@
 import { useState } from 'react';
-import { Key, Trash2, Copy, Check, Loader2, Shield, Info, CheckCircle2, XCircle } from 'lucide-react';
+import { Key, Trash2, Copy, Check, CheckCircle2, XCircle, Mail, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useToast } from '../../../hooks/useToast';
 
 // Layout
-import { TwoPanelLayout, ConfigSection, ConfigDivider } from '../../layout/TwoPanelLayout';
+import { TwoPanelLayout } from '../../layout/TwoPanelLayout';
 
 // Components
 import { ResultsPanel, ResultItem, ProgressBar } from '../ResultsPanel';
 import { Badge } from '../../ui/Badge';
 import { ResultCard } from '../../ui/Card';
 import { Button, IconButton } from '../../ui/Button';
-import { Textarea, Input } from '../../ui/Input';
-import { cn } from '../../../lib/utils';
 
 /**
  * KeysValidationPanel - Two-panel layout for key validation
@@ -26,10 +25,9 @@ export function KeysValidationPanel({
     keyStats,
     setKeyStats,
     selectedKeyIndex,
-    setSelectedKeyIndex,
+    onKeySelect,
     isLoading,
     setIsLoading,
-    currentItem,
     setCurrentItem,
     abortRef,
     modeSwitcher,
@@ -38,7 +36,9 @@ export function KeysValidationPanel({
     const [filter, setFilter] = useState('all');
     const [page, setPage] = useState(1);
     const [progress, setProgress] = useState({ current: 0, total: 0 });
+    const [refreshingKeys, setRefreshingKeys] = useState(new Set());
     const pageSize = 20;
+    const { success, error: toastError, info, warning } = useToast();
 
     // ══════════════════════════════════════════════════════════════════
     // HANDLERS
@@ -47,14 +47,14 @@ export function KeysValidationPanel({
     const clearResults = () => {
         setKeyResults([]);
         setKeyStats({ live: 0, livePlus: 0, liveZero: 0, liveNeg: 0, dead: 0, error: 0, total: 0 });
-        setSelectedKeyIndex(-1);
+        onKeySelect(-1);
         setPage(1);
     };
 
     const handleCheckKeys = async () => {
         const keyLines = skKeys.split('\n').filter(l => l.trim() && l.trim().startsWith('sk_'));
         if (keyLines.length === 0) {
-            alert('Enter at least one SK key');
+            warning('Enter at least one SK key');
             return;
         }
 
@@ -62,15 +62,17 @@ export function KeysValidationPanel({
         const uniqueKeys = keyLines.map(l => l.trim()).filter(k => !existingKeys.has(k));
 
         if (uniqueKeys.length === 0) {
-            alert('All keys already checked');
+            info('All keys already checked');
             return;
         }
 
         setIsLoading(true);
         abortRef.current = false;
         setProgress({ current: 0, total: uniqueKeys.length });
+        info(`Starting key validation for ${uniqueKeys.length} keys`);
         const newResults = [...keyResults];
         let { live = 0, livePlus = 0, liveZero = 0, liveNeg = 0, dead = 0, error = 0 } = keyStats;
+        const processedKeys = new Set(); // Track processed keys to remove from input
 
         for (let i = 0; i < uniqueKeys.length; i++) {
             if (abortRef.current) break;
@@ -92,28 +94,51 @@ export function KeysValidationPanel({
                     else if (data.status === 'LIVE0') { live++; liveZero++; }
                     else if (data.status === 'LIVE-') { live++; liveNeg++; }
                     else { live++; }
-                    setKeyResults([...newResults]);
+                    processedKeys.add(key);
                 } else if (data.status === 'DEAD') {
+                    newResults.unshift({ key: `${key.slice(0, 12)}...${key.slice(-4)}`, fullKey: key, ...data });
                     dead++;
+                    processedKeys.add(key);
                 }
-                setKeyStats({ live, livePlus, liveZero, liveNeg, dead, error, total: live + dead + error });
+                setKeyResults([...newResults]);
+                setKeyStats({ live, livePlus, liveZero, liveNeg, dead, error, total: newResults.length });
             } catch (err) {
                 error++;
-                setKeyStats({ live, livePlus, liveZero, liveNeg, dead, error, total: live + dead + error });
+                setKeyStats({ live, livePlus, liveZero, liveNeg, dead, error, total: newResults.length });
+                toastError(`Error checking key: ${err.message}`);
             }
 
             if (i < uniqueKeys.length - 1 && !abortRef.current) {
                 await new Promise(r => setTimeout(r, 500));
             }
         }
+        
+        // Remove processed keys from input
+        if (processedKeys.size > 0) {
+            const remainingKeys = skKeys
+                .split('\n')
+                .filter(line => {
+                    const trimmed = line.trim();
+                    return trimmed && !processedKeys.has(trimmed);
+                })
+                .join('\n');
+            setSkKeys(remainingKeys);
+        }
+        
         setIsLoading(false);
         setCurrentItem(null);
+        
+        // Show completion toast if not aborted
+        if (!abortRef.current) {
+            success(`Key validation complete: ${live} live, ${dead} dead`);
+        }
     };
 
     const handleStop = () => {
         abortRef.current = true;
         setIsLoading(false);
         setCurrentItem(null);
+        warning('Key validation stopped');
     };
 
     const handleCopyKey = (key, index) => {
@@ -123,10 +148,213 @@ export function KeysValidationPanel({
     };
 
     const handleDeleteKey = (index) => {
+        const deletedResult = keyResults[index];
         const updated = keyResults.filter((_, i) => i !== index);
         setKeyResults(updated);
-        if (selectedKeyIndex === index) setSelectedKeyIndex(-1);
-        else if (selectedKeyIndex > index) setSelectedKeyIndex(selectedKeyIndex - 1);
+        
+        // Update stats based on deleted result
+        if (deletedResult?.status) {
+            setKeyStats(prev => {
+                const newStats = { ...prev };
+                if (deletedResult.status === 'LIVE+') { newStats.live = Math.max(0, newStats.live - 1); newStats.livePlus = Math.max(0, newStats.livePlus - 1); }
+                else if (deletedResult.status === 'LIVE0') { newStats.live = Math.max(0, newStats.live - 1); newStats.liveZero = Math.max(0, newStats.liveZero - 1); }
+                else if (deletedResult.status === 'LIVE-') { newStats.live = Math.max(0, newStats.live - 1); newStats.liveNeg = Math.max(0, newStats.liveNeg - 1); }
+                else if (deletedResult.status?.startsWith('LIVE')) { newStats.live = Math.max(0, newStats.live - 1); }
+                else if (deletedResult.status === 'DEAD') { newStats.dead = Math.max(0, newStats.dead - 1); }
+                else if (deletedResult.status === 'ERROR') { newStats.error = Math.max(0, newStats.error - 1); }
+                newStats.total = Math.max(0, newStats.live + newStats.dead + (newStats.error || 0));
+                return newStats;
+            });
+        }
+        
+        if (selectedKeyIndex === index) onKeySelect(-1);
+        else if (selectedKeyIndex > index) onKeySelect(selectedKeyIndex - 1);
+    };
+
+    const handleRefreshKey = async (index) => {
+        const result = keyResults[index];
+        if (!result?.fullKey) return;
+        
+        const oldStatus = result.status;
+        setRefreshingKeys(prev => new Set([...prev, index]));
+        try {
+            const response = await fetch('/api/stripe-own/check-key', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ skKey: result.fullKey })
+            });
+            
+            if (!response.ok) {
+                throw new Error(`Server error: ${response.status}`);
+            }
+            
+            const text = await response.text();
+            if (!text) {
+                throw new Error('Empty response from server');
+            }
+            
+            const data = JSON.parse(text);
+            
+            if (data.status) {
+                setKeyResults(prev => {
+                    const updated = [...prev];
+                    updated[index] = { 
+                        key: `${result.fullKey.slice(0, 12)}...${result.fullKey.slice(-4)}`, 
+                        fullKey: result.fullKey, 
+                        ...data 
+                    };
+                    return updated;
+                });
+                
+                // Update stats if status changed
+                if (oldStatus !== data.status) {
+                    setKeyStats(prev => {
+                        const newStats = { ...prev };
+                        // Decrement old status
+                        if (oldStatus === 'LIVE+') { newStats.live--; newStats.livePlus--; }
+                        else if (oldStatus === 'LIVE0') { newStats.live--; newStats.liveZero--; }
+                        else if (oldStatus === 'LIVE-') { newStats.live--; newStats.liveNeg--; }
+                        else if (oldStatus?.startsWith('LIVE')) { newStats.live--; }
+                        else if (oldStatus === 'DEAD') { newStats.dead--; }
+                        else if (oldStatus === 'ERROR') { newStats.error--; }
+                        
+                        // Increment new status
+                        if (data.status === 'LIVE+') { newStats.live++; newStats.livePlus++; }
+                        else if (data.status === 'LIVE0') { newStats.live++; newStats.liveZero++; }
+                        else if (data.status === 'LIVE-') { newStats.live++; newStats.liveNeg++; }
+                        else if (data.status?.startsWith('LIVE')) { newStats.live++; }
+                        else if (data.status === 'DEAD') { newStats.dead++; }
+                        else if (data.status === 'ERROR') { newStats.error++; }
+                        
+                        newStats.total = newStats.live + newStats.dead + (newStats.error || 0);
+                        return newStats;
+                    });
+                }
+                
+                if (data.status?.startsWith('LIVE')) {
+                    success(`Key refreshed: ${data.status}`);
+                } else if (data.status === 'DEAD') {
+                    warning(`Key is now DEAD`);
+                } else {
+                    info(`Key status: ${data.status}`);
+                }
+            }
+        } catch (err) {
+            console.error('Refresh failed:', err);
+            toastError(`Refresh failed: ${err.message}`);
+        }
+        setRefreshingKeys(prev => {
+            const next = new Set(prev);
+            next.delete(index);
+            return next;
+        });
+    };
+
+    const handleRefreshAll = async () => {
+        if (keyResults.length === 0 || isLoading) return;
+        
+        setIsLoading(true);
+        setProgress({ current: 0, total: keyResults.length });
+        info(`Refreshing ${keyResults.length} keys concurrently`);
+        
+        // Mark all keys as refreshing
+        const allIndices = keyResults.map((_, i) => i);
+        setRefreshingKeys(new Set(allIndices));
+        
+        let completedCount = 0;
+        let refreshedCount = 0;
+        
+        // Create refresh promise for each key
+        const refreshPromises = keyResults.map(async (result, index) => {
+            if (!result?.fullKey) {
+                completedCount++;
+                setProgress({ current: completedCount, total: keyResults.length });
+                return null;
+            }
+            
+            try {
+                const response = await fetch('/api/stripe-own/check-key', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ skKey: result.fullKey })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Server error: ${response.status}`);
+                }
+                
+                const text = await response.text();
+                if (!text) {
+                    throw new Error('Empty response from server');
+                }
+                
+                const data = JSON.parse(text);
+                
+                // Remove from refreshing set
+                setRefreshingKeys(prev => {
+                    const next = new Set(prev);
+                    next.delete(index);
+                    return next;
+                });
+                
+                completedCount++;
+                setProgress({ current: completedCount, total: keyResults.length });
+                setCurrentItem(`Refreshed ${completedCount}/${keyResults.length}`);
+                
+                if (data.status) {
+                    refreshedCount++;
+                    return { index, data, fullKey: result.fullKey };
+                }
+                return null;
+            } catch (err) {
+                console.error('Refresh failed:', err);
+                // Remove from refreshing set on error
+                setRefreshingKeys(prev => {
+                    const next = new Set(prev);
+                    next.delete(index);
+                    return next;
+                });
+                completedCount++;
+                setProgress({ current: completedCount, total: keyResults.length });
+                return null;
+            }
+        });
+        
+        // Wait for all to complete
+        const results = await Promise.all(refreshPromises);
+        
+        // Update all results at once and recalculate stats
+        const updatedResults = [...keyResults];
+        results.forEach(r => {
+            if (r) {
+                updatedResults[r.index] = {
+                    key: `${r.fullKey.slice(0, 12)}...${r.fullKey.slice(-4)}`,
+                    fullKey: r.fullKey,
+                    ...r.data
+                };
+            }
+        });
+        
+        setKeyResults(updatedResults);
+        
+        // Recalculate stats based on updated results
+        const newStats = { live: 0, livePlus: 0, liveZero: 0, liveNeg: 0, dead: 0, error: 0, total: 0 };
+        updatedResults.forEach(result => {
+            if (result.status === 'LIVE+') { newStats.live++; newStats.livePlus++; }
+            else if (result.status === 'LIVE0') { newStats.live++; newStats.liveZero++; }
+            else if (result.status === 'LIVE-') { newStats.live++; newStats.liveNeg++; }
+            else if (result.status?.startsWith('LIVE')) { newStats.live++; }
+            else if (result.status === 'DEAD') { newStats.dead++; }
+            else if (result.status === 'ERROR') { newStats.error++; }
+        });
+        newStats.total = newStats.live + newStats.dead + newStats.error;
+        setKeyStats(newStats);
+        
+        setRefreshingKeys(new Set());
+        setIsLoading(false);
+        setCurrentItem(null);
+        
+        success(`Refresh complete: ${newStats.live} live, ${newStats.dead} dead`);
     };
 
     // ══════════════════════════════════════════════════════════════════
@@ -158,53 +386,62 @@ export function KeysValidationPanel({
     return (
         <TwoPanelLayout
             configPanel={
-                <div className="flex flex-col h-full overflow-hidden">
+                <div className="flex flex-col h-full">
                     {/* Card Header with Mode Switcher */}
                     {modeSwitcher && (
-                        <div className="px-3 py-2 md:px-4 md:py-3 border-b border-gray-100 bg-gray-50/50">
+                        <div className="panel-header">
                             {modeSwitcher}
                         </div>
                     )}
 
-                    {/* Input Section - Compact on mobile */}
-                    <div className="p-3 md:p-4 space-y-3 flex-1 flex flex-col">
-                        <div className="relative">
-                            <Textarea
-                                className="w-full h-20 md:h-28 text-xs md:text-[13px]"
+                    {/* Input Section with embedded buttons */}
+                    <div className="panel-input-section">
+                        {/* Combined Input Container */}
+                        <div className={`input-container-unified border-luma-coral-15 hover:border-luma-coral-25 transition-opacity ${isLoading ? 'input-container-loading' : ''}`}>
+                            <textarea
+                                className={`input-textarea h-20 md:h-24 ${isLoading ? 'input-textarea-disabled' : ''}`}
                                 placeholder="Enter SK keys (one per line)&#10;sk_live_xxxxx"
                                 value={skKeys}
                                 onChange={(e) => setSkKeys(e.target.value)}
                                 disabled={isLoading}
                             />
-                            {keyCount > 0 && (
-                                <div className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded bg-orange-100 text-[9px] text-orange-600 font-mono">
-                                    {keyCount}
+                            {/* Bottom toolbar inside input */}
+                            <div className="input-toolbar">
+                                <div className="flex items-center gap-2">
+                                    {keyCount > 0 && (
+                                        <span className="count-badge">
+                                            {keyCount} keys
+                                        </span>
+                                    )}
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="w-8 h-8 rounded-full hover:bg-luma-coral-10"
+                                        onClick={clearResults}
+                                        disabled={isLoading}
+                                        title="Clear"
+                                    >
+                                        <Trash2 size={14} className="text-gray-400 dark:text-gray-500" />
+                                    </Button>
                                 </div>
-                            )}
-                        </div>
-
-                        {/* Action Buttons - Compact */}
-                        <div className="flex gap-2">
-                            {isLoading ? (
-                                <Button variant="destructive" className="flex-1 h-9 text-xs" onClick={handleStop}>
-                                    <span className="w-2.5 h-2.5 bg-current rounded-sm" />
-                                    <span>Stop</span>
-                                </Button>
-                            ) : (
-                                <Button variant="primary" className="flex-1 h-9 text-xs" onClick={handleCheckKeys}>
-                                    <Shield size={14} />
-                                    <span>Validate</span>
-                                </Button>
-                            )}
-                            <Button
-                                variant="secondary"
-                                size="icon"
-                                className="w-9 h-9"
-                                onClick={clearResults}
-                                disabled={isLoading}
-                            >
-                                <Trash2 size={14} />
-                            </Button>
+                                {isLoading ? (
+                                    <button 
+                                        className="input-action-btn input-action-btn-stop"
+                                        onClick={handleStop}
+                                    >
+                                        <span className="w-2.5 h-2.5 bg-white rounded-sm" />
+                                    </button>
+                                ) : (
+                                    <button 
+                                        className="input-action-btn input-action-btn-primary"
+                                        onClick={handleCheckKeys}
+                                    >
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M5 12h14M12 5l7 7-7 7"/>
+                                        </svg>
+                                    </button>
+                                )}
+                            </div>
                         </div>
 
                         {/* Progress */}
@@ -213,25 +450,6 @@ export function KeysValidationPanel({
                                 <ProgressBar current={progress.current} total={progress.total} />
                             )}
                         </AnimatePresence>
-
-                        {/* Status Guide - Desktop only, at bottom */}
-                        <div className="hidden md:block mt-auto pt-3">
-                            <div className="p-2.5 rounded-xl bg-gradient-to-br from-gray-50 to-gray-100/50 border border-gray-200/50">
-                                <div className="flex items-center gap-3 flex-wrap">
-                                    <div className="flex items-center gap-1.5">
-                                        <CheckCircle2 size={10} className="text-emerald-500" />
-                                        <Badge variant="live_plus" size="xs">LIVE+</Badge>
-                                        <Badge variant="live_zero" size="xs">LIVE0</Badge>
-                                        <Badge variant="live_neg" size="xs">LIVE-</Badge>
-                                    </div>
-                                    <div className="w-px h-3 bg-gray-300" />
-                                    <div className="flex items-center gap-1.5">
-                                        <XCircle size={10} className="text-rose-500" />
-                                        <Badge variant="dead" size="xs">DEAD</Badge>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
                     </div>
                 </div>
             }
@@ -245,6 +463,7 @@ export function KeysValidationPanel({
                     totalPages={totalPages}
                     onPageChange={setPage}
                     onClear={clearResults}
+                    onRefresh={keyResults.length > 0 ? handleRefreshAll : undefined}
                     isLoading={isLoading}
                     isEmpty={paginatedResults.length === 0}
                     emptyState={<KeysEmptyState />}
@@ -256,9 +475,11 @@ export function KeysValidationPanel({
                                 index={idx}
                                 isSelected={selectedKeyIndex === idx}
                                 isCopied={copiedKey === idx}
-                                onSelect={() => setSelectedKeyIndex(idx)}
+                                isRefreshing={refreshingKeys.has(idx)}
+                                onSelect={() => onKeySelect(idx)}
                                 onCopy={() => handleCopyKey(result.fullKey, idx)}
                                 onDelete={() => handleDeleteKey(idx)}
+                                onRefresh={() => handleRefreshKey(idx)}
                             />
                         </ResultItem>
                     ))}
@@ -271,7 +492,18 @@ export function KeysValidationPanel({
 /**
  * KeyResultCard - Individual key result card
  */
-function KeyResultCard({ result, isSelected, isCopied, onSelect, onCopy, onDelete }) {
+function KeyResultCard({ result, isSelected, isCopied, isRefreshing, onSelect, onCopy, onDelete, onRefresh }) {
+    const [pkCopied, setPkCopied] = useState(false);
+
+    const handleCopyPk = (e) => {
+        e.stopPropagation();
+        if (result.pkKey) {
+            navigator.clipboard.writeText(result.pkKey);
+            setPkCopied(true);
+            setTimeout(() => setPkCopied(false), 2000);
+        }
+    };
+
     const getStatusVariant = (status) => {
         if (status === 'LIVE+') return 'live_plus';
         if (status === 'LIVE0') return 'live_zero';
@@ -281,75 +513,150 @@ function KeyResultCard({ result, isSelected, isCopied, onSelect, onCopy, onDelet
         return 'default';
     };
 
-    const formatCurrency = (amount, currency) => {
-        const symbols = { USD: '$', EUR: '€', GBP: '£', JPY: '¥', CAD: 'C$', AUD: 'A$' };
-        return `${symbols[currency?.toUpperCase()] || currency || '$'}${(amount / 100).toFixed(2)}`;
-    };
-
     return (
         <ResultCard
             status={result.status?.startsWith('LIVE') ? 'live' : 'die'}
-            className={isSelected ? 'ring-2 ring-orange-400/40 bg-orange-50' : ''}
+            isSelected={isSelected}
             onClick={onSelect}
+            className={isRefreshing ? 'opacity-60 pointer-events-none' : ''}
         >
-            <div className="flex items-center justify-between mb-2">
-                <Badge variant={getStatusVariant(result.status)} size="sm">
-                    {result.status === 'LIVE0' ? 'LIVE $0' : result.status}
-                </Badge>
-                <div className="flex gap-1">
-                    <IconButton variant="ghost" onClick={(e) => { e.stopPropagation(); onCopy(); }}>
-                        {isCopied ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
-                    </IconButton>
-                    <IconButton variant="ghost" onClick={(e) => { e.stopPropagation(); onDelete(); }}>
-                        <Trash2 size={12} />
-                    </IconButton>
-                </div>
-            </div>
-            
-            {/* Key */}
-            <div className="flex items-center gap-2 mb-1">
-                <Key size={12} className="text-gray-400" />
-                <p className="text-[13px] font-mono text-gray-700">{result.key}</p>
-            </div>
-            
-            {/* Email */}
-            {result.accountEmail && (
-                <div className="flex items-center gap-2 mb-1">
-                    <Mail size={12} className="text-gray-400" />
-                    <p className="text-[11px] text-gray-500">{result.accountEmail}</p>
+            {/* Loading overlay when refreshing */}
+            {isRefreshing && (
+                <div className="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-gray-900/50 rounded-xl z-10">
+                    <RefreshCw size={20} className="animate-spin text-luma-coral" />
                 </div>
             )}
+            {/* Header Row */}
+            <div className="flex items-start justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                    {/* Status + SK Key */}
+                    <div className="flex items-center gap-2 mb-1.5">
+                        {result.status?.startsWith('LIVE') ? (
+                            <CheckCircle2 size={14} className="status-icon-live" />
+                        ) : (
+                            <XCircle size={14} className="status-icon-dead" />
+                        )}
+                        <Badge variant={getStatusVariant(result.status)} size="sm">
+                            {result.status === 'LIVE0' ? 'LIVE $0' : result.status}
+                        </Badge>
+                        <span className="text-mono-key text-truncate">{result.key}</span>
+                    </div>
+
+                    {/* PK Key */}
+                    {result.pkKey && (
+                        <div className="flex items-center gap-1.5 mb-1">
+                            <Key size={10} className="text-luma-coral shrink-0" />
+                            <span className="text-mono-pk text-truncate">
+                                {result.pkKey.slice(0, 15)}...{result.pkKey.slice(-4)}
+                            </span>
+                            <button 
+                                onClick={handleCopyPk}
+                                className="icon-btn-sm"
+                            >
+                                {pkCopied ? <Check size={9} className="text-emerald-500" /> : <Copy size={9} className="text-luma-coral" />}
+                            </button>
+                        </div>
+                    )}
+
+                    {/* Email + Country Row */}
+                    <div className="flex items-center gap-3 text-meta">
+                        {result.accountEmail && result.accountEmail !== 'N/A' && (
+                            <span className="flex items-center gap-1">
+                                <Mail size={10} className="text-gray-400" />
+                                <span className="truncate max-w-[150px]">{result.accountEmail}</span>
+                            </span>
+                        )}
+                        {result.countryName && (
+                            <span className="flex items-center gap-1">
+                                <span>{result.countryFlag}</span>
+                                <span>{result.countryName}</span>
+                            </span>
+                        )}
+                    </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-0.5 shrink-0">
+                    <IconButton 
+                        variant="ghost" 
+                        onClick={(e) => { e.stopPropagation(); onRefresh(); }}
+                        disabled={isRefreshing}
+                        title="Refresh"
+                    >
+                        <RefreshCw size={11} className={isRefreshing ? 'animate-spin text-luma-coral' : ''} />
+                    </IconButton>
+                    <IconButton variant="ghost" onClick={(e) => { e.stopPropagation(); onCopy(); }} title="Copy SK">
+                        {isCopied ? <Check size={11} className="text-emerald-500" /> : <Copy size={11} />}
+                    </IconButton>
+                    <IconButton variant="ghost" onClick={(e) => { e.stopPropagation(); onDelete(); }} title="Delete">
+                        <Trash2 size={11} />
+                    </IconButton>
+                </div>
+            </div>
             
-            {/* Balance */}
-            {result.availableBalance !== undefined && (
-                <div className="flex items-center gap-2 mt-3 pt-3 border-t border-orange-200/40">
-                    <DollarSign size={14} className="text-emerald-500" />
-                    <span className="text-lg font-bold font-mono text-emerald-600">
-                        {formatCurrency(result.availableBalance, result.currency)}
+            {/* Capabilities + Balance Row */}
+            <div className="capabilities-row">
+                {/* Capabilities */}
+                <div className="flex flex-wrap gap-1">
+                    <span className={`capability-badge ${result.isChargeable ? 'capability-enabled' : 'capability-disabled'}`}>
+                        {result.isChargeable ? <CheckCircle2 size={9} /> : <XCircle size={9} />}
+                        Chargeable
                     </span>
-                    <span className="text-[10px] text-gray-400">available</span>
+                    <span className={`capability-badge ${result.chargesEnabled ? 'capability-blue' : 'capability-disabled'}`}>
+                        {result.chargesEnabled ? <CheckCircle2 size={9} /> : <XCircle size={9} />}
+                        Charges
+                    </span>
+                    <span className={`capability-badge ${result.payoutsEnabled ? 'capability-purple' : 'capability-disabled'}`}>
+                        {result.payoutsEnabled ? <CheckCircle2 size={9} /> : <XCircle size={9} />}
+                        Payouts
+                    </span>
+                    <span className={`capability-badge ${result.capabilities?.transfers ? 'capability-pink' : 'capability-disabled'}`}>
+                        {result.capabilities?.transfers ? <CheckCircle2 size={9} /> : <XCircle size={9} />}
+                        Transfers
+                    </span>
                 </div>
-            )}
+
+                {/* Balance + Currency */}
+                <div className="flex items-center gap-2">
+                    {result.currency && (
+                        <span className="currency-badge">
+                            {result.currency}
+                        </span>
+                    )}
+                    {result.availableBalance !== undefined && (
+                        <div className="flex items-baseline gap-1">
+                            <span className="text-balance">
+                                {result.currencySymbol || '$'}{(result.availableBalance / 100).toFixed(2)}
+                            </span>
+                            {result.pendingBalance > 0 && (
+                                <span className="text-balance-pending">
+                                    +{result.currencySymbol || '$'}{(result.pendingBalance / 100).toFixed(2)}
+                                </span>
+                            )}
+                        </div>
+                    )}
+                </div>
+            </div>
         </ResultCard>
     );
 }
 
 /**
- * KeysEmptyState
+ * KeysEmptyState - Empty state with warm Luma theme colors
  */
 function KeysEmptyState() {
     return (
         <motion.div
-            className="flex flex-col items-center justify-center py-20"
+            className="empty-state"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
         >
-            <div className="w-16 h-16 rounded-2xl bg-orange-50 border border-orange-200/50 flex items-center justify-center mb-5">
-                <Key size={28} className="text-orange-300" />
+            <div className="empty-state-icon">
+                <Key size={28} className="text-luma-coral" />
             </div>
-            <p className="text-sm font-medium text-gray-500 mb-1">No keys validated yet</p>
-            <p className="text-[11px] text-gray-400">Enter SK keys in the left panel to start</p>
+            <p className="empty-state-title">No keys validated yet</p>
+            <p className="empty-state-subtitle">Enter SK keys in the left panel to start</p>
         </motion.div>
     );
 }

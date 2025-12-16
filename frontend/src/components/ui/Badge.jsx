@@ -2,37 +2,57 @@ import { cn } from '../../lib/utils';
 import { motion } from 'framer-motion';
 
 /**
- * Badge Component - Premium Glass 2025
- * Refined status colors with subtle glow
+ * Badge Component - Luma Warm Theme 2025
+ * 
+ * Status colors aligned with Luma warm aesthetic and CSS variables:
+ * - Live/Success: Emerald (#10B981) - var(--luma-success)
+ * - Dead/Die: Rose (#F43F5E) - var(--luma-error)
+ * - Error/Warning: Amber (#F59E0B) - var(--luma-warning)
+ * 
+ * Uses centralized CSS classes from index.css for status indicators:
+ * - .status-indicator-live: For live/success states
+ * - .status-indicator-dead: For dead/die states  
+ * - .status-indicator-error: For error/warning states
+ * 
+ * Requirements:
+ * - 1.1: LIVE results use .status-indicator-live (emerald styling)
+ * - 1.2: DEAD/DIE results use .status-indicator-dead (rose styling)
+ * - 1.3: ERROR results use .status-indicator-error (amber styling)
  */
 export function Badge({ children, variant = 'default', className, animated = false, size = 'default' }) {
+    // Variants using centralized CSS classes for status indicators
+    // Maintains backward compatibility with existing variant names
     const variants = {
-        default: "text-gray-500 bg-gray-100 border-gray-200",
+        // Default - neutral warm gray
+        default: "text-luma-secondary bg-luma-muted border-luma",
         
-        // Live/Success variants
-        live: "text-emerald-600 bg-emerald-100 border-emerald-200",
-        live_plus: "text-emerald-700 bg-emerald-100 border-emerald-300 font-bold",
-        live_zero: "text-amber-600 bg-amber-100 border-amber-200",
-        live_neg: "text-amber-500 bg-amber-50 border-amber-200",
+        // Live/Success variants - Uses centralized .status-indicator-live class
+        // Validates: Requirement 1.1
+        live: "status-indicator-live",
+        live_plus: "status-indicator-live font-bold",
+        live_zero: "status-indicator-error", // Uses error/warning styling for zero balance
+        live_neg: "status-indicator-error", // Uses error/warning styling for negative balance
+        success: "status-indicator-live",
         
-        // Die/Dead variants
-        die: "text-rose-600 bg-rose-100 border-rose-200",
-        dead: "text-rose-500 bg-rose-50 border-rose-200",
+        // Die/Dead variants - Uses centralized .status-indicator-dead class
+        // Validates: Requirement 1.2
+        die: "status-indicator-dead",
+        dead: "status-indicator-dead",
         
-        // Status variants
-        error: "text-amber-600 bg-amber-100 border-amber-200",
-        retry: "text-purple-600 bg-purple-100 border-purple-200",
+        // Error/Warning variants - Uses centralized .status-indicator-error class
+        // Validates: Requirement 1.3
+        error: "status-indicator-error",
+        warning: "status-indicator-error",
+        retry: "text-purple-700 bg-purple-50 border-purple-200 dark:bg-purple-500/15 dark:text-purple-400 dark:border-purple-500/30",
         
-        // Success/Approved
-        approved: "text-orange-600 bg-orange-100 border-orange-200 font-bold",
-        success: "text-emerald-600 bg-emerald-100 border-emerald-200",
+        // Approved - Luma coral accent for positive actions
+        approved: "text-luma-coral-dark bg-luma-coral-10 border-luma-coral-30 font-bold",
         
-        // Other variants
-        outline: "text-gray-500 bg-transparent border-gray-300",
-        primary: "text-orange-600 bg-orange-100 border-orange-200",
-        info: "text-cyan-600 bg-cyan-100 border-cyan-200",
-        secondary: "text-purple-600 bg-purple-100 border-purple-200",
-        warning: "text-amber-600 bg-amber-100 border-amber-200",
+        // Other variants with warm theme colors
+        outline: "text-luma-secondary bg-transparent border-luma-strong",
+        primary: "text-luma-coral-dark bg-luma-coral-10 border-luma-coral-30",
+        info: "text-sky-700 bg-sky-50 border-sky-200 dark:bg-sky-500/15 dark:text-sky-400 dark:border-sky-500/30",
+        secondary: "text-luma-secondary bg-luma-muted border-luma",
     };
 
     const sizes = {
@@ -65,16 +85,29 @@ export function Badge({ children, variant = 'default', className, animated = fal
     );
 }
 
-// Status dot indicator
+/**
+ * StatusDot Component - Visual status indicator
+ * 
+ * Colors aligned with Luma theme CSS variables:
+ * - live: Emerald (#10B981) - var(--luma-success)
+ * - die/dead: Rose (#F43F5E) - var(--luma-error)
+ * - error/warning: Amber (#F59E0B) - var(--luma-warning)
+ */
 export function StatusDot({ status = 'default', pulse = false, size = 'default', className }) {
     const colors = {
         default: 'bg-gray-400',
+        // Live status - Emerald (Requirement 6.1)
         live: 'bg-emerald-500',
+        // Die/Dead status - Rose (Requirement 6.2)
         die: 'bg-rose-500',
+        dead: 'bg-rose-500',
+        // Error/Warning status - Amber (Requirement 6.3)
         error: 'bg-amber-500',
-        approved: 'bg-orange-500',
         warning: 'bg-amber-500',
-        info: 'bg-cyan-500',
+        // Approved - Luma coral
+        approved: 'bg-luma-coral',
+        // Info - Sky blue
+        info: 'bg-sky-500',
     };
 
     const sizes = {

@@ -1,5 +1,6 @@
+import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Loader2, Trash2, Key, LayoutGrid } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Loader2, Trash2, RefreshCw, LayoutGrid, Key } from 'lucide-react';
 import { ResultsHeader, ResultsContent, ResultsFooter } from '../layout/TwoPanelLayout';
 import { StatPillGroup } from '../ui/StatPill';
 import { cn } from '../../lib/utils';
@@ -24,6 +25,7 @@ export function ResultsPanel({
     
     // Actions
     onClear,
+    onRefresh,
     
     // State
     isLoading,
@@ -33,55 +35,90 @@ export function ResultsPanel({
     
     // Title
     title = 'Results',
-    subtitle,
-    
     className,
 }) {
     const safeStats = Array.isArray(stats) ? stats : [];
-    const totalCount = safeStats.reduce((sum, stat) => sum + (Number(stat.value) || 0), 0);
+    // Use the "all" stat value for total count, or find the first stat with id "all"
+    const allStat = safeStats.find(stat => stat.id === 'all');
+    const totalCount = allStat ? Number(allStat.value) || 0 : safeStats.reduce((sum, stat) => sum + (Number(stat.value) || 0), 0);
     const isChecking = Boolean(isLoading);
 
     return (
-        <div className={cn("flex flex-col h-full", className)}>
-            {/* Header - Compact on mobile */}
+        <div className={cn("flex flex-col", className)}>
+            {/* Header - Modern Glass Style */}
             <ResultsHeader>
                 {/* Title Row */}
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 md:gap-3">
-                        <div className="flex h-7 w-7 md:h-9 md:w-9 items-center justify-center rounded-lg md:rounded-xl bg-gradient-to-br from-rose-50 to-orange-50 border border-rose-100">
-                            <LayoutGrid size={14} className="text-rose-400 md:w-4 md:h-4" />
-                        </div>
+                <div className="flex items-center justify-between mb-5">
+                    <motion.div 
+                        className="flex items-center gap-4"
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.4 }}
+                    >
+                        <motion.div 
+                            className="results-header-icon"
+                            whileHover={{ scale: 1.05, rotate: 5 }}
+                            transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                        >
+                            <LayoutGrid size={22} className="text-white" />
+                        </motion.div>
                         <div>
-                            <h2 className="text-xs md:text-sm font-semibold text-gray-800">{title}</h2>
-                            {isChecking && (
-                                <p className="flex items-center gap-1 text-[9px] md:text-[10px] text-amber-600 mt-0.5">
-                                    <Loader2 size={8} className="animate-spin md:w-[10px] md:h-[10px]" />
+                            <h2 className="results-title">{title}</h2>
+                            {isChecking ? (
+                                <motion.p 
+                                    className="results-processing"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                >
+                                    <Loader2 size={12} className="animate-spin" />
                                     <span>Processing...</span>
-                                </p>
+                                </motion.p>
+                            ) : (
+                                <p className="results-subtitle">{totalCount} total results</p>
                             )}
                         </div>
-                    </div>
+                    </motion.div>
 
-                    {onClear && (
-                        <button
-                            onClick={onClear}
-                            className="flex items-center gap-1 text-[10px] md:text-[12px] font-medium text-rose-400 hover:text-rose-500 transition-colors"
-                            disabled={isLoading}
-                        >
-                            <Trash2 size={12} className="md:w-[14px] md:h-[14px]" />
-                            <span className="hidden sm:inline">Clear</span>
-                        </button>
-                    )}
+                    <motion.div 
+                        className="flex items-center gap-2"
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.4, delay: 0.1 }}
+                    >
+                        {onRefresh && (
+                            <motion.button
+                                onClick={onRefresh}
+                                className={cn("action-btn-glass action-btn-refresh", isLoading && "loading")}
+                                disabled={isLoading}
+                                title={isLoading ? "Refreshing..." : "Refresh all"}
+                                whileHover={!isLoading ? { scale: 1.02 } : {}}
+                                whileTap={!isLoading ? { scale: 0.98 } : {}}
+                            >
+                                <RefreshCw size={15} className={isLoading ? "animate-spin" : ""} />
+                                <span className="hidden sm:inline">{isLoading ? "Refreshing..." : "Refresh"}</span>
+                            </motion.button>
+                        )}
+                        {onClear && (
+                            <motion.button
+                                onClick={onClear}
+                                className={cn("action-btn-glass action-btn-clear", isLoading && "loading")}
+                                disabled={isLoading}
+                                whileHover={!isLoading ? { scale: 1.02 } : {}}
+                                whileTap={!isLoading ? { scale: 0.98 } : {}}
+                            >
+                                <Trash2 size={15} />
+                                <span className="hidden sm:inline">Clear</span>
+                            </motion.button>
+                        )}
+                    </motion.div>
                 </div>
 
-                {/* Filter Pills */}
-                <div className="flex items-center gap-1.5 md:gap-2 mt-2 md:mt-4 overflow-x-auto">
-                    <StatPillGroup
-                        stats={safeStats}
-                        activeFilter={activeFilter}
-                        onFilterChange={onFilterChange}
-                    />
-                </div>
+                {/* Filter Pills - Modern Glass Style */}
+                <StatPillGroup
+                    stats={safeStats}
+                    activeFilter={activeFilter}
+                    onFilterChange={onFilterChange}
+                />
             </ResultsHeader>
 
             {/* Results List */}
@@ -91,7 +128,7 @@ export function ResultsPanel({
                 ) : isEmpty ? (
                     emptyState || <DefaultEmptyState />
                 ) : (
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                         <AnimatePresence mode="popLayout">
                             {children}
                         </AnimatePresence>
@@ -114,62 +151,88 @@ export function ResultsPanel({
 }
 
 /**
- * Pagination Component
+ * Pagination Component - Modern Glass Style
  */
 function Pagination({ currentPage, totalPages, onPageChange }) {
     return (
-        <div className="flex items-center justify-center gap-3">
-            <button
-                onClick={() => onPageChange(Math.max(1, currentPage - 1))}
-                disabled={currentPage === 1}
-                className={cn(
-                    "p-2 rounded-lg transition-all duration-200",
-                    "bg-white/60 border border-rose-200/50 text-gray-500 hover:text-gray-700 hover:bg-white",
-                    currentPage === 1 && 'opacity-30 cursor-not-allowed'
-                )}
-            >
-                <ChevronLeft size={14} />
-            </button>
-            <span className="text-[11px] font-mono text-gray-500 min-w-[60px] text-center">
-                {currentPage} / {totalPages}
-            </span>
-            <button
-                onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
-                disabled={currentPage === totalPages}
-                className={cn(
-                    "p-2 rounded-lg transition-all duration-200",
-                    "bg-white/60 border border-rose-200/50 text-gray-500 hover:text-gray-700 hover:bg-white",
-                    currentPage === totalPages && 'opacity-30 cursor-not-allowed'
-                )}
-            >
-                <ChevronRight size={14} />
-            </button>
-        </div>
-    );
-}
-
-/**
- * Default Empty State - Gallery style like reference (warm theme)
- */
-function DefaultEmptyState() {
-    return (
-        <motion.div
-            className="flex flex-col items-center justify-center py-20"
+        <motion.div 
+            className="flex items-center justify-center gap-2"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
         >
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-50 to-rose-50 border border-rose-200/50 flex items-center justify-center mb-5">
-                <Key size={28} className="text-rose-300" />
+            <motion.button
+                onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+                className="pagination-btn"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+            >
+                <ChevronLeft size={16} />
+            </motion.button>
+            
+            <div className="pagination-info">
+                <span className="text-sm font-bold text-gray-800 dark:text-gray-100">{currentPage}</span>
+                <span className="text-sm text-gray-400">/</span>
+                <span className="text-sm font-medium text-gray-500 dark:text-gray-400">{totalPages}</span>
             </div>
-            <p className="text-sm font-medium text-gray-500 mb-1">No results yet</p>
-            <p className="text-[11px] text-gray-400">Results will appear here</p>
+            
+            <motion.button
+                onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+                disabled={currentPage === totalPages}
+                className="pagination-btn"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+            >
+                <ChevronRight size={16} />
+            </motion.button>
         </motion.div>
     );
 }
 
 /**
- * Default Loading State
+ * Default Empty State - Modern Glass Style
+ * Uses centralized .empty-state classes from index.css
+ */
+function DefaultEmptyState() {
+    return (
+        <motion.div
+            className="empty-state"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+        >
+            <motion.div 
+                className="relative mb-6"
+                animate={{ y: [0, -8, 0] }}
+                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+            >
+                <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-luma-coral/20 to-luma-coral-dark/10 blur-xl" />
+                <div className="empty-state-icon empty-state-icon-lg relative bg-gradient-to-br from-white to-gray-50 dark:from-luma-surface dark:to-luma-surface-muted border-white/60 dark:border-white/10 shadow-lg">
+                    <Key size={32} className="text-luma-coral" />
+                </div>
+            </motion.div>
+            <motion.p 
+                className="empty-state-title text-base font-semibold"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+            >
+                No results yet
+            </motion.p>
+            <motion.p 
+                className="empty-state-subtitle text-sm"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+            >
+                Results will appear here
+            </motion.p>
+        </motion.div>
+    );
+}
+
+/**
+ * Default Loading State - Modern Animated Style
  */
 function DefaultLoadingState() {
     return (
@@ -178,8 +241,21 @@ function DefaultLoadingState() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
         >
-            <Loader2 size={24} className="text-orange-500 animate-spin mb-4" />
-            <p className="text-sm font-medium text-gray-500">Processing...</p>
+            <motion.div 
+                className="loading-spinner mb-6"
+                animate={{ rotate: 360 }}
+                transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+            >
+                <div className="loading-spinner-track" />
+                <div className="loading-spinner-fill" />
+            </motion.div>
+            <motion.p 
+                className="loading-text"
+                animate={{ opacity: [1, 0.5, 1] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+            >
+                Processing...
+            </motion.p>
         </motion.div>
     );
 }
@@ -187,9 +263,10 @@ function DefaultLoadingState() {
 /**
  * ResultItem - Wrapper for individual result items with animation
  */
-export function ResultItem({ children, id }) {
+export const ResultItem = React.forwardRef(function ResultItem({ children, id }, ref) {
     return (
         <motion.div
+            ref={ref}
             key={id}
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
@@ -200,10 +277,11 @@ export function ResultItem({ children, id }) {
             {children}
         </motion.div>
     );
-}
+});
 
 /**
  * ProgressBar - Progress indicator for batch operations
+ * Warm Luma theme with orange gradient fill
  */
 export function ProgressBar({ current, total, className }) {
     const percent = total > 0 ? (current / total) * 100 : 0;
@@ -215,9 +293,11 @@ export function ProgressBar({ current, total, className }) {
             exit={{ opacity: 0, height: 0 }}
             className={cn("space-y-2", className)}
         >
-            <div className="h-1.5 rounded-full overflow-hidden bg-orange-200/50">
+            {/* Progress track - warm gray background */}
+            <div className="h-1.5 rounded-full overflow-hidden bg-gray-200/70 dark:bg-gray-700/70">
+                {/* Progress fill - coral gradient using CSS variables */}
                 <motion.div
-                    className="h-full rounded-full bg-gradient-to-r from-orange-400 to-orange-500"
+                    className="h-full rounded-full progress-bar-fill"
                     initial={{ width: 0 }}
                     animate={{ width: `${percent}%` }}
                     transition={{ duration: 0.2 }}
@@ -225,7 +305,7 @@ export function ProgressBar({ current, total, className }) {
             </div>
             <div className="flex items-center justify-between text-[11px]">
                 <span className="text-gray-400 font-mono">{current} / {total}</span>
-                <span className="text-orange-500 font-medium">{Math.round(percent)}%</span>
+                <span className="text-luma-coral font-medium">{Math.round(percent)}%</span>
             </div>
         </motion.div>
     );

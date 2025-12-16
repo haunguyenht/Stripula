@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Shield, Zap, TreeDeciduous, HelpCircle, Wallet, ShoppingBag, Target, Hash, KeyRound, ShoppingCart } from 'lucide-react';
 import { TopTabBar } from '../navigation/TopTabBar';
+import { ToastContainer } from '../ui/ToastContainer';
 import StripeOwn from '../StripeOwn';
 
 /**
- * AppLayout - Main application layout matching reference design
- * Full-page horizontal gradient + floating cards
+ * AppLayout - Main application layout with warm Luma theme
+ * Warm gradient background (cream → peach → soft pink) + floating cards
  */
 export function AppLayout() {
     const [activeRoute, setActiveRoute] = useState(() => 
@@ -19,16 +21,46 @@ export function AppLayout() {
 
     const renderContent = () => {
         switch (activeRoute) {
+            // Stripe routes
             case 'stripe-auth':
-                return <PlaceholderPage title="Stripe Auth" description="Key validation and authentication" icon="🔐" />;
+                return <PlaceholderPage title="Stripe Auth" description="Key validation and authentication" Icon={Shield} />;
             case 'stripe-charge-1':
                 return <StripeOwn />;
             case 'stripe-charge-2':
-                return <PlaceholderPage title="Stripe Charge v2" description="Alternative charge validation method" icon="⚡" />;
+                return <PlaceholderPage title="Stripe Charge v2" description="Alternative charge validation method" Icon={Zap} />;
+            
+            // Braintree routes
             case 'braintree-auth':
-                return <PlaceholderPage title="Braintree Auth" description="Braintree authentication" icon="🌳" />;
+                return <PlaceholderPage title="Braintree Auth" description="Braintree authentication" Icon={TreeDeciduous} />;
+            
+            // Adyen routes (coming soon)
+            case 'adyen-auth':
+                return <PlaceholderPage title="Adyen Auth" description="Adyen authentication" Icon={Wallet} comingSoon />;
+            case 'adyen-charge':
+                return <PlaceholderPage title="Adyen Charge" description="Adyen payment check" Icon={Zap} comingSoon />;
+            
+            // Shopify routes (coming soon)
+            case 'shopify-auth':
+                return <PlaceholderPage title="Shopify Auth" description="Shopify authentication" Icon={ShoppingBag} comingSoon />;
+            case 'shopify-charge':
+                return <PlaceholderPage title="Shopify Charge" description="Shopify payment check" Icon={Zap} comingSoon />;
+            
+            // Target routes (coming soon)
+            case 'target-charge':
+                return <PlaceholderPage title="Target Charge" description="Target payment check" Icon={Target} comingSoon />;
+            
+            // CO Hitter routes (coming soon)
+            case 'co-inbuilt-ccn':
+                return <PlaceholderPage title="Inbuilt CCN" description="Card number generator" Icon={Hash} comingSoon />;
+            case 'co-inbuilt-ccv':
+                return <PlaceholderPage title="Inbuilt CCV" description="CVV generator" Icon={KeyRound} comingSoon />;
+            case 'co-checkout':
+                return <PlaceholderPage title="CO Checkout" description="Checkout flow" Icon={ShoppingCart} comingSoon />;
+            
+            // Help
             case 'help':
-                return <PlaceholderPage title="Help" description="Documentation and support" icon="❓" />;
+                return <PlaceholderPage title="Help" description="Documentation and support" Icon={HelpCircle} />;
+            
             default:
                 return <StripeOwn />;
         }
@@ -36,10 +68,7 @@ export function AppLayout() {
 
     return (
         <div 
-            className="h-screen w-screen overflow-hidden flex flex-col"
-            style={{ 
-                background: 'linear-gradient(135deg, #FFF8E7 0%, #FFEDD5 30%, #FFE4E6 70%, #FCE7F3 100%)'
-            }}
+            className="h-screen w-screen overflow-hidden flex flex-col luma-warm-gradient"
         >
             {/* Compact Header */}
             <TopTabBar 
@@ -62,11 +91,14 @@ export function AppLayout() {
                     </motion.div>
                 </AnimatePresence>
             </main>
+            
+            {/* Toast Notifications */}
+            <ToastContainer position="bottom-right" />
         </div>
     );
 }
 
-function PlaceholderPage({ title, description, icon }) {
+function PlaceholderPage({ title, description, Icon, comingSoon = false }) {
     return (
         <motion.div 
             className="flex items-center justify-center h-full p-4"
@@ -74,29 +106,35 @@ function PlaceholderPage({ title, description, icon }) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
         >
-            <div className="text-center bg-white/80 border border-orange-200/50 shadow-lg rounded-2xl p-8 max-w-md">
+            <div className="text-center floating-panel p-8 max-w-md">
                 <motion.div 
-                    className="text-6xl mb-6"
+                    className="flex items-center justify-center mb-6"
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     transition={{ type: "spring", stiffness: 300, damping: 20, delay: 0.1 }}
                 >
-                    {icon}
+                    <div className="w-20 h-20 rounded-2xl bg-luma-coral-10 flex items-center justify-center">
+                        <Icon className="w-10 h-10 text-luma-coral" strokeWidth={1.5} />
+                    </div>
                 </motion.div>
-                <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-3">
+                <h1 className="text-2xl md:text-3xl font-bold text-luma mb-3">
                     {title}
                 </h1>
-                <p className="text-gray-500 text-sm md:text-base">
+                <p className="text-luma-secondary text-sm md:text-base">
                     {description}
                 </p>
-                <motion.p 
-                    className="text-orange-400 text-xs md:text-sm mt-6 font-mono"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.3 }}
-                >
-                    Coming soon...
-                </motion.p>
+                {comingSoon && (
+                    <motion.div 
+                        className="mt-6"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.3 }}
+                    >
+                        <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-amber-100 dark:bg-pink-500/20 text-xs font-bold text-amber-600 dark:text-pink-400 uppercase">
+                            Coming Soon
+                        </span>
+                    </motion.div>
+                )}
             </div>
         </motion.div>
     );

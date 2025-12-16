@@ -2,8 +2,8 @@ import { cn } from '../../lib/utils';
 import { forwardRef } from 'react';
 
 /**
- * Input Components - Premium Glass 2025
- * Clean, minimal with refined focus states
+ * Input Components - Luma Warm Theme
+ * Uses centralized CSS classes with warm color palette
  */
 
 const Input = forwardRef(({ className, type, ...props }, ref) => {
@@ -11,17 +11,13 @@ const Input = forwardRef(({ className, type, ...props }, ref) => {
         <input
             type={type}
             className={cn(
-                "flex h-11 w-full rounded-xl px-4",
-                "text-sm font-mono text-gray-700",
-                "bg-white/80",
-                "border border-orange-200/50",
-                "placeholder:text-gray-400",
-                "focus:outline-none",
-                "focus:border-orange-400/60 focus:bg-white",
-                "focus:ring-2 focus:ring-orange-400/20",
-                "disabled:cursor-not-allowed disabled:opacity-40",
+                "floating-input rounded-apple",
+                "flex h-11 w-full px-4",
+                "text-sm font-mono text-luma",
+                "placeholder:text-luma-muted",
+                "disabled:cursor-not-allowed disabled:opacity-40 disabled:bg-luma-muted",
+                "focus:outline-none focus:border-luma-coral-30 focus:ring-2 focus:ring-luma-coral-20",
                 "transition-all duration-200",
-                "shadow-sm",
                 className
             )}
             ref={ref}
@@ -32,22 +28,17 @@ const Input = forwardRef(({ className, type, ...props }, ref) => {
 
 Input.displayName = "Input";
 
-// Textarea - Warm theme styling
 const Textarea = forwardRef(({ className, ...props }, ref) => {
     return (
         <textarea
             className={cn(
-                "flex w-full rounded-xl p-4",
-                "text-sm font-mono text-gray-700 leading-relaxed",
-                "bg-white/80",
-                "border border-orange-200/50",
-                "placeholder:text-gray-400",
-                "focus:outline-none",
-                "focus:border-orange-400/60 focus:bg-white",
-                "focus:ring-2 focus:ring-orange-400/20",
-                "disabled:cursor-not-allowed disabled:opacity-40",
-                "transition-all duration-200 resize-none",
-                "scrollbar-thin shadow-sm",
+                "floating-input rounded-apple-lg",
+                "flex w-full p-4",
+                "text-sm font-mono text-luma leading-relaxed",
+                "placeholder:text-luma-muted",
+                "disabled:cursor-not-allowed disabled:opacity-40 disabled:bg-luma-muted",
+                "focus:outline-none focus:border-luma-coral-30 focus:ring-2 focus:ring-luma-coral-20",
+                "resize-none scrollbar-thin transition-all duration-200",
                 className
             )}
             ref={ref}
@@ -58,22 +49,17 @@ const Textarea = forwardRef(({ className, ...props }, ref) => {
 
 Textarea.displayName = "Textarea";
 
-// Select - Warm theme dropdown
 const Select = forwardRef(({ className, children, ...props }, ref) => {
     return (
         <div className="relative">
             <select
                 className={cn(
-                    "flex h-11 w-full rounded-xl px-4 appearance-none cursor-pointer",
-                    "text-sm font-mono text-gray-700",
-                    "bg-white/80",
-                    "border border-orange-200/50",
-                    "focus:outline-none",
-                    "focus:border-orange-400/60 focus:bg-white",
-                    "focus:ring-2 focus:ring-orange-400/20",
-                    "disabled:cursor-not-allowed disabled:opacity-40",
+                    "floating-input rounded-apple",
+                    "flex h-11 w-full px-4 appearance-none cursor-pointer",
+                    "text-sm font-apple-medium text-luma",
+                    "disabled:cursor-not-allowed disabled:opacity-40 disabled:bg-luma-muted",
+                    "focus:outline-none focus:border-luma-coral-30 focus:ring-2 focus:ring-luma-coral-20",
                     "transition-all duration-200",
-                    "shadow-sm",
                     className
                 )}
                 ref={ref}
@@ -81,7 +67,7 @@ const Select = forwardRef(({ className, children, ...props }, ref) => {
             >
                 {children}
             </select>
-            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-luma-muted">
                 <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5">
                     <path d="M2 3.5L5 6.5L8 3.5" />
                 </svg>
@@ -92,30 +78,23 @@ const Select = forwardRef(({ className, children, ...props }, ref) => {
 
 Select.displayName = "Select";
 
-// Range slider - Warm theme gradient thumb
-const RangeSlider = forwardRef(({ className, ...props }, ref) => {
+const RangeSlider = forwardRef(({ className, value, min = 0, max = 100, ...props }, ref) => {
+    const percentage = ((value - min) / (max - min)) * 100;
+    
     return (
-        <div className="relative">
+        <div className="relative w-full">
             <input
                 type="range"
+                value={value}
+                min={min}
+                max={max}
                 className={cn(
-                    "w-full h-1.5 rounded-full appearance-none cursor-pointer",
-                    "bg-orange-200/50",
-                    "[&::-webkit-slider-thumb]:appearance-none",
-                    "[&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4",
-                    "[&::-webkit-slider-thumb]:rounded-full",
-                    "[&::-webkit-slider-thumb]:bg-gradient-to-br [&::-webkit-slider-thumb]:from-orange-400 [&::-webkit-slider-thumb]:to-orange-500",
-                    "[&::-webkit-slider-thumb]:shadow-[0_0_12px_rgba(255,107,53,0.4)]",
-                    "[&::-webkit-slider-thumb]:cursor-pointer",
-                    "[&::-webkit-slider-thumb]:transition-all [&::-webkit-slider-thumb]:duration-200",
-                    "[&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white",
-                    "[&::-webkit-slider-thumb]:hover:scale-110",
-                    "[&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4",
-                    "[&::-moz-range-thumb]:rounded-full",
-                    "[&::-moz-range-thumb]:bg-gradient-to-br [&::-moz-range-thumb]:from-orange-400 [&::-moz-range-thumb]:to-orange-500",
-                    "[&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-white",
+                    "range-slider w-full h-2 rounded-full appearance-none cursor-pointer",
                     className
                 )}
+                style={{
+                    background: `linear-gradient(to right, var(--luma-coral) 0%, var(--luma-coral) ${percentage}%, var(--luma-border) ${percentage}%, var(--luma-border) 100%)`
+                }}
                 ref={ref}
                 {...props}
             />

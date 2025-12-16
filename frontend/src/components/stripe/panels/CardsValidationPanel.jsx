@@ -1,16 +1,17 @@
-import { useState } from 'react';
-import { CreditCard, Trash2, Copy, Check, Loader2, Zap, Key } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { CreditCard, Trash2, Copy, Check, Zap, Key, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useToast } from '../../../hooks/useToast';
 
 // Layout
-import { TwoPanelLayout, ConfigSection, ConfigDivider } from '../../layout/TwoPanelLayout';
+import { TwoPanelLayout } from '../../layout/TwoPanelLayout';
 
 // Components
 import { ResultsPanel, ResultItem, ProgressBar } from '../ResultsPanel';
 import { Badge } from '../../ui/Badge';
 import { ResultCard } from '../../ui/Card';
 import { Button, IconButton } from '../../ui/Button';
-import { Input, Textarea, Select, RangeSlider } from '../../ui/Input';
+import { Input, RangeSlider } from '../../ui/Input';
 import { cn } from '../../../lib/utils';
 
 // Utils
@@ -30,6 +31,9 @@ export function CardsValidationPanel({
     setCardStats,
     settings,
     onSettingsChange,
+    keyResults = [],
+    selectedKeyIndex,
+    onKeySelect,
     isLoading,
     setIsLoading,
     currentItem,
@@ -44,6 +48,16 @@ export function CardsValidationPanel({
     const [filter, setFilter] = useState('all');
     const [page, setPage] = useState(1);
     const pageSize = 20;
+    const { success, error: toastError, info, warning } = useToast();
+
+    // Filter live keys for dropdown
+    const liveKeys = useMemo(() => 
+        keyResults.filter(k => k.status?.startsWith('LIVE')),
+        [keyResults]
+    );
+
+    // Check if using manual input (selectedKeyIndex is -1 or "manual")
+    const isManualInput = selectedKeyIndex === -1 || selectedKeyIndex === 'manual';
 
     // ══════════════════════════════════════════════════════════════════
     // HANDLERS
@@ -61,29 +75,32 @@ export function CardsValidationPanel({
 
     const handleCheckCards = async () => {
         if (!settings.skKey?.trim()) {
-            alert('Enter an SK key');
+            warning('Enter an SK key');
             return;
         }
         if (!settings.pkKey?.trim() || !settings.pkKey.startsWith('pk_')) {
-            alert('PK Key is required for card validation');
+            warning('PK Key is required for card validation');
             return;
         }
         if (settings.validationMethod === 'charge' && !settings.proxy?.trim()) {
-            alert('Proxy is required for charge validation');
+            warning('Proxy is required for charge validation');
             return;
         }
         const cardList = cards.trim();
         if (!cardList) {
-            alert('Enter at least one card');
+            warning('Enter at least one card');
             return;
         }
 
         setIsLoading(true);
         abortRef.current = false;
-        setProgress({ current: 0, total: cardList.split('\n').filter(l => l.trim()).length });
+        const totalCards = cardList.split('\n').filter(l => l.trim()).length;
+        setProgress({ current: 0, total: totalCards });
 
         const methodLabels = { charge: 'Charge', nocharge: 'No Charge', setup: 'Setup', direct: 'Direct' };
-        setCurrentItem(`Starting ${methodLabels[settings.validationMethod] || 'Charge'} validation...`);
+        const methodLabel = methodLabels[settings.validationMethod] || 'Charge';
+        setCurrentItem(`Starting ${methodLabel} validation...`);
+        info(`Starting ${methodLabel} validation for ${totalCards} cards`);
 
         try {
             abortControllerRef.current = new AbortController();
@@ -163,12 +180,19 @@ export function CardsValidationPanel({
         } catch (err) {
             if (err.name !== 'AbortError') {
                 setCurrentItem(`Error: ${err.message}`);
+                toastError(`Validation error: ${err.message}`);
             }
         }
 
         setIsLoading(false);
         setCurrentItem(null);
         abortControllerRef.current = null;
+        
+        // Show completion toast if not aborted
+        if (!abortRef.current) {
+            const { live = 0, die = 0, error: errCount = 0 } = cardStats;
+            success(`Validation complete: ${live} live, ${die} dead, ${errCount} errors`);
+        }
     };
 
     const handleStop = async () => {
@@ -179,6 +203,7 @@ export function CardsValidationPanel({
         await fetch('/api/stripe-own/stop-batch', { method: 'POST' });
         setIsLoading(false);
         setCurrentItem('Stopped');
+        warning('Card validation stopped');
     };
 
     const handleCopyCard = (card, index) => {
@@ -225,53 +250,62 @@ export function CardsValidationPanel({
     return (
         <TwoPanelLayout
             configPanel={
-                <div className="flex flex-col h-full overflow-hidden">
+                <div className="flex flex-col h-full">
                     {/* Card Header with Mode Switcher */}
                     {modeSwitcher && (
-                        <div className="px-3 py-2 md:px-4 md:py-3 border-b border-gray-100 bg-gray-50/50">
+                        <div className="panel-header">
                             {modeSwitcher}
                         </div>
                     )}
 
-                    {/* Input + Buttons - Compact */}
-                    <div className="p-3 md:p-4 space-y-3">
-                        <div className="relative">
-                            <Textarea
-                                className="w-full h-16 md:h-24 text-xs md:text-[13px]"
+                    {/* Input Section with embedded buttons */}
+                    <div className="p-3 md:p-4 space-y-3 bg-white dark:bg-luma-surface">
+                        {/* Combined Input Container */}
+                        <div className={`input-container-unified border-luma-coral-15 hover:border-luma-coral-25 ${isLoading ? 'input-container-loading' : ''}`}>
+                            <textarea
+                                className={`input-textarea h-16 md:h-20 ${isLoading ? 'input-textarea-disabled' : ''}`}
                                 placeholder="Enter cards (one per line)&#10;4111111111111111|01|2025|123"
                                 value={cards}
                                 onChange={(e) => setCards(e.target.value)}
                                 disabled={isLoading}
                             />
-                            {cardCount > 0 && (
-                                <div className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded bg-orange-100 text-[9px] text-orange-600 font-mono">
-                                    {cardCount}
+                            {/* Bottom toolbar inside input */}
+                            <div className="input-toolbar">
+                                <div className="flex items-center gap-2">
+                                    {cardCount > 0 && (
+                                        <span className="count-badge">
+                                            {cardCount} cards
+                                        </span>
+                                    )}
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="w-8 h-8 rounded-full hover:bg-luma-coral-10"
+                                        onClick={clearResults}
+                                        disabled={isLoading}
+                                        title="Clear"
+                                    >
+                                        <Trash2 size={14} className="text-gray-400 dark:text-gray-500" />
+                                    </Button>
                                 </div>
-                            )}
-                        </div>
-
-                        {/* Action Buttons */}
-                        <div className="flex gap-2">
-                            {isLoading ? (
-                                <Button variant="destructive" className="flex-1 h-9 text-xs" onClick={handleStop}>
-                                    <span className="w-2.5 h-2.5 bg-current rounded-sm" />
-                                    <span>Stop</span>
-                                </Button>
-                            ) : (
-                                <Button variant="primary" className="flex-1 h-9 text-xs" onClick={handleCheckCards}>
-                                    <CreditCard size={14} />
-                                    <span>Check</span>
-                                </Button>
-                            )}
-                            <Button
-                                variant="secondary"
-                                size="icon"
-                                className="w-9 h-9"
-                                onClick={clearResults}
-                                disabled={isLoading}
-                            >
-                                <Trash2 size={14} />
-                            </Button>
+                                {isLoading ? (
+                                    <button 
+                                        className="input-action-btn input-action-btn-stop"
+                                        onClick={handleStop}
+                                    >
+                                        <span className="w-2.5 h-2.5 bg-white rounded-sm" />
+                                    </button>
+                                ) : (
+                                    <button 
+                                        className="input-action-btn input-action-btn-primary"
+                                        onClick={handleCheckCards}
+                                    >
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M5 12h14M12 5l7 7-7 7"/>
+                                        </svg>
+                                    </button>
+                                )}
+                            </div>
                         </div>
 
                         {/* Progress */}
@@ -283,27 +317,60 @@ export function CardsValidationPanel({
                     </div>
 
                     {/* Settings Section - Scrollable, compact */}
-                    <div className="flex-1 overflow-y-auto custom-scrollbar px-3 pb-3 md:px-4 md:pb-4 space-y-2">
+                    <div className="settings-section">
                         {/* API Keys */}
-                        <div className="p-2 md:p-3 rounded-lg bg-gray-50/80 border border-gray-100 space-y-2">
-                            <div className="flex items-center gap-1.5 text-[9px] font-semibold text-gray-500 uppercase">
-                                <Key size={9} />
+                        <div className="settings-card settings-card-inner border-luma-coral-10">
+                            <div className="settings-header">
+                                <div className="settings-header-icon settings-header-icon-amber">
+                                    <Key size={10} className="text-white" />
+                                </div>
                                 Keys
                             </div>
+                            
+                            {/* Key Selection Dropdown */}
+                            <div className="relative">
+                                <select
+                                    value={selectedKeyIndex}
+                                    onChange={(e) => {
+                                        const val = e.target.value;
+                                        onKeySelect?.(val === 'manual' ? -1 : parseInt(val));
+                                    }}
+                                    disabled={isLoading}
+                                    className="w-full h-8 px-3 pr-8 text-[10px] font-medium bg-white dark:bg-luma-surface border border-luma-coral/20 rounded-xl appearance-none cursor-pointer focus:outline-none focus:border-luma-coral/40 focus:ring-2 focus:ring-luma-coral/10 text-gray-700 dark:text-gray-200"
+                                >
+                                    <option value="manual">Manual Input</option>
+                                    {liveKeys.map((key, idx) => {
+                                        const originalIdx = keyResults.indexOf(key);
+                                        return (
+                                            <option key={originalIdx} value={originalIdx}>
+                                                {key.status} • {key.key} {key.accountEmail && key.accountEmail !== 'N/A' ? `• ${key.accountEmail}` : ''}
+                                            </option>
+                                        );
+                                    })}
+                                </select>
+                                <ChevronDown size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 pointer-events-none" />
+                            </div>
+
                             <div className="grid grid-cols-2 gap-1.5">
                                 <Input
                                     placeholder="sk_live_..."
                                     value={settings?.skKey || ''}
                                     onChange={(e) => handleSettingChange('skKey', e.target.value)}
-                                    disabled={isLoading}
-                                    className="text-[10px] h-7 md:h-8"
+                                    disabled={isLoading || !isManualInput}
+                                    className={cn(
+                                        "text-[10px] h-7 md:h-8 border-luma-coral-15 focus:border-luma-coral-40",
+                                        !isManualInput && "opacity-60 bg-gray-100 dark:bg-gray-800"
+                                    )}
                                 />
                                 <Input
                                     placeholder="pk_live_..."
                                     value={settings?.pkKey || ''}
                                     onChange={(e) => handleSettingChange('pkKey', e.target.value)}
-                                    disabled={isLoading}
-                                    className="text-[10px] h-7 md:h-8"
+                                    disabled={isLoading || !isManualInput}
+                                    className={cn(
+                                        "text-[10px] h-7 md:h-8 border-luma-coral-15 focus:border-luma-coral-40",
+                                        !isManualInput && "opacity-60 bg-gray-100 dark:bg-gray-800"
+                                    )}
                                 />
                             </div>
                             <Input
@@ -311,19 +378,21 @@ export function CardsValidationPanel({
                                 value={settings?.proxy || ''}
                                 onChange={(e) => handleSettingChange('proxy', e.target.value)}
                                 disabled={isLoading}
-                                className="text-[10px] h-7 md:h-8"
+                                className="text-[10px] h-7 md:h-8 border-[#E8836B]/15 focus:border-[#E8836B]/40"
                             />
                         </div>
 
                         {/* Validation Options */}
-                        <div className="p-2 md:p-3 rounded-lg bg-gray-50/80 border border-gray-100">
-                            <div className="flex items-center gap-1.5 text-[9px] font-semibold text-gray-500 uppercase mb-2">
-                                <Zap size={9} />
+                        <div className="settings-card settings-card-inner border-luma-coral-10">
+                            <div className="settings-header mb-2">
+                                <div className="settings-header-icon settings-header-icon-rose">
+                                    <Zap size={10} className="text-white" />
+                                </div>
                                 Method
                             </div>
                             
                             {/* Method pills - 2x2 grid */}
-                            <div className="grid grid-cols-2 gap-1 mb-2">
+                            <div className="grid grid-cols-2 gap-1.5 mb-2">
                                 {[
                                     { value: 'charge', label: 'Charge' },
                                     { value: 'nocharge', label: 'No Charge' },
@@ -335,10 +404,8 @@ export function CardsValidationPanel({
                                         onClick={() => handleSettingChange('validationMethod', method.value)}
                                         disabled={isLoading}
                                         className={cn(
-                                            "px-2 py-1.5 rounded-md text-[10px] font-medium transition-all border",
-                                            settings?.validationMethod === method.value
-                                                ? "bg-orange-50 border-orange-200 text-orange-700"
-                                                : "bg-white border-gray-200 text-gray-600"
+                                            "method-pill px-2 py-1.5 text-[10px]",
+                                            settings?.validationMethod === method.value && "active"
                                         )}
                                     >
                                         {method.label}
@@ -347,8 +414,8 @@ export function CardsValidationPanel({
                             </div>
 
                             {/* Concurrency */}
-                            <div className="flex items-center gap-2 pt-2 border-t border-gray-200/50">
-                                <span className="text-[9px] text-gray-500">Threads</span>
+                            <div className="flex items-center gap-2 pt-2 border-t border-luma-coral-10">
+                                <span className="text-[9px] text-gray-500 dark:text-gray-400">Threads</span>
                                 <div className="flex-1">
                                     <RangeSlider
                                         min="1"
@@ -358,7 +425,7 @@ export function CardsValidationPanel({
                                         disabled={isLoading}
                                     />
                                 </div>
-                                <span className="w-5 text-center text-[10px] font-mono text-gray-700">
+                                <span className="w-5 text-center text-[10px] font-mono text-gray-800 dark:text-gray-200">
                                     {settings?.concurrency || 3}
                                 </span>
                             </div>
@@ -398,7 +465,8 @@ export function CardsValidationPanel({
 }
 
 /**
- * CardResultCard - Individual card result card
+ * CardResultCard - Individual card result card with warm theme styling
+ * Uses centralized CSS classes for status indicators and text styling
  */
 function CardResultCard({ result, isCopied, onCopy }) {
     const getStatusVariant = (status) => {
@@ -422,38 +490,48 @@ function CardResultCard({ result, isCopied, onCopy }) {
                 <Badge variant={getStatusVariant(result.status)} size="sm">
                     {result.status}
                 </Badge>
-                <IconButton variant="ghost" onClick={onCopy}>
-                    {isCopied ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
+                <IconButton variant="ghost" onClick={onCopy} className="hover:bg-[#FEF3C7] dark:hover:bg-luma-coral-10">
+                    {isCopied ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} className="text-luma-muted" />}
                 </IconButton>
             </div>
-            <p className="text-[13px] font-mono text-gray-700">{result.card}</p>
+            <p className="text-mono-sm text-[13px] dark:text-gray-200">{result.card}</p>
             {result.message && (
-                <p className="text-[11px] text-gray-500 mt-1 line-clamp-2">{result.message}</p>
+                <p className="text-meta mt-1 line-clamp-2">{result.message}</p>
             )}
             {result.binData && (
-                <p className="text-[10px] text-orange-500 mt-2">
-                    {result.binData.scheme} {result.binData.type} • {result.binData.bank}
-                </p>
+                <div className="flex items-center gap-2 mt-2 pt-2 border-t border-luma-coral-10">
+                    <span className="bin-scheme-badge">
+                        {result.binData.scheme}
+                    </span>
+                    <span className="bin-type-badge">
+                        {result.binData.type}
+                    </span>
+                    <span className="text-mono-sm text-luma-coral truncate">
+                        {result.binData.bank}
+                    </span>
+                </div>
             )}
         </ResultCard>
     );
 }
 
 /**
- * CardsEmptyState
+ * CardsEmptyState - Empty state with warm Luma theme colors
+ * Uses centralized .empty-state classes for consistent styling
  */
 function CardsEmptyState() {
     return (
         <motion.div
-            className="flex flex-col items-center justify-center py-16"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            className="empty-state"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
         >
-            <div className="w-12 h-12 rounded-xl bg-rose-50 border border-rose-200/50 flex items-center justify-center mb-4">
-                <CreditCard size={20} className="text-rose-300" />
+            <div className="empty-state-icon">
+                <CreditCard size={28} className="text-luma-coral" />
             </div>
-            <p className="text-sm font-medium text-gray-500">No results yet</p>
-            <p className="text-[11px] text-gray-400 mt-1">Enter cards to start</p>
+            <p className="empty-state-title">No cards validated yet</p>
+            <p className="empty-state-subtitle">Enter cards in the left panel to start</p>
         </motion.div>
     );
 }

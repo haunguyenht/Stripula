@@ -60,6 +60,7 @@ export const STRIPE_API = {
     BALANCE: 'https://api.stripe.com/v1/balance',
     ACCOUNT: 'https://api.stripe.com/v1/account',
     CHECKOUT_SESSIONS: 'https://api.stripe.com/v1/checkout/sessions',
+    API_KEYS: 'https://api.stripe.com/v1/api_keys',
 };
 
 // Validation methods

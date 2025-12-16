@@ -7,68 +7,130 @@ import {
     ChevronDown,
     Shield,
     Sparkles,
-    Coins,
-    User
+    Crown,
+    Award,
+    Gem,
+    Check,
+    Wallet,
+    ShoppingBag,
+    Target,
+    Crosshair,
+    Hash,
+    KeyRound,
+    ShoppingCart,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../lib/utils';
+import { UserProfileBadge } from '../ui/UserProfileBadge';
+import { ThemeToggle } from '../ui/ThemeToggle';
 
-// Mock user data (will be replaced with Telegram SSO)
-const mockUser = {
-    name: 'John Doe',
-    plan: 'gold', // bronze, silver, gold, diamond
-    credits: 1250,
-    isOnline: true,
+// Default user data
+const defaultUser = {
+    name: 'User',
+    email: 'user@example.com',
+    credits: 100,
+    tier: 'gold',
 };
 
-const planConfig = {
-    bronze: { label: 'Bronze', color: 'text-amber-700 bg-amber-100 border-amber-200' },
-    silver: { label: 'Silver', color: 'text-gray-600 bg-gray-100 border-gray-300' },
-    gold: { label: 'Gold', color: 'text-yellow-700 bg-yellow-100 border-yellow-300' },
-    diamond: { label: 'Diamond', color: 'text-cyan-700 bg-cyan-100 border-cyan-300' },
+// Tier config with dark mode support
+const tierConfig = {
+    bronze: { icon: Shield, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-500/10 dark:bg-amber-500/20', border: 'border-amber-500/20 dark:border-amber-500/30' },
+    silver: { icon: Award, color: 'text-gray-500 dark:text-gray-400', bg: 'bg-gray-500/10 dark:bg-gray-500/20', border: 'border-gray-500/20 dark:border-gray-500/30' },
+    gold: { icon: Crown, color: 'text-yellow-600 dark:text-yellow-400', bg: 'bg-yellow-500/10 dark:bg-yellow-500/20', border: 'border-yellow-500/20 dark:border-yellow-500/30' },
+    diamond: { icon: Gem, color: 'text-cyan-500 dark:text-cyan-400', bg: 'bg-cyan-500/10 dark:bg-cyan-500/20', border: 'border-cyan-500/20 dark:border-cyan-500/30' },
 };
 
 /**
- * TopTabBar - Sticky top navigation bar with icon tabs and dropdowns
- * Warm theme 2025
+ * TopTabBar - Modern Apple-style navigation
  */
 export function TopTabBar({ 
     activeRoute, 
     onNavigate,
     className,
-    user = mockUser,
+    user = defaultUser,
+    onSettingsClick,
+    onHelpClick,
+    onLogoutClick,
 }) {
     const [openDropdown, setOpenDropdown] = useState(null);
     const dropdownRef = useRef(null);
-    const plan = planConfig[user.plan] || planConfig.bronze;
+
+    const tier = tierConfig[user?.tier] || tierConfig.bronze;
+    const TierIcon = tier.icon;
 
     const navItems = [
         { 
             id: 'stripe', 
             label: 'Stripe', 
             icon: CreditCard,
+            color: 'violet',
             children: [
-                { id: 'stripe-auth', label: 'Auth', icon: Shield },
-                { id: 'stripe-charge-1', label: 'Charge v1', icon: Zap },
-                { id: 'stripe-charge-2', label: 'Charge v2', icon: Sparkles },
+                { id: 'stripe-auth', label: 'Auth', icon: Shield, desc: 'Key validation', color: 'blue' },
+                { id: 'stripe-charge-1', label: 'SK Based Charge', icon: Zap, desc: 'Standard check', color: 'amber' },
+                { id: 'stripe-charge-2', label: 'Charge v2', icon: Sparkles, desc: 'Advanced check', color: 'purple' },
             ]
         },
         { 
             id: 'braintree', 
             label: 'Braintree', 
             icon: TreeDeciduous,
+            color: 'emerald',
             children: [
-                { id: 'braintree-auth', label: 'Auth', icon: Shield },
+                { id: 'braintree-auth', label: 'Auth', icon: Shield, desc: 'Authentication', color: 'teal' },
+            ]
+        },
+        { 
+            id: 'adyen', 
+            label: 'Adyen', 
+            icon: Wallet,
+            color: 'orange',
+            comingSoon: true,
+            children: [
+                { id: 'adyen-auth', label: 'Auth', icon: Shield, desc: 'Authentication', color: 'emerald', comingSoon: true },
+                { id: 'adyen-charge', label: 'Charge', icon: Zap, desc: 'Payment check', color: 'teal', comingSoon: true },
+            ]
+        },
+        { 
+            id: 'shopify', 
+            label: 'Shopify', 
+            icon: ShoppingBag,
+            color: 'green',
+            comingSoon: true,
+            children: [
+                { id: 'shopify-auth', label: 'Auth', icon: Shield, desc: 'Authentication', color: 'green', comingSoon: true },
+                { id: 'shopify-charge', label: 'Charge', icon: Zap, desc: 'Payment check', color: 'emerald', comingSoon: true },
+            ]
+        },
+        { 
+            id: 'target', 
+            label: 'Target', 
+            icon: Target,
+            color: 'rose',
+            comingSoon: true,
+            children: [
+                { id: 'target-charge', label: 'Charge', icon: Zap, desc: 'Payment check', color: 'rose', comingSoon: true },
+            ]
+        },
+        { 
+            id: 'co-hitter', 
+            label: 'CO Hitter', 
+            icon: Crosshair,
+            color: 'pink',
+            comingSoon: true,
+            children: [
+                { id: 'co-inbuilt-ccn', label: 'Inbuilt CCN', icon: Hash, desc: 'Card number gen', color: 'pink', comingSoon: true },
+                { id: 'co-inbuilt-ccv', label: 'Inbuilt CCV', icon: KeyRound, desc: 'CVV generator', color: 'purple', comingSoon: true },
+                { id: 'co-checkout', label: 'Checkout', icon: ShoppingCart, desc: 'Checkout flow', color: 'violet', comingSoon: true },
             ]
         },
         { 
             id: 'help', 
             label: 'Help', 
             icon: HelpCircle,
+            color: 'orange',
         },
     ];
 
-    // Close dropdown when clicking outside
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -80,10 +142,7 @@ export function TopTabBar({
     }, []);
 
     const handleClick = (item) => {
-        if (item.action) {
-            item.action();
-            setOpenDropdown(null);
-        } else if (item.children) {
+        if (item.children) {
             setOpenDropdown(openDropdown === item.id ? null : item.id);
         } else {
             onNavigate(item.id);
@@ -107,139 +166,227 @@ export function TopTabBar({
         <header 
             className={cn(
                 "sticky top-0 z-40 w-full",
-                "flex items-center justify-between px-2 py-2 md:px-4 md:py-3",
+                "flex items-center justify-between px-4 py-3 md:px-6",
+                "bg-transparent",
                 className
             )}
         >
-            {/* Left: User Avatar */}
-            <div className="flex items-center gap-2 shrink-0">
-                <div className="w-8 h-8 flex items-center justify-center rounded-xl bg-gradient-to-br from-orange-400 to-rose-400 shadow-md">
-                    <User size={16} className="text-white" />
+            {/* Left: User Name + Tier Badge */}
+            <motion.div 
+                className="nav-user-container"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.4 }}
+            >
+                <span className="nav-user-name">
+                    {user?.name || 'User'}
+                </span>
+                <div className={cn(
+                    "flex items-center gap-1.5 px-2 py-1 rounded-lg",
+                    tier.bg, tier.border, "border"
+                )}>
+                    <TierIcon size={12} className={tier.color} />
+                    <span className={cn("text-[10px] font-bold uppercase tracking-wide", tier.color)}>
+                        {user?.tier || 'Bronze'}
+                    </span>
                 </div>
-                <div className="hidden md:block">
-                    <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold text-gray-800">{user.name}</span>
-                        <span className={cn(
-                            "text-[9px] font-bold px-1.5 py-0.5 rounded border",
-                            plan.color
-                        )}>
-                            {plan.label}
-                        </span>
-                    </div>
-                    <div className="flex items-center gap-1 text-[10px] text-gray-400">
-                        <span className={cn(
-                            "w-1.5 h-1.5 rounded-full",
-                            user.isOnline ? "bg-emerald-500" : "bg-gray-400"
-                        )} />
-                        <span>{user.isOnline ? 'Online' : 'Offline'}</span>
-                    </div>
-                </div>
-            </div>
+            </motion.div>
 
-            {/* Center: Tab Navigation - Icon only on mobile */}
-            <nav ref={dropdownRef} className="flex items-center p-0.5 md:p-1 rounded-lg md:rounded-xl bg-white/90 backdrop-blur-sm shadow-lg border border-gray-100/80">
+            {/* Center: Navigation */}
+            <motion.nav 
+                ref={dropdownRef} 
+                className="nav-container"
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.1 }}
+            >
                 {navItems.map((item) => {
                     const isActive = isGroupActive(item);
                     const isOpen = openDropdown === item.id;
                     
                     return (
                         <div key={item.id} className="relative">
-                            <TabButton
+                            <NavButton
                                 icon={item.icon}
                                 label={item.label}
+                                color={item.color}
                                 active={isActive}
                                 hasDropdown={!!item.children}
                                 isOpen={isOpen}
+                                comingSoon={item.comingSoon}
                                 onClick={() => handleClick(item)}
                             />
                             
-                            {/* Dropdown Menu */}
                             <AnimatePresence>
                                 {item.children && isOpen && (
-                                    <motion.div
-                                        initial={{ opacity: 0, y: 4 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        exit={{ opacity: 0, y: 4 }}
-                                        transition={{ duration: 0.12 }}
-                                        className="absolute top-full left-0 mt-1 w-32 py-1 rounded-lg bg-white shadow-xl border border-gray-200 z-[100]"
-                                    >
-                                        {item.children.map((child) => (
-                                            <DropdownItem
-                                                key={child.id}
-                                                icon={child.icon}
-                                                label={child.label}
-                                                active={activeRoute === child.id}
-                                                onClick={() => handleChildClick(child.id)}
-                                            />
-                                        ))}
-                                    </motion.div>
+                                    <DropdownMenu
+                                        items={item.children}
+                                        activeRoute={activeRoute}
+                                        onSelect={handleChildClick}
+                                    />
                                 )}
                             </AnimatePresence>
                         </div>
                     );
                 })}
-            </nav>
+            </motion.nav>
 
-            {/* Right: Credits - Compact on mobile */}
-            <div className="flex items-center shrink-0">
-                <div className="flex items-center gap-1 px-2 py-1 md:px-3 md:py-1.5 rounded-lg bg-white/90 backdrop-blur-sm shadow border border-gray-100/80">
-                    <Coins size={12} className="text-yellow-500 md:w-[14px] md:h-[14px]" />
-                    <span className="text-[10px] md:text-xs font-bold text-gray-700">{user.credits.toLocaleString()}</span>
-                </div>
+            {/* Right: Theme Toggle + User Profile */}
+            <div className="flex items-center gap-3">
+                <ThemeToggle />
+                <UserProfileBadge
+                    user={user}
+                    onSettingsClick={onSettingsClick}
+                    onHelpClick={onHelpClick}
+                    onLogoutClick={onLogoutClick}
+                />
             </div>
         </header>
     );
 }
 
-/**
- * TabButton - Nav button (responsive)
- */
-function TabButton({ icon: Icon, label, active, hasDropdown, isOpen, onClick }) {
+function NavButton({ icon: Icon, label, color = 'blue', active, hasDropdown, isOpen, comingSoon, onClick }) {
+    const colorConfig = iconColors[color] || iconColors.blue;
+    
     return (
-        <button
+        <motion.button
             onClick={onClick}
             className={cn(
-                "flex items-center gap-1 px-2 py-1.5 md:gap-1.5 md:px-3 md:py-2 rounded-md md:rounded-lg text-[10px] md:text-xs font-semibold transition-all",
-                active
-                    ? "text-white bg-gradient-to-r from-orange-500 to-orange-400 shadow-sm"
-                    : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+                "nav-btn",
+                active && "nav-btn-active",
+                comingSoon && "nav-btn-coming-soon"
             )}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
         >
-            <Icon size={12} className={cn("md:w-[14px] md:h-[14px]", active ? "text-white" : "text-gray-400")} />
-            <span className="hidden md:inline">{label}</span>
-            {hasDropdown && (
-                <ChevronDown 
-                    size={8} 
-                    className={cn(
-                        "md:w-[10px] md:h-[10px] transition-transform duration-200",
-                        active ? "text-white/80" : "text-gray-400",
-                        isOpen && "rotate-180"
-                    )}
+            {/* Always show colorful icon background */}
+            <div className={cn(
+                "nav-icon-container",
+                active ? colorConfig.activeBg : colorConfig.bg
+            )}>
+                <Icon 
+                    size={15} 
+                    className={active ? colorConfig.activeIcon : colorConfig.icon} 
                 />
+            </div>
+            <span className={cn("nav-btn-label hidden md:inline")}>{label}</span>
+            {comingSoon && (
+                <span className="nav-badge-soon">Soon</span>
             )}
-        </button>
+            {hasDropdown && (
+                <motion.div
+                    animate={{ rotate: isOpen ? 180 : 0 }}
+                    transition={{ duration: 0.2 }}
+                >
+                    <ChevronDown size={12} className="nav-chevron" />
+                </motion.div>
+            )}
+        </motion.button>
     );
 }
 
-/**
- * DropdownItem - Individual dropdown menu item
- */
-function DropdownItem({ icon: Icon, label, active, onClick }) {
+function DropdownMenu({ items, activeRoute, onSelect }) {
     return (
-        <button
+        <motion.div
+            initial={{ opacity: 0, y: 8, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 8, scale: 0.96 }}
+            transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+            className="nav-dropdown"
+        >
+            {items.map((item, index) => (
+                <DropdownItem
+                    key={item.id}
+                    icon={item.icon}
+                    label={item.label}
+                    desc={item.desc}
+                    color={item.color}
+                    active={activeRoute === item.id}
+                    onClick={() => onSelect(item.id)}
+                    index={index}
+                    comingSoon={item.comingSoon}
+                />
+            ))}
+        </motion.div>
+    );
+}
+
+// Color configurations for icons - all nav items get colorful icons
+const iconColors = {
+    blue: { bg: 'bg-blue-100 dark:bg-blue-500/20', icon: 'text-blue-600 dark:text-blue-400', activeBg: 'bg-blue-500', activeIcon: 'text-white' },
+    amber: { bg: 'bg-amber-100 dark:bg-amber-500/20', icon: 'text-amber-600 dark:text-amber-400', activeBg: 'bg-amber-500', activeIcon: 'text-white' },
+    purple: { bg: 'bg-purple-100 dark:bg-purple-500/20', icon: 'text-purple-600 dark:text-purple-400', activeBg: 'bg-purple-500', activeIcon: 'text-white' },
+    emerald: { bg: 'bg-emerald-100 dark:bg-emerald-500/20', icon: 'text-emerald-600 dark:text-emerald-400', activeBg: 'bg-emerald-500', activeIcon: 'text-white' },
+    teal: { bg: 'bg-teal-100 dark:bg-teal-500/20', icon: 'text-teal-600 dark:text-teal-400', activeBg: 'bg-teal-500', activeIcon: 'text-white' },
+    orange: { bg: 'bg-orange-100 dark:bg-orange-500/20', icon: 'text-orange-600 dark:text-orange-400', activeBg: 'bg-orange-500', activeIcon: 'text-white' },
+    violet: { bg: 'bg-violet-100 dark:bg-violet-500/20', icon: 'text-violet-600 dark:text-violet-400', activeBg: 'bg-violet-500', activeIcon: 'text-white' },
+    rose: { bg: 'bg-rose-100 dark:bg-rose-500/20', icon: 'text-rose-600 dark:text-rose-400', activeBg: 'bg-rose-500', activeIcon: 'text-white' },
+    pink: { bg: 'bg-pink-100 dark:bg-pink-500/20', icon: 'text-pink-600 dark:text-pink-400', activeBg: 'bg-pink-500', activeIcon: 'text-white' },
+    green: { bg: 'bg-green-100 dark:bg-green-500/20', icon: 'text-green-600 dark:text-green-400', activeBg: 'bg-green-500', activeIcon: 'text-white' },
+};
+
+function DropdownItem({ icon: Icon, label, desc, active, onClick, index, color = 'blue', comingSoon }) {
+    const colorConfig = iconColors[color] || iconColors.blue;
+    
+    return (
+        <motion.button
             onClick={onClick}
             className={cn(
-                "w-full flex items-center gap-2 px-3 py-2 text-left text-xs transition-all duration-150",
-                active
-                    ? "text-orange-600 bg-orange-50"
-                    : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
+                "nav-dropdown-item",
+                active && "nav-dropdown-item-active",
+                comingSoon && "opacity-60"
             )}
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: index * 0.05 }}
+            whileTap={{ scale: 0.98 }}
         >
-            <Icon 
-                size={12} 
-                className={active ? "text-orange-500" : "text-gray-400"}
-            />
-            <span className={active ? "font-semibold" : "font-medium"}>{label}</span>
-        </button>
+            {/* Colorful Icon */}
+            <motion.div 
+                className={cn(
+                    "nav-dropdown-icon",
+                    active ? colorConfig.activeBg : colorConfig.bg
+                )}
+                whileHover={{ scale: 1.05 }}
+            >
+                <Icon 
+                    size={20} 
+                    className={active ? colorConfig.activeIcon : colorConfig.icon} 
+                />
+            </motion.div>
+            
+            {/* Text */}
+            <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                    <p className={cn(
+                        "nav-dropdown-item-label",
+                        active && "nav-dropdown-item-active"
+                    )}>
+                        {label}
+                    </p>
+                    {comingSoon && (
+                        <span className="nav-badge-soon">Soon</span>
+                    )}
+                </div>
+                {desc && (
+                    <p className="nav-dropdown-item-desc">{desc}</p>
+                )}
+            </div>
+            
+            {/* Check mark for active */}
+            <AnimatePresence>
+                {active && (
+                    <motion.div
+                        initial={{ scale: 0, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0, opacity: 0 }}
+                        transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                        className="flex items-center justify-center w-6 h-6 rounded-full bg-luma-coral"
+                    >
+                        <Check size={14} className="text-white" strokeWidth={3} />
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </motion.button>
     );
 }

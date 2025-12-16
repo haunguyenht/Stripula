@@ -91,22 +91,44 @@ export default function StripeOwn() {
         return settings.skKey;
     };
 
+    // Handle key selection - auto-update settings with selected key's SK and PK
+    const handleKeySelect = (index) => {
+        setSelectedKeyIndex(index);
+        if (index >= 0 && keyResults[index]) {
+            const selectedResult = keyResults[index];
+            setSettings(prev => ({
+                ...prev,
+                skKey: selectedResult.fullKey || '',
+                pkKey: selectedResult.pkKey || '',
+            }));
+        } else {
+            // Manual input - clear the fields
+            setSettings(prev => ({
+                ...prev,
+                skKey: '',
+                pkKey: '',
+            }));
+        }
+    };
+
     // Mode switcher component to pass to panels
     const modeSwitcher = (
         <div className="flex items-center justify-between">
             {/* Mode Toggle */}
-            <div className="flex items-center gap-0.5 p-0.5 md:p-1 rounded-lg md:rounded-xl bg-gray-50 border border-gray-100">
+            <div className="inline-flex items-center gap-1 p-1.5 md:p-2 rounded-2xl liquid-blur">
                 <ModeTab
                     active={activeTab === 'keys'}
                     onClick={() => setActiveTab('keys')}
                     icon={Key}
                     label="Keys"
+                    iconColor={activeTab === 'keys' ? "text-amber-500 dark:text-cyan-400" : undefined}
                 />
                 <ModeTab
                     active={activeTab === 'cards'}
                     onClick={() => setActiveTab('cards')}
                     icon={CreditCard}
                     label="Cards"
+                    iconColor={activeTab === 'cards' ? "text-[#E8836B] dark:text-pink-400" : undefined}
                 />
             </div>
 
@@ -128,7 +150,7 @@ export default function StripeOwn() {
                     keyStats={keyStats}
                     setKeyStats={setKeyStats}
                     selectedKeyIndex={selectedKeyIndex}
-                    setSelectedKeyIndex={setSelectedKeyIndex}
+                    onKeySelect={handleKeySelect}
                     isLoading={isLoading}
                     setIsLoading={setIsLoading}
                     currentItem={currentItem}
@@ -144,8 +166,11 @@ export default function StripeOwn() {
                     setCardResults={setCardResults}
                     cardStats={cardStats}
                     setCardStats={setCardStats}
-                    settings={{ ...settings, skKey: getActiveSkKey() }}
+                    settings={settings}
                     onSettingsChange={setSettings}
+                    keyResults={keyResults}
+                    selectedKeyIndex={selectedKeyIndex}
+                    onKeySelect={handleKeySelect}
                     isLoading={isLoading}
                     setIsLoading={setIsLoading}
                     currentItem={currentItem}
@@ -162,21 +187,24 @@ export default function StripeOwn() {
 }
 
 /**
- * ModeTab - Mode toggle with icon and label (responsive)
+ * ModeTab - Mode toggle with icon and label (responsive) - Apple style
  */
-function ModeTab({ active, onClick, icon: Icon, label }) {
+function ModeTab({ active, onClick, icon: Icon, label, iconColor }) {
+    const defaultIconColor = active ? "text-[#E8836B] dark:text-pink-400" : "text-gray-400 dark:text-gray-500";
+    
     return (
         <button
             className={cn(
-                "flex items-center gap-1 px-2 py-1 md:gap-1.5 md:px-3 md:py-1.5 rounded-md md:rounded-lg text-[10px] md:text-xs font-semibold transition-all",
+                "flex items-center gap-1.5 px-3 py-2 md:gap-2 md:px-4 md:py-2.5 rounded-apple text-xs md:text-sm font-apple-medium transition-all duration-200",
                 active
-                    ? "bg-white text-gray-800 shadow-sm"
-                    : "text-gray-500 hover:text-gray-700"
+                    ? "bg-white dark:bg-white/10 text-gray-800 dark:text-gray-100 shadow-[0_1px_3px_rgba(0,0,0,0.08)] dark:shadow-[0_1px_3px_rgba(0,0,0,0.3)]"
+                    : "text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-white/50 dark:hover:bg-white/5"
             )}
             onClick={onClick}
         >
-            <Icon size={12} className={cn("md:w-[14px] md:h-[14px]", active ? "text-orange-500" : "text-gray-400")} />
+            <Icon size={14} className={cn("md:w-4 md:h-4", iconColor || defaultIconColor)} />
             <span>{label}</span>
         </button>
     );
 }
+
