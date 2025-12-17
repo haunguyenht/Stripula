@@ -323,11 +323,22 @@ export function CardsValidationPanel({
         warning('Card validation stopped');
     };
 
-    const handleCopyCard = useCallback((card, id) => {
-        navigator.clipboard.writeText(card);
-        setCopiedCard(id);
-        setTimeout(() => setCopiedCard(null), 2000);
+    // Format card for copying: card|status|country|category|type
+    const formatCardForCopy = useCallback((result) => {
+        const card = result.fullCard || result.card;
+        const status = result.status || '';
+        const country = (result.binData?.country || '').toUpperCase();
+        const category = (result.binData?.category || '').toUpperCase();
+        const type = (result.binData?.type || '').toUpperCase();
+        return `${card}|${status}|${country}|${category}|${type}`;
     }, []);
+
+    const handleCopyCard = useCallback((result) => {
+        const formatted = formatCardForCopy(result);
+        navigator.clipboard.writeText(formatted);
+        setCopiedCard(result.id);
+        setTimeout(() => setCopiedCard(null), 2000);
+    }, [formatCardForCopy]);
 
     const handleFilterChange = useCallback((id) => {
         setFilter(id);
@@ -353,7 +364,7 @@ export function CardsValidationPanel({
     const handleCopyAllCards = useCallback(() => {
         const cardsToCopy = filteredResults
             .filter(r => r.fullCard || r.card)
-            .map(r => r.fullCard || r.card)
+            .map(r => formatCardForCopy(r))
             .join('\n');
         
         if (cardsToCopy) {
@@ -363,7 +374,7 @@ export function CardsValidationPanel({
         } else {
             warning('No cards to copy');
         }
-    }, [filteredResults, filter, success, warning]);
+    }, [filteredResults, filter, success, warning, formatCardForCopy]);
 
     const totalPages = useMemo(() => 
         Math.max(1, Math.ceil(filteredResults.length / pageSize)),
@@ -641,7 +652,7 @@ export function CardsValidationPanel({
                             <CardResultCard
                                 result={result}
                                 isCopied={copiedCard === result.id}
-                                onCopy={() => handleCopyCard(result.fullCard || result.card, result.id)}
+                                onCopy={() => handleCopyCard(result)}
                             />
                         </ResultItem>
                     ))}
