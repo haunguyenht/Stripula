@@ -34,6 +34,8 @@ export class ChargeValidator extends BaseValidator {
 
     async _doValidate(card, keys, proxy, options, attempt = 1) {
         const startTime = Date.now();
+        let binData = null;
+        
         if (attempt === 1) {
             this.logStart(card, 'charge+refund');
         } else {
@@ -42,7 +44,7 @@ export class ChargeValidator extends BaseValidator {
 
         try {
             // Lookup BIN first (single lookup, pass to Playwright)
-            const binData = await this.lookupBin(card);
+            binData = await this.lookupBin(card);
 
             // Step 1: Create PaymentMethod via Playwright
             console.log(`[${this.getName()}] Step 1: Creating PaymentMethod...`);
@@ -161,7 +163,16 @@ export class ChargeValidator extends BaseValidator {
             
             const result = this.handleError(error);
             
-            // Include risk data in the result
+            // Include binData and risk data in the result (with fallback)
+            result.binData = binData || {
+                scheme: null,
+                type: null,
+                category: null,
+                country: null,
+                countryCode: null,
+                countryEmoji: null,
+                bank: null
+            };
             result.riskData = {
                 riskLevel: outcome.risk_level,
                 riskScore: outcome.risk_score,

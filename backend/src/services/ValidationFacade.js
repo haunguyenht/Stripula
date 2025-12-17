@@ -152,12 +152,14 @@ export class ValidationFacade extends EventEmitter {
 
                     const result = await validator.validate(cardEntity, keys, proxyEntity, { chargeAmount });
 
-                    // Add card info to result
+                    // Add card info to result (including CVV for copy)
                     result.card = {
                         last4: cardEntity.last4,
                         number: cardEntity.number,
                         expMonth: cardEntity.expMonth,
-                        expYear: cardEntity.expYear
+                        expYear: cardEntity.expYear,
+                        cvc: cardEntity.cvv,
+                        cvv: cardEntity.cvv
                     };
                     result.index = cardIndex;
 

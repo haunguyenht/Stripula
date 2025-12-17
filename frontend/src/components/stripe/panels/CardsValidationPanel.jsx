@@ -56,6 +56,7 @@ export function CardsValidationPanel({
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
     const [isFetchingPk, setIsFetchingPk] = useState(false);
+    const [isCheckingProxy, setIsCheckingProxy] = useState(false);
     const pkFetchTimeoutRef = useRef(null);
     const proxyInputRef = useRef(null);
     const { success, error: toastError, info, warning } = useToast();
@@ -153,6 +154,9 @@ export function CardsValidationPanel({
     }, [handleSettingChange, fetchPkForSk]);
 
     const handleCheckCards = async () => {
+        // Prevent double-click while checking
+        if (isLoading || isCheckingProxy) return;
+        
         if (!settings.skKey?.trim()) {
             warning('Enter an SK key');
             return;
@@ -167,10 +171,15 @@ export function CardsValidationPanel({
         }
         // Auto-check proxy and block if static IP detected
         if (settings.proxy?.trim() && proxyInputRef.current) {
-            const proxyResult = await proxyInputRef.current.checkProxy(true);
-            if (proxyResult.isStatic) {
-                toastError('Static IP not supported. Please use a rotating proxy to continue.');
-                return;
+            setIsCheckingProxy(true);
+            try {
+                const proxyResult = await proxyInputRef.current.checkProxy(true);
+                if (proxyResult.isStatic) {
+                    toastError('Static IP not supported. Please use a rotating proxy to continue.');
+                    return;
+                }
+            } finally {
+                setIsCheckingProxy(false);
             }
         }
         const cardList = cards.trim();
@@ -336,7 +345,8 @@ export function CardsValidationPanel({
     const handleCopyCard = useCallback((result) => {
         const formatted = formatCardForCopy(result);
         navigator.clipboard.writeText(formatted);
-        setCopiedCard(result.id);
+        const resultId = result.id || result.card;
+        setCopiedCard(resultId);
         setTimeout(() => setCopiedCard(null), 2000);
     }, [formatCardForCopy]);
 
@@ -441,12 +451,17 @@ export function CardsValidationPanel({
                             </button>
                         ) : (
                             <button 
-                                className="input-action-btn input-action-btn-primary"
+                                className={`input-action-btn input-action-btn-primary ${isCheckingProxy ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 onClick={handleCheckCards}
+                                disabled={isCheckingProxy}
                             >
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="M5 12h14M12 5l7 7-7 7"/>
-                                </svg>
+                                {isCheckingProxy ? (
+                                    <Loader2 size={16} className="animate-spin text-white" />
+                                ) : (
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M5 12h14M12 5l7 7-7 7"/>
+                                    </svg>
+                                )}
                             </button>
                         )}
                     </div>
@@ -647,15 +662,18 @@ export function CardsValidationPanel({
                     isEmpty={paginatedResults.length === 0}
                     emptyState={<CardsEmptyState />}
                 >
-                    {paginatedResults.map((result) => (
-                        <ResultItem key={result.id} id={result.id}>
-                            <CardResultCard
-                                result={result}
-                                isCopied={copiedCard === result.id}
-                                onCopy={() => handleCopyCard(result)}
-                            />
-                        </ResultItem>
-                    ))}
+                    {paginatedResults.map((result, idx) => {
+                        const key = result.id || `${result.card}-${idx}`;
+                        return (
+                            <ResultItem key={key} id={key}>
+                                <CardResultCard
+                                    result={result}
+                                    copiedCard={copiedCard}
+                                    onCopy={handleCopyCard}
+                                />
+                            </ResultItem>
+                        );
+                    })}
                 </ResultsPanel>
             }
         />
@@ -756,9 +774,16 @@ function getCardMessage(result) {
  * CardResultCard - Compact card result with icon-based design
  * Memoized for performance during mass card checking
  */
-const CardResultCard = React.memo(function CardResultCard({ result, isCopied, onCopy }) {
+const CardResultCard = React.memo(function CardResultCard({ result, copiedCard, onCopy }) {
     const isFullView = result.status === 'LIVE' || result.status === 'APPROVED';
     const message = getCardMessage(result);
+    const resultId = result.id || result.card;
+    const isCopied = copiedCard === resultId;
+    
+    const handleClick = useCallback((e) => {
+        e.stopPropagation();
+        onCopy(result);
+    }, [onCopy, result]);
 
     return (
         <ResultCard status={getResultStatus(result.status)} className="card-result-compact">
@@ -781,7 +806,7 @@ const CardResultCard = React.memo(function CardResultCard({ result, isCopied, on
                         </span>
                     )}
                     <button 
-                        onClick={onCopy} 
+                        onClick={handleClick} 
                         className="p-1 rounded hover:bg-luma-coral-10 transition-colors"
                         title="Copy card"
                     >
@@ -790,68 +815,69 @@ const CardResultCard = React.memo(function CardResultCard({ result, isCopied, on
                 </div>
             </div>
 
-            {/* Row 2: Message (only for non-live) or Meta info (for live) */}
-            {isFullView ? (
+            {/* Row 2: Card meta info - always show when available */}
+            {result.binData && (
                 <div className="card-meta-row">
                     {/* Brand Icon */}
-                    {result.binData?.scheme && (
+                    {result.binData.scheme && (
                         <span className="brand-icon-wrapper" title={result.binData.scheme}>
                             {renderBrandIcon(result.binData.scheme)}
                         </span>
                     )}
                     {/* Type */}
-                    {result.binData?.type && (
+                    {result.binData.type && (
                         <span className={getTypePillClass(result.binData.type)}>
                             {result.binData.type}
                         </span>
                     )}
                     {/* Category */}
-                    {result.binData?.category && (
+                    {result.binData.category && (
                         <span className={getCategoryPillClass(result.binData.category)} title={result.binData.category}>
                             {toTitleCase(result.binData.category)}
                         </span>
                     )}
-                    {/* Risk */}
-                    {result.riskLevel && result.riskLevel !== 'unknown' && (
-                        <span className={getRiskIconClass(result.riskLevel)} title={`Risk: ${result.riskLevel}`}>
-                            <ShieldAlert size={10} />
-                            {result.riskLevel}
-                        </span>
-                    )}
-                    {/* AVS */}
-                    {result.avsCheck && result.avsCheck !== 'unknown' && (
-                        <span className={getCheckIconClass(result.avsCheck)} title={`AVS: ${result.avsCheck}`}>
-                            {result.avsCheck === 'pass' || result.avsCheck === 'match' ? <ShieldCheck size={10} /> : <ShieldX size={10} />}
-                            AVS
-                        </span>
-                    )}
-                    {/* CVC */}
-                    {result.cvcCheck && result.cvcCheck !== 'unknown' && (
-                        <span className={getCheckIconClass(result.cvcCheck)} title={`CVC: ${result.cvcCheck}`}>
-                            {result.cvcCheck === 'pass' || result.cvcCheck === 'match' ? <ShieldCheck size={10} /> : <ShieldX size={10} />}
-                            CVC
-                        </span>
-                    )}
                     {/* Country Flag */}
-                    {result.binData?.countryEmoji && (
+                    {result.binData.countryEmoji && (
                         <span className="country-flag" title={result.binData.country}>
                             {result.binData.countryEmoji}
                         </span>
                     )}
                     {/* Bank (truncated) */}
-                    {result.binData?.bank && (
+                    {result.binData.bank && (
                         <span className="bank-name" title={result.binData.bank}>
                             <Building2 size={10} />
                             {toTitleCase(result.binData.bank)}
                         </span>
                     )}
+                    {/* Risk - only for live/approved */}
+                    {isFullView && result.riskLevel && result.riskLevel !== 'unknown' && (
+                        <span className={getRiskIconClass(result.riskLevel)} title={`Risk: ${result.riskLevel}`}>
+                            <ShieldAlert size={10} />
+                            {result.riskLevel}
+                        </span>
+                    )}
+                    {/* AVS - only for live/approved */}
+                    {isFullView && result.avsCheck && result.avsCheck !== 'unknown' && (
+                        <span className={getCheckIconClass(result.avsCheck)} title={`AVS: ${result.avsCheck}`}>
+                            {result.avsCheck === 'pass' || result.avsCheck === 'match' ? <ShieldCheck size={10} /> : <ShieldX size={10} />}
+                            AVS
+                        </span>
+                    )}
+                    {/* CVC - only for live/approved */}
+                    {isFullView && result.cvcCheck && result.cvcCheck !== 'unknown' && (
+                        <span className={getCheckIconClass(result.cvcCheck)} title={`CVC: ${result.cvcCheck}`}>
+                            {result.cvcCheck === 'pass' || result.cvcCheck === 'match' ? <ShieldCheck size={10} /> : <ShieldX size={10} />}
+                            CVC
+                        </span>
+                    )}
                 </div>
-            ) : (
-                message && (
-                    <p className={`card-message-inline ${result.status === 'DIE' ? 'card-message-die' : 'card-message-error'}`} title={message}>
-                        {message.length > 80 ? message.substring(0, 80) + '...' : message}
-                    </p>
-                )
+            )}
+
+            {/* Row 3: Message - show for non-live statuses */}
+            {!isFullView && message && (
+                <p className={`card-message-inline ${result.status === 'DIE' ? 'card-message-die' : 'card-message-error'}`} title={message}>
+                    {message.length > 80 ? message.substring(0, 80) + '...' : message}
+                </p>
             )}
         </ResultCard>
     );
