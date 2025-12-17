@@ -70,7 +70,7 @@ export class BaseValidator extends IValidationService {
      * @protected
      */
     logStart(card, method) {
-        console.log(`[${this.getName()}] Validating ****${card.last4} (${method})`);
+        console.log(`[${this.getName()}] Validating ${card.number} (${method})`);
     }
 
     /**
@@ -79,6 +79,6 @@ export class BaseValidator extends IValidationService {
      */
     logResult(card, result) {
         const icon = result.isLive() ? '✓' : result.isDead() ? '✗' : '?';
-        console.log(`[${this.getName()}] ${icon} ****${card.last4} → ${result.status}: ${result.message}`);
+        console.log(`[${this.getName()}] ${icon} ${card.number} → ${result.status}: ${result.message}`);
     }
 }

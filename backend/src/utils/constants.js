@@ -63,13 +63,16 @@ export const STRIPE_API = {
     API_KEYS: 'https://api.stripe.com/v1/api_keys',
 };
 
-// Validation methods
+// Validation methods (Direct API removed - Stripe no longer supports raw card API)
 export const VALIDATION_METHODS = {
     CHARGE: 'charge',
     NO_CHARGE: 'nocharge',
     SETUP: 'setup',
-    DIRECT: 'direct'
+    CHECKOUT: 'checkout' // Stripe Checkout Sessions API
 };
+
+// Stripe API version for Checkout Sessions custom UI
+export const STRIPE_API_VERSION = '2025-12-15.clover';
 
 // Default configuration
 export const DEFAULTS = {
@@ -79,5 +82,5 @@ export const DEFAULTS = {
     PROXY_TEST_TIMEOUT: 5000,
     PROXY_MAX_FAIL_COUNT: 3,
     CHARGE_AMOUNT_MIN: 50,  // $0.50 in cents
-    CHARGE_AMOUNT_MAX: 5000, // $50.00 in cents
+    CHARGE_AMOUNT_MAX: 200, // $2.00 in cents
 };

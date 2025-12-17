@@ -1,5 +1,6 @@
-import { useState, useMemo } from 'react';
-import { CreditCard, Trash2, Copy, Check, Zap, Key, ChevronDown } from 'lucide-react';
+import React, { useState, useMemo, useRef, useCallback } from 'react';
+import { CreditCard, Trash2, Copy, Check, Zap, Key, ChevronDown, Loader2, ShieldCheck, ShieldX, ShieldAlert, Clock, Building2 } from 'lucide-react';
+import { VisaFlatRoundedIcon, MastercardFlatRoundedIcon, AmericanExpressFlatRoundedIcon, DiscoverFlatRoundedIcon, JCBFlatRoundedIcon, UnionPayFlatRoundedIcon, DinersClubFlatRoundedIcon, GenericFlatRoundedIcon } from 'react-svg-credit-card-payment-icons';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '../../../hooks/useToast';
 import { useCardFilters } from '../../../hooks/useCardFilters';
@@ -11,12 +12,14 @@ import { TwoPanelLayout } from '../../layout/TwoPanelLayout';
 import { ResultsPanel, ResultItem, ProgressBar } from '../ResultsPanel';
 import { Badge } from '../../ui/Badge';
 import { ResultCard } from '../../ui/Card';
-import { Button, IconButton } from '../../ui/Button';
+import { Button } from '../../ui/Button';
 import { Input, RangeSlider } from '../../ui/Input';
+import { ProxyInput } from '../../ui/ProxyInput';
+import { Celebration, useCelebration } from '../../ui/Celebration';
 import { cn } from '../../../lib/utils';
 
 // Utils
-import { parseProxy } from '../../../utils/proxy';
+import { parseProxy } from '../../../utils/proxy.js';
 
 /**
  * CardsValidationPanel - Two-panel layout for card validation
@@ -51,8 +54,12 @@ export function CardsValidationPanel({
     const [copiedCard, setCopiedCard] = useState(null);
     const [filter, setFilter] = useState('all');
     const [page, setPage] = useState(1);
-    const pageSize = 20;
+    const [pageSize, setPageSize] = useState(10);
+    const [isFetchingPk, setIsFetchingPk] = useState(false);
+    const pkFetchTimeoutRef = useRef(null);
+    const proxyInputRef = useRef(null);
     const { success, error: toastError, info, warning } = useToast();
+    const { trigger: celebrationTrigger, celebrate } = useCelebration();
 
     // Filter live keys for dropdown
     const liveKeys = useMemo(() => 
@@ -73,9 +80,77 @@ export function CardsValidationPanel({
         setPage(1);
     };
 
-    const handleSettingChange = (key, value) => {
-        onSettingsChange?.({ ...settings, [key]: value });
-    };
+    const handleSettingChange = useCallback((key, value) => {
+        onSettingsChange?.((prev) => ({ ...prev, [key]: value }));
+    }, [onSettingsChange]);
+
+    const fetchPkForSk = useCallback(async (skKey) => {
+        if (!skKey || !skKey.startsWith('sk_live_') || skKey.length < 20) return;
+        
+        const trimmedKey = skKey.trim();
+        const existingKey = keyResults.find(k => k.fullKey?.trim() === trimmedKey);
+        if (existingKey) {
+            if (existingKey.status === 'DEAD') {
+                warning('This key is dead');
+                return;
+            }
+            if (existingKey.pkKey) {
+                onSettingsChange?.((prev) => ({ ...prev, skKey: trimmedKey, pkKey: existingKey.pkKey }));
+                success(`PK key found • ${existingKey.status}`);
+                return;
+            }
+        }
+        
+        setIsFetchingPk(true);
+        info('Fetching PK key...');
+        try {
+            const response = await fetch('/api/stripe-own/check-key', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ skKey })
+            });
+            const result = await response.json();
+            
+            if (result.pkKey) {
+                onSettingsChange?.((prev) => ({ ...prev, skKey, pkKey: result.pkKey }));
+                success(`PK key fetched • ${result.status}`);
+            } else if (result.status === 'DEAD') {
+                warning(result.message || 'Key is dead');
+            } else {
+                warning('Could not fetch PK key');
+            }
+        } catch (err) {
+            console.error('Failed to fetch PK:', err);
+            toastError('Failed to fetch PK key');
+        } finally {
+            setIsFetchingPk(false);
+        }
+    }, [keyResults, onSettingsChange, info, success, warning, toastError]);
+
+    const handlePkKeyChange = useCallback((value) => {
+        const currentSk = settings?.skKey?.trim();
+        const existingKey = currentSk ? keyResults.find(k => k.fullKey?.trim() === currentSk) : null;
+        
+        if (existingKey?.pkKey && value.trim() !== existingKey.pkKey) {
+            toastError('PK key does not match this SK key');
+        }
+        
+        handleSettingChange('pkKey', value);
+    }, [settings?.skKey, keyResults, handleSettingChange, toastError]);
+
+    const handleSkKeyChange = useCallback((value) => {
+        handleSettingChange('skKey', value);
+        
+        if (pkFetchTimeoutRef.current) {
+            clearTimeout(pkFetchTimeoutRef.current);
+        }
+        
+        if (value.startsWith('sk_live_') && value.length >= 30) {
+            pkFetchTimeoutRef.current = setTimeout(() => {
+                fetchPkForSk(value);
+            }, 500);
+        }
+    }, [handleSettingChange, fetchPkForSk]);
 
     const handleCheckCards = async () => {
         if (!settings.skKey?.trim()) {
@@ -90,6 +165,14 @@ export function CardsValidationPanel({
             warning('Proxy is required for charge validation');
             return;
         }
+        // Auto-check proxy and block if static IP detected
+        if (settings.proxy?.trim() && proxyInputRef.current) {
+            const proxyResult = await proxyInputRef.current.checkProxy(true);
+            if (proxyResult.isStatic) {
+                toastError('Static IP not supported. Please use a rotating proxy to continue.');
+                return;
+            }
+        }
         const cardList = cards.trim();
         if (!cardList) {
             warning('Enter at least one card');
@@ -101,15 +184,22 @@ export function CardsValidationPanel({
         const totalCards = cardList.split('\n').filter(l => l.trim()).length;
         setProgress({ current: 0, total: totalCards });
 
-        const methodLabels = { charge: 'Charge', nocharge: 'No Charge', setup: 'Setup', direct: 'Direct' };
+        const methodLabels = { charge: 'Charge', nocharge: 'No Charge', setup: 'Setup' };
         const methodLabel = methodLabels[settings.validationMethod] || 'Charge';
         setCurrentItem(`Starting ${methodLabel} validation...`);
         info(`Starting ${methodLabel} validation for ${totalCards} cards`);
 
+        let currentCards = cards; // Track current cards for real-time removal
+        
         try {
             abortControllerRef.current = new AbortController();
 
             const proxyObj = parseProxy(settings.proxy);
+            // Parse charge amount - convert dollars to cents
+            const chargeAmountCents = settings.chargeAmount 
+                ? Math.round(parseFloat(settings.chargeAmount) * 100) 
+                : null;
+
             const response = await fetch('/api/stripe-own/validate-batch-stream', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -119,7 +209,8 @@ export function CardsValidationPanel({
                     cardList,
                     concurrency: settings.concurrency,
                     proxy: proxyObj,
-                    validationMethod: settings.validationMethod
+                    validationMethod: settings.validationMethod,
+                    chargeAmount: chargeAmountCents
                 }),
                 signal: abortControllerRef.current.signal
             });
@@ -155,7 +246,7 @@ export function CardsValidationPanel({
                     } else if (event === 'progress') {
                         setProgress({ current: data.current, total: data.total });
                         stats = {
-                            approved: data.summary.live || 0,
+                            approved: data.summary.approved || 0,
                             live: data.summary.live || 0,
                             die: data.summary.die || 0,
                             error: data.summary.error || 0,
@@ -166,18 +257,40 @@ export function CardsValidationPanel({
                     } else if (event === 'result') {
                         const r = data;
                         const cardInfo = r.card || {};
-                        const cardDisplay = typeof cardInfo === 'object'
-                            ? `****${cardInfo.last4 || '****'}`
-                            : cardInfo;
+                        // Build full card string with CVV if available
+                        const cvv = cardInfo.cvc || cardInfo.cvv;
                         const fullCard = typeof cardInfo === 'object'
-                            ? `${cardInfo.number}|${cardInfo.expMonth}|${cardInfo.expYear}`
+                            ? `${cardInfo.number}|${cardInfo.expMonth}|${cardInfo.expYear}${cvv ? '|' + cvv : ''}`
                             : cardInfo;
+                        // Generate stable unique id for this result
+                        const resultId = `${fullCard}-${Date.now()}-${newResults.length}`;
                         newResults.unshift({
                             ...r,
-                            card: cardDisplay,
+                            id: resultId,
+                            card: fullCard,
                             fullCard: fullCard
                         });
                         setCardResults([...newResults]);
+                        
+                        // Trigger celebration for APPROVED cards
+                        if (r.status === 'APPROVED') {
+                            celebrate();
+                        }
+                        
+                        // Remove processed card from input immediately
+                        if (typeof cardInfo === 'object' && cardInfo.number) {
+                            const cardNumber = cardInfo.number;
+                            currentCards = currentCards
+                                .split('\n')
+                                .filter(line => {
+                                    const trimmed = line.trim();
+                                    if (!trimmed) return false;
+                                    const lineCardNumber = trimmed.split(/[|,\s]/)[0];
+                                    return lineCardNumber !== cardNumber;
+                                })
+                                .join('\n');
+                            setCards(currentCards);
+                        }
                     }
                 }
             }
@@ -210,36 +323,66 @@ export function CardsValidationPanel({
         warning('Card validation stopped');
     };
 
-    const handleCopyCard = (card, index) => {
+    const handleCopyCard = useCallback((card, id) => {
         navigator.clipboard.writeText(card);
-        setCopiedCard(index);
+        setCopiedCard(id);
         setTimeout(() => setCopiedCard(null), 2000);
-    };
+    }, []);
+
+    const handleFilterChange = useCallback((id) => {
+        setFilter(id);
+        setPage(1);
+    }, []);
+
+    const handlePageSizeChange = useCallback((size) => {
+        setPageSize(size);
+        setPage(1);
+    }, []);
 
     // ══════════════════════════════════════════════════════════════════
     // COMPUTED VALUES
     // ══════════════════════════════════════════════════════════════════
 
-    const cardCount = cards.split('\n').filter(l => l.trim()).length;
+    const cardCount = useMemo(() => 
+        cards.split('\n').filter(l => l.trim()).length,
+        [cards]
+    );
 
     const filteredResults = useCardFilters(cardResults, filter);
 
-    const totalPages = Math.ceil(filteredResults.length / pageSize);
-    const paginatedResults = filteredResults.slice((page - 1) * pageSize, page * pageSize);
+    const handleCopyAllCards = useCallback(() => {
+        const cardsToCopy = filteredResults
+            .filter(r => r.fullCard || r.card)
+            .map(r => r.fullCard || r.card)
+            .join('\n');
+        
+        if (cardsToCopy) {
+            navigator.clipboard.writeText(cardsToCopy);
+            const filterLabel = filter === 'all' ? '' : ` ${filter}`;
+            success(`Copied ${filteredResults.length}${filterLabel} cards`);
+        } else {
+            warning('No cards to copy');
+        }
+    }, [filteredResults, filter, success, warning]);
 
-    const stats = [
+    const totalPages = useMemo(() => 
+        Math.max(1, Math.ceil(filteredResults.length / pageSize)),
+        [filteredResults.length, pageSize]
+    );
+    
+    const paginatedResults = useMemo(() => 
+        filteredResults.slice((page - 1) * pageSize, page * pageSize),
+        [filteredResults, page, pageSize]
+    );
+
+    const stats = useMemo(() => [
         { id: 'all', label: 'All', value: cardStats.total, color: 'default' },
+        { id: 'approved', label: 'Approved', value: cardStats.approved, color: 'coral', showDot: true },
         { id: 'live', label: 'Live', value: cardStats.live, color: 'emerald', showDot: true },
         { id: 'die', label: 'Die', value: cardStats.die, color: 'rose', showDot: true },
         { id: 'error', label: 'Error', value: cardStats.error, color: 'amber', showDot: true },
-    ];
+    ], [cardStats]);
 
-    const methodLabels = {
-        charge: 'Charge + Refund',
-        nocharge: 'No Charge',
-        setup: 'Checkout Session',
-        direct: 'Direct API'
-    };
 
     // ══════════════════════════════════════════════════════════════════
     // RENDER
@@ -333,7 +476,7 @@ export function CardsValidationPanel({
                                 const originalIdx = keyResults.indexOf(key);
                                 return (
                                     <option key={originalIdx} value={originalIdx}>
-                                        {key.status} • {key.key} {key.accountEmail && key.accountEmail !== 'N/A' ? `• ${key.accountEmail}` : ''}
+                                        🟢 {key.key} {key.accountEmail && key.accountEmail !== 'N/A' ? `• ${key.accountEmail}` : ''}
                                     </option>
                                 );
                             })}
@@ -342,33 +485,45 @@ export function CardsValidationPanel({
                     </div>
 
                     <div className="grid grid-cols-2 gap-1.5">
-                        <Input
-                            placeholder="sk_live_..."
-                            value={settings?.skKey || ''}
-                            onChange={(e) => handleSettingChange('skKey', e.target.value)}
-                            disabled={isLoading || !isManualInput}
-                            className={cn(
-                                "text-[10px] h-7 md:h-8 border-luma-coral-15 focus:border-luma-coral-40",
-                                !isManualInput && "opacity-60 bg-gray-100 dark:bg-gray-800"
+                        <div className="relative">
+                            <Input
+                                placeholder="sk_live_..."
+                                value={settings?.skKey || ''}
+                                onChange={(e) => handleSkKeyChange(e.target.value)}
+                                disabled={isLoading || !isManualInput || isFetchingPk}
+                                className={cn(
+                                    "text-[10px] h-7 md:h-8 border-luma-coral-15 focus:border-luma-coral-40",
+                                    !isManualInput && "opacity-60 bg-gray-100 dark:bg-gray-800",
+                                    isFetchingPk && "pr-8"
+                                )}
+                            />
+                            {isFetchingPk && (
+                                <Loader2 size={12} className="absolute right-2 top-1/2 -translate-y-1/2 animate-spin text-luma-coral" />
                             )}
-                        />
-                        <Input
-                            placeholder="pk_live_..."
-                            value={settings?.pkKey || ''}
-                            onChange={(e) => handleSettingChange('pkKey', e.target.value)}
-                            disabled={isLoading || !isManualInput}
-                            className={cn(
-                                "text-[10px] h-7 md:h-8 border-luma-coral-15 focus:border-luma-coral-40",
-                                !isManualInput && "opacity-60 bg-gray-100 dark:bg-gray-800"
+                        </div>
+                        <div className="relative">
+                            <Input
+                                placeholder="pk_live_..."
+                                value={settings?.pkKey || ''}
+                                onChange={(e) => handlePkKeyChange(e.target.value)}
+                                disabled={isLoading || !isManualInput || isFetchingPk}
+                                className={cn(
+                                    "text-[10px] h-7 md:h-8 border-luma-coral-15 focus:border-luma-coral-40",
+                                    !isManualInput && "opacity-60 bg-gray-100 dark:bg-gray-800",
+                                    isFetchingPk && "pr-8"
+                                )}
+                            />
+                            {isFetchingPk && (
+                                <Loader2 size={12} className="absolute right-2 top-1/2 -translate-y-1/2 animate-spin text-luma-coral" />
                             )}
-                        />
+                        </div>
                     </div>
-                    <Input
-                        placeholder="Proxy (optional)"
+                    <ProxyInput
+                        ref={proxyInputRef}
+                        placeholder="Proxy (host:port:user:pass)"
                         value={settings?.proxy || ''}
                         onChange={(e) => handleSettingChange('proxy', e.target.value)}
                         disabled={isLoading}
-                        className="text-[10px] h-7 md:h-8 border-[#E8836B]/15 focus:border-[#E8836B]/40"
                     />
                 </div>
 
@@ -381,13 +536,12 @@ export function CardsValidationPanel({
                         Method
                     </div>
                     
-                    {/* Method pills - 2x2 grid */}
-                    <div className="grid grid-cols-2 gap-1.5 mb-2">
+                    {/* Method pills - 3 columns */}
+                    <div className="grid grid-cols-3 gap-1.5 mb-2">
                         {[
                             { value: 'charge', label: 'Charge' },
                             { value: 'nocharge', label: 'No Charge' },
                             { value: 'setup', label: 'Checkout' },
-                            { value: 'direct', label: 'Direct' },
                         ].map((method) => (
                             <button
                                 key={method.value}
@@ -402,6 +556,25 @@ export function CardsValidationPanel({
                             </button>
                         ))}
                     </div>
+
+                    {/* Charge Amount - only show when charge method is selected */}
+                    {settings?.validationMethod === 'charge' && (
+                        <div className="flex items-center gap-2 pt-2 border-t border-luma-coral-10 mb-2">
+                            <span className="settings-label">Amount $</span>
+                            <input
+                                type="number"
+                                min="0.50"
+                                max="50"
+                                step="0.01"
+                                value={settings?.chargeAmount || ''}
+                                onChange={(e) => handleSettingChange('chargeAmount', e.target.value)}
+                                placeholder="Random"
+                                disabled={isLoading}
+                                className="settings-inline-input flex-1 px-2 py-1 text-[11px] text-center"
+                            />
+                            <span className="settings-hint">0.50-50</span>
+                        </div>
+                    )}
 
                     {/* Concurrency */}
                     <div className="flex items-center gap-2 pt-2 border-t border-luma-coral-10">
@@ -425,6 +598,8 @@ export function CardsValidationPanel({
     );
 
     return (
+        <>
+        <Celebration trigger={celebrationTrigger} />
         <TwoPanelLayout
             modeSwitcher={modeSwitcher}
             drawerOpen={drawerOpen}
@@ -447,85 +622,229 @@ export function CardsValidationPanel({
             }
             resultsPanel={
                 <ResultsPanel
-                    title="Card Results"
-                    subtitle={methodLabels[settings?.validationMethod] || 'Charge + Refund'}
                     stats={stats}
                     activeFilter={filter}
-                    onFilterChange={(id) => { setFilter(id); setPage(1); }}
+                    onFilterChange={handleFilterChange}
                     currentPage={page}
                     totalPages={totalPages}
                     onPageChange={setPage}
+                    pageSize={pageSize}
+                    onPageSizeChange={handlePageSizeChange}
                     onClear={clearResults}
+                    onCopyAll={filteredResults.length > 0 ? handleCopyAllCards : undefined}
                     isLoading={isLoading}
                     isEmpty={paginatedResults.length === 0}
                     emptyState={<CardsEmptyState />}
                 >
-                    {paginatedResults.map((result, idx) => (
-                        <ResultItem key={`${result.card}-${idx}`} id={`${result.card}-${idx}`}>
+                    {paginatedResults.map((result) => (
+                        <ResultItem key={result.id} id={result.id}>
                             <CardResultCard
                                 result={result}
-                                index={idx}
-                                isCopied={copiedCard === idx}
-                                onCopy={() => handleCopyCard(result.fullCard || result.card, idx)}
+                                isCopied={copiedCard === result.id}
+                                onCopy={() => handleCopyCard(result.fullCard || result.card, result.id)}
                             />
                         </ResultItem>
                     ))}
                 </ResultsPanel>
             }
         />
+        </>
     );
+}
+
+// ══════════════════════════════════════════════════════════════════
+// HELPER FUNCTIONS (extracted for performance - avoid recreation on each render)
+// ══════════════════════════════════════════════════════════════════
+
+function toTitleCase(str) {
+    if (!str) return '';
+    return str.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function getStatusVariant(status) {
+    if (status === 'APPROVED') return 'approved';
+    if (status === 'LIVE') return 'live';
+    if (status === 'DIE') return 'die';
+    if (status === 'ERROR') return 'error';
+    if (status === 'RETRY') return 'retry';
+    return 'default';
+}
+
+function getResultStatus(status) {
+    if (status === 'APPROVED' || status === 'LIVE') return 'live';
+    if (status === 'DIE') return 'die';
+    return 'error';
+}
+
+function formatDuration(ms) {
+    if (!ms) return null;
+    return (ms / 1000).toFixed(1);
+}
+
+const BRAND_ICON_PROPS = { width: 28, height: 18 };
+
+function renderBrandIcon(scheme) {
+    const s = scheme?.toLowerCase() || '';
+    if (s === 'visa') return <VisaFlatRoundedIcon {...BRAND_ICON_PROPS} />;
+    if (s === 'mastercard') return <MastercardFlatRoundedIcon {...BRAND_ICON_PROPS} />;
+    if (s === 'amex' || s === 'american express') return <AmericanExpressFlatRoundedIcon {...BRAND_ICON_PROPS} />;
+    if (s === 'discover') return <DiscoverFlatRoundedIcon {...BRAND_ICON_PROPS} />;
+    if (s === 'jcb') return <JCBFlatRoundedIcon {...BRAND_ICON_PROPS} />;
+    if (s === 'unionpay' || s === 'union pay') return <UnionPayFlatRoundedIcon {...BRAND_ICON_PROPS} />;
+    if (s === 'diners' || s === 'diners club') return <DinersClubFlatRoundedIcon {...BRAND_ICON_PROPS} />;
+    return <GenericFlatRoundedIcon {...BRAND_ICON_PROPS} />;
+}
+
+function getCategoryPillClass(category) {
+    if (!category) return null;
+    const c = category.toLowerCase();
+    if (c.includes('platinum')) return 'category-pill category-pill-platinum';
+    if (c.includes('gold')) return 'category-pill category-pill-gold';
+    if (c.includes('business')) return 'category-pill category-pill-business';
+    if (c.includes('corporate')) return 'category-pill category-pill-corporate';
+    if (c.includes('world')) return 'category-pill category-pill-world';
+    if (c.includes('signature')) return 'category-pill category-pill-signature';
+    if (c.includes('infinite')) return 'category-pill category-pill-infinite';
+    if (c.includes('enhanced')) return 'category-pill category-pill-enhanced';
+    if (c.includes('classic')) return 'category-pill category-pill-classic';
+    return 'category-pill category-pill-standard';
+}
+
+function getTypePillClass(type) {
+    const t = type?.toLowerCase() || '';
+    if (t === 'credit') return 'type-pill type-pill-credit';
+    if (t === 'debit') return 'type-pill type-pill-debit';
+    if (t === 'prepaid') return 'type-pill type-pill-prepaid';
+    return 'type-pill';
+}
+
+function getRiskIconClass(level) {
+    if (!level || level === 'unknown') return null;
+    if (level === 'normal' || level === 'low') return 'risk-icon risk-icon-low';
+    if (level === 'elevated' || level === 'medium') return 'risk-icon risk-icon-elevated';
+    return 'risk-icon risk-icon-high';
+}
+
+function getCheckIconClass(check) {
+    if (!check || check === 'unknown' || check === 'unavailable') return 'check-icon check-icon-unknown';
+    if (check === 'pass' || check === 'match') return 'check-icon check-icon-pass';
+    return 'check-icon check-icon-fail';
+}
+
+function getCardMessage(result) {
+    if (!result.message) return null;
+    if (result.status === 'APPROVED') {
+        return result.chargeAmountFormatted ? `Charged ${result.chargeAmountFormatted}` : 'Payment successful';
+    }
+    if (result.status === 'LIVE') return result.message;
+    if (result.status === 'DIE') return result.message.replace(/^Declined:\s*/i, '').replace(/_/g, ' ');
+    return result.message.replace(/^(Error:|Tokenization failed:)\s*/i, '');
 }
 
 /**
- * CardResultCard - Individual card result card with warm theme styling
- * Uses centralized CSS classes for status indicators and text styling
+ * CardResultCard - Compact card result with icon-based design
+ * Memoized for performance during mass card checking
  */
-function CardResultCard({ result, isCopied, onCopy }) {
-    const getStatusVariant = (status) => {
-        if (status === 'APPROVED') return 'approved';
-        if (status === 'LIVE') return 'live';
-        if (status === 'DIE') return 'die';
-        if (status === 'ERROR') return 'error';
-        if (status === 'RETRY') return 'retry';
-        return 'default';
-    };
-
-    const getResultStatus = (status) => {
-        if (status === 'APPROVED' || status === 'LIVE') return 'live';
-        if (status === 'DIE') return 'die';
-        return 'error';
-    };
+const CardResultCard = React.memo(function CardResultCard({ result, isCopied, onCopy }) {
+    const isFullView = result.status === 'LIVE' || result.status === 'APPROVED';
+    const message = getCardMessage(result);
 
     return (
-        <ResultCard status={getResultStatus(result.status)}>
-            <div className="flex items-center justify-between mb-2">
-                <Badge variant={getStatusVariant(result.status)} size="sm">
-                    {result.status}
-                </Badge>
-            <IconButton variant="ghost" onClick={onCopy} className="hover:bg-[#FEF3C7] dark:hover:bg-luma-coral-10">
-                    {isCopied ? <Check size={12} className="text-status-success" /> : <Copy size={12} className="text-luma-muted" />}
-                </IconButton>
-            </div>
-            <p className="text-mono-sm text-[13px] dark:text-gray-200">{result.card}</p>
-            {result.message && (
-                <p className="text-meta mt-1 line-clamp-2">{result.message}</p>
-            )}
-            {result.binData && (
-                <div className="flex items-center gap-2 mt-2 pt-2 border-t border-luma-coral-10">
-                    <span className="bin-scheme-badge">
-                        {result.binData.scheme}
-                    </span>
-                    <span className="bin-type-badge">
-                        {result.binData.type}
-                    </span>
-                    <span className="text-mono-sm text-luma-coral truncate">
-                        {result.binData.bank}
-                    </span>
+        <ResultCard status={getResultStatus(result.status)} className="card-result-compact">
+            {/* Row 1: Status + Card Number + Actions */}
+            <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <Badge variant={getStatusVariant(result.status)} size="xs">
+                        {result.status}
+                    </Badge>
+                    {result.chargeAmountFormatted && (
+                        <span className="amount-badge">{result.chargeAmountFormatted}</span>
+                    )}
+                    <span className="card-number-compact truncate flex-1">{result.card}</span>
                 </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                    {result.duration && (
+                        <span className="duration-compact flex items-center gap-1">
+                            <Clock size={10} />
+                            {formatDuration(result.duration)}s
+                        </span>
+                    )}
+                    <button 
+                        onClick={onCopy} 
+                        className="p-1 rounded hover:bg-luma-coral-10 transition-colors"
+                        title="Copy card"
+                    >
+                        {isCopied ? <Check size={12} className="text-luma-success" /> : <Copy size={12} className="text-luma-muted" />}
+                    </button>
+                </div>
+            </div>
+
+            {/* Row 2: Message (only for non-live) or Meta info (for live) */}
+            {isFullView ? (
+                <div className="card-meta-row">
+                    {/* Brand Icon */}
+                    {result.binData?.scheme && (
+                        <span className="brand-icon-wrapper" title={result.binData.scheme}>
+                            {renderBrandIcon(result.binData.scheme)}
+                        </span>
+                    )}
+                    {/* Type */}
+                    {result.binData?.type && (
+                        <span className={getTypePillClass(result.binData.type)}>
+                            {result.binData.type}
+                        </span>
+                    )}
+                    {/* Category */}
+                    {result.binData?.category && (
+                        <span className={getCategoryPillClass(result.binData.category)} title={result.binData.category}>
+                            {toTitleCase(result.binData.category)}
+                        </span>
+                    )}
+                    {/* Risk */}
+                    {result.riskLevel && result.riskLevel !== 'unknown' && (
+                        <span className={getRiskIconClass(result.riskLevel)} title={`Risk: ${result.riskLevel}`}>
+                            <ShieldAlert size={10} />
+                            {result.riskLevel}
+                        </span>
+                    )}
+                    {/* AVS */}
+                    {result.avsCheck && result.avsCheck !== 'unknown' && (
+                        <span className={getCheckIconClass(result.avsCheck)} title={`AVS: ${result.avsCheck}`}>
+                            {result.avsCheck === 'pass' || result.avsCheck === 'match' ? <ShieldCheck size={10} /> : <ShieldX size={10} />}
+                            AVS
+                        </span>
+                    )}
+                    {/* CVC */}
+                    {result.cvcCheck && result.cvcCheck !== 'unknown' && (
+                        <span className={getCheckIconClass(result.cvcCheck)} title={`CVC: ${result.cvcCheck}`}>
+                            {result.cvcCheck === 'pass' || result.cvcCheck === 'match' ? <ShieldCheck size={10} /> : <ShieldX size={10} />}
+                            CVC
+                        </span>
+                    )}
+                    {/* Country Flag */}
+                    {result.binData?.countryEmoji && (
+                        <span className="country-flag" title={result.binData.country}>
+                            {result.binData.countryEmoji}
+                        </span>
+                    )}
+                    {/* Bank (truncated) */}
+                    {result.binData?.bank && (
+                        <span className="bank-name" title={result.binData.bank}>
+                            <Building2 size={10} />
+                            {toTitleCase(result.binData.bank)}
+                        </span>
+                    )}
+                </div>
+            ) : (
+                message && (
+                    <p className={`card-message-inline ${result.status === 'DIE' ? 'card-message-die' : 'card-message-error'}`} title={message}>
+                        {message.length > 80 ? message.substring(0, 80) + '...' : message}
+                    </p>
+                )
             )}
         </ResultCard>
     );
-}
+});
 
 /**
  * CardsEmptyState - Empty state with warm Luma theme colors

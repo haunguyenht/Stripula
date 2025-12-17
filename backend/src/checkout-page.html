@@ -4,18 +4,30 @@
     <title>Checkout</title>
     <script src="https://js.stripe.com/v3/"></script>
     <style>
-        body { font-family: Arial, sans-serif; padding: 20px; }
-        #card-element { border: 1px solid #ccc; padding: 10px; border-radius: 4px; }
-        #result { margin-top: 20px; padding: 10px; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 20px; background: #f5f5f5; }
+        .card-row { display: flex; gap: 10px; margin-bottom: 10px; }
+        .card-field { flex: 1; border: 1px solid #e0e0e0; padding: 12px; border-radius: 6px; background: #fff; min-height: 20px; }
+        #card-number { flex: 2; }
+        #result { margin-top: 20px; padding: 12px; border-radius: 6px; font-size: 14px; }
         .success { background: #d4edda; color: #155724; }
         .error { background: #f8d7da; color: #721c24; }
+        button { padding: 12px 24px; margin-top: 10px; cursor: pointer; background: #5469d4; color: #fff; border: none; border-radius: 6px; font-size: 14px; }
+        button:disabled { background: #94a3b8; cursor: not-allowed; }
     </style>
 </head>
 <body>
     <h2>Card Payment</h2>
-    <div id="card-element"></div>
     
-    <!-- Hidden billing fields for automation -->
+    <!-- Separate elements for faster parallel filling -->
+    <div class="card-row">
+        <div id="card-number" class="card-field"></div>
+    </div>
+    <div class="card-row">
+        <div id="card-expiry" class="card-field"></div>
+        <div id="card-cvc" class="card-field"></div>
+    </div>
+    
+    <!-- Hidden billing fields -->
     <input type="hidden" id="billing-name" value="">
     <input type="hidden" id="billing-email" value="">
     <input type="hidden" id="billing-street" value="">
@@ -23,48 +35,121 @@
     <input type="hidden" id="billing-state" value="">
     <input type="hidden" id="billing-zip" value="">
     <input type="hidden" id="billing-country" value="US">
+    <input type="hidden" id="billing-phone" value="">
     
-    <button id="submit-btn" style="margin-top: 15px; padding: 10px 20px;">Create Payment Method</button>
+    <button id="submit-btn">Create Payment Method</button>
     <div id="result"></div>
 
     <script>
+        // Parse URL params early
         const params = new URLSearchParams(window.location.search);
         const pkKey = params.get('pk') || 'pk_test_xxx';
         
-        // Get billing info from URL params
-        const billingName = params.get('name') || '';
-        const billingEmail = params.get('email') || '';
-        const billingStreet = params.get('street') || '';
-        const billingCity = params.get('city') || '';
-        const billingState = params.get('state') || '';
-        const billingZip = params.get('zip') || '';
-        const billingCountry = params.get('country') || 'US';
-        
-        // Set hidden fields
-        document.getElementById('billing-name').value = billingName;
-        document.getElementById('billing-email').value = billingEmail;
-        document.getElementById('billing-street').value = billingStreet;
-        document.getElementById('billing-city').value = billingCity;
-        document.getElementById('billing-state').value = billingState;
-        document.getElementById('billing-zip').value = billingZip;
-        document.getElementById('billing-country').value = billingCountry;
-        
-        const stripe = Stripe(pkKey);
-        const elements = stripe.elements();
-        
-        const card = elements.create('card', {
-            style: {
-                base: {
-                    fontSize: '16px',
-                    color: '#32325d',
-                }
-            },
-            hidePostalCode: true
+        // Initialize Stripe with advanced fraud detection
+        const stripe = Stripe(pkKey, {
+            betas: ['elements_enable_deferred_intent_beta_1']
         });
-        card.mount('#card-element');
-
-        window.stripeResult = undefined;
         
+        // Create Elements
+        const elements = stripe.elements({
+            locale: 'auto'
+        });
+        
+        // Optimized element style matching real checkout pages
+        const elementStyle = {
+            base: {
+                fontSize: '16px',
+                color: '#32325d',
+                fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                fontSmoothing: 'antialiased',
+                '::placeholder': { color: '#aab7c4' }
+            },
+            invalid: { color: '#fa755a', iconColor: '#fa755a' }
+        };
+        
+        // Create separate elements
+        const cardNumber = elements.create('cardNumber', { 
+            style: elementStyle,
+            showIcon: true,
+            iconStyle: 'solid'
+        });
+        const cardExpiry = elements.create('cardExpiry', { style: elementStyle });
+        const cardCvc = elements.create('cardCvc', { style: elementStyle });
+        
+        // Mount elements
+        cardNumber.mount('#card-number');
+        cardExpiry.mount('#card-expiry');
+        cardCvc.mount('#card-cvc');
+        
+        // Track ready state
+        let readyCount = 0;
+        const markReady = () => {
+            readyCount++;
+            if (readyCount === 3) {
+                window.stripeElementsReady = true;
+                // Create Radar session in background after elements ready
+                createRadarSession();
+                console.log('[Stripe] Elements ready');
+            }
+        };
+        
+        cardNumber.on('ready', markReady);
+        cardExpiry.on('ready', markReady);
+        cardCvc.on('ready', markReady);
+        
+        // Track completion and errors
+        let cardState = { 
+            number: false, expiry: false, cvc: false, 
+            numberError: null, expiryError: null, cvcError: null,
+            brand: null
+        };
+        
+        cardNumber.on('change', (e) => { 
+            cardState.number = e.complete; 
+            cardState.numberError = e.error?.message || null;
+            cardState.brand = e.brand || null;
+        });
+        cardExpiry.on('change', (e) => { 
+            cardState.expiry = e.complete; 
+            cardState.expiryError = e.error?.message || null;
+        });
+        cardCvc.on('change', (e) => { 
+            cardState.cvc = e.complete;
+            cardState.cvcError = e.error?.message || null;
+        });
+        
+        // Radar session for device fingerprinting (anti-fraud)
+        let radarSessionId = null;
+        async function createRadarSession() {
+            try {
+                const result = await stripe.createRadarSession();
+                if (result.radarSession) {
+                    radarSessionId = result.radarSession.id;
+                    console.log('[Radar] Session:', radarSessionId);
+                }
+            } catch (err) {
+                console.warn('[Radar] Failed:', err.message);
+            }
+        }
+        
+        // Expose for Playwright
+        window.stripeResult = undefined;
+        window.stripeElementsReady = false;
+        window.stripeElements = { cardNumber, cardExpiry, cardCvc };
+        window.isCardComplete = () => cardState.number && cardState.expiry && cardState.cvc;
+        window.getCardErrors = () => cardState.numberError || cardState.expiryError || cardState.cvcError;
+        window.getCardBrand = () => cardState.brand;
+        window.getRadarSession = () => radarSessionId;
+        
+        // Set billing from URL params
+        const billingFields = ['name', 'email', 'street', 'city', 'state', 'zip', 'country', 'phone'];
+        billingFields.forEach(field => {
+            const value = params.get(field) || (field === 'country' ? 'US' : '');
+            const el = document.getElementById(`billing-${field}`);
+            if (el) el.value = value;
+        });
+        
+        // Submit handler with full billing details for AVS
         async function submitCard() {
             const resultDiv = document.getElementById('result');
             const submitBtn = document.getElementById('submit-btn');
@@ -75,57 +160,56 @@
             submitBtn.disabled = true;
 
             try {
+                // Build complete billing details for AVS verification
+                const billingDetails = {};
                 const name = document.getElementById('billing-name').value;
                 const email = document.getElementById('billing-email').value;
+                const phone = document.getElementById('billing-phone').value;
+                
+                if (name) billingDetails.name = name;
+                if (email) billingDetails.email = email;
+                if (phone) billingDetails.phone = phone;
+                
                 const street = document.getElementById('billing-street').value;
                 const city = document.getElementById('billing-city').value;
                 const state = document.getElementById('billing-state').value;
                 const zip = document.getElementById('billing-zip').value;
                 const country = document.getElementById('billing-country').value;
                 
-                // Create Radar Session for device fingerprinting
-                let radarSession = null;
-                try {
-                    const radarResult = await stripe.createRadarSession();
-                    if (radarResult.radarSession) {
-                        radarSession = radarResult.radarSession.id;
-                        console.log('[Radar] Session created:', radarSession);
-                    }
-                } catch (radarErr) {
-                    console.warn('[Radar] Failed to create session:', radarErr.message);
-                }
+                // Always include address for AVS checks
+                billingDetails.address = {
+                    line1: street || '123 Main St',
+                    city: city || 'New York',
+                    state: state || 'NY',
+                    postal_code: zip || '10001',
+                    country: country || 'US'
+                };
                 
-                // Build full billing details
-                const billingDetails = {};
-                if (name) billingDetails.name = name;
-                if (email) billingDetails.email = email;
-                
-                if (street || city || state || zip || country) {
-                    billingDetails.address = {};
-                    if (street) billingDetails.address.line1 = street;
-                    if (city) billingDetails.address.city = city;
-                    if (state) billingDetails.address.state = state;
-                    if (zip) billingDetails.address.postal_code = zip;
-                    if (country) billingDetails.address.country = country;
-                }
-                
+                // Create PaymentMethod with full billing for better authorization
                 const { paymentMethod, error } = await stripe.createPaymentMethod({
                     type: 'card',
-                    card: card,
-                    billing_details: Object.keys(billingDetails).length > 0 ? billingDetails : undefined
+                    card: cardNumber,
+                    billing_details: billingDetails,
+                    radar_options: radarSessionId ? { session: radarSessionId } : undefined
                 });
 
                 if (error) {
                     resultDiv.textContent = 'ERROR:' + error.message;
                     resultDiv.className = 'error';
-                    window.stripeResult = { error: error.message };
+                    window.stripeResult = { 
+                        error: error.message, 
+                        code: error.code, 
+                        decline_code: error.decline_code,
+                        type: error.type
+                    };
                 } else {
                     resultDiv.textContent = 'SUCCESS:' + paymentMethod.id;
                     resultDiv.className = 'success';
                     window.stripeResult = { 
                         paymentMethodId: paymentMethod.id,
                         card: paymentMethod.card,
-                        radarSession: radarSession
+                        billingDetails: paymentMethod.billing_details,
+                        radarSession: radarSessionId
                     };
                 }
             } catch (e) {
@@ -138,6 +222,7 @@
         }
         
         document.getElementById('submit-btn').addEventListener('click', submitCard);
+        window.submitCard = submitCard;
     </script>
 </body>
 </html>

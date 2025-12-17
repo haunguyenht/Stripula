@@ -41,7 +41,7 @@ export function KeysValidationPanel({
     const [page, setPage] = useState(1);
     const [progress, setProgress] = useState({ current: 0, total: 0 });
     const [refreshingKeys, setRefreshingKeys] = useState(new Set());
-    const pageSize = 20;
+    const pageSize = 10;
     const { success, error: toastError, info, warning } = useToast();
 
     // ══════════════════════════════════════════════════════════════════
@@ -76,7 +76,7 @@ export function KeysValidationPanel({
         info(`Starting key validation for ${uniqueKeys.length} keys`);
         const newResults = [...keyResults];
         let { live = 0, livePlus = 0, liveZero = 0, liveNeg = 0, dead = 0, error = 0 } = keyStats;
-        const processedKeys = new Set(); // Track processed keys to remove from input
+        let currentKeys = skKeys; // Track current keys for real-time removal
 
         for (let i = 0; i < uniqueKeys.length; i++) {
             if (abortRef.current) break;
@@ -93,17 +93,22 @@ export function KeysValidationPanel({
                 const data = await response.json();
 
                 if (data.status?.startsWith('LIVE')) {
-                    newResults.unshift({ key: `${key.slice(0, 12)}...${key.slice(-4)}`, fullKey: key, ...data });
+                    newResults.unshift({ key: key, fullKey: key, ...data });
                     if (data.status === 'LIVE+') { live++; livePlus++; }
                     else if (data.status === 'LIVE0') { live++; liveZero++; }
                     else if (data.status === 'LIVE-') { live++; liveNeg++; }
                     else { live++; }
-                    processedKeys.add(key);
                 } else if (data.status === 'DEAD') {
-                    newResults.unshift({ key: `${key.slice(0, 12)}...${key.slice(-4)}`, fullKey: key, ...data });
+                    newResults.unshift({ key: key, fullKey: key, ...data });
                     dead++;
-                    processedKeys.add(key);
                 }
+                
+                // Remove processed key from input immediately
+                currentKeys = currentKeys
+                    .split('\n')
+                    .filter(line => line.trim() !== key)
+                    .join('\n');
+                setSkKeys(currentKeys);
                 setKeyResults([...newResults]);
                 setKeyStats({ live, livePlus, liveZero, liveNeg, dead, error, total: newResults.length });
             } catch (err) {
@@ -115,18 +120,6 @@ export function KeysValidationPanel({
             if (i < uniqueKeys.length - 1 && !abortRef.current) {
                 await new Promise(r => setTimeout(r, 500));
             }
-        }
-        
-        // Remove processed keys from input
-        if (processedKeys.size > 0) {
-            const remainingKeys = skKeys
-                .split('\n')
-                .filter(line => {
-                    const trimmed = line.trim();
-                    return trimmed && !processedKeys.has(trimmed);
-                })
-                .join('\n');
-            setSkKeys(remainingKeys);
         }
         
         setIsLoading(false);
@@ -149,6 +142,28 @@ export function KeysValidationPanel({
         navigator.clipboard.writeText(key);
         setCopiedKey(index);
         setTimeout(() => setCopiedKey(null), 2000);
+    };
+
+    const handleCopyAllSK = () => {
+        const allSK = keyResults
+            .filter(r => r.fullKey)
+            .map(r => r.fullKey)
+            .join('\n');
+        if (allSK) {
+            navigator.clipboard.writeText(allSK);
+            success(`Copied ${keyResults.filter(r => r.fullKey).length} SK keys`);
+        }
+    };
+
+    const handleCopyAllPK = () => {
+        const allPK = keyResults
+            .filter(r => r.pkKey)
+            .map(r => r.pkKey)
+            .join('\n');
+        if (allPK) {
+            navigator.clipboard.writeText(allPK);
+            success(`Copied ${keyResults.filter(r => r.pkKey).length} PK keys`);
+        }
     };
 
     const handleDeleteKey = (index) => {
@@ -203,7 +218,7 @@ export function KeysValidationPanel({
                 setKeyResults(prev => {
                     const updated = [...prev];
                     updated[index] = { 
-                        key: `${result.fullKey.slice(0, 12)}...${result.fullKey.slice(-4)}`, 
+                        key: result.fullKey, 
                         fullKey: result.fullKey, 
                         ...data 
                     };
@@ -330,7 +345,7 @@ export function KeysValidationPanel({
         results.forEach(r => {
             if (r) {
                 updatedResults[r.index] = {
-                    key: `${r.fullKey.slice(0, 12)}...${r.fullKey.slice(-4)}`,
+                    key: r.fullKey,
                     fullKey: r.fullKey,
                     ...r.data
                 };
@@ -463,7 +478,6 @@ export function KeysValidationPanel({
             }
             resultsPanel={
                 <ResultsPanel
-                    title="Key Results"
                     stats={stats}
                     activeFilter={filter}
                     onFilterChange={(id) => { setFilter(id); setPage(1); }}
@@ -472,6 +486,8 @@ export function KeysValidationPanel({
                     onPageChange={setPage}
                     onClear={clearResults}
                     onRefresh={keyResults.length > 0 ? handleRefreshAll : undefined}
+                    onCopyAllSK={keyResults.length > 0 ? handleCopyAllSK : undefined}
+                    onCopyAllPK={keyResults.length > 0 ? handleCopyAllPK : undefined}
                     isLoading={isLoading}
                     isEmpty={paginatedResults.length === 0}
                     emptyState={<KeysEmptyState />}
@@ -540,9 +556,9 @@ function KeyResultCard({ result, isSelected, isCopied, isRefreshing, onSelect, o
                     {/* Status + SK Key */}
                     <div className="flex items-center gap-2 mb-1.5">
                         {result.status?.startsWith('LIVE') ? (
-                            <CheckCircle2 size={14} className="status-icon-live" />
+                            <span className="status-dot-live" />
                         ) : (
-                            <XCircle size={14} className="status-icon-dead" />
+                            <span className="status-dot-dead" />
                         )}
                         <Badge variant={getStatusVariant(result.status)} size="sm">
                             {result.status === 'LIVE0' ? 'LIVE $0' : result.status}
@@ -555,14 +571,8 @@ function KeyResultCard({ result, isSelected, isCopied, isRefreshing, onSelect, o
                         <div className="flex items-center gap-1.5 mb-1">
                             <Key size={10} className="text-luma-coral shrink-0" />
                             <span className="text-mono-pk text-truncate">
-                                {result.pkKey.slice(0, 15)}...{result.pkKey.slice(-4)}
+                                {result.pkKey}
                             </span>
-                            <button 
-                                onClick={handleCopyPk}
-                                className="icon-btn-sm"
-                            >
-                                {pkCopied ? <Check size={9} className="text-status-success" /> : <Copy size={9} className="text-luma-coral" />}
-                            </button>
                         </div>
                     )}
 
@@ -584,7 +594,7 @@ function KeyResultCard({ result, isSelected, isCopied, isRefreshing, onSelect, o
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex gap-0.5 shrink-0">
+                <div className="flex gap-1 shrink-0">
                     <IconButton 
                         variant="ghost" 
                         onClick={(e) => { e.stopPropagation(); onRefresh(); }}
@@ -593,9 +603,24 @@ function KeyResultCard({ result, isSelected, isCopied, isRefreshing, onSelect, o
                     >
                         <RefreshCw size={11} className={isRefreshing ? 'animate-spin text-luma-coral' : ''} />
                     </IconButton>
-                    <IconButton variant="ghost" onClick={(e) => { e.stopPropagation(); onCopy(); }} title="Copy SK">
-                        {isCopied ? <Check size={11} className="text-status-success" /> : <Copy size={11} />}
-                    </IconButton>
+                    {result.pkKey && (
+                        <button 
+                            onClick={(e) => { e.stopPropagation(); handleCopyPk(e); }} 
+                            title="Copy PK"
+                            className="flex items-center gap-0.5 px-1.5 py-0.5 text-[9px] font-medium rounded-md hover:bg-luma-coral-10 transition-colors"
+                        >
+                            {pkCopied ? <Check size={10} className="text-status-success" /> : <Copy size={10} className="text-luma-coral" />}
+                            <span className="text-luma-coral">PK</span>
+                        </button>
+                    )}
+                    <button 
+                        onClick={(e) => { e.stopPropagation(); onCopy(); }} 
+                        title="Copy SK"
+                        className="flex items-center gap-0.5 px-1.5 py-0.5 text-[9px] font-medium rounded-md hover:bg-amber-500/10 transition-colors"
+                    >
+                        {isCopied ? <Check size={10} className="text-status-success" /> : <Copy size={10} className="text-amber-500" />}
+                        <span className="text-amber-500">SK</span>
+                    </button>
                     <IconButton variant="ghost" onClick={(e) => { e.stopPropagation(); onDelete(); }} title="Delete">
                         <Trash2 size={11} />
                     </IconButton>

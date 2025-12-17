@@ -28,7 +28,7 @@ export class CardController {
             }
 
             const mode = usePlaywright && pkKey ? 'Playwright' : 'API';
-            console.log(`[CardController] Validating ****${card.number.slice(-4)} | Mode: ${mode}`);
+            console.log(`[CardController] Validating ${card.number} | Mode: ${mode}`);
 
             const result = await this.validationFacade.validateCard({
                 card,
@@ -62,7 +62,7 @@ export class CardController {
                 return res.status(400).json({ status: 'ERROR', message: 'Card data is required' });
             }
 
-            console.log(`[CardController] NoCharge validation: ****${card.number.slice(-4)}`);
+            console.log(`[CardController] NoCharge validation: ${card.number}`);
 
             const result = await this.validationFacade.validateCard({
                 card,
@@ -114,7 +114,7 @@ export class CardController {
      * Validate multiple cards with SSE progress
      */
     async validateBatchStream(req, res) {
-        const { skKey, pkKey, cards, cardList, concurrency = 3, proxy, validationMethod = 'charge' } = req.body;
+        const { skKey, pkKey, cards, cardList, concurrency = 3, proxy, validationMethod = 'charge', chargeAmount } = req.body;
 
         if (!skKey || !pkKey) {
             return res.status(400).json({ status: 'ERROR', message: 'Both skKey and pkKey are required' });
@@ -153,6 +153,7 @@ export class CardController {
                 proxy,
                 concurrency: Math.min(concurrency, 10),
                 method: validationMethod,
+                chargeAmount: chargeAmount || null,
                 onProgress: (progress) => sendEvent('progress', progress),
                 onResult: (result) => sendEvent('result', result.toJSON ? result.toJSON() : result)
             });
@@ -191,7 +192,7 @@ export class CardController {
             status: 'OK',
             count: cards.length,
             cards: cards.map(c => ({
-                number: `****${c.last4}`,
+                number: c.number,
                 expMonth: c.expMonth,
                 expYear: c.expYear,
                 bin: c.bin
@@ -219,7 +220,7 @@ export class CardController {
                 return res.status(400).json({ status: 'ERROR', message: 'Valid amount is required' });
             }
 
-            console.log(`[CardController] Payment: $${amount} ${currency.toUpperCase()} | ****${card.number.slice(-4)}`);
+            console.log(`[CardController] Payment: $${amount} ${currency.toUpperCase()} | ${card.number}`);
 
             // Use charge validator but without refund for actual payment
             // For now, return error - payment should be implemented separately
@@ -247,7 +248,7 @@ export class CardController {
                 return res.status(400).json({ status: 'ERROR', message: 'Card data is required' });
             }
 
-            console.log(`[CardController] Tokenizing ****${card.number.slice(-4)}`);
+            console.log(`[CardController] Tokenizing ${card.number}`);
 
             const cardEntity = new Card(card);
             const result = await this.browserService.createPaymentMethod(pkKey, cardEntity);

@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo } from 'react';
+import { useState, useRef, useMemo, useEffect } from 'react';
 import { Key, CreditCard } from 'lucide-react';
 
 // Panels
@@ -25,23 +25,37 @@ export default function StripeOwn() {
     // KEY VALIDATION STATE
     // ══════════════════════════════════════════════════════════════════
     const [skKeys, setSkKeys] = useLocalStorage('stripeOwnSkKeys', '');
-    const [keyResults, setKeyResults] = useLocalStorage('stripeKeyResults', []);
+    const [keyResults, setKeyResults] = useLocalStorage('stripeKeyResults', [], { debounceMs: 1000, maxArrayLength: 500 });
     const [keyStats, setKeyStats] = useLocalStorage('stripeKeyStats', {
         live: 0, livePlus: 0, liveZero: 0, liveNeg: 0, dead: 0, error: 0, total: 0
-    });
+    }, { debounceMs: 1000 });
     const [selectedKeyIndex, setSelectedKeyIndex] = useLocalStorage('stripeOwnSelectedKey', -1);
 
     // ══════════════════════════════════════════════════════════════════
     // CARD VALIDATION STATE
     // ══════════════════════════════════════════════════════════════════
     const [cards, setCards] = useLocalStorage('stripeOwnCards', '');
-    const [rawCardResults, setCardResults] = useLocalStorage('stripeCardResults', []);
+    const [rawCardResults, setCardResults] = useLocalStorage('stripeCardResults', [], { debounceMs: 1000, maxArrayLength: 500 });
     
     // Transform legacy card results (where card was stored as object)
     const cardResults = useMemo(() => transformLegacyCardResults(rawCardResults), [rawCardResults]);
     const [cardStats, setCardStats] = useLocalStorage('stripeCardStats', {
         approved: 0, live: 0, die: 0, error: 0, total: 0
-    });
+    }, { debounceMs: 1000 });
+
+    // Recalculate stats from actual results on load to fix any stale data
+    useEffect(() => {
+        if (cardResults.length > 0) {
+            const recalculated = {
+                approved: cardResults.filter(r => r.status === 'APPROVED').length,
+                live: cardResults.filter(r => r.status === 'LIVE').length,
+                die: cardResults.filter(r => r.status === 'DIE').length,
+                error: cardResults.filter(r => r.status === 'ERROR' || r.status === 'RETRY').length,
+                total: cardResults.length
+            };
+            setCardStats(recalculated);
+        }
+    }, []);
 
     // ══════════════════════════════════════════════════════════════════
     // SETTINGS STATE
@@ -50,7 +64,7 @@ export default function StripeOwn() {
         skKey: '',
         pkKey: '',
         proxy: '',
-        concurrency: 3,
+        concurrency: 1,
         validationMethod: 'charge',
     });
 
@@ -118,11 +132,6 @@ export default function StripeOwn() {
                     iconColor={activeTab === 'cards' ? "mode-icon-cards" : undefined}
                 />
             </div>
-
-            {/* Mode indicator text */}
-            <span className="mode-indicator">
-                {activeTab === 'keys' ? 'SK Validation' : 'Card Check'}
-            </span>
         </div>
     );
 

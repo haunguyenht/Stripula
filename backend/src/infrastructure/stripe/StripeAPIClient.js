@@ -310,6 +310,11 @@ export class StripeAPIClient extends IStripeAPIClient {
             'payment_method_types[]': 'card',
             'capture_method': captureMethod,
         });
+        
+        // Expand to get full charge data including Radar risk assessment
+        // This also helps get risk data on declined charges
+        formData.append('expand[]', 'latest_charge');
+        formData.append('expand[]', 'latest_charge.outcome');
 
         if (paymentMethod) {
             formData.append('payment_method', paymentMethod);
@@ -409,6 +414,64 @@ export class StripeAPIClient extends IStripeAPIClient {
 
         const config = this._createBasicAuthConfig(skKey, proxy);
         const response = await axios.post(STRIPE_API.SETUP_INTENTS, formData.toString(), config);
+        return response.data;
+    }
+
+    /**
+     * Create a SetupIntent for client-side confirmation (best for CVV check)
+     * Returns client_secret for Stripe.js confirmCardSetup
+     */
+    async createSetupIntentForClient(skKey, params = {}, proxy = null) {
+        const { customerId, usage = 'off_session', paymentMethodTypes = ['card'] } = params;
+        
+        const formData = new URLSearchParams({
+            'usage': usage,
+            'automatic_payment_methods[enabled]': 'false'
+        });
+
+        // Add payment method types
+        paymentMethodTypes.forEach(type => {
+            formData.append('payment_method_types[]', type);
+        });
+
+        if (customerId) {
+            formData.append('customer', customerId);
+        }
+
+        const config = this._createConfig(skKey, proxy);
+        const response = await axios.post(STRIPE_API.SETUP_INTENTS, formData.toString(), config);
+        return response.data;
+    }
+
+    /**
+     * Confirm a SetupIntent with PaymentMethod
+     */
+    async confirmSetupIntent(skKey, setupIntentId, paymentMethodId, proxy = null) {
+        const formData = new URLSearchParams({
+            'payment_method': paymentMethodId,
+            'return_url': 'https://example.com/complete'
+        });
+
+        const config = this._createConfig(skKey, proxy);
+        const response = await axios.post(`${STRIPE_API.SETUP_INTENTS}/${setupIntentId}/confirm`, formData.toString(), config);
+        return response.data;
+    }
+
+    /**
+     * Cancel a SetupIntent
+     */
+    async cancelSetupIntent(skKey, setupIntentId, proxy = null) {
+        const config = this._createConfig(skKey, proxy);
+        const response = await axios.post(`${STRIPE_API.SETUP_INTENTS}/${setupIntentId}/cancel`, '', config);
+        return response.data;
+    }
+
+    /**
+     * Get SetupIntent details
+     */
+    async getSetupIntent(skKey, setupIntentId, proxy = null) {
+        const config = this._createConfig(skKey, proxy);
+        const response = await axios.get(`${STRIPE_API.SETUP_INTENTS}/${setupIntentId}`, config);
         return response.data;
     }
 

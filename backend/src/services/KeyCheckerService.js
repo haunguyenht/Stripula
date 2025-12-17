@@ -53,7 +53,7 @@ export class KeyCheckerService {
             if (!key.startsWith('sk_')) continue;
 
             const result = await this.checkKey(key);
-            result.key = `${key.slice(0, 12)}...${key.slice(-4)}`;
+            result.key = key;
             result.fullKey = key;
 
             if (result.status?.startsWith('LIVE')) {

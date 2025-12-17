@@ -3,6 +3,7 @@
  */
 export class ValidationResult {
     static STATUS = {
+        APPROVED: 'APPROVED',
         LIVE: 'LIVE',
         DIE: 'DIE',
         ERROR: 'ERROR',
@@ -25,6 +26,8 @@ export class ValidationResult {
         sellerMessage = null,
         paymentIntentId = null,
         chargeId = null,
+        chargeAmount = null,
+        chargeAmountFormatted = null,
         method = null,
         duration = null
     }) {
@@ -43,12 +46,18 @@ export class ValidationResult {
         this.sellerMessage = sellerMessage;
         this.paymentIntentId = paymentIntentId;
         this.chargeId = chargeId;
+        this.chargeAmount = chargeAmount;
+        this.chargeAmountFormatted = chargeAmountFormatted;
         this.method = method;
         this.duration = duration;
     }
 
     isLive() {
         return this.status === ValidationResult.STATUS.LIVE;
+    }
+
+    isApproved() {
+        return this.status === ValidationResult.STATUS.APPROVED;
     }
 
     isDead() {
@@ -80,9 +89,15 @@ export class ValidationResult {
             sellerMessage: this.sellerMessage,
             paymentIntentId: this.paymentIntentId,
             chargeId: this.chargeId,
+            chargeAmount: this.chargeAmount,
+            chargeAmountFormatted: this.chargeAmountFormatted,
             method: this.method,
             duration: this.duration
         };
+    }
+
+    static approved(message, options = {}) {
+        return new ValidationResult({ status: ValidationResult.STATUS.APPROVED, message, success: true, ...options });
     }
 
     static live(message, options = {}) {

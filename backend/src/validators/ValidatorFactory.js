@@ -1,7 +1,7 @@
 import { ChargeValidator } from './ChargeValidator.js';
 import { NoChargeValidator } from './NoChargeValidator.js';
-import { DirectAPIValidator } from './DirectAPIValidator.js';
 import { SetupValidator } from './SetupValidator.js';
+import { CheckoutSessionValidator } from './CheckoutSessionValidator.js';
 import { VALIDATION_METHODS } from '../utils/constants.js';
 
 /**
@@ -41,11 +41,11 @@ export class ValidatorFactory {
             case VALIDATION_METHODS.NO_CHARGE:
                 return new NoChargeValidator(this.dependencies);
             
-            case VALIDATION_METHODS.DIRECT:
-                return new DirectAPIValidator(this.dependencies);
-            
             case VALIDATION_METHODS.SETUP:
                 return new SetupValidator(this.dependencies);
+            
+            case VALIDATION_METHODS.CHECKOUT:
+                return new CheckoutSessionValidator(this.dependencies);
             
             default:
                 console.log(`[ValidatorFactory] Unknown method: ${method}, defaulting to charge`);

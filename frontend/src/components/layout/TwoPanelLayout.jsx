@@ -148,7 +148,7 @@ export function TwoPanelLayout({
                     !shouldUseMobileLayout && "flex-1"
                 )} style={{ maxHeight: 'var(--app-dvh)' }}>
                     <div className={cn(
-                        "flex flex-col floating-panel h-fit",
+                        "flex flex-col floating-panel h-full",
                         "bg-luma-surface"
                     )} style={{ maxHeight: 'var(--app-dvh)' }}>
                         {resultsPanel}

@@ -11,6 +11,7 @@ const colorClassMap = {
     emerald: 'stat-pill-emerald',
     rose: 'stat-pill-rose',
     amber: 'stat-pill-amber',
+    coral: 'stat-pill-coral',
 };
 
 export function StatPill({ 

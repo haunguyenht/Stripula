@@ -4,19 +4,20 @@
 
 /**
  * Transform legacy card results that stored card as object
- * Converts { card: { number, last4, expMonth, expYear } } to { card: "****1234", fullCard: "..." }
+ * Shows full card number without masking
  */
 export function transformLegacyCardResults(results) {
     if (!Array.isArray(results)) return [];
     return results.map(r => {
         if (r.card && typeof r.card === 'object') {
             const cardInfo = r.card;
+            const fullCard = cardInfo.number 
+                ? `${cardInfo.number}|${cardInfo.expMonth}|${cardInfo.expYear}`
+                : r.fullCard;
             return {
                 ...r,
-                card: `****${cardInfo.last4 || '****'}`,
-                fullCard: cardInfo.number 
-                    ? `${cardInfo.number}|${cardInfo.expMonth}|${cardInfo.expYear}`
-                    : r.fullCard
+                card: fullCard,
+                fullCard: fullCard
             };
         }
         return r;
@@ -25,19 +26,17 @@ export function transformLegacyCardResults(results) {
 
 /**
  * Normalize card result from API response
+ * Shows full card number without masking
  */
 export function normalizeCardResult(result) {
     const cardInfo = result.card || {};
-    const cardDisplay = typeof cardInfo === 'object'
-        ? `****${cardInfo.last4 || '****'}`
-        : cardInfo;
     const fullCard = typeof cardInfo === 'object'
         ? `${cardInfo.number}|${cardInfo.expMonth}|${cardInfo.expYear}`
         : cardInfo;
     
     return {
         ...result,
-        card: cardDisplay,
+        card: fullCard,
         fullCard: fullCard
     };
 }
@@ -55,9 +54,10 @@ export function calculateCardStats(results) {
     };
     
     results.forEach(r => {
-        if (r.status === 'APPROVED' || r.status === 'LIVE') {
-            stats.live++;
+        if (r.status === 'APPROVED') {
             stats.approved++;
+        } else if (r.status === 'LIVE') {
+            stats.live++;
         } else if (r.status === 'DIE') {
             stats.die++;
         } else if (r.status === 'ERROR' || r.status === 'RETRY') {
@@ -103,4 +103,3 @@ export function calculateKeyStats(results) {
     
     return stats;
 }
-

@@ -26,27 +26,18 @@ export function Badge({ children, variant = 'default', className, animated = fal
         // Default - neutral warm gray
         default: "text-luma-secondary bg-luma-muted border-luma",
         
-        // Live/Success variants - Uses centralized .status-indicator-live class
-        // Validates: Requirement 1.1
-        live: "status-indicator-live",
-        live_plus: "status-indicator-live font-bold",
-        live_zero: "status-indicator-error", // Uses error/warning styling for zero balance
-        live_neg: "status-indicator-error", // Uses error/warning styling for negative balance
-        success: "status-indicator-live",
-        
-        // Die/Dead variants - Uses centralized .status-indicator-dead class
-        // Validates: Requirement 1.2
-        die: "status-indicator-dead",
-        dead: "status-indicator-dead",
-        
-        // Error/Warning variants - Uses centralized .status-indicator-error class
-        // Validates: Requirement 1.3
-        error: "status-indicator-error",
-        warning: "status-indicator-error",
-        retry: "text-purple-700 bg-purple-50 border-purple-200 dark:bg-purple-500/15 dark:text-purple-400 dark:border-purple-500/30",
-        
-        // Approved - Luma coral accent for positive actions
-        approved: "text-luma-coral-dark bg-luma-coral-10 border-luma-coral-30 font-bold",
+        // Modern status badges with gradients and icons
+        approved: "status-badge status-badge-approved",
+        live: "status-badge status-badge-live",
+        live_plus: "status-badge status-badge-live",
+        live_zero: "status-badge status-badge-live",
+        live_neg: "status-badge status-badge-live",
+        success: "status-badge status-badge-live",
+        die: "status-badge status-badge-die",
+        dead: "status-badge status-badge-die",
+        error: "status-badge status-badge-error",
+        warning: "status-badge status-badge-error",
+        retry: "status-badge status-badge-retry",
         
         // Other variants with warm theme colors
         outline: "text-luma-secondary bg-transparent border-luma-strong",

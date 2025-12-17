@@ -1,6 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Loader2, Trash2, RefreshCw, LayoutGrid, Key } from 'lucide-react';
+import React from 'react';
+import { motion } from 'framer-motion';
+import { ChevronLeft, ChevronRight, Trash2, RefreshCw, Key, Copy } from 'lucide-react';
 import { ResultsHeader, ResultsContent, ResultsFooter } from '../layout/TwoPanelLayout';
 import { StatPillGroup } from '../ui/StatPill';
 import { cn } from '../../lib/utils';
@@ -22,10 +22,15 @@ export function ResultsPanel({
     currentPage,
     totalPages,
     onPageChange,
+    pageSize,
+    onPageSizeChange,
     
     // Actions
     onClear,
     onRefresh,
+    onCopyAllSK,
+    onCopyAllPK,
+    onCopyAll,
     
     // State
     isLoading,
@@ -33,129 +38,17 @@ export function ResultsPanel({
     emptyState,
     loadingState,
     
-    // Title
-    title = 'Results',
     className,
 }) {
     const safeStats = Array.isArray(stats) ? stats : [];
-    const allStat = safeStats.find(stat => stat.id === 'all');
-    const totalCount = allStat ? Number(allStat.value) || 0 : safeStats.reduce((sum, stat) => sum + (Number(stat.value) || 0), 0);
-    const isChecking = Boolean(isLoading);
-
-    // Dynamic width detection for showing/hiding title
-    const headerRef = useRef(null);
-    const titleRef = useRef(null);
-    const pillsRef = useRef(null);
-    const actionsRef = useRef(null);
-    const [showTitle, setShowTitle] = useState(true);
-    const measuredWidthsRef = useRef({ title: 0, pills: 0, actions: 0 });
-    
-    // Measure actual content widths once title is visible
-    useEffect(() => {
-        if (!showTitle) return;
-        
-        // Measure after render
-        const measureTimeout = setTimeout(() => {
-            if (titleRef.current) {
-                measuredWidthsRef.current.title = titleRef.current.offsetWidth;
-            }
-            if (pillsRef.current) {
-                measuredWidthsRef.current.pills = pillsRef.current.offsetWidth;
-            }
-            if (actionsRef.current) {
-                measuredWidthsRef.current.actions = actionsRef.current.offsetWidth;
-            }
-        }, 50);
-        
-        return () => clearTimeout(measureTimeout);
-    }, [showTitle, safeStats]); // Re-measure when stats change
-    
-    useEffect(() => {
-        if (!headerRef.current) return;
-        
-        let rafId;
-        let timeoutId;
-        
-        const checkWidth = () => {
-            if (!headerRef.current) return;
-            
-            const containerWidth = headerRef.current.offsetWidth;
-            const { title, pills, actions } = measuredWidthsRef.current;
-            
-            // Calculate required width: measured widths + gaps (16px between each element)
-            const GAP = 16;
-            const PADDING = 8; // Extra breathing room
-            const requiredWidth = title + pills + actions + (GAP * 2) + PADDING;
-            
-            // Hysteresis: need 40px more space to show title again
-            const HYSTERESIS = 40;
-            
-            setShowTitle(prev => {
-                if (prev) {
-                    // Currently showing - hide if container is smaller than required
-                    return containerWidth >= requiredWidth;
-                } else {
-                    // Currently hidden - show only if significantly wider
-                    // Use measured pills + actions + estimated title width for comparison
-                    const estimatedRequired = (title || 180) + pills + actions + (GAP * 2) + PADDING;
-                    return containerWidth >= estimatedRequired + HYSTERESIS;
-                }
-            });
-        };
-        
-        const debouncedCheck = () => {
-            cancelAnimationFrame(rafId);
-            clearTimeout(timeoutId);
-            timeoutId = setTimeout(() => {
-                rafId = requestAnimationFrame(checkWidth);
-            }, 100);
-        };
-        
-        // Initial check after a short delay to allow measurement
-        const initialTimeout = setTimeout(checkWidth, 100);
-        
-        // Observe resize
-        const resizeObserver = new ResizeObserver(debouncedCheck);
-        resizeObserver.observe(headerRef.current);
-        
-        return () => {
-            resizeObserver.disconnect();
-            cancelAnimationFrame(rafId);
-            clearTimeout(timeoutId);
-            clearTimeout(initialTimeout);
-        };
-    }, [safeStats]); // Re-run when stats change as pills width may change
 
     return (
-        <div className={cn("flex flex-col", className)}>
-            {/* Header - Single row: Title (dynamic) | Pills | Actions */}
+        <div className={cn("flex flex-col h-full", className)}>
+            {/* Header - Pills | Actions */}
             <ResultsHeader>
-                <div ref={headerRef} className="flex items-center justify-between gap-4">
-                    {/* Left: Icon + Title - dynamically hidden based on available width */}
-                    {showTitle && (
-                        <div ref={titleRef} className="flex items-center gap-2 min-w-0 shrink-0">
-                            <div className="results-header-icon shrink-0">
-                                <LayoutGrid size={18} className="text-white" />
-                            </div>
-                            <div className="min-w-0">
-                                <h2 className="results-title truncate text-sm whitespace-nowrap">{title}</h2>
-                                {isChecking ? (
-                                    <p className="results-processing">
-                                        <Loader2 size={10} className="animate-spin" />
-                                        <span className="text-[10px]">Processing...</span>
-                                    </p>
-                                ) : (
-                                    <p className="results-subtitle text-[10px] whitespace-nowrap">{totalCount} results</p>
-                                )}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Center: Filter Pills - centered in available space */}
-                    <div 
-                        ref={pillsRef}
-                        className="flex-1 flex justify-center min-w-0"
-                    >
+                <div className="flex items-center justify-between gap-4">
+                    {/* Left: Filter Pills */}
+                    <div className="flex-1 flex justify-start min-w-0">
                         <StatPillGroup
                             stats={safeStats}
                             activeFilter={activeFilter}
@@ -164,7 +57,7 @@ export function ResultsPanel({
                     </div>
 
                     {/* Right: Actions */}
-                    <div ref={actionsRef} className="flex items-center gap-1 shrink-0">
+                    <div className="flex items-center gap-1 shrink-0">
                         {onRefresh && (
                             <button
                                 onClick={onRefresh}
@@ -177,6 +70,38 @@ export function ResultsPanel({
                                 title="Refresh all"
                             >
                                 <RefreshCw size={14} className={isLoading ? "animate-spin" : ""} />
+                            </button>
+                        )}
+                        {onCopyAllPK && (
+                            <button
+                                onClick={onCopyAllPK}
+                                className="action-btn-copy-pk !px-2 !py-1.5"
+                                disabled={isLoading}
+                                title="Copy all PK keys"
+                            >
+                                <Copy size={12} />
+                                <span className="text-[9px] font-semibold">PK</span>
+                            </button>
+                        )}
+                        {onCopyAllSK && (
+                            <button
+                                onClick={onCopyAllSK}
+                                className="action-btn-copy-sk !px-2 !py-1.5"
+                                disabled={isLoading}
+                                title="Copy all SK keys"
+                            >
+                                <Copy size={12} />
+                                <span className="text-[9px] font-semibold">SK</span>
+                            </button>
+                        )}
+                        {onCopyAll && (
+                            <button
+                                onClick={onCopyAll}
+                                className="action-btn-glass !px-2 !py-1.5"
+                                disabled={isLoading}
+                                title="Copy all (filtered)"
+                            >
+                                <Copy size={14} />
                             </button>
                         )}
                         {onClear && (
@@ -198,27 +123,27 @@ export function ResultsPanel({
             </ResultsHeader>
 
             {/* Results List */}
-            <ResultsContent>
+            <ResultsContent className="flex-1 min-h-0">
                 {isLoading && isEmpty ? (
                     loadingState || <DefaultLoadingState />
                 ) : isEmpty ? (
                     emptyState || <DefaultEmptyState />
                 ) : (
                     <div className="space-y-3">
-                        <AnimatePresence mode="popLayout">
-                            {children}
-                        </AnimatePresence>
+                        {children}
                     </div>
                 )}
             </ResultsContent>
 
             {/* Pagination */}
-            {totalPages > 1 && (
+            {(totalPages > 1 || onPageSizeChange) && (
                 <ResultsFooter>
                     <Pagination
                         currentPage={currentPage}
                         totalPages={totalPages}
                         onPageChange={onPageChange}
+                        pageSize={pageSize}
+                        onPageSizeChange={onPageSizeChange}
                     />
                 </ResultsFooter>
             )}
@@ -227,32 +152,52 @@ export function ResultsPanel({
 }
 
 /**
- * Pagination Component - Modern Glass Style
+ * Pagination Component - Modern Glass Style with Page Size Selector
  */
-function Pagination({ currentPage, totalPages, onPageChange }) {
+function Pagination({ currentPage, totalPages, onPageChange, pageSize, onPageSizeChange }) {
     return (
-        <div className="flex items-center justify-center gap-1.5 sm:gap-2">
-            <button
-                onClick={() => onPageChange(Math.max(1, currentPage - 1))}
-                disabled={currentPage === 1}
-                className="pagination-btn"
-            >
-                <ChevronLeft size={14} className="sm:w-4 sm:h-4" />
-            </button>
+        <div className="flex items-center justify-center gap-3">
+            {/* Page Size Selector */}
+            {onPageSizeChange && (
+                <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] text-gray-500 dark:text-gray-400">Show</span>
+                    <select
+                        value={pageSize}
+                        onChange={(e) => onPageSizeChange(Number(e.target.value))}
+                        className="pagination-select"
+                    >
+                        <option value={10}>10</option>
+                        <option value={20}>20</option>
+                        <option value={50}>50</option>
+                        <option value={100}>100</option>
+                    </select>
+                </div>
+            )}
             
-            <div className="pagination-info">
-                <span className="pagination-text pagination-text-current">{currentPage}</span>
-                <span className="pagination-text pagination-text-divider">/</span>
-                <span className="pagination-text">{totalPages}</span>
+            {/* Page Navigation */}
+            <div className="flex items-center gap-1.5 sm:gap-2">
+                <button
+                    onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+                    disabled={currentPage === 1}
+                    className="pagination-btn"
+                >
+                    <ChevronLeft size={14} className="sm:w-4 sm:h-4" />
+                </button>
+                
+                <div className="pagination-info">
+                    <span className="pagination-text pagination-text-current">{currentPage}</span>
+                    <span className="pagination-text pagination-text-divider">/</span>
+                    <span className="pagination-text">{totalPages || 1}</span>
+                </div>
+                
+                <button
+                    onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+                    disabled={currentPage === totalPages || totalPages === 0}
+                    className="pagination-btn"
+                >
+                    <ChevronRight size={14} className="sm:w-4 sm:h-4" />
+                </button>
             </div>
-            
-            <button
-                onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
-                disabled={currentPage === totalPages}
-                className="pagination-btn"
-            >
-                <ChevronRight size={14} className="sm:w-4 sm:h-4" />
-            </button>
         </div>
     );
 }
@@ -329,22 +274,15 @@ function DefaultLoadingState() {
 }
 
 /**
- * ResultItem - Wrapper for individual result items with animation
+ * ResultItem - Wrapper for individual result items (lightweight for performance)
  */
-export const ResultItem = React.forwardRef(function ResultItem({ children, id }, ref) {
+export const ResultItem = React.memo(React.forwardRef(function ResultItem({ children, id }, ref) {
     return (
-        <motion.div
-            ref={ref}
-            key={id}
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            transition={{ duration: 0.15 }}
-        >
+        <div ref={ref} className="result-item-enter">
             {children}
-        </motion.div>
+        </div>
     );
-});
+}));
 
 /**
  * ProgressBar - Progress indicator for batch operations

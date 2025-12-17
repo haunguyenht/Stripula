@@ -45,7 +45,7 @@ export class ValidationFacade extends EventEmitter {
         const validator = this.validatorFactory.getValidator(method);
         
         // Execute validation
-        console.log(`[ValidationFacade] Validating ****${cardEntity.last4} via ${validator.getName()}`);
+        console.log(`[ValidationFacade] Validating ${cardEntity.number} via ${validator.getName()}`);
         return await validator.validate(cardEntity, keys, proxyEntity);
     }
 
@@ -63,6 +63,8 @@ export class ValidationFacade extends EventEmitter {
             proxy = null,
             method = VALIDATION_METHODS.CHARGE,
             concurrency = DEFAULTS.CONCURRENCY,
+            chargeAmount = null,
+            delayBetweenCards = 2000, // ms delay between starting each card
             onProgress = null,
             onResult = null
         } = params;
@@ -85,7 +87,16 @@ export class ValidationFacade extends EventEmitter {
         }
 
         // Parse proxy
-        const proxyEntity = proxy ? (proxy instanceof Proxy ? proxy : Proxy.fromString(proxy) || proxy) : null;
+        let proxyEntity = null;
+        if (proxy) {
+            if (proxy instanceof Proxy) {
+                proxyEntity = proxy;
+            } else if (typeof proxy === 'string') {
+                proxyEntity = Proxy.fromString(proxy);
+            } else if (typeof proxy === 'object' && proxy.host) {
+                proxyEntity = new Proxy(proxy);
+            }
+        }
 
         // Get validator
         const validator = this.validatorFactory.getValidator(method);
@@ -96,10 +107,10 @@ export class ValidationFacade extends EventEmitter {
         let processed = 0;
         let activeWorkers = 0;
         const total = cardArray.length;
-        const summary = { total, live: 0, die: 0, error: 0, pending: 0 };
+        const summary = { total, approved: 0, live: 0, die: 0, error: 0, pending: 0 };
 
         console.log(`[ValidationFacade] ══════════════════════════════════════════`);
-        console.log(`[ValidationFacade] Batch: ${total} cards | Method: ${validator.getName()} | Concurrency: ${concurrency}`);
+        console.log(`[ValidationFacade] Batch: ${total} cards | Method: ${validator.getName()} | Concurrency: ${concurrency} | Delay: ${delayBetweenCards}ms`);
         console.log(`[ValidationFacade] ══════════════════════════════════════════`);
 
         const startTime = Date.now();
@@ -124,7 +135,7 @@ export class ValidationFacade extends EventEmitter {
                     if (activeWorkers === 0) {
                         const duration = ((Date.now() - startTime) / 1000).toFixed(1);
                         console.log(`[ValidationFacade] Completed: ${total} cards in ${duration}s`);
-                        console.log(`[ValidationFacade] LIVE: ${summary.live} | DIE: ${summary.die} | ERROR: ${summary.error}`);
+                        console.log(`[ValidationFacade] APPROVED: ${summary.approved} | LIVE: ${summary.live} | DIE: ${summary.die} | ERROR: ${summary.error}`);
                         this.emit('complete', { results, summary, duration: parseFloat(duration) });
                         resolve({ results, summary, duration: parseFloat(duration) });
                     }
@@ -137,9 +148,9 @@ export class ValidationFacade extends EventEmitter {
 
                 try {
                     const cardEntity = card instanceof Card ? card : new Card(card);
-                    console.log(`[ValidationFacade] [${cardIndex + 1}/${total}] Processing ****${cardEntity.last4}...`);
+                    console.log(`[ValidationFacade] [${cardIndex + 1}/${total}] Processing ${cardEntity.number}...`);
 
-                    const result = await validator.validate(cardEntity, keys, proxyEntity);
+                    const result = await validator.validate(cardEntity, keys, proxyEntity, { chargeAmount });
 
                     // Add card info to result
                     result.card = {
@@ -153,7 +164,8 @@ export class ValidationFacade extends EventEmitter {
                     results.push(result);
 
                     // Update summary
-                    if (result.status === 'LIVE') summary.live++;
+                    if (result.status === 'APPROVED') summary.approved++;
+                    else if (result.status === 'LIVE') summary.live++;
                     else if (result.status === 'DIE') summary.die++;
                     else if (result.status === 'ERROR') summary.error++;
                     else summary.pending++;
@@ -195,13 +207,20 @@ export class ValidationFacade extends EventEmitter {
                 }
 
                 activeWorkers--;
+                
+                // Add delay before starting next card to avoid bot detection
+                if (queue.length > 0 && delayBetweenCards > 0) {
+                    await new Promise(resolve => setTimeout(resolve, delayBetweenCards));
+                }
+                
                 processNext();
             };
 
-            // Start initial workers
+            // Start initial workers with staggered delays
             const initialWorkers = Math.min(concurrency, queue.length);
             for (let i = 0; i < initialWorkers; i++) {
-                processNext();
+                // Stagger initial worker starts to avoid all hitting at once
+                setTimeout(() => processNext(), i * delayBetweenCards);
             }
         });
     }

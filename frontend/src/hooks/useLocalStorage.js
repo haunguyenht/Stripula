@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 /**
  * useLocalStorage Hook
@@ -8,7 +8,10 @@ import { useState, useEffect, useCallback } from 'react';
  * @param {any} initialValue - Default value if not in storage
  * @returns {[any, function]} - [value, setValue]
  */
-export function useLocalStorage(key, initialValue) {
+export function useLocalStorage(key, initialValue, options = {}) {
+    const { debounceMs = 500, maxArrayLength = 100 } = options;
+    const debounceRef = useRef(null);
+    
     // Get initial value from localStorage or use default
     const [storedValue, setStoredValue] = useState(() => {
         try {
@@ -27,21 +30,40 @@ export function useLocalStorage(key, initialValue) {
         }
     });
 
-    // Update localStorage when value changes
+    // Debounced localStorage write
     useEffect(() => {
-        try {
-            if (storedValue === undefined) {
-                localStorage.removeItem(key);
-            } else {
-                const valueToStore = typeof storedValue === 'string' 
-                    ? storedValue 
-                    : JSON.stringify(storedValue);
-                localStorage.setItem(key, valueToStore);
-            }
-        } catch (error) {
-            console.warn(`Error setting localStorage key "${key}":`, error);
+        // Clear any pending write
+        if (debounceRef.current) {
+            clearTimeout(debounceRef.current);
         }
-    }, [key, storedValue]);
+        
+        debounceRef.current = setTimeout(() => {
+            try {
+                if (storedValue === undefined) {
+                    localStorage.removeItem(key);
+                } else {
+                    // Limit array size to prevent localStorage bloat
+                    let valueToSave = storedValue;
+                    if (Array.isArray(storedValue) && storedValue.length > maxArrayLength) {
+                        valueToSave = storedValue.slice(0, maxArrayLength);
+                    }
+                    
+                    const valueToStore = typeof valueToSave === 'string' 
+                        ? valueToSave 
+                        : JSON.stringify(valueToSave);
+                    localStorage.setItem(key, valueToStore);
+                }
+            } catch (error) {
+                console.warn(`Error setting localStorage key "${key}":`, error);
+            }
+        }, debounceMs);
+        
+        return () => {
+            if (debounceRef.current) {
+                clearTimeout(debounceRef.current);
+            }
+        };
+    }, [key, storedValue, debounceMs, maxArrayLength]);
 
     // Memoized setter that handles function updates
     const setValue = useCallback((value) => {

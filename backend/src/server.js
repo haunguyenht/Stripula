@@ -23,6 +23,7 @@ import { ValidatorFactory } from './validators/ValidatorFactory.js';
 import { KeyController } from './controllers/KeyController.js';
 import { CardController } from './controllers/CardController.js';
 import { SettingsController } from './controllers/SettingsController.js';
+import { ProxyController } from './controllers/ProxyController.js';
 
 // Config
 import { DEFAULTS } from './utils/constants.js';
@@ -70,6 +71,9 @@ function createContainer() {
     const settingsController = new SettingsController({
         browserService: infrastructure.browserService
     });
+    const proxyController = new ProxyController({
+        proxyManager
+    });
 
     return {
         infrastructure,
@@ -82,7 +86,8 @@ function createContainer() {
         controllers: {
             key: keyController,
             card: cardController,
-            settings: settingsController
+            settings: settingsController,
+            proxy: proxyController
         }
     };
 }
@@ -107,13 +112,22 @@ function createApp(container) {
         res.sendFile(path.join(__dirname, 'setup-checkout.html'));
     });
 
+    // Checkout Sessions API page (custom UI mode)
+    app.get('/checkout-sessions', (req, res) => {
+        res.sendFile(path.join(__dirname, 'checkout-sessions-page.html'));
+    });
+
     // Get route handlers
     const keyRoutes = container.controllers.key.getRoutes();
     const cardRoutes = container.controllers.card.getRoutes();
     const settingsRoutes = container.controllers.settings.getRoutes();
+    const proxyRoutes = container.controllers.proxy.getRoutes();
 
     // Key routes
     app.post('/api/stripe-own/check-key', keyRoutes.checkKey);
+
+    // Proxy routes
+    app.post('/api/stripe-own/check-proxy', proxyRoutes.checkProxy);
 
     // Card validation routes
     app.post('/api/stripe-own/validate', cardRoutes.validate);
