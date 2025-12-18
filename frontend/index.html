@@ -4,15 +4,58 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#0a0f1a" />
+    <meta name="theme-color" content="#142833" />
     <title>Stripula Pro</title>
-    <!-- Google Fonts: Orbitron (display), Space Grotesk (UI), JetBrains Mono (code), Inter (body) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Orbitron:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- DNS prefetch for external resources -->
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+    <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
+    
+    <!-- Preconnect to font origins -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    
+    <!-- Preload critical tile background (WebP, small) -->
+    <link rel="preload" href="/bg-tile.webp" as="image" type="image/webp" fetchpriority="high" />
+    
+    <!-- Prefetch decorative backgrounds (WebP, optimized) -->
+    <link rel="prefetch" href="/grainy-background-new.webp" as="image" type="image/webp" />
+    <link rel="prefetch" href="/bottom-section-bg.webp" as="image" type="image/webp" />
+    
+    <!-- Google Fonts: Async load with display=swap for better performance -->
+    <!-- Primary fonts: Inter (UI), JetBrains Mono (code), Inter Tight (body), Playfair Display (headings) -->
+    <link 
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Playfair+Display:wght@400;500;600;700&display=swap" 
+      rel="stylesheet" 
+      media="print" 
+      onload="this.media='all'" 
+    />
+    <noscript>
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    </noscript>
+    
+    <!-- Critical inline styles for instant background -->
+    <style>
+      body { 
+        background-color: #142833; 
+        margin: 0; 
+        min-height: 100vh;
+      }
+      /* Prevent FOUC */
+      #root { opacity: 0; transition: opacity 0.2s ease; }
+      #root.loaded { opacity: 1; }
+    </style>
   </head>
-  <body class="bg-[#0a0f1a]">
+  <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+    <script>
+      // Remove FOUC prevention once app loads
+      window.addEventListener('DOMContentLoaded', function() {
+        requestAnimationFrame(function() {
+          document.getElementById('root').classList.add('loaded');
+        });
+      });
+    </script>
   </body>
 </html>

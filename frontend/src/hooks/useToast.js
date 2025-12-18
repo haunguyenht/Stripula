@@ -1,28 +1,27 @@
-import { useContext } from 'react';
-import { ToastContext } from '../contexts/ToastContext';
+import { toast } from 'sonner';
 
 /**
- * Custom hook to access toast notification context
- * Provides methods to show, dismiss, and manage toast notifications
+ * Custom hook to access toast notification functionality
+ * Uses sonner under the hood for a cleaner API
  * 
  * @returns {{
- *   toasts: Array<{id: string, message: string, type: string, duration: number, persistent: boolean}>,
- *   toast: (options: {message: string, type?: string, duration?: number, persistent?: boolean}) => string,
- *   success: (message: string, options?: {duration?: number, persistent?: boolean}) => string,
- *   error: (message: string, options?: {duration?: number, persistent?: boolean}) => string,
- *   warning: (message: string, options?: {duration?: number, persistent?: boolean}) => string,
- *   info: (message: string, options?: {duration?: number, persistent?: boolean}) => string,
- *   dismiss: (id: string) => void,
+ *   toast: (message: string, options?: object) => string | number,
+ *   success: (message: string, options?: object) => string | number,
+ *   error: (message: string, options?: object) => string | number,
+ *   warning: (message: string, options?: object) => string | number,
+ *   info: (message: string, options?: object) => string | number,
+ *   dismiss: (id?: string | number) => void,
  *   dismissAll: () => void
  * }}
- * @throws {Error} If used outside of ToastProvider
  */
 export function useToast() {
-  const context = useContext(ToastContext);
-  
-  if (context === null) {
-    throw new Error('useToast must be used within a ToastProvider. Wrap your application with <ToastProvider> to use toast notifications.');
-  }
-  
-  return context;
+  return {
+    toast: (message, options) => toast(message, options),
+    success: (message, options) => toast.success(message, options),
+    error: (message, options) => toast.error(message, options),
+    warning: (message, options) => toast.warning(message, options),
+    info: (message, options) => toast.info(message, options),
+    dismiss: (id) => toast.dismiss(id),
+    dismissAll: () => toast.dismiss(),
+  };
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 
 const COLORS = [
@@ -10,6 +10,14 @@ const COLORS = [
   '#8B5CF6', // purple
   '#F43F5E', // rose
 ];
+
+// Throttle interval in ms - prevents celebration spam during mass checks
+const THROTTLE_INTERVAL = 2000;
+
+// Reduced particle counts for better performance during mass checks
+const PARTICLE_COUNT = 12; // Was 20 per burst point
+const CONFETTI_COUNT = 25; // Was 50
+const SPARKLE_COUNT = 15; // Was 30
 
 function randomBetween(min, max) {
   return Math.random() * (max - min) + min;
@@ -91,12 +99,26 @@ export function Celebration({ trigger, duration = 3000 }) {
   const [sparkles, setSparkles] = useState([]);
   const [rings, setRings] = useState([]);
   const [isActive, setIsActive] = useState(false);
+  const lastTriggerRef = useRef(0);
+  const timeoutRef = useRef(null);
 
   const createCelebration = useCallback(() => {
+    // Throttle: skip if triggered too recently
+    const now = Date.now();
+    if (now - lastTriggerRef.current < THROTTLE_INTERVAL) {
+      return;
+    }
+    lastTriggerRef.current = now;
+
+    // Clear any pending cleanup
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
     const centerX = window.innerWidth / 2;
     const centerY = window.innerHeight / 2;
 
-    // Create firework particles at multiple points
+    // Create firework particles at multiple points (reduced count)
     const newParticles = [];
     const burstPoints = [
       { x: centerX, y: centerY - 100 },
@@ -105,7 +127,7 @@ export function Celebration({ trigger, duration = 3000 }) {
     ];
 
     burstPoints.forEach((point, burstIndex) => {
-      for (let i = 0; i < 20; i++) {
+      for (let i = 0; i < PARTICLE_COUNT; i++) {
         newParticles.push({
           id: `particle-${burstIndex}-${i}`,
           x: point.x,
@@ -116,9 +138,9 @@ export function Celebration({ trigger, duration = 3000 }) {
       }
     });
 
-    // Create confetti falling from top
+    // Create confetti falling from top (reduced count)
     const newConfetti = [];
-    for (let i = 0; i < 50; i++) {
+    for (let i = 0; i < CONFETTI_COUNT; i++) {
       newConfetti.push({
         id: `confetti-${i}`,
         x: randomBetween(0, window.innerWidth),
@@ -127,9 +149,9 @@ export function Celebration({ trigger, duration = 3000 }) {
       });
     }
 
-    // Create sparkles around the screen
+    // Create sparkles around the screen (reduced count)
     const newSparkles = [];
-    for (let i = 0; i < 30; i++) {
+    for (let i = 0; i < SPARKLE_COUNT; i++) {
       newSparkles.push({
         id: `sparkle-${i}`,
         x: randomBetween(100, window.innerWidth - 100),
@@ -153,7 +175,7 @@ export function Celebration({ trigger, duration = 3000 }) {
     setIsActive(true);
 
     // Clear after duration
-    setTimeout(() => {
+    timeoutRef.current = setTimeout(() => {
       setIsActive(false);
       setParticles([]);
       setConfetti([]);
@@ -161,6 +183,15 @@ export function Celebration({ trigger, duration = 3000 }) {
       setRings([]);
     }, duration);
   }, [duration]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (trigger > 0) {
@@ -189,10 +220,21 @@ export function Celebration({ trigger, duration = 3000 }) {
   );
 }
 
+/**
+ * useCelebration hook with built-in throttling
+ * Prevents celebration spam during mass card validation
+ */
 export function useCelebration() {
   const [trigger, setTrigger] = useState(0);
+  const lastCelebrateRef = useRef(0);
 
   const celebrate = useCallback(() => {
+    // Additional throttle at hook level for extra safety
+    const now = Date.now();
+    if (now - lastCelebrateRef.current < THROTTLE_INTERVAL) {
+      return;
+    }
+    lastCelebrateRef.current = now;
     setTrigger((prev) => prev + 1);
   }, []);
 

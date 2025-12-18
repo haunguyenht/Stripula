@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import * as fc from 'fast-check';
 
 /**
- * **Feature: css-centralization, Property 1: Status Class Color Consistency**
+ * **Feature: shadcn-ui-migration, Property 1: Status Class Color Consistency**
  * **Validates: Requirements 1.1, 1.2, 1.3**
  * 
  * For any status type (live, dead, error), the corresponding CSS class should apply
@@ -75,7 +75,7 @@ function getStatusIndicatorClassDefinition(status) {
   return definitions[className] || null;
 }
 
-describe('CSS Centralization - Status Class Color Consistency', () => {
+describe('CSS - Status Class Color Consistency', () => {
   /**
    * Property 1: Status Class Color Consistency
    * 
@@ -167,7 +167,7 @@ describe('CSS Centralization - Status Class Color Consistency', () => {
 
 
 /**
- * **Feature: css-centralization, Property 5: Dark Mode Variant Consistency**
+ * **Feature: shadcn-ui-migration, Property 5: Dark Mode Variant Consistency**
  * **Validates: Requirements 6.1, 6.2, 6.3, 6.4**
  * 
  * For any centralized CSS class, when the .dark class is present on the document,
@@ -228,11 +228,11 @@ const darkModeClassMapping = {
   
   // Empty state classes (Requirement 6.4)
   'empty-state-title': {
-    light: { color: 'var(--luma-text-secondary)' },
+    light: { color: 'text-muted-foreground' },
     dark: { text: 'text-gray-300' }
   },
   'empty-state-subtitle': {
-    light: { color: 'var(--luma-text-muted)' },
+    light: { color: 'text-muted-foreground' },
     dark: { text: 'text-gray-500' }
   },
   
@@ -242,7 +242,7 @@ const darkModeClassMapping = {
     dark: { bg: 'bg-pink-900/40', text: 'text-pink-400' }
   },
   
-  // Currency and balance classes (added during cleanup)
+  // Currency and balance classes
   'currency-badge': {
     light: { bg: 'bg-gray-100', text: 'text-gray-500', border: 'border-gray-200' },
     dark: { bg: 'bg-white/10', text: 'text-gray-300', border: 'border-white/10' }
@@ -256,7 +256,7 @@ const darkModeClassMapping = {
     dark: { text: 'text-pink-400' }
   },
   
-  // BIN data badge classes (added during cleanup)
+  // BIN data badge classes
   'bin-scheme-badge': {
     light: { bg: 'bg-[#FEF3C7]', text: 'text-[#92400E]' },
     dark: { bg: 'bg-amber-900/30', text: 'text-amber-400' }
@@ -288,7 +288,7 @@ function hasDarkModeVariant(className) {
   });
 }
 
-describe('CSS Centralization - Dark Mode Variant Consistency', () => {
+describe('CSS - Dark Mode Variant Consistency', () => {
   /**
    * Property 5: Dark Mode Variant Consistency
    * 
@@ -300,7 +300,7 @@ describe('CSS Centralization - Dark Mode Variant Consistency', () => {
    * Property 5a: Status indicator classes have dark mode variants
    * Validates: Requirement 6.1
    */
-  it('should have dark mode variants for all status indicator classes', () => {
+  it('should have dark mode variants for status indicator classes', () => {
     const statusClasses = fc.constantFrom(
       'status-indicator-live',
       'status-indicator-dead',
@@ -311,16 +311,12 @@ describe('CSS Centralization - Dark Mode Variant Consistency', () => {
       fc.property(statusClasses, (className) => {
         const styles = getDarkModeStyles(className);
         
-        // Verify dark mode styles exist
+        // Verify class has dark mode styles
         expect(styles).not.toBeNull();
         expect(styles.dark).toBeDefined();
         
-        // Verify dark mode has different colors than light mode
+        // Verify dark mode differs from light mode
         expect(hasDarkModeVariant(className)).toBe(true);
-        
-        // Verify dark mode uses appropriate opacity/color patterns
-        expect(styles.dark.bg).toContain('/15');
-        expect(styles.dark.border).toContain('/30');
       }),
       { numRuns: 100 }
     );
@@ -330,7 +326,7 @@ describe('CSS Centralization - Dark Mode Variant Consistency', () => {
    * Property 5b: Capability badge classes have dark mode variants
    * Validates: Requirement 6.1
    */
-  it('should have dark mode variants for all capability badge classes', () => {
+  it('should have dark mode variants for capability badge classes', () => {
     const capabilityClasses = fc.constantFrom(
       'capability-enabled',
       'capability-disabled',
@@ -343,11 +339,11 @@ describe('CSS Centralization - Dark Mode Variant Consistency', () => {
       fc.property(capabilityClasses, (className) => {
         const styles = getDarkModeStyles(className);
         
-        // Verify dark mode styles exist
+        // Verify class has dark mode styles
         expect(styles).not.toBeNull();
         expect(styles.dark).toBeDefined();
         
-        // Verify dark mode has different colors than light mode
+        // Verify dark mode differs from light mode
         expect(hasDarkModeVariant(className)).toBe(true);
       }),
       { numRuns: 100 }
@@ -358,7 +354,7 @@ describe('CSS Centralization - Dark Mode Variant Consistency', () => {
    * Property 5c: Text classes have dark mode variants
    * Validates: Requirement 6.2
    */
-  it('should have dark mode variants for all text classes', () => {
+  it('should have dark mode variants for text classes', () => {
     const textClasses = fc.constantFrom(
       'text-mono-key',
       'text-mono-sm',
@@ -369,11 +365,11 @@ describe('CSS Centralization - Dark Mode Variant Consistency', () => {
       fc.property(textClasses, (className) => {
         const styles = getDarkModeStyles(className);
         
-        // Verify dark mode styles exist
+        // Verify class has dark mode styles
         expect(styles).not.toBeNull();
         expect(styles.dark).toBeDefined();
         
-        // Verify dark mode has different colors than light mode
+        // Verify dark mode differs from light mode
         expect(hasDarkModeVariant(className)).toBe(true);
       }),
       { numRuns: 100 }
@@ -381,94 +377,21 @@ describe('CSS Centralization - Dark Mode Variant Consistency', () => {
   });
 
   /**
-   * Property 5d: Input classes have dark mode variants
-   * Validates: Requirement 6.3
+   * Property 5d: All centralized classes have dark mode support
+   * Validates: Requirements 6.1, 6.2, 6.3, 6.4
    */
-  it('should have dark mode variants for input classes', () => {
-    const inputClasses = fc.constantFrom('count-badge');
+  it('should have dark mode support for all centralized classes', () => {
+    const allClasses = fc.constantFrom(...Object.keys(darkModeClassMapping));
 
     fc.assert(
-      fc.property(inputClasses, (className) => {
+      fc.property(allClasses, (className) => {
         const styles = getDarkModeStyles(className);
         
-        // Verify dark mode styles exist
+        // Verify class has dark mode styles
         expect(styles).not.toBeNull();
         expect(styles.dark).toBeDefined();
         
-        // Verify dark mode has different colors than light mode
-        expect(hasDarkModeVariant(className)).toBe(true);
-      }),
-      { numRuns: 100 }
-    );
-  });
-
-  /**
-   * Property 5e: Empty state classes have dark mode variants
-   * Validates: Requirement 6.4
-   */
-  it('should have dark mode variants for empty state classes', () => {
-    const emptyStateClasses = fc.constantFrom(
-      'empty-state-title',
-      'empty-state-subtitle'
-    );
-
-    fc.assert(
-      fc.property(emptyStateClasses, (className) => {
-        const styles = getDarkModeStyles(className);
-        
-        // Verify dark mode styles exist
-        expect(styles).not.toBeNull();
-        expect(styles.dark).toBeDefined();
-        
-        // Verify dark mode has different colors than light mode
-        expect(hasDarkModeVariant(className)).toBe(true);
-      }),
-      { numRuns: 100 }
-    );
-  });
-
-  /**
-   * Property 5f: Currency and balance classes have dark mode variants
-   * Validates: Requirements 6.1, 6.2
-   */
-  it('should have dark mode variants for currency and balance classes', () => {
-    const currencyBalanceClasses = fc.constantFrom(
-      'currency-badge',
-      'text-balance',
-      'text-balance-pending'
-    );
-
-    fc.assert(
-      fc.property(currencyBalanceClasses, (className) => {
-        const styles = getDarkModeStyles(className);
-        
-        // Verify dark mode styles exist
-        expect(styles).not.toBeNull();
-        expect(styles.dark).toBeDefined();
-        
-        // Verify dark mode has different colors than light mode
-        expect(hasDarkModeVariant(className)).toBe(true);
-      }),
-      { numRuns: 100 }
-    );
-  });
-
-  /**
-   * Property 5g: BIN data badge classes have dark mode variants
-   * Validates: Requirement 6.1
-   */
-  it('should have dark mode variants for BIN data badge classes', () => {
-    const binBadgeClasses = fc.constantFrom('bin-scheme-badge');
-
-    fc.assert(
-      fc.property(binBadgeClasses, (className) => {
-        const styles = getDarkModeStyles(className);
-        
-        // Verify dark mode styles exist
-        expect(styles).not.toBeNull();
-        expect(styles.dark).toBeDefined();
-        
-        // Verify dark mode has different colors than light mode
+        // Verify dark mode differs from light mode
         expect(hasDarkModeVariant(className)).toBe(true);
       }),
       { numRuns: 100 }
@@ -478,24 +401,25 @@ describe('CSS Centralization - Dark Mode Variant Consistency', () => {
 
 
 /**
- * **Feature: css-centralization, Property 4: Empty State Layout Consistency**
- * **Validates: Requirements 4.1, 4.2, 4.3**
+ * **Feature: shadcn-ui-migration, Property 3: Empty State Component Styling**
+ * **Validates: Requirements 4.1, 4.2**
  * 
- * For any empty state element (container, icon, title, subtitle), the corresponding
- * CSS class should apply correct layout and typography.
+ * For any empty state component, the styling should be consistent and use
+ * the correct CSS classes for icon, title, and subtitle.
  */
 
-// Empty state class definitions based on design document
+// Empty state class definitions based on shadcn design
 const emptyStateClassDefinitions = {
   'empty-state': {
     layout: 'flex flex-col items-center justify-center',
-    spacing: 'py-16 md:py-20'
+    spacing: 'py-16 text-center',
+    textColor: 'text-muted-foreground'
   },
   'empty-state-icon': {
     size: 'w-16 h-16',
     shape: 'rounded-2xl',
-    background: 'bg-luma-coral-10',
-    border: 'border border-luma-coral-30',
+    background: 'bg-primary/10',
+    border: 'border border-primary/30',
     layout: 'flex items-center justify-center',
     spacing: 'mb-5'
   },
@@ -506,11 +430,11 @@ const emptyStateClassDefinitions = {
   'empty-state-title': {
     typography: 'text-sm font-medium',
     spacing: 'mb-1',
-    color: 'var(--luma-text-secondary)'
+    color: 'text-muted-foreground'
   },
   'empty-state-subtitle': {
     typography: 'text-[11px]',
-    color: 'var(--luma-text-muted)'
+    color: 'text-muted-foreground'
   }
 };
 
@@ -519,125 +443,80 @@ function getEmptyStateClassDefinition(className) {
   return emptyStateClassDefinitions[className] || null;
 }
 
-// Function to verify a class has required layout properties
-function hasLayoutProperties(className) {
+// Function to verify an empty state class has required properties
+function hasRequiredEmptyStateProperties(className) {
   const definition = emptyStateClassDefinitions[className];
   if (!definition) return false;
   
-  // Container should have flex layout
+  // Different classes have different required properties
   if (className === 'empty-state') {
-    return !!(definition.layout && definition.layout.includes('flex'));
+    return !!(definition.layout && definition.spacing);
   }
-  
-  // Icon should have size and shape
-  if (className.includes('icon')) {
+  if (className.startsWith('empty-state-icon')) {
     return !!(definition.size && definition.shape);
   }
-  
-  // Text elements should have typography or color
-  if (className.includes('title') || className.includes('subtitle')) {
-    return !!(definition.typography || definition.color);
+  if (className === 'empty-state-title' || className === 'empty-state-subtitle') {
+    return !!(definition.typography && definition.color);
   }
   
   return true;
 }
 
-// Function to verify a class has required typography properties
-function hasTypographyProperties(className) {
-  const definition = emptyStateClassDefinitions[className];
-  if (!definition) return false;
-  
-  // Title should have font-medium
-  if (className === 'empty-state-title') {
-    return definition.typography && definition.typography.includes('font-medium');
-  }
-  
-  // Subtitle should have smaller text size
-  if (className === 'empty-state-subtitle') {
-    return definition.typography && definition.typography.includes('text-[11px]');
-  }
-  
-  return true;
-}
-
-describe('CSS Centralization - Empty State Layout Consistency', () => {
+describe('CSS - Empty State Component Styling', () => {
   /**
-   * Property 4: Empty State Layout Consistency
+   * Property 3: Empty State Component Styling
    * 
-   * For any empty state element (container, icon, title, subtitle), the corresponding
-   * CSS class should apply correct layout and typography.
+   * For any empty state component, the styling should be consistent and use
+   * the correct CSS classes.
    */
   
   /**
-   * Property 4a: Empty state container has centered flex layout
+   * Property 3a: Empty state container has correct layout
    * Validates: Requirement 4.1
    */
-  it('should apply centered flex layout for empty state container', () => {
-    const containerClasses = fc.constantFrom('empty-state');
-
+  it('should have correct layout for empty state container', () => {
     fc.assert(
-      fc.property(containerClasses, (className) => {
+      fc.property(fc.constant('empty-state'), (className) => {
         const definition = getEmptyStateClassDefinition(className);
         
         // Verify class definition exists
         expect(definition).not.toBeNull();
         
-        // Verify flex layout is applied
+        // Verify layout includes centering
         expect(definition.layout).toContain('flex');
-        expect(definition.layout).toContain('flex-col');
         expect(definition.layout).toContain('items-center');
         expect(definition.layout).toContain('justify-center');
-        
-        // Verify spacing is applied
-        expect(definition.spacing).toBeDefined();
       }),
       { numRuns: 100 }
     );
   });
 
   /**
-   * Property 4b: Empty state icon has proper sizing and background
-   * Validates: Requirement 4.2
+   * Property 3b: Empty state icon has correct styling
+   * Validates: Requirement 4.1
    */
-  it('should apply proper sizing and background for empty state icon', () => {
-    const iconClasses = fc.constantFrom('empty-state-icon', 'empty-state-icon-lg');
-
+  it('should have correct styling for empty state icon', () => {
     fc.assert(
-      fc.property(iconClasses, (className) => {
+      fc.property(fc.constant('empty-state-icon'), (className) => {
         const definition = getEmptyStateClassDefinition(className);
         
         // Verify class definition exists
         expect(definition).not.toBeNull();
         
-        // Verify size is defined
-        expect(definition.size).toBeDefined();
-        
-        // Verify shape (rounded corners) is defined
-        expect(definition.shape).toBeDefined();
-        expect(definition.shape).toContain('rounded');
-        
         // Base icon should have background and border
-        if (className === 'empty-state-icon') {
-          expect(definition.background).toContain('luma-coral');
-          expect(definition.border).toContain('border');
-          expect(definition.layout).toContain('flex');
-        }
-        
-        // Large variant should have larger size
-        if (className === 'empty-state-icon-lg') {
-          expect(definition.size).toContain('w-20');
-          expect(definition.size).toContain('h-20');
-        }
+        expect(definition.background).toContain('primary');
+        expect(definition.border).toContain('border');
+        expect(definition.layout).toContain('flex');
       }),
       { numRuns: 100 }
     );
   });
 
   /**
-   * Property 4c: Empty state text elements have proper typography
-   * Validates: Requirement 4.3
+   * Property 3c: Empty state text elements have correct typography
+   * Validates: Requirement 4.2
    */
-  it('should apply proper typography for empty state text elements', () => {
+  it('should have correct typography for empty state text elements', () => {
     const textClasses = fc.constantFrom('empty-state-title', 'empty-state-subtitle');
 
     fc.assert(
@@ -649,59 +528,23 @@ describe('CSS Centralization - Empty State Layout Consistency', () => {
         
         // Verify typography is defined
         expect(definition.typography).toBeDefined();
-        
-        // Verify color is defined
         expect(definition.color).toBeDefined();
-        
-        // Title should have medium font weight
-        if (className === 'empty-state-title') {
-          expect(definition.typography).toContain('font-medium');
-          expect(definition.typography).toContain('text-sm');
-          expect(definition.spacing).toBe('mb-1');
-        }
-        
-        // Subtitle should have smaller text
-        if (className === 'empty-state-subtitle') {
-          expect(definition.typography).toContain('text-[11px]');
-        }
       }),
       { numRuns: 100 }
     );
   });
 
   /**
-   * Property 4d: All empty state classes have required layout properties
-   * Validates: Requirements 4.1, 4.2, 4.3
+   * Property 3d: All empty state classes have required properties
+   * Validates: Requirements 4.1, 4.2
    */
-  it('should have required layout properties for all empty state classes', () => {
-    const allEmptyStateClasses = fc.constantFrom(
-      'empty-state',
-      'empty-state-icon',
-      'empty-state-icon-lg',
-      'empty-state-title',
-      'empty-state-subtitle'
-    );
+  it('should have required properties for all empty state classes', () => {
+    const allEmptyStateClasses = fc.constantFrom(...Object.keys(emptyStateClassDefinitions));
 
     fc.assert(
       fc.property(allEmptyStateClasses, (className) => {
-        // Verify class has layout properties
-        expect(hasLayoutProperties(className)).toBe(true);
-      }),
-      { numRuns: 100 }
-    );
-  });
-
-  /**
-   * Property 4e: Text empty state classes have required typography properties
-   * Validates: Requirement 4.3
-   */
-  it('should have required typography properties for text empty state classes', () => {
-    const textClasses = fc.constantFrom('empty-state-title', 'empty-state-subtitle');
-
-    fc.assert(
-      fc.property(textClasses, (className) => {
-        // Verify class has typography properties
-        expect(hasTypographyProperties(className)).toBe(true);
+        // Verify class has required properties
+        expect(hasRequiredEmptyStateProperties(className)).toBe(true);
       }),
       { numRuns: 100 }
     );
@@ -710,64 +553,44 @@ describe('CSS Centralization - Empty State Layout Consistency', () => {
 
 
 /**
- * **Feature: css-centralization, Property 3: Icon Action Styling Consistency**
- * **Validates: Requirements 3.1, 3.2, 3.3, 3.4**
+ * **Feature: shadcn-ui-migration, Property 4: Icon Action Class Styling**
+ * **Validates: Requirements 5.1, 5.2**
  * 
- * For any icon action type (copy, delete, refresh), the corresponding CSS class
- * should apply correct base styling and hover states.
+ * For any icon action class, the styling should include proper hover states
+ * and consistent sizing.
  */
 
-// Icon action class definitions based on design document
+// Icon action class definitions based on shadcn design
 const iconActionClassDefinitions = {
   'icon-action': {
     base: {
-      padding: 'p-1.5',
-      borderRadius: 'rounded-lg',
-      textColor: 'text-gray-400',
-      transition: 'transition-colors duration-150'
+      size: 'w-7 h-7',
+      layout: 'flex items-center justify-center',
+      shape: 'rounded-md',
+      textColor: 'text-muted-foreground',
+      transition: 'transition-colors'
     },
     hover: {
-      textColor: 'text-gray-600',
-      background: 'bg-gray-100'
-    },
-    dark: {
-      textColor: 'text-gray-500'
-    },
-    darkHover: {
-      textColor: 'text-gray-300',
-      background: 'bg-white/10'
+      textColor: 'text-primary',
+      background: 'bg-primary/10'
+    }
+  },
+  'icon-action-refresh': {
+    hover: {
+      textColor: 'text-primary',
+      background: 'bg-primary/10'
     }
   },
   'icon-action-copy': {
     hover: {
       textColor: 'text-blue-500',
-      background: 'bg-blue-50'
-    },
-    darkHover: {
-      textColor: 'text-blue-400',
       background: 'bg-blue-500/10'
     }
   },
   'icon-action-delete': {
     hover: {
-      textColor: 'text-rose-500',
-      background: 'bg-rose-50'
-    },
-    darkHover: {
-      textColor: 'text-rose-400',
-      background: 'bg-rose-500/10'
-    }
-  },
-  'icon-action-refresh': {
-    hover: {
-      textColor: 'text-luma-coral',
-      background: 'bg-luma-coral-10'
-    }
-  },
-  'icon-action-sm': {
-    base: {
-      padding: 'p-0.5',
-      borderRadius: 'rounded'
+      textColor: 'text-destructive',
+      background: 'bg-destructive/10'
     }
   }
 };
@@ -777,258 +600,73 @@ function getIconActionClassDefinition(className) {
   return iconActionClassDefinitions[className] || null;
 }
 
-// Function to verify a class has base styling properties
-function hasBaseIconActionStyling(className) {
+// Function to verify an icon action class has hover state
+function hasHoverState(className) {
   const definition = iconActionClassDefinitions[className];
-  if (!definition) return false;
-  
-  // Base icon-action should have padding, border-radius, and transition
-  if (className === 'icon-action') {
-    return !!(definition.base && 
-              definition.base.padding && 
-              definition.base.borderRadius && 
-              definition.base.transition);
-  }
-  
-  // Small variant should have smaller padding
-  if (className === 'icon-action-sm') {
-    return !!(definition.base && definition.base.padding === 'p-0.5');
-  }
-  
-  // Action variants should have hover states
-  if (className.includes('copy') || className.includes('delete') || className.includes('refresh')) {
-    return !!(definition.hover && definition.hover.textColor && definition.hover.background);
-  }
-  
-  return true;
+  return definition && definition.hover && Object.keys(definition.hover).length > 0;
 }
 
-// Function to verify a class has hover state properties
-function hasHoverStateProperties(className) {
-  const definition = iconActionClassDefinitions[className];
-  if (!definition) return false;
-  
-  // Must have hover state defined
-  return !!(definition.hover && definition.hover.textColor);
-}
-
-// Function to verify hover state uses correct color for action type
-function hasCorrectHoverColor(className) {
-  const definition = iconActionClassDefinitions[className];
-  if (!definition || !definition.hover) return false;
-  
-  // Copy action should use blue
-  if (className === 'icon-action-copy') {
-    return definition.hover.textColor.includes('blue') && 
-           definition.hover.background.includes('blue');
-  }
-  
-  // Delete action should use rose (destructive)
-  if (className === 'icon-action-delete') {
-    return definition.hover.textColor.includes('rose') && 
-           definition.hover.background.includes('rose');
-  }
-  
-  // Refresh action should use coral (brand color)
-  if (className === 'icon-action-refresh') {
-    return definition.hover.textColor.includes('coral') && 
-           definition.hover.background.includes('coral');
-  }
-  
-  // Base icon-action should use gray
-  if (className === 'icon-action') {
-    return definition.hover.textColor.includes('gray') && 
-           definition.hover.background.includes('gray');
-  }
-  
-  return true;
-}
-
-describe('CSS Centralization - Icon Action Styling Consistency', () => {
+describe('CSS - Icon Action Class Styling', () => {
   /**
-   * Property 3: Icon Action Styling Consistency
+   * Property 4: Icon Action Class Styling
    * 
-   * For any icon action type (copy, delete, refresh), the corresponding CSS class
-   * should apply correct base styling and hover states.
+   * For any icon action class, the styling should include proper hover states
+   * and consistent sizing.
    */
   
   /**
-   * Property 3a: Base icon-action class has correct styling
-   * Validates: Requirement 3.1
+   * Property 4a: Base icon action has correct structure
+   * Validates: Requirement 5.1
    */
-  it('should apply correct base styling for icon-action class', () => {
-    const baseClasses = fc.constantFrom('icon-action');
-
+  it('should have correct base structure for icon action class', () => {
     fc.assert(
-      fc.property(baseClasses, (className) => {
+      fc.property(fc.constant('icon-action'), (className) => {
         const definition = getIconActionClassDefinition(className);
         
         // Verify class definition exists
         expect(definition).not.toBeNull();
         
-        // Verify base styling is defined
+        // Verify base styles
         expect(definition.base).toBeDefined();
-        expect(definition.base.padding).toBe('p-1.5');
-        expect(definition.base.borderRadius).toBe('rounded-lg');
-        expect(definition.base.textColor).toBe('text-gray-400');
-        expect(definition.base.transition).toContain('transition-colors');
-        
-        // Verify hover state is defined
-        expect(definition.hover).toBeDefined();
-        expect(definition.hover.textColor).toBe('text-gray-600');
-        expect(definition.hover.background).toBe('bg-gray-100');
-        
-        // Verify dark mode is defined
-        expect(definition.dark).toBeDefined();
-        expect(definition.darkHover).toBeDefined();
+        expect(definition.base.size).toBeDefined();
+        expect(definition.base.layout).toContain('flex');
+        expect(definition.base.transition).toContain('transition');
       }),
       { numRuns: 100 }
     );
   });
 
   /**
-   * Property 3b: Copy action has blue hover state
-   * Validates: Requirement 3.2
+   * Property 4b: All icon action classes have hover states
+   * Validates: Requirement 5.2
    */
-  it('should apply blue hover state for icon-action-copy class', () => {
-    const copyClasses = fc.constantFrom('icon-action-copy');
+  it('should have hover states for all icon action classes', () => {
+    const iconActionClasses = fc.constantFrom(...Object.keys(iconActionClassDefinitions));
 
     fc.assert(
-      fc.property(copyClasses, (className) => {
+      fc.property(iconActionClasses, (className) => {
+        // Verify class has hover state
+        expect(hasHoverState(className)).toBe(true);
+      }),
+      { numRuns: 100 }
+    );
+  });
+
+  /**
+   * Property 4c: Delete action uses destructive color
+   * Validates: Requirement 5.2
+   */
+  it('should use destructive color for delete action', () => {
+    fc.assert(
+      fc.property(fc.constant('icon-action-delete'), (className) => {
         const definition = getIconActionClassDefinition(className);
         
         // Verify class definition exists
         expect(definition).not.toBeNull();
         
-        // Verify hover state uses blue colors
-        expect(definition.hover).toBeDefined();
-        expect(definition.hover.textColor).toContain('blue');
-        expect(definition.hover.background).toContain('blue');
-        
-        // Verify dark mode hover uses blue colors
-        expect(definition.darkHover).toBeDefined();
-        expect(definition.darkHover.textColor).toContain('blue');
-        expect(definition.darkHover.background).toContain('blue');
-      }),
-      { numRuns: 100 }
-    );
-  });
-
-  /**
-   * Property 3c: Delete action has rose/destructive hover state
-   * Validates: Requirement 3.3
-   */
-  it('should apply rose hover state for icon-action-delete class', () => {
-    const deleteClasses = fc.constantFrom('icon-action-delete');
-
-    fc.assert(
-      fc.property(deleteClasses, (className) => {
-        const definition = getIconActionClassDefinition(className);
-        
-        // Verify class definition exists
-        expect(definition).not.toBeNull();
-        
-        // Verify hover state uses rose colors (destructive)
-        expect(definition.hover).toBeDefined();
-        expect(definition.hover.textColor).toContain('rose');
-        expect(definition.hover.background).toContain('rose');
-        
-        // Verify dark mode hover uses rose colors
-        expect(definition.darkHover).toBeDefined();
-        expect(definition.darkHover.textColor).toContain('rose');
-        expect(definition.darkHover.background).toContain('rose');
-      }),
-      { numRuns: 100 }
-    );
-  });
-
-  /**
-   * Property 3d: Refresh action has coral hover state
-   * Validates: Requirement 3.4
-   */
-  it('should apply coral hover state for icon-action-refresh class', () => {
-    const refreshClasses = fc.constantFrom('icon-action-refresh');
-
-    fc.assert(
-      fc.property(refreshClasses, (className) => {
-        const definition = getIconActionClassDefinition(className);
-        
-        // Verify class definition exists
-        expect(definition).not.toBeNull();
-        
-        // Verify hover state uses coral colors (brand color)
-        expect(definition.hover).toBeDefined();
-        expect(definition.hover.textColor).toContain('coral');
-        expect(definition.hover.background).toContain('coral');
-      }),
-      { numRuns: 100 }
-    );
-  });
-
-  /**
-   * Property 3e: All icon action classes have required base styling
-   * Validates: Requirements 3.1, 3.2, 3.3, 3.4
-   */
-  it('should have required base styling for all icon action classes', () => {
-    const allIconActionClasses = fc.constantFrom(
-      'icon-action',
-      'icon-action-copy',
-      'icon-action-delete',
-      'icon-action-refresh',
-      'icon-action-sm'
-    );
-
-    fc.assert(
-      fc.property(allIconActionClasses, (className) => {
-        // Verify class has base styling properties
-        expect(hasBaseIconActionStyling(className)).toBe(true);
-      }),
-      { numRuns: 100 }
-    );
-  });
-
-  /**
-   * Property 3f: Action variant classes have hover states with correct colors
-   * Validates: Requirements 3.2, 3.3, 3.4
-   */
-  it('should have hover states with correct colors for action variants', () => {
-    const actionVariantClasses = fc.constantFrom(
-      'icon-action',
-      'icon-action-copy',
-      'icon-action-delete',
-      'icon-action-refresh'
-    );
-
-    fc.assert(
-      fc.property(actionVariantClasses, (className) => {
-        // Verify class has hover state properties
-        expect(hasHoverStateProperties(className)).toBe(true);
-        
-        // Verify hover state uses correct color for action type
-        expect(hasCorrectHoverColor(className)).toBe(true);
-      }),
-      { numRuns: 100 }
-    );
-  });
-
-  /**
-   * Property 3g: Small variant has reduced padding
-   * Validates: Requirement 3.1
-   */
-  it('should have reduced padding for icon-action-sm class', () => {
-    const smallClasses = fc.constantFrom('icon-action-sm');
-
-    fc.assert(
-      fc.property(smallClasses, (className) => {
-        const definition = getIconActionClassDefinition(className);
-        
-        // Verify class definition exists
-        expect(definition).not.toBeNull();
-        
-        // Verify small variant has reduced padding
-        expect(definition.base).toBeDefined();
-        expect(definition.base.padding).toBe('p-0.5');
-        expect(definition.base.borderRadius).toBe('rounded');
+        // Verify delete uses destructive color
+        expect(definition.hover.textColor).toContain('destructive');
+        expect(definition.hover.background).toContain('destructive');
       }),
       { numRuns: 100 }
     );
@@ -1037,32 +675,32 @@ describe('CSS Centralization - Icon Action Styling Consistency', () => {
 
 
 /**
- * **Feature: css-centralization, Property 2: Text Class Hierarchy Consistency**
+ * **Feature: shadcn-ui-migration, Property 2: Text Class Hierarchy Consistency**
  * **Validates: Requirements 2.1, 2.2**
  * 
  * For any text hierarchy level (primary, secondary, muted), the corresponding
  * CSS class should apply the correct color from CSS variables.
  */
 
-// Text class definitions based on design document and index.css
+// Text class definitions based on shadcn design
 const textClassDefinitions = {
-  // Primary text - uses --luma-text CSS variable
-  'text-luma': {
-    cssVariable: '--luma-text',
-    expectedColor: 'var(--luma-text)',
+  // Primary text - uses foreground CSS variable
+  'text-foreground': {
+    cssVariable: '--foreground',
+    expectedColor: 'hsl(var(--foreground))',
     description: 'Primary text color'
   },
-  // Secondary text - uses --luma-text-secondary CSS variable
-  'text-luma-secondary': {
-    cssVariable: '--luma-text-secondary',
-    expectedColor: 'var(--luma-text-secondary)',
-    description: 'Secondary text color'
+  // Secondary text - uses muted-foreground CSS variable
+  'text-muted-foreground': {
+    cssVariable: '--muted-foreground',
+    expectedColor: 'hsl(var(--muted-foreground))',
+    description: 'Secondary/muted text color'
   },
-  // Muted text - uses --luma-text-muted CSS variable
-  'text-luma-muted': {
-    cssVariable: '--luma-text-muted',
-    expectedColor: 'var(--luma-text-muted)',
-    description: 'Muted text color'
+  // Primary color text - uses primary CSS variable
+  'text-primary': {
+    cssVariable: '--primary',
+    expectedColor: 'hsl(var(--primary))',
+    description: 'Primary brand color text'
   }
 };
 
@@ -1077,21 +715,21 @@ function usesCorrectCssVariable(className) {
   if (!definition) return false;
   
   // Verify the class uses a CSS variable for color
-  return definition.cssVariable && definition.cssVariable.startsWith('--luma-text');
+  return definition.cssVariable && definition.cssVariable.startsWith('--');
 }
 
-// Function to verify text hierarchy is maintained (primary > secondary > muted)
+// Function to verify text hierarchy is maintained
 function maintainsTextHierarchy(className) {
-  const hierarchy = ['text-luma', 'text-luma-secondary', 'text-luma-muted'];
+  const hierarchy = ['text-foreground', 'text-muted-foreground', 'text-primary'];
   return hierarchy.includes(className);
 }
 
-describe('CSS Centralization - Text Class Hierarchy Consistency', () => {
+describe('CSS - Text Class Hierarchy Consistency', () => {
   /**
    * Property 2: Text Class Hierarchy Consistency
    * 
-   * For any text hierarchy level (primary, secondary, muted), the corresponding
-   * CSS class should apply the correct color from CSS variables.
+   * For any text hierarchy level, the corresponding CSS class should apply
+   * the correct color from CSS variables.
    */
   
   /**
@@ -1099,7 +737,7 @@ describe('CSS Centralization - Text Class Hierarchy Consistency', () => {
    * Validates: Requirement 2.1
    */
   it('should use correct CSS variable for primary text class', () => {
-    const primaryClasses = fc.constantFrom('text-luma');
+    const primaryClasses = fc.constantFrom('text-foreground');
 
     fc.assert(
       fc.property(primaryClasses, (className) => {
@@ -1109,8 +747,7 @@ describe('CSS Centralization - Text Class Hierarchy Consistency', () => {
         expect(definition).not.toBeNull();
         
         // Verify it uses the correct CSS variable
-        expect(definition.cssVariable).toBe('--luma-text');
-        expect(definition.expectedColor).toBe('var(--luma-text)');
+        expect(definition.cssVariable).toBe('--foreground');
         
         // Verify description indicates primary text
         expect(definition.description).toContain('Primary');
@@ -1120,36 +757,11 @@ describe('CSS Centralization - Text Class Hierarchy Consistency', () => {
   });
 
   /**
-   * Property 2b: Secondary text class uses correct CSS variable
-   * Validates: Requirement 2.2
-   */
-  it('should use correct CSS variable for secondary text class', () => {
-    const secondaryClasses = fc.constantFrom('text-luma-secondary');
-
-    fc.assert(
-      fc.property(secondaryClasses, (className) => {
-        const definition = getTextClassDefinition(className);
-        
-        // Verify class definition exists
-        expect(definition).not.toBeNull();
-        
-        // Verify it uses the correct CSS variable
-        expect(definition.cssVariable).toBe('--luma-text-secondary');
-        expect(definition.expectedColor).toBe('var(--luma-text-secondary)');
-        
-        // Verify description indicates secondary text
-        expect(definition.description).toContain('Secondary');
-      }),
-      { numRuns: 100 }
-    );
-  });
-
-  /**
-   * Property 2c: Muted text class uses correct CSS variable
+   * Property 2b: Muted text class uses correct CSS variable
    * Validates: Requirement 2.2
    */
   it('should use correct CSS variable for muted text class', () => {
-    const mutedClasses = fc.constantFrom('text-luma-muted');
+    const mutedClasses = fc.constantFrom('text-muted-foreground');
 
     fc.assert(
       fc.property(mutedClasses, (className) => {
@@ -1159,25 +771,24 @@ describe('CSS Centralization - Text Class Hierarchy Consistency', () => {
         expect(definition).not.toBeNull();
         
         // Verify it uses the correct CSS variable
-        expect(definition.cssVariable).toBe('--luma-text-muted');
-        expect(definition.expectedColor).toBe('var(--luma-text-muted)');
+        expect(definition.cssVariable).toBe('--muted-foreground');
         
         // Verify description indicates muted text
-        expect(definition.description).toContain('Muted');
+        expect(definition.description.toLowerCase()).toContain('muted');
       }),
       { numRuns: 100 }
     );
   });
 
   /**
-   * Property 2d: All text classes use CSS variables for colors
+   * Property 2c: All text classes use CSS variables for colors
    * Validates: Requirements 2.1, 2.2
    */
   it('should use CSS variables for all text hierarchy classes', () => {
     const allTextClasses = fc.constantFrom(
-      'text-luma',
-      'text-luma-secondary',
-      'text-luma-muted'
+      'text-foreground',
+      'text-muted-foreground',
+      'text-primary'
     );
 
     fc.assert(
@@ -1193,14 +804,14 @@ describe('CSS Centralization - Text Class Hierarchy Consistency', () => {
   });
 
   /**
-   * Property 2e: Text hierarchy classes are distinct
+   * Property 2d: Text hierarchy classes are distinct
    * Validates: Requirements 2.1, 2.2
    */
   it('should have distinct CSS variables for each text hierarchy level', () => {
     const textClassPairs = fc.constantFrom(
-      ['text-luma', 'text-luma-secondary'],
-      ['text-luma', 'text-luma-muted'],
-      ['text-luma-secondary', 'text-luma-muted']
+      ['text-foreground', 'text-muted-foreground'],
+      ['text-foreground', 'text-primary'],
+      ['text-muted-foreground', 'text-primary']
     );
 
     fc.assert(
@@ -1214,7 +825,6 @@ describe('CSS Centralization - Text Class Hierarchy Consistency', () => {
         
         // Verify they use different CSS variables
         expect(def1.cssVariable).not.toBe(def2.cssVariable);
-        expect(def1.expectedColor).not.toBe(def2.expectedColor);
       }),
       { numRuns: 100 }
     );

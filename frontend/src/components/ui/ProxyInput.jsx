@@ -1,8 +1,10 @@
 import { useState, useCallback, useImperativeHandle, forwardRef } from 'react';
 import { Loader2, AlertTriangle, Wifi, CheckCircle2 } from 'lucide-react';
-import { cn } from '../../lib/utils.js';
-import { isStaticProxy, parseProxy } from '../../utils/proxy.js';
-import { useToast } from '../../hooks/useToast.js';
+import { cn } from '@/lib/utils';
+import { isStaticProxy, parseProxy } from '@/utils/proxy';
+import { useToast } from '@/hooks/useToast';
+import { Input } from './input';
+import { Button } from './button';
 
 /**
  * ProxyInput - Input with check button and static IP detection
@@ -100,30 +102,32 @@ export const ProxyInput = forwardRef(function ProxyInput({
     }), [checkProxy, isChecking, proxyStatus]);
 
     const getStatusIcon = () => {
-        if (isChecking) return <Loader2 size={12} className="animate-spin text-luma-coral" />;
+        if (isChecking) return <Loader2 size={12} className="animate-spin text-primary" />;
         if (proxyStatus === 'valid') return <CheckCircle2 size={12} className="text-emerald-500" />;
         if (proxyStatus === 'static') return <AlertTriangle size={12} className="text-amber-500" />;
-        if (proxyStatus === 'invalid') return <AlertTriangle size={12} className="text-rose-500" />;
-        return <Wifi size={12} className="text-gray-400" />;
+        if (proxyStatus === 'invalid') return <AlertTriangle size={12} className="text-destructive" />;
+        return <Wifi size={12} className="text-muted-foreground" />;
     };
 
-    const getBorderClass = () => {
-        if (proxyStatus === 'valid') return 'border-emerald-500/30 focus:border-emerald-500/50';
-        if (proxyStatus === 'static') return 'border-amber-500/30 focus:border-amber-500/50';
-        if (proxyStatus === 'invalid') return 'border-rose-500/30 focus:border-rose-500/50';
-        return 'border-luma-coral-15 focus:border-luma-coral-40';
+    const getInputVariantClass = () => {
+        if (proxyStatus === 'valid') return 'border-emerald-500/30 focus-visible:border-emerald-500/50 focus-visible:ring-emerald-500/20';
+        if (proxyStatus === 'static') return 'border-amber-500/30 focus-visible:border-amber-500/50 focus-visible:ring-amber-500/20';
+        if (proxyStatus === 'invalid') return 'border-destructive/30 focus-visible:border-destructive/50 focus-visible:ring-destructive/20';
+        return '';
     };
 
-    const getBtnClass = () => {
-        if (proxyStatus === 'valid') return 'bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20';
-        if (proxyStatus === 'static') return 'bg-amber-500/10 text-amber-600 hover:bg-amber-500/20';
-        if (proxyStatus === 'invalid') return 'bg-rose-500/10 text-rose-600 hover:bg-rose-500/20';
-        return 'bg-luma-coral-10 text-luma-coral hover:bg-luma-coral-20';
+    const getButtonVariant = () => {
+        if (proxyStatus === 'valid') return 'success';
+        if (proxyStatus === 'static') return 'warning';
+        if (proxyStatus === 'invalid') return 'destructive';
+        return 'secondary';
     };
 
     return (
         <div className="relative flex items-center">
-            <input
+            <Input
+                id="proxy-input"
+                name="proxy-input"
                 type="text"
                 value={value || ''}
                 onChange={(e) => {
@@ -134,34 +138,22 @@ export const ProxyInput = forwardRef(function ProxyInput({
                 disabled={disabled || isChecking}
                 placeholder={placeholder}
                 className={cn(
-                    "floating-input rounded-apple",
-                    "flex h-7 md:h-8 w-full pl-3 pr-16",
-                    "text-[10px] font-mono text-luma",
-                    "placeholder:text-luma-muted",
-                    "disabled:cursor-not-allowed disabled:opacity-40",
-                    "focus:outline-none focus:ring-2 focus:ring-luma-coral-20",
-                    "transition-all duration-200",
-                    getBorderClass(),
+                    "h-8 pr-16 font-mono text-xs",
+                    getInputVariantClass(),
                     className
                 )}
             />
-            <button
+            <Button
                 type="button"
+                variant={getButtonVariant()}
+                size="sm"
                 onClick={() => checkProxy(true)}
                 disabled={disabled || isChecking || !value?.trim()}
-                className={cn(
-                    "absolute right-1 top-1/2 -translate-y-1/2",
-                    "flex items-center gap-1 px-2 py-1 rounded-lg",
-                    "text-[9px] font-medium transition-all duration-200",
-                    "disabled:opacity-40 disabled:cursor-not-allowed",
-                    getBtnClass()
-                )}
+                className="absolute right-1 h-6 px-2 text-[10px]"
                 title="Check proxy"
             >
                 {getStatusIcon()}
-            </button>
+            </Button>
         </div>
     );
 });
-
-export default ProxyInput;

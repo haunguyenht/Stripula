@@ -1,5 +1,8 @@
 /**
  * Stripe utility functions for data transformation and normalization
+ * 
+ * Note: calculateCardStats and calculateKeyStats have been moved to statistics.js
+ * to avoid duplication. Import from '@/utils/statistics' if needed.
  */
 
 /**
@@ -22,84 +25,4 @@ export function transformLegacyCardResults(results) {
         }
         return r;
     });
-}
-
-/**
- * Normalize card result from API response
- * Shows full card number without masking
- */
-export function normalizeCardResult(result) {
-    const cardInfo = result.card || {};
-    const fullCard = typeof cardInfo === 'object'
-        ? `${cardInfo.number}|${cardInfo.expMonth}|${cardInfo.expYear}`
-        : cardInfo;
-    
-    return {
-        ...result,
-        card: fullCard,
-        fullCard: fullCard
-    };
-}
-
-/**
- * Calculate card stats from results array
- */
-export function calculateCardStats(results) {
-    const stats = {
-        approved: 0,
-        live: 0,
-        die: 0,
-        error: 0,
-        total: results.length
-    };
-    
-    results.forEach(r => {
-        if (r.status === 'APPROVED') {
-            stats.approved++;
-        } else if (r.status === 'LIVE') {
-            stats.live++;
-        } else if (r.status === 'DIE') {
-            stats.die++;
-        } else if (r.status === 'ERROR' || r.status === 'RETRY') {
-            stats.error++;
-        }
-    });
-    
-    return stats;
-}
-
-/**
- * Calculate key stats from results array
- */
-export function calculateKeyStats(results) {
-    const stats = {
-        live: 0,
-        livePlus: 0,
-        liveZero: 0,
-        liveNeg: 0,
-        dead: 0,
-        error: 0,
-        total: results.length
-    };
-    
-    results.forEach(r => {
-        if (r.status === 'LIVE+') {
-            stats.live++;
-            stats.livePlus++;
-        } else if (r.status === 'LIVE0') {
-            stats.live++;
-            stats.liveZero++;
-        } else if (r.status === 'LIVE-') {
-            stats.live++;
-            stats.liveNeg++;
-        } else if (r.status?.startsWith('LIVE')) {
-            stats.live++;
-        } else if (r.status === 'DEAD') {
-            stats.dead++;
-        } else if (r.status === 'ERROR') {
-            stats.error++;
-        }
-    });
-    
-    return stats;
 }

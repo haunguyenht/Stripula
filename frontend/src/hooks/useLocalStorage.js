@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 
+
 /**
  * useLocalStorage Hook
  * Persist state to localStorage with automatic sync
@@ -76,49 +77,4 @@ export function useLocalStorage(key, initialValue, options = {}) {
     return [storedValue, setValue];
 }
 
-/**
- * useSessionStorage Hook
- * Same as useLocalStorage but uses sessionStorage
- */
-export function useSessionStorage(key, initialValue) {
-    const [storedValue, setStoredValue] = useState(() => {
-        try {
-            const item = sessionStorage.getItem(key);
-            if (item === null) return initialValue;
-            
-            try {
-                return JSON.parse(item);
-            } catch {
-                return item;
-            }
-        } catch (error) {
-            console.warn(`Error reading sessionStorage key "${key}":`, error);
-            return initialValue;
-        }
-    });
-
-    useEffect(() => {
-        try {
-            if (storedValue === undefined) {
-                sessionStorage.removeItem(key);
-            } else {
-                const valueToStore = typeof storedValue === 'string' 
-                    ? storedValue 
-                    : JSON.stringify(storedValue);
-                sessionStorage.setItem(key, valueToStore);
-            }
-        } catch (error) {
-            console.warn(`Error setting sessionStorage key "${key}":`, error);
-        }
-    }, [key, storedValue]);
-
-    const setValue = useCallback((value) => {
-        setStoredValue(prev => {
-            const newValue = typeof value === 'function' ? value(prev) : value;
-            return newValue;
-        });
-    }, []);
-
-    return [storedValue, setValue];
-}
 

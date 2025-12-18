@@ -1,107 +1,33 @@
-import { cn } from '../../lib/utils';
-import { forwardRef } from 'react';
+import * as React from "react";
+import { cn } from "../../lib/utils.js";
 
-/**
- * Input Components - Luma Warm Theme
- * Uses centralized CSS classes with warm color palette
- */
-
-const Input = forwardRef(({ className, type, ...props }, ref) => {
+const Input = React.forwardRef(
+  ({ className, type, ...props }, ref) => {
     return (
-        <input
-            type={type}
-            className={cn(
-                "floating-input rounded-apple",
-                "flex h-11 w-full px-4",
-                "text-sm font-mono text-luma",
-                "placeholder:text-luma-muted",
-                "disabled:cursor-not-allowed disabled:opacity-40 disabled:bg-luma-muted",
-                "focus:outline-none focus:border-luma-coral-30 focus:ring-2 focus:ring-luma-coral-20",
-                "transition-all duration-200",
-                className
-            )}
-            ref={ref}
-            {...props}
-        />
+      <input
+        type={type}
+        className={cn(
+          // Base styles
+          "flex h-9 w-full px-3 py-1 text-sm transition-colors",
+          "file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground",
+          "disabled:cursor-not-allowed disabled:opacity-50",
+          // Light mode: OrangeAI warm input
+          "rounded-[10px] bg-[rgb(248,247,247)] border border-[rgb(237,234,233)]",
+          "text-[rgb(37,27,24)] placeholder:text-[rgb(145,134,131)]",
+          "focus-visible:outline-none focus-visible:border-[rgb(255,64,23)] focus-visible:ring-2 focus-visible:ring-[rgb(255,64,23)]/10",
+          // Dark mode: OPUX glass input
+          "dark:rounded-md dark:bg-transparent dark:glass-input",
+          "dark:text-white dark:border-white/10",
+          "dark:placeholder:text-white/40",
+          "dark:focus-visible:ring-terracotta/20 dark:focus-visible:border-white/20",
+          className
+        )}
+        ref={ref}
+        {...props}
+      />
     );
-});
-
+  }
+);
 Input.displayName = "Input";
 
-const Textarea = forwardRef(({ className, ...props }, ref) => {
-    return (
-        <textarea
-            className={cn(
-                "floating-input rounded-apple-lg",
-                "flex w-full p-4",
-                "text-sm font-mono text-luma leading-relaxed",
-                "placeholder:text-luma-muted",
-                "disabled:cursor-not-allowed disabled:opacity-40 disabled:bg-luma-muted",
-                "focus:outline-none focus:border-luma-coral-30 focus:ring-2 focus:ring-luma-coral-20",
-                "resize-none scrollbar-thin transition-all duration-200",
-                className
-            )}
-            ref={ref}
-            {...props}
-        />
-    );
-});
-
-Textarea.displayName = "Textarea";
-
-const Select = forwardRef(({ className, children, ...props }, ref) => {
-    return (
-        <div className="relative">
-            <select
-                className={cn(
-                    "floating-input rounded-apple",
-                    "flex h-11 w-full px-4 appearance-none cursor-pointer",
-                    "text-sm font-apple-medium text-luma",
-                    "disabled:cursor-not-allowed disabled:opacity-40 disabled:bg-luma-muted",
-                    "focus:outline-none focus:border-luma-coral-30 focus:ring-2 focus:ring-luma-coral-20",
-                    "transition-all duration-200",
-                    className
-                )}
-                ref={ref}
-                {...props}
-            >
-                {children}
-            </select>
-            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-luma-muted">
-                <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5">
-                    <path d="M2 3.5L5 6.5L8 3.5" />
-                </svg>
-            </div>
-        </div>
-    );
-});
-
-Select.displayName = "Select";
-
-const RangeSlider = forwardRef(({ className, value, min = 0, max = 100, ...props }, ref) => {
-    const percentage = ((value - min) / (max - min)) * 100;
-    
-    return (
-        <div className="relative w-full">
-            <input
-                type="range"
-                value={value}
-                min={min}
-                max={max}
-                className={cn(
-                    "range-slider w-full h-2 rounded-full appearance-none cursor-pointer",
-                    className
-                )}
-                style={{
-                    background: `linear-gradient(to right, var(--luma-coral) 0%, var(--luma-coral) ${percentage}%, var(--luma-border) ${percentage}%, var(--luma-border) 100%)`
-                }}
-                ref={ref}
-                {...props}
-            />
-        </div>
-    );
-});
-
-RangeSlider.displayName = "RangeSlider";
-
-export { Input, Textarea, Select, RangeSlider };
+export { Input };
