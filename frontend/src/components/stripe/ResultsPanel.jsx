@@ -155,7 +155,7 @@ export function ResultsPanel({
         )}
       </ResultsContent>
 
-      {totalPages > 1 && (
+      {(totalPages > 1 || onPageSizeChange) && (
         <ResultsFooter>
           <Pagination
             currentPage={currentPage}
