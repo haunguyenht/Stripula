@@ -150,6 +150,12 @@ export const cardVariants = cva(
           'border-l-2 border-l-warning',
           'dark:border-l-[#f59e0b]',
         ].join(' '),
+        
+        // Declined status - rose/red accent
+        declined: [
+          'border-l-2 border-l-[#f43f5e]',
+          'dark:border-l-[#f43f5e]',
+        ].join(' '),
       },
       
       interactive: {

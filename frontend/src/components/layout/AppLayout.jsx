@@ -1,83 +1,243 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Shield, Zap, TreeDeciduous, HelpCircle, Wallet, ShoppingBag, Target, Hash, KeyRound, ShoppingCart } from 'lucide-react';
+import { Zap, TreeDeciduous, HelpCircle, Wallet, ShoppingBag, Target, Layers, Key, MapPin, SquareStack } from 'lucide-react';
 import { TopTabBar } from '../navigation/TopTabBar';
 import StripeOwn from '../StripeOwn';
+import { StripeAuthPanel } from '../stripe/panels/StripeAuthPanel';
+import { StripeChargePanel } from '../stripe/panels/StripeChargePanel';
+import { ShopifyChargePanel } from '../shopify/panels/ShopifyChargePanel';
+import { ProfilePage } from '@/pages/ProfilePage';
+import { LoginPage } from '@/pages/LoginPage';
+import { AdminPage } from '@/pages/AdminPage';
 import { AppBackground } from '../background/AppBackground';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { ConfirmDialog } from '@/components/ui/alert-dialog';
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
+import { TelegramContactButton } from '@/components/ui/TelegramContactButton';
+import { DailyClaimModal } from '@/components/credits/DailyClaimModal';
 import { transition, variants } from '@/lib/motion';
+import { useAuth } from '@/contexts/AuthContext';
+import { useValidation, ValidationProvider } from '@/contexts/ValidationContext';
 
 /**
  * AppLayout - Main application layout with shadcn/ui components
+ * Protected by authentication - shows login page when not authenticated
  */
 export function AppLayout() {
-  const [activeRoute, setActiveRoute] = useState(() => 
-    localStorage.getItem('appActiveRoute') || 'stripe-charge-1'
+  return (
+    <ValidationProvider>
+      <AppLayoutInner />
+    </ValidationProvider>
   );
+}
 
-  const handleNavigate = (routeId) => {
-    setActiveRoute(routeId);
-    localStorage.setItem('appActiveRoute', routeId);
-  };
+function AppLayoutInner() {
+  const { isAuthenticated, isLoading, user: authUser } = useAuth();
+  const { isValidating, stopValidation } = useValidation();
+  const [activeRoute, setActiveRoute] = useState(() => 
+    localStorage.getItem('appActiveRoute') || 'profile'
+  );
+  
+  // Confirmation dialog state for route switching during validation
+  const [showStopConfirm, setShowStopConfirm] = useState(false);
+  const [pendingRoute, setPendingRoute] = useState(null);
+
+  // Transform auth user to nav user format
+  const navUser = authUser ? {
+    name: authUser.firstName || authUser.first_name || 'User',
+    email: authUser.username ? `@${authUser.username}` : null,
+    credits: authUser.creditBalance ?? authUser.credit_balance ?? 0,
+    tier: authUser.tier || 'free',
+    photoUrl: authUser.photoUrl || authUser.photo_url,
+    isAdmin: authUser.isAdmin || authUser.is_admin || false,
+  } : null;
+
+  // Handle navigation with confirmation if validating
+  const handleNavigate = useCallback((routeId) => {
+    if (isValidating && routeId !== activeRoute) {
+      // Show confirmation dialog
+      setPendingRoute(routeId);
+      setShowStopConfirm(true);
+    } else {
+      setActiveRoute(routeId);
+      localStorage.setItem('appActiveRoute', routeId);
+    }
+  }, [isValidating, activeRoute]);
+
+  // Confirm stop and navigate
+  const handleConfirmStop = useCallback(() => {
+    stopValidation();
+    if (pendingRoute) {
+      setActiveRoute(pendingRoute);
+      localStorage.setItem('appActiveRoute', pendingRoute);
+      setPendingRoute(null);
+    }
+  }, [pendingRoute, stopValidation]);
+
+  // Cancel navigation
+  const handleCancelStop = useCallback(() => {
+    setPendingRoute(null);
+  }, []);
 
   const renderContent = () => {
     switch (activeRoute) {
       case 'stripe-auth':
-        return <PlaceholderPage title="Stripe Auth" description="Key validation and authentication" Icon={Shield} />;
-      case 'stripe-charge-1':
-        return <StripeOwn />;
-      case 'stripe-charge-2':
-        return <PlaceholderPage title="Stripe Charge v2" description="Alternative charge validation method" Icon={Zap} />;
+        return (
+          <ErrorBoundary fallbackMessage="Error loading Stripe Auth panel. Your input has been preserved.">
+            <StripeAuthPanel />
+          </ErrorBoundary>
+        );
+      case 'stripe-charge':
+        return (
+          <ErrorBoundary fallbackMessage="Error loading Stripe Charge panel. Your input has been preserved.">
+            <StripeChargePanel />
+          </ErrorBoundary>
+        );
+      case 'stripe-skbased':
+        return (
+          <ErrorBoundary fallbackMessage="Error loading SK-Based panel. Your input has been preserved.">
+            <StripeOwn />
+          </ErrorBoundary>
+        );
       case 'braintree-auth':
-        return <PlaceholderPage title="Braintree Auth" description="Braintree authentication" Icon={TreeDeciduous} />;
+        return <PlaceholderPage title="Braintree Auth" description="Braintree authentication with 3 gateways" Icon={TreeDeciduous} />;
+      case 'braintree-charge':
+        return <PlaceholderPage title="Braintree Charge" description="Braintree payment check with 3 gateways" Icon={TreeDeciduous} />;
       case 'paypal-charge':
-        return <PlaceholderPage title="PayPal Charge" description="PayPal payment check" Icon={Wallet} />;
+        return <PlaceholderPage title="PayPal Charge" description="PayPal payment check with 3 gateways" Icon={Wallet} />;
       case 'adyen-auth':
-        return <PlaceholderPage title="Adyen Auth" description="Adyen authentication" Icon={Wallet} comingSoon />;
+        return <PlaceholderPage title="Adyen Auth" description="Adyen authentication with 3 gateways" Icon={Wallet} />;
       case 'adyen-charge':
-        return <PlaceholderPage title="Adyen Charge" description="Adyen payment check" Icon={Zap} comingSoon />;
-      case 'shopify-auth':
-        return <PlaceholderPage title="Shopify Auth" description="Shopify authentication" Icon={ShoppingBag} comingSoon />;
+        return <PlaceholderPage title="Adyen Charge" description="Adyen payment check with 3 gateways" Icon={Zap} />;
       case 'shopify-charge':
-        return <PlaceholderPage title="Shopify Charge" description="Shopify payment check" Icon={Zap} comingSoon />;
+        return (
+          <ErrorBoundary fallbackMessage="Error loading Shopify Charge panel. Your input has been preserved.">
+            <ShopifyChargePanel />
+          </ErrorBoundary>
+        );
       case 'target-charge':
-        return <PlaceholderPage title="Target Charge" description="Target payment check" Icon={Target} comingSoon />;
-      case 'co-inbuilt-ccn':
-        return <PlaceholderPage title="Inbuilt CCN" description="Card number generator" Icon={Hash} comingSoon />;
-      case 'co-inbuilt-ccv':
-        return <PlaceholderPage title="Inbuilt CCV" description="CVV generator" Icon={KeyRound} comingSoon />;
-      case 'co-checkout':
-        return <PlaceholderPage title="CO Checkout" description="Checkout flow" Icon={ShoppingCart} comingSoon />;
+        return <PlaceholderPage title="Target Charge" description="Target payment check with 3 gateways" Icon={Target} />;
+      case 'other-sk-key-check':
+        return (
+          <ErrorBoundary fallbackMessage="Error loading SK Key Check panel. Your input has been preserved.">
+            <StripeOwn initialTab="keys" />
+          </ErrorBoundary>
+        );
+      case 'other-charge-avs':
+        return <PlaceholderPage title="Charge AVS" description="Address verification service validation" Icon={MapPin} />;
+      case 'other-square-charge':
+        return <PlaceholderPage title="Square Charge" description="Square payment validation" Icon={SquareStack} />;
+      case 'profile':
+        return (
+          <ErrorBoundary fallbackMessage="Error loading Profile page.">
+            <ProfilePage />
+          </ErrorBoundary>
+        );
+      case 'admin':
+        return (
+          <ErrorBoundary fallbackMessage="Error loading Admin page.">
+            <AdminPage />
+          </ErrorBoundary>
+        );
       case 'help':
         return <PlaceholderPage title="Help" description="Documentation and support" Icon={HelpCircle} />;
       default:
-        return <StripeOwn />;
+        return (
+          <ErrorBoundary fallbackMessage="Error loading SK-Based panel. Your input has been preserved.">
+            <StripeOwn />
+          </ErrorBoundary>
+        );
     }
   };
 
+  // Show loading spinner while checking auth
+  if (isLoading) {
+    return (
+      <div className="h-screen w-screen overflow-hidden flex flex-col bg-[rgb(248,247,247)] dark:bg-transparent">
+        <AppBackground />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-3">
+            <svg 
+              className="animate-spin h-10 w-10 text-primary" 
+              viewBox="0 0 24 24"
+            >
+              <circle 
+                className="opacity-25" 
+                cx="12" cy="12" r="10" 
+                stroke="currentColor" 
+                strokeWidth="4" 
+                fill="none" 
+              />
+              <path 
+                className="opacity-75" 
+                fill="currentColor" 
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" 
+              />
+            </svg>
+            <span className="text-sm text-muted-foreground">Loading...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show login page when not authenticated
+  if (!isAuthenticated) {
+    return (
+      <div className="h-screen w-screen overflow-hidden flex flex-col bg-[rgb(248,247,247)] dark:bg-transparent">
+        <AppBackground />
+        <main className="flex-1 flex flex-col overflow-hidden relative z-0">
+          <LoginPage />
+        </main>
+      </div>
+    );
+  }
+
+  // Authenticated - show main app
   return (
     <div className="h-screen w-screen overflow-hidden flex flex-col bg-[rgb(248,247,247)] dark:bg-transparent">
+      {/* Daily claim modal - auto shows when available */}
+      <DailyClaimModal autoShow />
+      
+      {/* Confirmation dialog for stopping validation */}
+      <ConfirmDialog
+        open={showStopConfirm}
+        onOpenChange={setShowStopConfirm}
+        title="Stop validation?"
+        description="Validation is still in progress. Are you sure you want to stop and navigate away? Any pending cards will not be processed."
+        confirmLabel="Stop & Navigate"
+        cancelLabel="Continue Validation"
+        onConfirm={handleConfirmStop}
+        onCancel={handleCancelStop}
+      />
+      
       {/* Decorative background with gradient and floating dots */}
       <AppBackground />
       
       <TopTabBar 
         activeRoute={activeRoute} 
         onNavigate={handleNavigate}
+        user={navUser}
       />
       
       <main className="flex-1 flex flex-col overflow-hidden relative z-0">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeRoute}
-            className="h-full"
-            {...variants.fadeIn}
-            transition={transition.fast}
-          >
-            {renderContent()}
-          </motion.div>
-        </AnimatePresence>
+        <ErrorBoundary>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeRoute}
+              className="h-full"
+              {...variants.fadeIn}
+              transition={transition.fast}
+            >
+              {renderContent()}
+            </motion.div>
+          </AnimatePresence>
+        </ErrorBoundary>
       </main>
+      
+      {/* Floating Telegram contact button */}
+      <TelegramContactButton />
     </div>
   );
 }

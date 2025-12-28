@@ -49,11 +49,19 @@ export class Card {
     /**
      * Parse a card from text line (supports number|month|year|cvv format)
      */
+    static fromString(line) {
+        return Card.fromLine(line);
+    }
+
+    /**
+     * Parse a card from text line (supports number|month|year|cvv format)
+     */
     static fromLine(line) {
-        const parts = line.split(/[|:]/);
+        if (!line || typeof line !== 'string') return null;
+        const parts = line.split(/[|:,\s]+/).filter(Boolean);
         if (parts.length < 3) return null;
 
-        let number = parts[0].replace(/\D/g, '');
+        let number = (parts[0] || '').replace(/\D/g, '');
         let expMonth, expYear, cvv;
 
         if (parts.length >= 4) {

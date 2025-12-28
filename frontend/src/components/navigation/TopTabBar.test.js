@@ -47,8 +47,8 @@ const navigationConfig = [
     label: 'Stripe', 
     children: [
       { id: 'stripe-auth', label: 'Auth' },
-      { id: 'stripe-charge-1', label: 'Charge v1' },
-      { id: 'stripe-charge-2', label: 'Charge v2' },
+      { id: 'stripe-charge', label: 'Charge check' },
+      { id: 'stripe-charge-1', label: 'SK Based Charge' },
     ]
   },
   { 

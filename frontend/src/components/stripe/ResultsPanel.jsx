@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { motion } from 'motion/react';
 import { ChevronLeft, ChevronRight, Trash2, RefreshCw, Key, Copy } from 'lucide-react';
 import { ResultsHeader, ResultsContent, ResultsFooter } from '../layout/panels/ResultsPanelSections';
@@ -11,11 +11,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { VirtualResultsList } from '@/components/ui/virtual-list';
+import { VirtualResultsList, useVirtualization } from '@/components/ui/virtual-list';
 import { cn } from '@/lib/utils';
 
-// Threshold for enabling virtualization
-const VIRTUALIZATION_THRESHOLD = 30;
+// Threshold for enabling virtualization (Requirements 3.1)
+const VIRTUALIZATION_THRESHOLD = 50;
 
 /**
  * ResultsPanel - Results panel with stats bar, list, and pagination
@@ -47,13 +47,13 @@ export function ResultsPanel({
   emptyState,
   loadingState,
   className,
+  // Custom header actions (e.g., ExportButton)
+  headerActions,
 }) {
   const safeStats = Array.isArray(stats) ? stats : [];
   
-  // Determine if we should use virtualization
-  const useVirtualization = useMemo(() => {
-    return items && items.length > VIRTUALIZATION_THRESHOLD;
-  }, [items]);
+  // Determine if we should use virtualization (Requirements 3.1)
+  const shouldVirtualize = useVirtualization(items?.length || 0, VIRTUALIZATION_THRESHOLD);
 
   return (
     <div className={cn("flex flex-col h-full", className)}>
@@ -71,6 +71,8 @@ export function ResultsPanel({
 
           {/* Actions - always icon only for consistency */}
           <div className="flex items-center gap-0.5 shrink-0">
+            {/* Custom header actions (e.g., ExportButton) */}
+            {headerActions}
             {onRefresh && (
               <Button
                 variant="ghost"
@@ -135,27 +137,39 @@ export function ResultsPanel({
         </div>
       </ResultsHeader>
 
-      <ResultsContent className="flex-1 min-h-0">
-        {isLoading && isEmpty ? (
-          loadingState || <DefaultLoadingState />
-        ) : isEmpty ? (
-          emptyState || <DefaultEmptyState />
-        ) : useVirtualization && items && renderItem ? (
-          <VirtualResultsList
-            items={items}
-            renderItem={renderItem}
-            getItemKey={getItemKey}
-            estimateSize={estimateItemSize}
-            overscan={5}
-          />
-        ) : (
-          <div className="space-y-3">
-            {children}
-          </div>
-        )}
-      </ResultsContent>
+      {shouldVirtualize && items && renderItem ? (
+        // Virtual list needs its own scroll container
+        <div className="flex-1 min-h-0 overflow-auto p-4">
+          {isLoading && isEmpty ? (
+            loadingState || <DefaultLoadingState />
+          ) : isEmpty ? (
+            emptyState || <DefaultEmptyState />
+          ) : (
+            <VirtualResultsList
+              items={items}
+              renderItem={renderItem}
+              getItemKey={getItemKey}
+              estimateSize={estimateItemSize}
+              overscan={5}
+            />
+          )}
+        </div>
+      ) : (
+        <ResultsContent className="flex-1 min-h-0">
+          {isLoading && isEmpty ? (
+            loadingState || <DefaultLoadingState />
+          ) : isEmpty ? (
+            emptyState || <DefaultEmptyState />
+          ) : (
+            <div className="space-y-3">
+              {children}
+            </div>
+          )}
+        </ResultsContent>
+      )}
 
-      {(totalPages > 1 || onPageSizeChange) && (
+      {/* Show pagination when there are multiple pages OR items exceed minimum page size */}
+      {(totalPages > 1 || (items?.length > 10 && onPageSizeChange)) && (
         <ResultsFooter>
           <Pagination
             currentPage={currentPage}
@@ -237,12 +251,12 @@ function DefaultEmptyState() {
         animate={{ y: [0, -8, 0] }}
         transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
       >
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-muted">
-          <Key className="h-8 w-8 text-muted-foreground" />
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[rgb(248,247,247)] dark:bg-white/10">
+          <Key className="h-8 w-8 text-[rgb(145,134,131)] dark:text-white/50" />
         </div>
       </motion.div>
-      <p className="text-lg font-semibold">No results yet</p>
-      <p className="text-sm text-muted-foreground mt-1">Results will appear here</p>
+      <p className="text-lg font-semibold text-[rgb(37,27,24)] dark:text-white">No results yet</p>
+      <p className="text-sm text-[rgb(145,134,131)] dark:text-white/50 mt-1">Results will appear here</p>
     </motion.div>
   );
 }

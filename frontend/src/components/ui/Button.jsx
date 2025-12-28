@@ -8,35 +8,36 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        // Default - OrangeAI gradient button with orange glow (light) / OPUX terracotta (dark)
+        // Default - OrangeAI gradient button (light) / OPUX terracotta (dark)
         default: [
-          // Light mode: OrangeAI gradient orange button with glow
+          // Light mode: Clean gradient button with minimal shadow
           "bg-gradient-to-b from-[rgb(255,64,23)] to-[rgb(220,50,15)]",
           "text-white font-semibold",
-          "shadow-[0px_2px_6px_0px_rgba(0,0,0,0.2),0_4px_15px_rgba(255,64,23,0.3)]",
+          "shadow-sm",
           "hover:from-[rgb(255,80,40)] hover:to-[rgb(235,60,25)]",
-          "hover:shadow-[0px_2px_6px_0px_rgba(0,0,0,0.2),0_6px_20px_rgba(255,64,23,0.4)]",
-          "active:translate-y-[1px] active:shadow-[0px_1px_3px_rgba(0,0,0,0.2)]",
-          // Dark mode: OPUX terracotta button
-          "dark:from-[#AB726F] dark:to-[#AB726F] dark:border-none",
-          "dark:hover:from-[#b4817e] dark:hover:to-[#b4817e]",
-          "dark:shadow-[#9d5e5bb8_0_0.602187px_1.08394px_-1.25px,#9d5e5ba3_0_2.28853px_4.11936px_-2.5px,#9d5e5b40_0_10px_18px_-3.75px]",
+          "hover:shadow-md",
+          "active:translate-y-[1px] active:shadow-sm",
+          // Dark mode: OPUX terracotta button with subtle shadow
+          "dark:from-[#AB726F] dark:to-[#9d5e5b] dark:border-none",
+          "dark:hover:from-[#b4817e] dark:hover:to-[#a86b68]",
+          "dark:shadow-md",
+          "dark:hover:shadow-lg",
         ].join(" "),
 
-        // Destructive - red accent
+        // Destructive - red accent (matches default button style)
         destructive: [
-          // Light mode: OrangeAI destructive
-          "bg-gradient-to-b from-[rgb(239,68,68)] to-[rgb(220,50,50)]",
-          "text-white shadow-[0px_2px_6px_rgba(0,0,0,0.2)]",
-          "hover:from-[rgb(248,80,80)] hover:to-[rgb(230,60,60)]",
-          // Dark mode: OPUX glass with red
-          "dark:from-transparent dark:to-transparent",
-          "dark:[background:linear-gradient(135deg,#33333365,#2e2e2e60)]",
-          "dark:[backdrop-filter:blur(12px)_saturate(180%)]",
-          "dark:border dark:border-[#ef444450]",
-          "dark:text-[#ef4444]",
-          "dark:shadow-[0_8px_32px_#0000005e,inset_0_1px_0_#ffffff0d]",
-          "dark:hover:border-[#ef444480]",
+          // Light mode: Clean red gradient with minimal shadow
+          "bg-gradient-to-b from-[rgb(239,68,68)] to-[rgb(200,45,45)]",
+          "text-white font-semibold",
+          "shadow-sm",
+          "hover:from-[rgb(248,80,80)] hover:to-[rgb(220,55,55)]",
+          "hover:shadow-md",
+          "active:translate-y-[1px] active:shadow-sm",
+          // Dark mode: Solid red button (matches default terracotta style)
+          "dark:from-[#dc2626] dark:to-[#b91c1c] dark:border-none",
+          "dark:hover:from-[#ef4444] dark:hover:to-[#dc2626]",
+          "dark:shadow-md",
+          "dark:hover:shadow-lg",
         ].join(" "),
 
         // Outline - OrangeAI outline (light) / OPUX glass outline (dark)
@@ -88,34 +89,46 @@ const buttonVariants = cva(
 
         // Success - green accent
         success: [
-          // Light mode: OrangeAI success
-          "bg-gradient-to-b from-[rgb(34,197,94)] to-[rgb(22,163,74)]",
-          "text-white shadow-[0px_2px_6px_rgba(0,0,0,0.2)]",
-          "hover:from-[rgb(50,210,110)] hover:to-[rgb(34,180,90)]",
-          // Dark mode: OPUX glass with green
+          // Light mode: Soft emerald with subtle gradient
+          "bg-gradient-to-b from-emerald-50 to-emerald-100/80",
+          "text-emerald-700 font-medium",
+          "border border-emerald-200/60",
+          "shadow-sm shadow-emerald-500/5",
+          "hover:from-emerald-100 hover:to-emerald-150/80",
+          "hover:border-emerald-300/60",
+          "hover:shadow-md hover:shadow-emerald-500/10",
+          "active:translate-y-[1px] active:shadow-sm",
+          // Dark mode: OPUX glass with emerald accent
           "dark:from-transparent dark:to-transparent",
           "dark:[background:linear-gradient(135deg,#33333365,#2e2e2e60)]",
           "dark:[backdrop-filter:blur(12px)_saturate(180%)]",
-          "dark:border dark:border-[#22c55e50]",
-          "dark:text-[#22c55e]",
+          "dark:border dark:border-emerald-500/30",
+          "dark:text-emerald-400",
           "dark:shadow-[0_8px_32px_#0000005e,inset_0_1px_0_#ffffff0d]",
-          "dark:hover:border-[#22c55e80]",
+          "dark:hover:border-emerald-500/50",
+          "dark:hover:shadow-[0_8px_32px_#00000070,inset_0_1px_0_#ffffff14]",
         ].join(" "),
 
         // Warning - amber accent
         warning: [
-          // Light mode: OrangeAI warning
-          "bg-gradient-to-b from-[rgb(245,158,11)] to-[rgb(217,119,6)]",
-          "text-white shadow-[0px_2px_6px_rgba(0,0,0,0.2)]",
-          "hover:from-[rgb(250,170,30)] hover:to-[rgb(230,140,20)]",
+          // Light mode: Soft amber with subtle gradient
+          "bg-gradient-to-b from-amber-50 to-amber-100/80",
+          "text-amber-700 font-medium",
+          "border border-amber-200/60",
+          "shadow-sm shadow-amber-500/5",
+          "hover:from-amber-100 hover:to-amber-150/80",
+          "hover:border-amber-300/60",
+          "hover:shadow-md hover:shadow-amber-500/10",
+          "active:translate-y-[1px] active:shadow-sm",
           // Dark mode: OPUX glass with amber
           "dark:from-transparent dark:to-transparent",
           "dark:[background:linear-gradient(135deg,#33333365,#2e2e2e60)]",
           "dark:[backdrop-filter:blur(12px)_saturate(180%)]",
-          "dark:border dark:border-[#f59e0b50]",
-          "dark:text-[#f59e0b]",
+          "dark:border dark:border-amber-500/30",
+          "dark:text-amber-400",
           "dark:shadow-[0_8px_32px_#0000005e,inset_0_1px_0_#ffffff0d]",
-          "dark:hover:border-[#f59e0b80]",
+          "dark:hover:border-amber-500/50",
+          "dark:hover:shadow-[0_8px_32px_#00000070,inset_0_1px_0_#ffffff14]",
         ].join(" "),
 
         // Contrast - OrangeAI dark button (light) / white button (dark)

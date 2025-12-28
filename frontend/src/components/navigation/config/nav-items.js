@@ -1,28 +1,22 @@
 import { 
   CreditCard, 
   TreeDeciduous, 
-  HelpCircle, 
   Zap,
   Shield,
-  Sparkles,
   Wallet,
   ShoppingBag,
   Target,
-  Crosshair,
-  Hash,
-  KeyRound,
-  ShoppingCart,
+  Layers,
+  Key,
+  MapPin,
+  SquareStack,
 } from 'lucide-react';
 
 /**
- * Default user data for when no user is provided
+ * Default user data - null when no user is authenticated
+ * Real user data should be passed from AuthContext
  */
-export const defaultUser = {
-  name: 'User',
-  email: 'user@example.com',
-  credits: 100,
-  tier: 'gold',
-};
+export const defaultUser = null;
 
 /**
  * Navigation menu items configuration
@@ -34,9 +28,9 @@ export const navItems = [
     label: 'Stripe', 
     icon: CreditCard,
     children: [
-      { id: 'stripe-auth', label: 'Auth', icon: Shield, desc: 'Key validation' },
-      { id: 'stripe-charge-1', label: 'SK Based Charge', icon: Zap, desc: 'Standard check' },
-      { id: 'stripe-charge-2', label: 'Charge v2', icon: Sparkles, desc: 'Advanced check' },
+      { id: 'stripe-auth', label: 'Auth', icon: Shield, desc: 'Authorization check' },
+      { id: 'stripe-charge', label: 'Charge', icon: Zap, desc: 'Payment check' },
+      { id: 'stripe-skbased', label: 'SKBased', icon: Key, desc: 'SKBased check' },
     ]
   },
   { 
@@ -45,6 +39,7 @@ export const navItems = [
     icon: TreeDeciduous,
     children: [
       { id: 'braintree-auth', label: 'Auth', icon: Shield, desc: 'Authentication' },
+      { id: 'braintree-charge', label: 'Charge', icon: Zap, desc: 'Payment check' },
     ]
   },
   { 
@@ -59,46 +54,36 @@ export const navItems = [
     id: 'adyen',
     label: 'Adyen', 
     icon: Wallet,
-    comingSoon: true,
     children: [
-      { id: 'adyen-auth', label: 'Auth', icon: Shield, desc: 'Authentication', comingSoon: true },
-      { id: 'adyen-charge', label: 'Charge', icon: Zap, desc: 'Payment check', comingSoon: true },
+      { id: 'adyen-auth', label: 'Auth', icon: Shield, desc: 'Authentication' },
+      { id: 'adyen-charge', label: 'Charge', icon: Zap, desc: 'Payment check' },
     ]
   },
   { 
     id: 'shopify', 
     label: 'Shopify', 
     icon: ShoppingBag,
-    comingSoon: true,
     children: [
-      { id: 'shopify-auth', label: 'Auth', icon: Shield, desc: 'Authentication', comingSoon: true },
-      { id: 'shopify-charge', label: 'Charge', icon: Zap, desc: 'Payment check', comingSoon: true },
+      { id: 'shopify-charge', label: 'Charge', icon: Zap, desc: 'Payment check' },
     ]
   },
   { 
     id: 'target', 
     label: 'Target', 
     icon: Target,
-    comingSoon: true,
     children: [
-      { id: 'target-charge', label: 'Charge', icon: Zap, desc: 'Payment check', comingSoon: true },
+      { id: 'target-charge', label: 'Charge', icon: Zap, desc: 'Payment check' },
     ]
   },
   { 
-    id: 'co-hitter', 
-    label: 'CO Hitter', 
-    icon: Crosshair,
-    comingSoon: true,
+    id: 'other-gate', 
+    label: 'Other Gate', 
+    icon: Layers,
     children: [
-      { id: 'co-inbuilt-ccn', label: 'Inbuilt CCN', icon: Hash, desc: 'Card number gen', comingSoon: true },
-      { id: 'co-inbuilt-ccv', label: 'Inbuilt CCV', icon: KeyRound, desc: 'CVV generator', comingSoon: true },
-      { id: 'co-checkout', label: 'Checkout', icon: ShoppingCart, desc: 'Checkout flow', comingSoon: true },
+      { id: 'other-sk-key-check', label: 'SK Key Check', icon: Key, desc: 'Check SK keys validity' },
+      { id: 'other-charge-avs', label: 'Charge AVS', icon: MapPin, desc: 'Address verification' },
+      { id: 'other-square-charge', label: 'Square Charge', icon: SquareStack, desc: 'Square payment check' },
     ]
-  },
-  { 
-    id: 'help', 
-    label: 'Help', 
-    icon: HelpCircle,
   },
 ];
 

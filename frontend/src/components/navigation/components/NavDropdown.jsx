@@ -34,24 +34,23 @@ export function NavDropdown({ item, activeRoute, onNavigate, isActive }) {
         disabled={isDisabled}
         className={cn(
           "group gap-1.5 rounded-lg h-8 px-3 transition-all duration-300",
-          // Light mode: OrangeAI style with icon
-          "bg-transparent hover:bg-[rgb(248,247,247)]",
-          "text-[rgb(37,27,24)] hover:text-[rgb(255,64,23)]",
+          // Light mode: OrangeAI style
           "font-medium text-sm",
-          isActive && "text-[rgb(255,64,23)] bg-[rgb(255,64,23)]/5",
+          isActive 
+            ? "bg-gradient-to-r from-[rgb(255,64,23)] to-[rgb(230,50,15)] text-white shadow-sm hover:shadow-md hover:from-[rgb(240,55,18)] hover:to-[rgb(210,45,12)]" 
+            : "bg-transparent hover:bg-[rgb(248,247,247)] text-[rgb(37,27,24)] hover:text-[rgb(255,64,23)]",
           // Dark mode: OPUX styling
-          "dark:text-white/90 dark:hover:text-white dark:hover:bg-white/10",
-          isActive && "dark:bg-primary dark:text-primary-foreground dark:shadow-sm",
+          isActive
+            ? "dark:from-primary dark:to-primary/90 dark:text-primary-foreground dark:shadow-sm"
+            : "dark:text-white/90 dark:hover:text-white dark:hover:bg-white/10",
           isDisabled && "opacity-50 cursor-not-allowed"
         )}
       >
         <Icon className={cn(
           "h-4 w-4 transition-colors",
-          isActive ? "text-[rgb(255,64,23)]" : "text-[rgb(145,134,131)]",
-          "group-hover:text-[rgb(255,64,23)]",
-          // Dark mode icon colors
-          isActive ? "dark:text-primary-foreground" : "dark:text-white/60",
-          "dark:group-hover:text-white"
+          isActive 
+            ? "text-white dark:text-primary-foreground" 
+            : "text-[rgb(145,134,131)] group-hover:text-[rgb(255,64,23)] dark:text-white/60 dark:group-hover:text-white"
         )} />
         <span>{item.label}</span>
         {item.comingSoon && (
@@ -70,24 +69,23 @@ export function NavDropdown({ item, activeRoute, onNavigate, isActive }) {
           size="sm"
           className={cn(
             "group gap-1.5 rounded-lg h-8 px-3 transition-all duration-300",
-            // Light mode: OrangeAI style with icon
-            "bg-transparent hover:bg-[rgb(248,247,247)]",
-            "text-[rgb(37,27,24)] hover:text-[rgb(255,64,23)]",
+            // Light mode: OrangeAI style
             "font-medium text-sm",
-            isActive && "text-[rgb(255,64,23)] bg-[rgb(255,64,23)]/5",
-            // Dark mode: keep original styling
-            "dark:text-white/90 dark:hover:text-white dark:hover:bg-white/10",
-            isActive && "dark:bg-primary dark:text-primary-foreground dark:shadow-sm",
+            isActive 
+              ? "bg-gradient-to-r from-[rgb(255,64,23)] to-[rgb(230,50,15)] text-white shadow-sm hover:shadow-md hover:from-[rgb(240,55,18)] hover:to-[rgb(210,45,12)]" 
+              : "bg-transparent hover:bg-[rgb(248,247,247)] text-[rgb(37,27,24)] hover:text-[rgb(255,64,23)]",
+            // Dark mode: OPUX styling
+            isActive
+              ? "dark:from-primary dark:to-primary/90 dark:text-primary-foreground dark:shadow-sm"
+              : "dark:text-white/90 dark:hover:text-white dark:hover:bg-white/10",
             isDisabled && "opacity-50 cursor-not-allowed"
           )}
         >
         <Icon className={cn(
           "h-4 w-4 transition-colors",
-          isActive ? "text-[rgb(255,64,23)]" : "text-[rgb(145,134,131)]",
-          "group-hover:text-[rgb(255,64,23)]",
-          // Dark mode icon colors
-          isActive ? "dark:text-primary-foreground" : "dark:text-white/60",
-          "dark:group-hover:text-white"
+          isActive 
+            ? "text-white dark:text-primary-foreground" 
+            : "text-[rgb(145,134,131)] group-hover:text-[rgb(255,64,23)] dark:text-white/60 dark:group-hover:text-white"
         )} />
           <span>{item.label}</span>
           {item.comingSoon && (

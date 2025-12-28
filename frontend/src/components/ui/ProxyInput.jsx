@@ -3,12 +3,12 @@ import { Loader2, AlertTriangle, Wifi, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { isStaticProxy, parseProxy } from '@/utils/proxy';
 import { useToast } from '@/hooks/useToast';
-import { Input } from './input';
-import { Button } from './button';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 
 /**
  * ProxyInput - Input with check button and static IP detection
- * Exposes checkProxy() via ref for auto-check before validation
+ * Exposes checkProxy() and checkStripeAccess() via ref for auto-check before validation
  */
 export const ProxyInput = forwardRef(function ProxyInput({
     value,
@@ -50,7 +50,7 @@ export const ProxyInput = forwardRef(function ProxyInput({
 
         try {
             const appearsStatic = isStaticProxy(value);
-            const response = await fetch('/api/stripe-own/check-proxy', {
+            const response = await fetch('/api/proxy/check', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ proxy: parsed })
@@ -72,41 +72,86 @@ export const ProxyInput = forwardRef(function ProxyInput({
             } else {
                 setProxyStatus('invalid');
                 if (showToast) toastError(data.message || 'Proxy Dead - Could not connect');
-                setLastCheckedValue(value);
+                setLastCheckedValue(null); // Allow retry on failure
                 onProxyCheck?.({ valid: false, message: data.message });
                 return { valid: false, isStatic: false };
             }
-        } catch {
-            // Fallback to local validation if endpoint unavailable
-            const appearsStatic = isStaticProxy(value);
-            if (appearsStatic) {
-                setProxyStatus('static');
-                if (showToast) warning('Static IP detected. Rotating proxies work better with Stripe.');
-            } else {
-                setProxyStatus('valid');
-                if (showToast) success('Proxy Live');
-            }
-            setLastCheckedValue(value);
-            onProxyCheck?.({ valid: true, isStatic: appearsStatic });
-            return { valid: true, isStatic: appearsStatic };
+        } catch (err) {
+            // Server unavailable - cannot verify proxy
+            setProxyStatus('invalid');
+            if (showToast) toastError('Cannot verify proxy - server unavailable');
+            setLastCheckedValue(null); // Allow retry
+            onProxyCheck?.({ valid: false, message: 'Server unavailable' });
+            return { valid: false, isStatic: false };
         } finally {
             setIsChecking(false);
         }
     }, [value, lastCheckedValue, proxyStatus, success, warning, toastError, onProxyCheck]);
 
-    // Expose checkProxy to parent via ref
+    /**
+     * Check if proxy can reach Stripe's API
+     * Some proxies block financial/payment APIs
+     * NOTE: This does NOT modify proxyStatus - it's a separate check
+     */
+    const checkStripeAccess = useCallback(async (showToast = true) => {
+        if (!value?.trim()) {
+            if (showToast) warning('Please enter a proxy first');
+            return { canAccessStripe: false };
+        }
+
+        const parsed = parseProxy(value);
+        if (!parsed) {
+            if (showToast) toastError('Proxy format not recognized');
+            return { canAccessStripe: false };
+        }
+
+        setIsChecking(true);
+
+        try {
+            const response = await fetch('/api/proxy/check-stripe', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ proxy: parsed })
+            });
+            const data = await response.json();
+
+            if (data.success) {
+                if (showToast) success('Stripe API accessible');
+                return { canAccessStripe: true, responseTime: data.responseTime };
+            } else {
+                // Don't set proxyStatus here - this is a separate Stripe-specific check
+                if (showToast) {
+                    if (data.blocked) {
+                        toastError('Proxy blocked from Stripe API. Try a different proxy provider.');
+                    } else {
+                        toastError(data.message || 'Cannot reach Stripe API through this proxy');
+                    }
+                }
+                return { canAccessStripe: false, blocked: data.blocked, message: data.message };
+            }
+        } catch (err) {
+            // Don't set proxyStatus here - this is a separate Stripe-specific check
+            if (showToast) toastError('Cannot verify Stripe access - server unavailable');
+            return { canAccessStripe: false, message: 'Server unavailable' };
+        } finally {
+            setIsChecking(false);
+        }
+    }, [value, success, warning, toastError]);
+
+    // Expose checkProxy and checkStripeAccess to parent via ref
     useImperativeHandle(ref, () => ({
         checkProxy,
+        checkStripeAccess,
         isChecking,
         proxyStatus,
-    }), [checkProxy, isChecking, proxyStatus]);
+    }), [checkProxy, checkStripeAccess, isChecking, proxyStatus]);
 
     const getStatusIcon = () => {
-        if (isChecking) return <Loader2 size={12} className="animate-spin text-primary" />;
-        if (proxyStatus === 'valid') return <CheckCircle2 size={12} className="text-emerald-500" />;
-        if (proxyStatus === 'static') return <AlertTriangle size={12} className="text-amber-500" />;
-        if (proxyStatus === 'invalid') return <AlertTriangle size={12} className="text-destructive" />;
-        return <Wifi size={12} className="text-muted-foreground" />;
+        if (isChecking) return <Loader2 size={12} className="animate-spin text-primary dark:text-white" />;
+        if (proxyStatus === 'valid') return <CheckCircle2 size={12} className="text-emerald-500 dark:text-emerald-400" />;
+        if (proxyStatus === 'static') return <AlertTriangle size={12} className="text-amber-500 dark:text-amber-400" />;
+        if (proxyStatus === 'invalid') return <AlertTriangle size={12} className="text-white" />;
+        return <Wifi size={12} className="text-muted-foreground dark:text-white/70" />;
     };
 
     const getInputVariantClass = () => {

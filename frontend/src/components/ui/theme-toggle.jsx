@@ -52,12 +52,17 @@ export function ThemeToggle({ className }) {
     document.documentElement.style.setProperty('--theme-toggle-radius', `${maxRadius}px`);
 
     // Use View Transitions API for smooth circular reveal
-    const transition = document.startViewTransition(() => {
-      toggleTheme();
-    });
+    try {
+      const transition = document.startViewTransition(() => {
+        toggleTheme();
+      });
 
-    // Wait for transition to complete
-    await transition.finished;
+      // Wait for transition to complete
+      await transition.finished;
+    } catch {
+      // View Transition may be blocked by browser extensions
+      toggleTheme();
+    }
   }, [toggleTheme, reducedMotion]);
 
   return (

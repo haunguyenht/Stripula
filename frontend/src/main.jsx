@@ -4,33 +4,47 @@ import { Toaster } from 'sonner'
 import './index.css'
 import App from './App'
 import { ThemeProvider } from './contexts/ThemeContext'
+import { AuthProvider } from './contexts/AuthContext'
 import { TooltipProvider } from '@/components/ui/tooltip'
+import { UserNotificationListener } from '@/components/notifications/UserNotificationListener'
+import { initDevToolsProtection } from '@/lib/utils/devtools-protection'
+
+// Initialize DevTools protection in production
+initDevToolsProtection({
+  disableRightClick: true,
+  disableKeys: true,
+  detectOpen: false, // Set to true for stricter detection (slight performance cost)
+  disableTextSelect: false, // Keep false for better UX
+});
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <ThemeProvider>
-      <TooltipProvider>
-        <App />
-        <Toaster 
-          position="bottom-right"
-          toastOptions={{
-            className: 'font-sans',
-            duration: 4000,
-            classNames: {
-              toast: 'opux-toast',
-              title: 'opux-toast-title',
-              description: 'opux-toast-description',
-              success: 'opux-toast-success',
-              error: 'opux-toast-error',
-              warning: 'opux-toast-warning',
-              info: 'opux-toast-info',
-              closeButton: 'opux-toast-close',
-            },
-          }}
-          richColors
-          closeButton
-        />
-      </TooltipProvider>
+      <AuthProvider>
+        <TooltipProvider>
+          <UserNotificationListener />
+          <App />
+          <Toaster 
+            position="bottom-right"
+            toastOptions={{
+              className: 'font-sans',
+              duration: 4000,
+              classNames: {
+                toast: 'opux-toast',
+                title: 'opux-toast-title',
+                description: 'opux-toast-description',
+                success: 'opux-toast-success',
+                error: 'opux-toast-error',
+                warning: 'opux-toast-warning',
+                info: 'opux-toast-info',
+                closeButton: 'opux-toast-close',
+              },
+            }}
+            richColors
+            closeButton
+          />
+        </TooltipProvider>
+      </AuthProvider>
     </ThemeProvider>
   </StrictMode>,
 )

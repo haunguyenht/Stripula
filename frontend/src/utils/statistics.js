@@ -77,7 +77,7 @@ export function calculateCardStats(results) {
             stats.approved++;
         } else if (status === 'LIVE') {
             stats.live++;
-        } else if (status === 'DIE') {
+        } else if (status === 'DIE' || status === 'DEAD' || status === 'DECLINED') {
             stats.die++;
         } else if (status === 'ERROR' || status === 'RETRY') {
             stats.error++;
@@ -114,7 +114,8 @@ export function filterResults(results, filter) {
             case 'dead':
                 return status === 'DEAD';
             case 'die':
-                return status === 'DIE';
+                // Include all declined/dead card statuses
+                return status === 'DIE' || status === 'DEAD' || status === 'DECLINED';
             case 'error':
                 return status === 'ERROR' || status === 'RETRY';
             case 'approved':

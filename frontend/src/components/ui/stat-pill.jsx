@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { cn } from '@/lib/utils';
 
 // Light mode active colors
@@ -6,7 +7,8 @@ const colorClasses = {
   emerald: 'data-[active=true]:bg-success/10 data-[active=true]:text-success',
   rose: 'data-[active=true]:bg-destructive/10 data-[active=true]:text-destructive',
   amber: 'data-[active=true]:bg-warning/10 data-[active=true]:text-warning',
-  coral: 'data-[active=true]:bg-primary/10 data-[active=true]:text-primary',
+  coral: 'data-[active=true]:bg-orange-500/10 data-[active=true]:text-orange-600',
+  cyan: 'data-[active=true]:bg-cyan-500/10 data-[active=true]:text-cyan-600',
   primary: 'data-[active=true]:bg-primary/10 data-[active=true]:text-primary',
   success: 'data-[active=true]:bg-success/10 data-[active=true]:text-success',
   destructive: 'data-[active=true]:bg-destructive/10 data-[active=true]:text-destructive',
@@ -19,7 +21,8 @@ const darkColorClasses = {
   emerald: 'dark:data-[active=true]:bg-emerald-500/15 dark:data-[active=true]:text-emerald-400',
   rose: 'dark:data-[active=true]:bg-red-500/15 dark:data-[active=true]:text-red-400',
   amber: 'dark:data-[active=true]:bg-amber-500/15 dark:data-[active=true]:text-amber-400',
-  coral: 'dark:data-[active=true]:bg-primary/15 dark:data-[active=true]:text-primary',
+  coral: 'dark:data-[active=true]:bg-orange-500/15 dark:data-[active=true]:text-orange-400',
+  cyan: 'dark:data-[active=true]:bg-cyan-500/15 dark:data-[active=true]:text-cyan-400',
   primary: 'dark:data-[active=true]:bg-primary/15 dark:data-[active=true]:text-primary',
   success: 'dark:data-[active=true]:bg-emerald-500/15 dark:data-[active=true]:text-emerald-400',
   destructive: 'dark:data-[active=true]:bg-red-500/15 dark:data-[active=true]:text-red-400',
@@ -31,7 +34,8 @@ const dotColors = {
   emerald: 'bg-success dark:bg-emerald-400',
   rose: 'bg-destructive dark:bg-red-400',
   amber: 'bg-warning dark:bg-amber-400',
-  coral: 'bg-primary',
+  coral: 'bg-orange-500 dark:bg-orange-400',
+  cyan: 'bg-cyan-500 dark:bg-cyan-400',
   primary: 'bg-primary',
   success: 'bg-success dark:bg-emerald-400',
   destructive: 'bg-destructive dark:bg-red-400',
@@ -42,8 +46,9 @@ const dotColors = {
  * StatPill - Compact stat display with filter functionality
  * OPUX styled with glass effect in dark mode
  * Responsive: shows only dot+value on small screens, full label on larger screens
+ * Memoized for performance (Requirements 5.5)
  */
-export function StatPill({ 
+export const StatPill = memo(function StatPill({ 
   label, 
   value, 
   color = 'default', 
@@ -101,13 +106,14 @@ export function StatPill({
       <span className="font-semibold tabular-nums">{value}</span>
     </button>
   );
-}
+});
 
 /**
  * StatPillGroup - Group of stat pills
  * Supports flex-nowrap via className for horizontal scrolling layouts
+ * Memoized for performance (Requirements 5.5)
  */
-export function StatPillGroup({ 
+export const StatPillGroup = memo(function StatPillGroup({ 
   stats, 
   activeFilter, 
   onFilterChange,
@@ -130,4 +136,4 @@ export function StatPillGroup({
       ))}
     </div>
   );
-}
+});

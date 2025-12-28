@@ -190,13 +190,13 @@ export function isStaticProxy(proxyStr) {
     
     const line = proxyStr.toLowerCase();
     
-    // Keywords that indicate rotating/residential proxies
+    // Keywords that strongly indicate rotating/residential proxies
     const rotatingKeywords = [
         'rotating', 'rotate', 'residential', 'mobile', 'isp',
-        'backconnect', 'gateway', 'pool', 'random', 'session',
-        'sticky', 'country-', 'state-', 'city-', 'geo',
+        'backconnect', 'pool', 'random',
         'smartproxy', 'brightdata', 'oxylabs', 'luminati',
-        'webshare', 'proxy-cheap', 'soax', 'geosurf'
+        'webshare', 'proxy-cheap', 'soax', 'geosurf',
+        'zyte', 'crawlera', 'scrapingbee', 'apify'
     ];
     
     // Check if any rotating keywords are present
@@ -250,7 +250,7 @@ export async function checkProxy(proxyStr) {
     const appearsStatic = isStaticProxy(proxyStr);
     
     try {
-        const response = await fetch('/api/stripe-own/check-proxy', {
+        const response = await fetch('/api/proxy/check', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ proxy: parsed })

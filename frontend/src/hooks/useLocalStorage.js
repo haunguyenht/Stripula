@@ -26,7 +26,6 @@ export function useLocalStorage(key, initialValue, options = {}) {
                 return item;
             }
         } catch (error) {
-            console.warn(`Error reading localStorage key "${key}":`, error);
             return initialValue;
         }
     });
@@ -55,7 +54,6 @@ export function useLocalStorage(key, initialValue, options = {}) {
                     localStorage.setItem(key, valueToStore);
                 }
             } catch (error) {
-                console.warn(`Error setting localStorage key "${key}":`, error);
             }
         }, debounceMs);
         

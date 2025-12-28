@@ -34,10 +34,10 @@ const PanelCard = React.forwardRef(
         className={cn(
           // Layout-safe defaults
           'flex flex-col',
-          // Height behavior
+          // Height behavior: h-auto grows with content, max-h from className constrains it
           fitContent ? 'h-auto' : 'h-full min-h-0',
-          // No overflow clipping on the card wrapper - let shadow show
-          'overflow-visible',
+          // Clip content to rounded corners but don't clip shadow
+          'overflow-hidden',
           className
         )}
         {...props}
@@ -55,7 +55,7 @@ const PanelCard = React.forwardRef(
         ref={ref}
         className={cn(
           "flex flex-col",
-          fitContent ? "h-auto" : "h-full min-h-0"
+          fitContent ? "h-auto max-h-full" : "h-full min-h-0"
         )}
         initial={{ opacity: 0, y: 40, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}

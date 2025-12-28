@@ -37,7 +37,8 @@ cd frontend && npx shadcn@latest add [component-name]
 ### Backend
 - **Runtime**: Node.js + Express
 - **Pattern**: Dependency injection container
-- **Browser Automation**: Playwright (for card validation)
+- **HTTP Client**: axios + axios-cookiejar-support + tough-cookie (session handling)
+- **Auth Validation**: WooCommerce registration flow (no SK key needed, only PK)
 
 ## Architecture
 
@@ -139,6 +140,103 @@ frontend/src/
 - Bypass the service layer in controllers
 - Use `.js` extension in imports
 
+## Auth Validation Architecture
+
+### Flow (No SK Key Required - Only PK)
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                           AuthValidator                                  │
+│                                                                         │
+│  For each card:                                                         │
+│  ┌──────────────────────────────────────────────────────────────────┐  │
+│  │ 1. WooCommerceClient.registerAndGetNonces()                      │  │
+│  │    ├── GET /my-account/ → extract register nonce                 │  │
+│  │    ├── POST /my-account/ → submit registration                   │  │
+│  │    │   (first_name, last_name, email@outlook.com, password)      │  │
+│  │    ├── GET /my-account/add-payment-method/ → extract nonces      │  │
+│  │    │   (setupIntentNonce, ajaxNonce)                             │  │
+│  │    └── Return: { session, nonces, fingerprint }                  │  │
+│  └──────────────────────────────────────────────────────────────────┘  │
+│                              ↓                                          │
+│  ┌──────────────────────────────────────────────────────────────────┐  │
+│  │ 2. StripePaymentMethodClient.createPaymentMethod()               │  │
+│  │    ├── POST api.stripe.com/v1/payment_methods                    │  │
+│  │    │   (card[number], card[exp_month], card[exp_year], card[cvc])│  │
+│  │    └── Return: { pmId: "pm_xxx" }                                │  │
+│  └──────────────────────────────────────────────────────────────────┘  │
+│                              ↓                                          │
+│  ┌──────────────────────────────────────────────────────────────────┐  │
+│  │ 3. WooCommerceClient.submitSetupIntent()                         │  │
+│  │    ├── POST /wp-admin/admin-ajax.php                             │  │
+│  │    │   action=wc_stripe_create_and_confirm_setup_intent          │  │
+│  │    │   wc-stripe-payment-method=pm_xxx                           │  │
+│  │    │   _ajax_nonce=xxx                                           │  │
+│  │    └── Return: { success, data: { status, error } }              │  │
+│  └──────────────────────────────────────────────────────────────────┘  │
+│                              ↓                                          │
+│  ┌──────────────────────────────────────────────────────────────────┐  │
+│  │ 4. AuthResult.fromWooCommerceResponse()                          │  │
+│  │    ├── success + status=succeeded → APPROVED                     │  │
+│  │    ├── error.message → DECLINED (with decline code)              │  │
+│  │    └── Parse decline patterns (insufficient_funds, etc.)         │  │
+│  └──────────────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### Layer Structure
+```
+backend/src/
+├── validators/
+│   └── AuthValidator.js        # Orchestrates the 4-step flow above
+├── infrastructure/auth/
+│   ├── WooCommerceClient.js    # Registration, nonce extraction, SetupIntent
+│   └── StripePaymentMethodClient.js  # Creates PM via Stripe API
+├── domain/
+│   └── AuthResult.js           # Result entity with status parsing
+├── services/
+│   └── StripeAuthService.js    # Batch processing with EventEmitter
+└── utils/
+    └── constants.js            # AUTH_SITES configuration
+```
+
+### Cookie/Session Handling
+```javascript
+// Uses axios-cookiejar-support for automatic cookie management
+import { wrapper } from 'axios-cookiejar-support';
+import { CookieJar } from 'tough-cookie';
+
+const jar = new CookieJar();
+const client = wrapper(axios.create({ jar, withCredentials: true }));
+// All subsequent requests automatically send/receive cookies
+```
+
+### Rate Limiting (CRITICAL)
+- **Fresh session per card** - WooCommerce rate-limits "too soon" on ANY PM attempt
+- Rate limit is per-attempt, NOT per successful PM add - even declined cards trigger it
+- Deleting PM does NOT reset cooldown - don't waste time implementing this
+- Session pooling does NOT work - tried and failed
+
+## Backend Agent Rules
+
+### DO
+- Create fresh registration per card for auth validation
+- Use `axios-cookiejar-support` + `tough-cookie` for automatic cookie handling
+- Use random emails: outlook.com, yahoo.com, hotmail.com, protonmail.com, icloud.com
+- Use `first_name`, `last_name` for WooCommerce registration fields
+- Handle HTTP 400 as valid response (Stripe decline info comes in 400s)
+- Return full card number in `card` field
+
+### DO NOT
+- Reuse WooCommerce sessions between cards
+- Use gmail.com emails (blocked by sites)
+- Use `billing_first_name` (wrong field name)
+- Add console.log in production code
+- Return masked `cardNumber` field (removed)
+
+### Auth Result Enhancement
+- Include `binData` for approved cards via `binLookupClient.lookup()`
+- BIN data includes: scheme, type, category, country, countryEmoji, bank
+
 ## Common Patterns
 
 ### Adding a new shadcn component
@@ -227,3 +325,21 @@ import { cardVariants } from '@/lib/styles/card-variants';
 - `transition.default` - Standard
 - `transition.opux` - Smooth OPUX style
 - `transition.soft` - Gentle easing
+
+## Frontend Notes
+
+### Auth Panel Persistence
+- Uses `useLocalStorage` for: cards, results (max 500), stats, concurrency, site
+- Stats accumulate - new batches add to existing counts
+- Clear button resets both results and stats
+
+### Panel Shadow Consistency
+- Both panels use `PanelCard variant="elevated"` 
+- Don't use `overflow-auto` on panel wrappers (clips shadows)
+- Use `pb-6` on wrappers for bottom shadow space
+
+### Celebration Animation
+- CSS in `index.css` (firework-container, confetti, sparkle, ring-explosion)
+- Triggers on APPROVED status with 2s throttle
+- Uses `createPortal` to render at document.body level
+

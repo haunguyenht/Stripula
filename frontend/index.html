@@ -15,6 +15,16 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     
+    <!-- Preload critical fonts for faster text rendering -->
+    <!-- Inter 400 (regular) - most used weight -->
+    <link 
+      rel="preload" 
+      href="https://fonts.gstatic.com/s/inter/v18/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfAZ9hjp-Ek-_EeA.woff2" 
+      as="font" 
+      type="font/woff2" 
+      crossorigin 
+    />
+    
     <!-- Preload critical tile background (WebP, small) -->
     <link rel="preload" href="/bg-tile.webp" as="image" type="image/webp" fetchpriority="high" />
     
@@ -36,10 +46,20 @@
     
     <!-- Critical inline styles for instant background -->
     <style>
+      /* Font-face with font-display: swap for FOUT prevention */
+      @font-face {
+        font-family: 'Inter';
+        font-style: normal;
+        font-weight: 400;
+        font-display: swap;
+        src: url(https://fonts.gstatic.com/s/inter/v18/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfAZ9hjp-Ek-_EeA.woff2) format('woff2');
+      }
+      
       body { 
         background-color: #142833; 
         margin: 0; 
         min-height: 100vh;
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
       }
       /* Prevent FOUC */
       #root { opacity: 0; transition: opacity 0.2s ease; }

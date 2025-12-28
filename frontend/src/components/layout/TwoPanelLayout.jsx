@@ -120,7 +120,7 @@ export function TwoPanelLayout({
       >
         {/* Config Panel - Desktop only */}
         {!shouldUseMobileLayout && (
-          <aside className="shrink-0 w-[320px] md:w-[360px] lg:w-[400px] self-start">
+          <aside className="shrink-0 w-[320px] md:w-[360px] lg:w-[400px] self-start pb-6">
             <PanelCard 
               variant="elevated" 
               animate={true}
@@ -150,7 +150,9 @@ export function TwoPanelLayout({
         {/* Results Panel */}
         <main 
           className={cn(
-            "min-w-0 flex-1 self-start",
+            "min-w-0 flex-1 pb-6",
+            // Hybrid height: grow with content, max at viewport, then scroll
+            "max-h-[calc(100vh-120px)] flex flex-col",
             shouldUseMobileLayout && "w-full"
           )}
         >
@@ -159,6 +161,7 @@ export function TwoPanelLayout({
             animate={true}
             hoverLift={true}
             fitContent={true}
+            className="max-h-full"
           >
             {resultsPanel}
           </PanelCard>

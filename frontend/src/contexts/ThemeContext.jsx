@@ -15,16 +15,16 @@ export const ThemeContext = createContext(null);
  * @param {React.ReactNode} props.children
  */
 export function ThemeProvider({ children }) {
-  // Initialize theme from localStorage, default to light
+  // Initialize theme from localStorage, default to dark
   const [theme, setThemeState] = useState(() => {
     try {
       const stored = localStorage.getItem(THEME_STORAGE_KEY);
       if (stored === LIGHT_THEME || stored === DARK_THEME) {
         return stored;
       }
-      return LIGHT_THEME;
+      return DARK_THEME;
     } catch {
-      return LIGHT_THEME;
+      return DARK_THEME;
     }
   });
 
@@ -43,7 +43,6 @@ export function ThemeProvider({ children }) {
     try {
       localStorage.setItem(THEME_STORAGE_KEY, theme);
     } catch (error) {
-      console.warn('Failed to persist theme to localStorage:', error);
     }
   }, [theme]);
 

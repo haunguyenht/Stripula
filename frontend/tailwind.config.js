@@ -139,12 +139,36 @@ export default {
           '0%': { opacity: '0', transform: 'translateY(-8px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
+        // Badge status animations
+        'badge-shimmer': {
+          '0%': { backgroundPosition: '-200% center' },
+          '100%': { backgroundPosition: '200% center' },
+        },
+        'badge-pulse-soft': {
+          '0%, 100%': { boxShadow: '0 0 8px rgba(245, 158, 11, 0.2)' },
+          '50%': { boxShadow: '0 0 14px rgba(245, 158, 11, 0.35)' },
+        },
+        'badge-glow-pulse': {
+          '0%, 100%': { boxShadow: '0 0 12px rgba(16, 185, 129, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2)' },
+          '50%': { boxShadow: '0 0 20px rgba(16, 185, 129, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.25)' },
+        },
+        // Tier card shimmer animation
+        'shimmer-slow': {
+          '0%': { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(100%)' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
         'chat-fade-in': 'chat-fade-in 0.5s ease-out forwards',
         'fade-in': 'fade-in 0.3s ease',
+        // Badge status animations
+        'badge-shimmer': 'badge-shimmer 2.5s ease-in-out infinite',
+        'badge-pulse-soft': 'badge-pulse-soft 2s ease-in-out infinite',
+        'badge-glow-pulse': 'badge-glow-pulse 2s ease-in-out infinite',
+        // Tier card animations
+        'shimmer-slow': 'shimmer-slow 3s ease-in-out infinite',
       },
     },
   },

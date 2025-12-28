@@ -118,7 +118,9 @@ const AppBackground = memo(function AppBackground({ className }) {
         className={cn(
           "absolute inset-0 bg-opux-landscape",
           "transition-opacity duration-1000 ease-out",
-          isVisible && landscapeLoaded ? "opacity-60" : "opacity-0"
+          isVisible && landscapeLoaded ? "opacity-60" : "opacity-0",
+          // Apply will-change only during loading transition
+          !landscapeLoaded && "is-loading"
         )}
         style={{ transform: 'translateZ(0)' }}
       />

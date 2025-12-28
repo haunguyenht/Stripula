@@ -26,8 +26,8 @@ const NavPill = React.forwardRef(
         ref={ref}
         className={cn(
           "h-10 nav-pill flex items-center",
-          // Light mode: OrangeAI - transparent, no bg (inside white container)
-          "rounded-md bg-transparent",
+          // Light mode: transparent for glass header
+          "rounded-md bg-transparent border-0 shadow-none",
           // Dark mode: OPUX glass pill
           "dark:rounded-xl dark:bg-transparent dark:border-0 dark:shadow-none",
           className
@@ -56,8 +56,8 @@ const NavPillButton = React.forwardRef(
         className={cn(
           "h-10 nav-pill",
           "flex items-center gap-2 px-3 text-sm font-semibold",
-          // Light mode: OrangeAI link style - transparent, hover to orange
-          "rounded-md bg-transparent",
+          // Light mode: transparent, hover to orange
+          "rounded-md bg-transparent border-0 shadow-none",
           "text-[rgb(37,27,24)] hover:text-[rgb(255,64,23)]",
           "transition-colors duration-300",
           // Dark mode: OPUX glass button pill
@@ -89,9 +89,9 @@ const NavPillNav = React.forwardRef(
         ref={ref}
         className={cn(
           "nav-pill",
-          // Light mode: OrangeAI - compact flex with reasonable gaps
+          // Light mode: transparent for glass header
           "flex items-center gap-1",
-          "rounded-md bg-transparent",
+          "rounded-md bg-transparent border-0 shadow-none",
           // Dark mode: OPUX glass nav pill
           "dark:rounded-xl dark:bg-transparent dark:border-0 dark:shadow-none dark:gap-0.5 dark:px-1",
           className

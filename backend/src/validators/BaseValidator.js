@@ -9,7 +9,6 @@ export class BaseValidator extends IValidationService {
     constructor(options = {}) {
         super();
         this.stripeClient = options.stripeClient;
-        this.browserService = options.browserService;
         this.binLookup = options.binLookup;
         this.errorHandler = options.errorHandler;
         this.retryHandler = options.retryHandler;
@@ -38,7 +37,7 @@ export class BaseValidator extends IValidationService {
         try {
             return await this.binLookup.lookup(card.number);
         } catch (error) {
-            console.log(`[${this.getName()}] BIN lookup failed: ${error.message}`);
+            // Logging disabled
             return null;
         }
     }
@@ -70,7 +69,7 @@ export class BaseValidator extends IValidationService {
      * @protected
      */
     logStart(card, method) {
-        console.log(`[${this.getName()}] Validating ${card.number} (${method})`);
+        // Logging disabled
     }
 
     /**
@@ -78,7 +77,6 @@ export class BaseValidator extends IValidationService {
      * @protected
      */
     logResult(card, result) {
-        const icon = result.isLive() ? '✓' : result.isDead() ? '✗' : '?';
-        console.log(`[${this.getName()}] ${icon} ${card.number} → ${result.status}: ${result.message}`);
+        // Logging disabled
     }
 }

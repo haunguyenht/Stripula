@@ -1,6 +1,23 @@
-import { faker } from '@faker-js/faker';
+import { faker, fakerEN_US, fakerEN_GB, fakerEN_CA, fakerEN_AU, fakerDE, fakerFR, fakerNL, fakerES, fakerIT, fakerPT_BR } from '@faker-js/faker';
 import axios from 'axios';
 import { getStateAbbrev } from './helpers.js';
+
+const LOCALE_FAKERS = {
+    'en_US': fakerEN_US,
+    'en_GB': fakerEN_GB,
+    'en_CA': fakerEN_CA,
+    'en_AU': fakerEN_AU,
+    'de': fakerDE,
+    'fr': fakerFR,
+    'nl': fakerNL,
+    'es': fakerES,
+    'it': fakerIT,
+    'pt_BR': fakerPT_BR
+};
+
+function getFaker(locale = 'en_US') {
+    return LOCALE_FAKERS[locale] || faker;
+}
 
 // Country-specific identity generators
 const COUNTRY_CONFIGS = {
@@ -73,22 +90,22 @@ const COUNTRY_CONFIGS = {
  */
 export async function generateRealisticIdentity(countryCode = 'US') {
     const config = COUNTRY_CONFIGS[countryCode] || COUNTRY_CONFIGS.US;
-    
+
     try {
         const response = await axios.get(`https://randomuser.me/api/1.4/?nat=${config.nat}`, { timeout: 5000 });
         const user = response.data.results[0];
-        
+
         let state = user.location.state;
         if (countryCode === 'US') {
             state = getStateAbbrev(state);
         }
-        
+
         // Format zip based on country
         let zip = String(user.location.postcode);
         if (countryCode === 'GB' && zip.length > 4) {
             zip = zip.slice(0, -3) + ' ' + zip.slice(-3);
         }
-        
+
         return {
             firstName: user.name.first,
             lastName: user.name.last,
@@ -102,7 +119,6 @@ export async function generateRealisticIdentity(countryCode = 'US') {
             phone: user.phone?.replace(/[^\d+]/g, '') || generatePhoneForCountry(countryCode)
         };
     } catch (error) {
-        console.log(`[Identity] randomuser.me failed, using faker: ${error.message}`);
         return generateFallbackIdentity(countryCode);
     }
 }
@@ -114,26 +130,24 @@ export async function generateRealisticIdentity(countryCode = 'US') {
  */
 export function generateFallbackIdentity(countryCode = 'US') {
     const config = COUNTRY_CONFIGS[countryCode] || COUNTRY_CONFIGS.US;
-    
-    // Set faker locale
-    try {
-        faker.setLocale(config.locale);
-    } catch {
-        // Fallback to en if locale not available
-    }
-    
-    const firstName = faker.person.firstName();
-    const lastName = faker.person.lastName();
-    
+    const localFaker = getFaker(config.locale);
+
+    const firstName = localFaker.person.firstName();
+    const lastName = localFaker.person.lastName();
+
+    // Use non-gmail domains per AGENTS.md
+    const domains = ['outlook.com', 'yahoo.com', 'hotmail.com', 'protonmail.com', 'icloud.com'];
+    const domain = domains[Math.floor(Math.random() * domains.length)];
+
     return {
         firstName,
         lastName,
         fullName: `${firstName} ${lastName}`,
-        email: `${firstName.toLowerCase()}${lastName.toLowerCase()}${Math.floor(Math.random() * 999)}@gmail.com`,
-        street: faker.location.streetAddress(),
-        city: faker.location.city(),
-        state: countryCode === 'US' ? faker.location.state({ abbreviated: true }) : faker.location.state(),
-        zip: faker.location.zipCode(config.zipFormat),
+        email: `${firstName.toLowerCase()}${lastName.toLowerCase()}${Math.floor(Math.random() * 999)}@${domain}`,
+        street: localFaker.location.streetAddress(),
+        city: localFaker.location.city(),
+        state: countryCode === 'US' ? localFaker.location.state({ abbreviated: true }) : localFaker.location.state(),
+        zip: localFaker.location.zipCode(config.zipFormat),
         country: countryCode,
         phone: generatePhoneForCountry(countryCode)
     };
@@ -162,7 +176,6 @@ function generatePhoneForCountry(countryCode) {
  */
 export async function generateIdentityForBin(binData) {
     const countryCode = binData?.countryCode || 'US';
-    console.log(`[Identity] Generating identity for ${countryCode} card`);
     return generateRealisticIdentity(countryCode);
 }
 
@@ -173,15 +186,10 @@ export async function generateIdentityForBin(binData) {
 export function generateBillingDetails() {
     const countries = ['US', 'GB', 'CA', 'AU'];
     const country = countries[Math.floor(Math.random() * countries.length)];
-    
-    let zip;
-    switch (country) {
-        case 'US': zip = faker.location.zipCode('#####'); break;
-        case 'GB': zip = faker.location.zipCode('??# #??'); break;
-        case 'CA': zip = faker.location.zipCode('?#? #?#'); break;
-        case 'AU': zip = faker.location.zipCode('####'); break;
-        default: zip = faker.location.zipCode();
-    }
-    
+    const config = COUNTRY_CONFIGS[country] || COUNTRY_CONFIGS.US;
+    const localFaker = getFaker(config.locale);
+
+    const zip = localFaker.location.zipCode(config.zipFormat);
+
     return { zip, country };
 }

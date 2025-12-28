@@ -66,16 +66,19 @@ export function TopTabBar({
   return (
     <header className={cn(
       "relative z-40 flex items-center justify-between gap-3",
-      // Light mode: OrangeAI exact styling - bg-neutral-surface1 px-5 py-2 rounded-md shadow-button-light
-      "mx-4 mt-3 px-5 py-2 rounded-md",
-      "bg-white",
-      "shadow-[0px_2px_8px_0px_rgba(0,0,0,0.04)]",
-      // Dark mode: transparent (no container styling)
-      "dark:mx-0 dark:mt-0 dark:px-4 dark:py-2.5 dark:rounded-none dark:bg-transparent dark:shadow-none",
+      // Consistent sizing for both themes
+      "mx-4 mt-3 px-4 py-2 rounded-xl",
+      // Light mode: Subtle frosted glass with warm tint
+      "bg-gradient-to-b from-white/80 to-[rgb(252,250,249)]/70",
+      "backdrop-blur-md",
+      "border border-[rgb(237,234,233)]/60",
+      "shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.03)]",
+      // Dark mode: transparent styling but same dimensions
+      "dark:bg-transparent dark:bg-none dark:shadow-none dark:border-transparent dark:backdrop-blur-none",
       className
     )}>
-      {/* Left: User Profile */}
-      <UserPill user={user} />
+      {/* Left: Credits & Theme Toggle */}
+      <ActionsPill user={user} onNavigate={handleNavigate} />
 
       {/* Center: Navigation */}
       <div ref={navContainerRef} className="flex-1 min-w-0 flex justify-center">
@@ -97,8 +100,8 @@ export function TopTabBar({
         )}
       </div>
 
-      {/* Right: Actions */}
-      <ActionsPill user={user} />
+      {/* Right: User Profile */}
+      <UserPill user={user} onNavigate={handleNavigate} />
     </header>
   );
 }

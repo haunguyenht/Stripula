@@ -18,7 +18,8 @@ export function toTitleCase(str) {
 export function getStatusVariant(status) {
   if (status === 'APPROVED') return 'approved';
   if (status === 'LIVE') return 'live';
-  if (status === 'DIE') return 'dead';
+  if (status === 'DIE' || status === 'DEAD') return 'dead';
+  if (status === 'DECLINED') return 'declined';
   if (status === 'ERROR' || status === 'RETRY') return 'error';
   return 'secondary';
 }
@@ -35,7 +36,8 @@ export function formatDuration(ms) {
  * Format card result message for display
  */
 export function formatCardMessage(result) {
-  if (!result.message) return null;
+  if (!result || !result.message) return null;
+  const message = result.message || '';
   
   if (result.status === 'APPROVED') {
     return result.chargeAmountFormatted 
@@ -44,10 +46,10 @@ export function formatCardMessage(result) {
   }
   
   if (result.status === 'DIE') {
-    return result.message.replace(/^Declined:\s*/i, '').replace(/_/g, ' ');
+    return message.replace(/^Declined:\s*/i, '').replace(/_/g, ' ');
   }
   
-  return result.message.replace(/^(Error:|Tokenization failed:)\s*/i, '');
+  return message.replace(/^(Error:|Tokenization failed:)\s*/i, '');
 }
 
 /**

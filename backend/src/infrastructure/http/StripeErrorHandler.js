@@ -70,9 +70,8 @@ export class StripeErrorHandler {
         // Handle unusual HTTP status codes (bot protection, proxy issues)
         if (statusCode === 492 || statusCode === 493 || statusCode === 520 || statusCode === 521 || statusCode === 522) {
             // Log full error for debugging
-            console.log(`[StripeError] ⚠️ HTTP ${statusCode} Bot Protection Triggered`);
-            console.log(`[StripeError] Full response:`, JSON.stringify(error.response?.data || {}, null, 2));
-            console.log(`[StripeError] Headers:`, JSON.stringify(error.response?.headers || {}, null, 2));
+
+
             return ValidationResult.error(`Bot protection triggered (HTTP ${statusCode}) - try different proxy/IP`, {
                 httpStatus: statusCode,
                 responseData: error.response?.data,
@@ -102,7 +101,7 @@ export class StripeErrorHandler {
 
         // Log risk data if available
         if (riskData.riskLevel || riskData.sellerMessage) {
-            console.log(`[StripeError] Risk: ${riskData.riskLevel || 'N/A'} | Score: ${riskData.riskScore || 'N/A'} | ${riskData.sellerMessage || ''}`);
+
         }
 
         // CCN LIVE - card number valid but CVV wrong
@@ -202,17 +201,17 @@ export class StripeErrorHandler {
      */
     interpretCvcCheck(cvcCheck, last4 = '****') {
         if (cvcCheck === 'pass') {
-            console.log(`[StripeError] ✓ ${last4} - CVV LIVE`);
+
             return ValidationResult.live('CVV Match ✓', { fraudData: { cvcCheck } });
         }
 
         if (cvcCheck === 'fail') {
-            console.log(`[StripeError] ~ ${last4} - CCN LIVE (CVV fail)`);
+
             return ValidationResult.live('CCN Match (Incorrect CVV)', { fraudData: { cvcCheck } });
         }
 
         if (cvcCheck === 'unavailable' || cvcCheck === 'unchecked') {
-            console.log(`[StripeError] ? ${last4} - CVC unchecked`);
+
             return ValidationResult.live(`Card valid (CVC: ${cvcCheck})`, { fraudData: { cvcCheck } });
         }
 

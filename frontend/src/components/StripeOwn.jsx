@@ -1,14 +1,17 @@
-import { useState, useRef, useMemo, useEffect, lazy, Suspense } from 'react';
+import { useState, useRef, useEffect, lazy, Suspense, useCallback } from 'react';
 import { Key, CreditCard, Loader2 } from 'lucide-react';
 
 // Hooks
 import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { useSessionStorage } from '@/hooks/useSessionStorage';
+import { useBoundedResults } from '@/hooks/useBoundedStorage';
 
 // UI Components
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ConfirmDialog } from '@/components/ui/alert-dialog';
 
 // Utils
-import { transformLegacyCardResults } from '@/utils/stripe';
+import { calculateCardStats } from '@/utils/statistics';
 
 // Lazy-loaded panels for code-splitting (reduces initial bundle)
 const KeysValidationPanel = lazy(() => 
@@ -33,44 +36,51 @@ function PanelLoadingFallback() {
 /**
  * StripeOwn - Main Component
  * Two-panel layout (Config left, Results right)
+ * @param {Object} props
+ * @param {string} [props.initialTab] - Optional initial tab ('keys' or 'cards')
  */
-export default function StripeOwn() {
-  const [activeTab, setActiveTab] = useLocalStorage('stripeOwnTab', 'keys');
+export default function StripeOwn({ initialTab }) {
+  const [activeTab, setActiveTab] = useLocalStorage('stripeOwnTab', initialTab || 'keys');
 
   // ══════════════════════════════════════════════════════════════════
   // KEY VALIDATION STATE
+  // Results use sessionStorage - survives refresh/crash, clears on browser close
   // ══════════════════════════════════════════════════════════════════
   const [skKeys, setSkKeys] = useLocalStorage('stripeOwnSkKeys', '');
-  const [keyResults, setKeyResults] = useLocalStorage('stripeKeyResults', [], { debounceMs: 1000, maxArrayLength: 500 });
-  const [keyStats, setKeyStats] = useLocalStorage('stripeKeyStats', {
+  const { 
+    results: keyResults, 
+    setResults: setKeyResults 
+  } = useBoundedResults('session_keyResults', []);
+  const [keyStats, setKeyStats] = useSessionStorage('session_keyStats', {
     live: 0, livePlus: 0, liveZero: 0, liveNeg: 0, dead: 0, error: 0, total: 0
-  }, { debounceMs: 1000 });
+  });
   const [selectedKeyIndex, setSelectedKeyIndex] = useLocalStorage('stripeOwnSelectedKey', -1);
 
   // ══════════════════════════════════════════════════════════════════
-  // CARD VALIDATION STATE
+  // CARD VALIDATION STATE  
+  // Results use bounded storage - survives refresh/crash, clears on browser close
+  // FIFO limit of 5000 results to prevent memory bloat (Requirements: 4.1, 4.2)
   // ══════════════════════════════════════════════════════════════════
   const [cards, setCards] = useLocalStorage('stripeOwnCards', '');
-  const [rawCardResults, setCardResults] = useLocalStorage('stripeCardResults', [], { debounceMs: 1000, maxArrayLength: 500 });
+  const { 
+    results: rawCardResults, 
+    setResults: setCardResults 
+  } = useBoundedResults('session_cardResults', []);
   
-  const cardResults = useMemo(() => transformLegacyCardResults(rawCardResults), [rawCardResults]);
-  const [cardStats, setCardStats] = useLocalStorage('stripeCardStats', {
+  const cardResults = rawCardResults;
+  const [cardStats, setCardStats] = useSessionStorage('session_cardStats', {
     approved: 0, live: 0, die: 0, error: 0, total: 0
-  }, { debounceMs: 1000 });
+  });
 
-  // Recalculate card stats when cardResults change (e.g., on page load from localStorage)
+  // Sync stats with actual results on mount (fixes mismatch when results were trimmed)
   useEffect(() => {
     if (cardResults.length > 0) {
-      const recalculated = {
-        approved: cardResults.filter(r => r.status === 'APPROVED').length,
-        live: cardResults.filter(r => r.status === 'LIVE').length,
-        die: cardResults.filter(r => r.status === 'DIE').length,
-        error: cardResults.filter(r => r.status === 'ERROR' || r.status === 'RETRY').length,
-        total: cardResults.length
-      };
-      setCardStats(recalculated);
+      const actualStats = calculateCardStats(cardResults);
+      setCardStats(actualStats);
     }
-  }, [cardResults, setCardStats]);
+    // Only run once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ══════════════════════════════════════════════════════════════════
   // SETTINGS STATE
@@ -79,8 +89,8 @@ export default function StripeOwn() {
     skKey: '',
     pkKey: '',
     proxy: '',
-    concurrency: 1,
-    validationMethod: 'charge',
+    concurrency: 3,
+    validationMethod: 'direct_api',
   });
 
   // ══════════════════════════════════════════════════════════════════
@@ -90,10 +100,30 @@ export default function StripeOwn() {
   const [currentItem, setCurrentItem] = useState(null);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+  
+  // Confirmation dialog state for tab switching during loading
+  const [showStopConfirm, setShowStopConfirm] = useState(false);
+  const [pendingTab, setPendingTab] = useState(null);
 
   // Refs
   const abortRef = useRef(false);
   const abortControllerRef = useRef(null);
+
+  // Clear card settings if selected key becomes DEAD
+  useEffect(() => {
+    if (selectedKeyIndex >= 0 && keyResults[selectedKeyIndex]) {
+      const selectedKey = keyResults[selectedKeyIndex];
+      if (selectedKey.status === 'DEAD') {
+        // Key is now dead, clear selection and settings
+        setSelectedKeyIndex(-1);
+        setSettings(prev => ({
+          ...prev,
+          skKey: '',
+          pkKey: '',
+        }));
+      }
+    }
+  }, [keyResults, selectedKeyIndex, setSelectedKeyIndex, setSettings]);
 
   const handleKeySelect = (index) => {
     setSelectedKeyIndex(index);
@@ -113,9 +143,46 @@ export default function StripeOwn() {
     }
   };
 
+  // Handle tab change with confirmation if loading
+  const handleTabChange = useCallback((newTab) => {
+    if (isLoading) {
+      // Show confirmation dialog
+      setPendingTab(newTab);
+      setShowStopConfirm(true);
+    } else {
+      setActiveTab(newTab);
+    }
+  }, [isLoading, setActiveTab]);
+
+  // Confirm stop and switch tab
+  const handleConfirmStop = useCallback(() => {
+    // Abort the current request
+    abortRef.current = true;
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    // Stop backend processing (only cards tab has backend processing)
+    if (activeTab === 'cards') {
+      fetch('/api/skbased/stop', { method: 'POST' }).catch(() => {});
+    }
+    // Keys validation is client-side only, no backend stop needed
+    setIsLoading(false);
+    setCurrentItem(null);
+    // Switch to pending tab
+    if (pendingTab) {
+      setActiveTab(pendingTab);
+      setPendingTab(null);
+    }
+  }, [activeTab, pendingTab, setActiveTab]);
+
+  // Cancel tab switch
+  const handleCancelStop = useCallback(() => {
+    setPendingTab(null);
+  }, []);
+
   // Mode switcher using shadcn Tabs
   const modeSwitcher = (
-    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-auto">
+    <Tabs value={activeTab} onValueChange={handleTabChange} className="w-auto">
       <TabsList>
         <TabsTrigger value="keys" className="gap-2">
           <Key className="h-4 w-4" />
@@ -131,6 +198,18 @@ export default function StripeOwn() {
 
   return (
     <div className="h-full min-h-0 flex flex-col">
+      {/* Confirmation dialog for stopping validation */}
+      <ConfirmDialog
+        open={showStopConfirm}
+        onOpenChange={setShowStopConfirm}
+        title="Stop validation?"
+        description="Validation is still in progress. Are you sure you want to stop and switch tabs? Any pending cards will not be processed."
+        confirmLabel="Stop & Switch"
+        cancelLabel="Continue Validation"
+        onConfirm={handleConfirmStop}
+        onCancel={handleCancelStop}
+      />
+      
       <Suspense fallback={<PanelLoadingFallback />}>
         {activeTab === 'keys' ? (
           <KeysValidationPanel

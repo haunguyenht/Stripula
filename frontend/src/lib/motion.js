@@ -13,6 +13,29 @@ export const prefersReducedMotion = () => {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 };
 
+// Subscribe to reduced motion preference changes
+export const onReducedMotionChange = (callback) => {
+  if (typeof window === 'undefined') return () => {};
+  
+  const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const handler = (e) => callback(e.matches);
+  
+  // Use addEventListener for modern browsers
+  if (mediaQuery.addEventListener) {
+    mediaQuery.addEventListener('change', handler);
+    return () => mediaQuery.removeEventListener('change', handler);
+  }
+  
+  // Fallback for older browsers
+  mediaQuery.addListener(handler);
+  return () => mediaQuery.removeListener(handler);
+};
+
+// Get animation duration respecting reduced motion
+export const getAnimationDuration = (normalDuration) => {
+  return prefersReducedMotion() ? 0 : normalDuration;
+};
+
 // Animation durations (in seconds)
 export const duration = {
   instant: 0.1,
@@ -306,5 +329,56 @@ export const getCardEnterProps = (options = {}) => {
     animate: variants.softEnter.animate,
     exit: variants.softEnter.exit,
     transition: options.transition || transition.opux,
+  };
+};
+
+/**
+ * Will-change optimization utilities
+ * 
+ * will-change should be applied sparingly and only during animations
+ * to hint the browser about upcoming changes. It should be removed
+ * after the animation completes to free up GPU memory.
+ */
+
+// CSS classes for will-change optimization
+export const willChangeClasses = {
+  transform: 'will-change-transform',
+  opacity: 'will-change-opacity',
+  transformOpacity: 'will-change-[transform,opacity]',
+  auto: 'will-change-auto',
+};
+
+// Get will-change props for motion components
+// Automatically applies will-change during animation and removes after
+export const getWillChangeProps = (properties = ['transform', 'opacity']) => {
+  if (prefersReducedMotion()) {
+    return {};
+  }
+  
+  const willChangeValue = properties.join(', ');
+  
+  return {
+    style: { willChange: 'auto' },
+    onAnimationStart: (e) => {
+      if (e.target) {
+        e.target.style.willChange = willChangeValue;
+      }
+    },
+    onAnimationComplete: (e) => {
+      if (e.target) {
+        e.target.style.willChange = 'auto';
+      }
+    },
+  };
+};
+
+// Hook for managing will-change in React components
+export const useWillChange = (isAnimating, properties = ['transform', 'opacity']) => {
+  if (prefersReducedMotion()) {
+    return { willChange: 'auto' };
+  }
+  
+  return {
+    willChange: isAnimating ? properties.join(', ') : 'auto',
   };
 };

@@ -1,5 +1,5 @@
-import { v4 as uuidv4 } from 'uuid';
 import { BROWSER_USER_AGENTS, API_USER_AGENTS, VIEWPORTS, STATE_ABBREV } from './constants.js';
+import { fingerprintGenerator } from './FingerprintGenerator.js';
 
 /**
  * Get random element from array
@@ -46,15 +46,12 @@ export function getRandomChargeAmount(minCents = 50, maxCents = 5000) {
 
 /**
  * Generate Stripe tracking IDs (guid, muid, sid)
+ * Uses standard UUID v4 format from FingerprintGenerator
  * @returns {{guid: string, muid: string, sid: string}}
+ * @deprecated Use fingerprintGenerator.generateStripeIds() directly
  */
 export function generateStripeIds() {
-    const makeId = () => uuidv4().replace(/-/g, '') + uuidv4().replace(/-/g, '').slice(0, 6);
-    return {
-        guid: makeId(),
-        muid: makeId(),
-        sid: makeId()
-    };
+    return fingerprintGenerator.generateStripeIds();
 }
 
 /**

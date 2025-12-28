@@ -48,6 +48,12 @@ export function KeysValidationPanel({
   const pageSize = 10;
   const { success, error: toastError, info, warning } = useToast();
 
+  // Check if there are valid SK keys to check
+  const hasValidKeys = useMemo(() => {
+    const keyLines = skKeys?.split('\n').filter(l => l.trim() && l.trim().startsWith('sk_')) || [];
+    return keyLines.length > 0;
+  }, [skKeys]);
+
   const clearResults = useCallback(() => {
     setKeyResults([]);
     setKeyStats({ live: 0, livePlus: 0, liveZero: 0, liveNeg: 0, dead: 0, error: 0, total: 0 });
@@ -85,7 +91,7 @@ export function KeysValidationPanel({
       setProgress({ current: i + 1, total: uniqueKeys.length });
 
       try {
-        const response = await fetch('/api/stripe-own/check-key', {
+        const response = await fetch('/api/keys/check', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ skKey: key })
@@ -187,7 +193,7 @@ export function KeysValidationPanel({
     
     setRefreshingKeys(prev => new Set([...prev, index]));
     try {
-      const response = await fetch('/api/stripe-own/check-key', {
+      const response = await fetch('/api/keys/check', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ skKey: result.fullKey })
@@ -238,7 +244,7 @@ export function KeysValidationPanel({
       }
       
       try {
-        const response = await fetch('/api/stripe-own/check-key', {
+        const response = await fetch('/api/keys/check', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ skKey: result.fullKey })
@@ -332,7 +338,7 @@ export function KeysValidationPanel({
   const configContent = (
     <div className="space-y-4 p-4">
       {/* Input with integrated action bar */}
-      <div className="rounded-lg border border-border/10 dark:border-white/10 dark:bg-white/5 overflow-hidden transition-all duration-200 focus-within:border-primary/30 focus-within:ring-2 focus-within:ring-primary/10 dark:focus-within:border-white/20 dark:focus-within:ring-primary/20">
+      <div className="rounded-lg border border-[rgb(230,225,223)] dark:border-white/10 bg-white dark:bg-white/5 shadow-sm dark:shadow-none overflow-hidden transition-all duration-200 focus-within:border-primary/30 focus-within:ring-2 focus-within:ring-primary/10 dark:focus-within:border-white/20 dark:focus-within:ring-primary/20">
         <Textarea
           id="sk-keys-input"
           name="sk-keys-input"
@@ -348,7 +354,7 @@ export function KeysValidationPanel({
         />
         
         {/* Action bar below textarea */}
-        <div className="flex items-center justify-between px-3 py-2 border-t border-border/10 dark:border-white/10 bg-muted/30 dark:bg-white/5">
+        <div className="flex items-center justify-between px-3 py-2 border-t border-[rgb(230,225,223)] dark:border-white/10 bg-[rgb(250,249,249)] dark:bg-white/5">
           {/* Key count badge */}
           <div className="flex items-center gap-2">
             {keyCount > 0 && (
@@ -375,7 +381,13 @@ export function KeysValidationPanel({
                 Stop
               </Button>
             ) : (
-              <Button size="sm" className="h-8" onClick={handleCheckKeys}>
+              <Button 
+                size="sm" 
+                className="h-8" 
+                onClick={handleCheckKeys}
+                disabled={!hasValidKeys}
+                title={!hasValidKeys ? 'Enter at least one SK key (sk_...)' : undefined}
+              >
                 Check Keys
               </Button>
             )}
@@ -400,7 +412,7 @@ export function KeysValidationPanel({
       configPanel={
         <div className="flex flex-col">
           {modeSwitcher && (
-            <div className="p-4 border-b flex justify-center">
+          <div className="p-4 border-b border-[rgb(230,225,223)] dark:border-white/10 flex justify-center">
               {modeSwitcher}
             </div>
           )}
@@ -470,6 +482,7 @@ export function KeysValidationPanel({
  */
 const KeyResultCard = React.memo(function KeyResultCard({ result, isSelected, isCopied, isRefreshing, onSelect, onCopy, onDelete, onRefresh }) {
   const [pkCopied, setPkCopied] = useState(false);
+  const { warning, success } = useToast();
 
   const handleCopyPk = useCallback((e) => {
     e.stopPropagation();
@@ -481,7 +494,19 @@ const KeyResultCard = React.memo(function KeyResultCard({ result, isSelected, is
   }, [result.pkKey]);
 
   const isLive = result.status?.startsWith('LIVE');
+  const isDead = result.status === 'DEAD';
   const skKey = result.fullKey || result.key;
+
+  // Handle click - prevent selection for dead keys, show toast for live keys
+  const handleClick = useCallback(() => {
+    if (isDead) {
+      warning('Dead keys cannot be used for card validation');
+      return;
+    }
+    onSelect();
+    const accountName = result.accountName && result.accountName !== 'N/A' ? result.accountName : 'Unknown';
+    success(`Key selected • ${accountName}`);
+  }, [isDead, onSelect, warning, success, result.accountName]);
   const availableBalance = ((result.availableBalance || 0) / 100).toFixed(2);
   const pendingBalance = ((result.pendingBalance || 0) / 100).toFixed(2);
   const symbol = result.currencySymbol || '$';
@@ -502,8 +527,11 @@ const KeyResultCard = React.memo(function KeyResultCard({ result, isSelected, is
       status={cardStatus}
       isSelected={isSelected}
       isLoading={isRefreshing}
-      onClick={onSelect}
-      className="group relative w-full max-w-full overflow-hidden"
+      onClick={handleClick}
+      className={cn(
+        "group relative w-full max-w-full overflow-hidden",
+        isDead && "cursor-not-allowed opacity-70"
+      )}
     >
       <ResultCardContent className="space-y-1.5 w-full overflow-hidden">
         {/* Row 1: Status + Account name + Balance + Pending */}
@@ -548,7 +576,7 @@ const KeyResultCard = React.memo(function KeyResultCard({ result, isSelected, is
           )}
         </div>
 
-        {/* Row 3: Capabilities */}
+        {/* Row 3: Capabilities + Duration */}
         <div className="flex items-center gap-1 flex-wrap">
           {result.isChargeable && (
             <Badge variant="outline" className="h-4 text-[9px] px-1 border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
@@ -564,10 +592,15 @@ const KeyResultCard = React.memo(function KeyResultCard({ result, isSelected, is
           {result.capabilities?.cardPayments && (
             <Badge variant="outline" className="h-4 text-[9px] px-1">Cards</Badge>
           )}
+          {result.duration && (
+            <span className="text-[9px] text-muted-foreground ml-auto">
+              {(result.duration / 1000).toFixed(1)}s
+            </span>
+          )}
         </div>
 
         {/* Row 4: Keys (truncated for cleaner display) */}
-        <div className="pt-2 border-t border-border/30 dark:border-white/10 space-y-1 w-full overflow-hidden">
+        <div className="pt-2 border-t border-[rgb(230,225,223)]/50 dark:border-white/10 space-y-1 w-full overflow-hidden">
           {/* SK */}
           <div className="flex items-center gap-1.5 w-full">
             <span className="text-[9px] text-muted-foreground shrink-0 w-4">SK</span>
@@ -644,11 +677,11 @@ function KeysEmptyState() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
-      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-muted mb-4">
-        <Key className="h-8 w-8 text-muted-foreground" />
+      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[rgb(248,247,247)] dark:bg-white/10 mb-4">
+        <Key className="h-8 w-8 text-[rgb(145,134,131)] dark:text-white/50" />
       </div>
-      <p className="text-lg font-semibold">No keys validated yet</p>
-      <p className="text-sm text-muted-foreground mt-1">Enter SK keys in the left panel to start</p>
+      <p className="text-lg font-semibold text-[rgb(37,27,24)] dark:text-white">No keys validated yet</p>
+      <p className="text-sm text-[rgb(145,134,131)] dark:text-white/50 mt-1">Enter SK keys in the left panel to start</p>
     </motion.div>
   );
 }

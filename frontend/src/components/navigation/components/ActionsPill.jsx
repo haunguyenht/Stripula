@@ -1,7 +1,5 @@
 import { Coins, Plus } from 'lucide-react';
 import { NavPill } from './NavPill';
-import { ThemeToggle } from '@/components/ui/theme-toggle';
-import { UserProfileBadge } from '@/components/ui/user-profile-badge';
 import { cn } from '@/lib/utils';
 import {
   Tooltip,
@@ -10,15 +8,20 @@ import {
 } from '@/components/ui/tooltip';
 
 /**
- * ActionsPill - Right navbar section with credits, theme toggle, and profile menu
+ * ActionsPill - Left navbar section with credits and theme toggle
  * 
  * OPUX styled with clear interactive hints
  * 
  * @param {Object} user - User object { name, email, tier, credits }
+ * @param {Function} onNavigate - Navigation handler
  */
-export function ActionsPill({ user }) {
-  const credits = user?.credits ?? 100;
+export function ActionsPill({ user, onNavigate }) {
+  const credits = user?.credits ?? 0;
   const isLowCredits = credits < 20;
+
+  const handleCreditsClick = () => {
+    if (onNavigate) onNavigate('profile');
+  };
 
   return (
     <NavPill className="flex items-center gap-1 px-1.5" delay={0.1}>
@@ -26,6 +29,7 @@ export function ActionsPill({ user }) {
       <Tooltip>
         <TooltipTrigger asChild>
           <button 
+            onClick={handleCreditsClick}
             className={cn(
               "flex items-center gap-1.5 px-2 py-1.5 rounded-md transition-all duration-300",
               // Light mode: OrangeAI hover style
@@ -58,23 +62,6 @@ export function ActionsPill({ user }) {
         </TooltipContent>
       </Tooltip>
       
-      {/* Separator */}
-      <div className="h-5 w-px bg-[rgb(237,234,233)] dark:bg-white/10" />
-      
-      {/* Theme Toggle */}
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <div>
-            <ThemeToggle />
-          </div>
-        </TooltipTrigger>
-        <TooltipContent side="bottom" className="text-xs">
-          <p>Toggle theme</p>
-        </TooltipContent>
-      </Tooltip>
-      
-      {/* Profile Menu */}
-      <UserProfileBadge user={user} />
     </NavPill>
   );
 }
