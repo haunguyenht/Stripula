@@ -968,6 +968,11 @@ const ShopifyResultItem = React.memo(function ShopifyResultItem({ result, index,
                 {toTitleCase(binData.type)}
               </Badge>
             )}
+            {binData.category && (
+              <Badge variant="outline" className="text-[9px] h-5">
+                {toTitleCase(binData.category)}
+              </Badge>
+            )}
             {(binData.countryEmoji || binData.countryCode) && (
               <span className="text-sm" title={binData.country || binData.countryCode}>
                 {binData.countryEmoji || binData.countryCode}

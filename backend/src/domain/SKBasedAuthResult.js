@@ -35,6 +35,7 @@ export class SKBasedAuthResult {
         // BIN data
         this.brand = data.brand || null;
         this.type = data.type || null;
+        this.category = data.category || null;
         this.funding = data.funding || null;
         this.bank = data.bank || null;
         this.country = data.country || null;
@@ -91,9 +92,10 @@ export class SKBasedAuthResult {
      */
     toJSON() {
         // Build binData object for frontend compatibility
-        const binData = (this.brand || this.type || this.country || this.bank) ? {
+        const binData = (this.brand || this.type || this.country || this.bank || this.category) ? {
             scheme: this.brand?.toLowerCase(),
             type: this.type?.toLowerCase(),
+            category: this.category?.toLowerCase(),
             funding: this.funding,
             bank: this.bank,
             country: this.country,
@@ -115,6 +117,7 @@ export class SKBasedAuthResult {
             // Include both formats for compatibility
             brand: this.brand,
             type: this.type,
+            category: this.category,
             funding: this.funding,
             bank: this.bank,
             country: this.country,

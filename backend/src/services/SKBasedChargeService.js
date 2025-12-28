@@ -238,7 +238,7 @@ export class SKBasedChargeService extends EventEmitter {
                             executorStats
                         });
                     },
-                    (execResult, index) => {
+                    async (execResult, index) => {
                         // Result callback - emit immediately for live streaming (Requirement 8.1)
                         if (execResult.success) {
                             const result = execResult.result;
@@ -258,7 +258,7 @@ export class SKBasedChargeService extends EventEmitter {
                             }
 
                             this.emit('result', result);
-                            if (onResult) onResult(result.toJSON ? result.toJSON() : result);
+                            if (onResult) await Promise.resolve(onResult(result.toJSON ? result.toJSON() : result));
                         } else {
                             const errorResult = SKBasedResult.error(execResult.error, { card: cards[index] });
                             results.push(errorResult);
@@ -266,7 +266,7 @@ export class SKBasedChargeService extends EventEmitter {
                             stats.errors++;
 
                             this.emit('result', errorResult);
-                            if (onResult) onResult(errorResult.toJSON ? errorResult.toJSON() : errorResult);
+                            if (onResult) await Promise.resolve(onResult(errorResult.toJSON ? errorResult.toJSON() : errorResult));
                         }
 
                         // Emit progress (Requirement 8.2)
@@ -321,152 +321,8 @@ export class SKBasedChargeService extends EventEmitter {
             }
         }
 
-        // Legacy processing (fallback when SpeedManager not available)
-        return this._processBatchLegacy(cards, {
-            ...validationOptions,
-            tier,
-            onProgress,
-            onResult
-        });
-    }
-
-    /**
-     * Legacy batch processing without SpeedManager
-     * @private
-     */
-    async _processBatchLegacy(cards, options) {
-        const {
-            skKey,
-            pkKey,
-            proxy,
-            chargeAmount,
-            currency,
-            tier = 'free',
-            onProgress,
-            onResult
-        } = options;
-
-        // Import defaults for tier-based limiting in legacy mode
-        const { DEFAULT_SPEED_LIMITS } = await import('./SpeedConfigService.js');
-        const tierLimits = DEFAULT_SPEED_LIMITS[tier] || DEFAULT_SPEED_LIMITS.free;
-
-        const concurrency = tierLimits.concurrency;
-        const delay = tierLimits.delay;
-
-        this._log(`Legacy mode | Tier: ${tier} | Concurrency: ${concurrency} | Delay: ${delay}ms`);
-
-        const gatewayId = this.getGatewayId();
-        const validationOptions = { skKey, pkKey, proxy, chargeAmount, currency };
-
-        const results = [];
-        const queue = [...cards];
-        const total = cards.length;
-        let processed = 0;
-        let activeWorkers = 0;
-        const stats = { approved: 0, live: 0, declined: 0, errors: 0 };
-        const startTime = Date.now();
-
-        return new Promise((resolve) => {
-            const processNext = async () => {
-                if (this.abortFlag) {
-                    if (activeWorkers === 0) {
-                        const duration = ((Date.now() - startTime) / 1000).toFixed(1);
-                        const liveCount = stats.live;
-
-                        const abortedResult = {
-                            results,
-                            stats,
-                            total,
-                            liveCount,
-                            duration: parseFloat(duration),
-                            aborted: true,
-                            gatewayId
-                        };
-
-                        this.emit('complete', abortedResult);
-                        this.emit('batchComplete', abortedResult);
-                        resolve(abortedResult);
-                    }
-                    return;
-                }
-
-                if (queue.length === 0) {
-                    if (activeWorkers === 0) {
-                        const duration = ((Date.now() - startTime) / 1000).toFixed(1);
-                        const liveCount = stats.live;
-
-                        const batchResult = {
-                            results,
-                            stats,
-                            total,
-                            liveCount,
-                            duration: parseFloat(duration),
-                            gatewayId
-                        };
-
-                        this.emit('complete', batchResult);
-                        this.emit('batchComplete', batchResult);
-                        resolve(batchResult);
-                    }
-                    return;
-                }
-
-                const card = queue.shift();
-                activeWorkers++;
-
-                try {
-                    const result = await this.processCard(card, validationOptions);
-                    results.push(result);
-                    processed++;
-
-                    // Update stats
-                    if (result.isApproved()) {
-                        stats.approved++;
-                        stats.live++;
-                    } else if (result.status === 'LIVE') {
-                        stats.live++;
-                    } else if (result.isDeclined()) {
-                        stats.declined++;
-                    } else {
-                        stats.errors++;
-                    }
-
-                    const progress = { processed, total, ...stats };
-
-                    this.emit('progress', progress);
-                    this.emit('result', result);
-
-                    if (onProgress) onProgress(progress);
-                    if (onResult) onResult(result.toJSON ? result.toJSON() : result);
-
-                } catch (error) {
-                    const errorResult = SKBasedResult.error(error.message, { card });
-                    results.push(errorResult);
-                    processed++;
-                    stats.errors++;
-
-                    this.emit('result', errorResult);
-
-                    if (onProgress) onProgress({ processed, total, ...stats });
-                    if (onResult) onResult(errorResult.toJSON ? errorResult.toJSON() : errorResult);
-                }
-
-                activeWorkers--;
-
-                // Delay between cards
-                if (queue.length > 0 && delay > 0 && !this.abortFlag) {
-                    await new Promise(r => setTimeout(r, delay));
-                }
-
-                processNext();
-            };
-
-            // Start workers with staggered delays
-            const initialWorkers = Math.min(concurrency, queue.length);
-            for (let i = 0; i < initialWorkers; i++) {
-                setTimeout(() => processNext(), i * delay);
-            }
-        });
+        // SpeedManager is required - throw error if not available
+        throw new Error('SpeedManager is required for batch processing');
     }
 
     /**

@@ -298,7 +298,7 @@ export class ShopifyChargeService extends EventEmitter {
                             executorStats
                         });
                     },
-                    (execResult, index) => {
+                    async (execResult, index) => {
                         // Live streaming: emit result immediately as each task completes
                         if (execResult.success) {
                             const result = execResult.result;
@@ -310,7 +310,7 @@ export class ShopifyChargeService extends EventEmitter {
                             else stats.errors++;
 
                             this.emit('result', result);
-                            if (onResult) onResult(result.toJSON ? result.toJSON() : result);
+                            if (onResult) await Promise.resolve(onResult(result.toJSON ? result.toJSON() : result));
                         } else {
                             const errorResult = ShopifyResult.error(execResult.error, { card: cards[index] });
                             results.push(errorResult);
@@ -318,7 +318,7 @@ export class ShopifyChargeService extends EventEmitter {
                             stats.errors++;
 
                             this.emit('result', errorResult);
-                            if (onResult) onResult(errorResult.toJSON ? errorResult.toJSON() : errorResult);
+                            if (onResult) await Promise.resolve(onResult(errorResult.toJSON ? errorResult.toJSON() : errorResult));
                         }
 
                         if (onProgress) onProgress({ processed, total, ...stats });
@@ -369,133 +369,8 @@ export class ShopifyChargeService extends EventEmitter {
             }
         }
 
-        // Legacy processing (fallback when SpeedManager not available)
-        return this._processBatchLegacy(cards, { concurrency, delayBetweenCards, onProgress, onResult, tier });
-    }
-
-    /**
-     * Legacy batch processing without SpeedManager
-     * @private
-     * 
-     * Note: This fallback enforces tier-based limits using DEFAULT_SPEED_LIMITS
-     * to prevent users from bypassing speed restrictions
-     */
-    async _processBatchLegacy(cards, options) {
-        const {
-            concurrency,
-            delayBetweenCards,
-            onProgress,
-            onResult,
-            tier = 'free'
-        } = options;
-
-        // Import defaults for tier-based limiting in legacy mode
-        const { DEFAULT_SPEED_LIMITS } = await import('./SpeedConfigService.js');
-        const tierLimits = DEFAULT_SPEED_LIMITS[tier] || DEFAULT_SPEED_LIMITS.free;
-
-        // Enforce tier-based limits even in legacy mode
-        const effectiveConcurrency = Math.min(concurrency, tierLimits.concurrency);
-        const effectiveDelay = Math.max(delayBetweenCards, tierLimits.delay);
-
-        const results = [];
-        const queue = [...cards];
-        const total = cards.length;
-        let processed = 0;
-        let activeWorkers = 0;
-        const stats = { approved: 0, declined: 0, errors: 0 };
-
-        const startTime = Date.now();
-
-        return new Promise((resolve) => {
-            const processNext = async () => {
-                if (this.abortFlag) {
-                    if (activeWorkers === 0) {
-                        const duration = ((Date.now() - startTime) / 1000).toFixed(1);
-                        // Emit batchComplete with LIVE card count for credit deduction
-                        // Requirements: 4.1, 4.2 - Credits only for LIVE/APPROVED cards
-                        const liveCount = stats.approved;
-                        this.emit('complete', { results, stats, duration: parseFloat(duration), aborted: true });
-                        this.emit('batchComplete', {
-                            results,
-                            stats,
-                            liveCount,
-                            total,
-                            duration: parseFloat(duration),
-                            aborted: true,
-                            gatewayId: 'shopify'
-                        });
-                        resolve({ results, stats, total, liveCount, duration: parseFloat(duration), aborted: true });
-                    }
-                    return;
-                }
-
-                if (queue.length === 0) {
-                    if (activeWorkers === 0) {
-                        const duration = ((Date.now() - startTime) / 1000).toFixed(1);
-                        // Emit batchComplete with LIVE card count for credit deduction
-                        // Requirements: 4.1, 4.2 - Credits only for LIVE/APPROVED cards
-                        const liveCount = stats.approved;
-                        this.emit('complete', { results, stats, duration: parseFloat(duration) });
-                        this.emit('batchComplete', {
-                            results,
-                            stats,
-                            liveCount,
-                            total,
-                            duration: parseFloat(duration),
-                            gatewayId: 'shopify'
-                        });
-                        resolve({ results, stats, total, liveCount, duration: parseFloat(duration) });
-                    }
-                    return;
-                }
-
-                const card = queue.shift();
-                activeWorkers++;
-
-                try {
-                    const result = await this.processCard(card);
-                    results.push(result);
-                    processed++;
-
-                    if (result.isApproved()) stats.approved++;
-                    else if (result.isDeclined()) stats.declined++;
-                    else stats.errors++;
-
-                    const progress = { processed, total, ...stats };
-
-                    this.emit('progress', progress);
-                    this.emit('result', result);
-
-                    if (onProgress) onProgress(progress);
-                    if (onResult) onResult(result.toJSON ? result.toJSON() : result);
-
-                } catch (error) {
-                    const errorResult = ShopifyResult.error(error.message, { card });
-                    results.push(errorResult);
-                    processed++;
-                    stats.errors++;
-
-                    this.emit('result', errorResult);
-                    if (onProgress) onProgress({ processed, total, ...stats });
-                    if (onResult) onResult(errorResult.toJSON ? errorResult.toJSON() : errorResult);
-                }
-
-                activeWorkers--;
-
-                // Delay between cards (using tier-enforced delay)
-                if (queue.length > 0 && effectiveDelay > 0 && !this.abortFlag) {
-                    await new Promise(r => setTimeout(r, effectiveDelay));
-                }
-
-                processNext();
-            };
-
-            // Start workers with staggered delays (using tier-enforced limits)
-            const initialWorkers = Math.min(effectiveConcurrency, queue.length);
-            for (let i = 0; i < initialWorkers; i++) {
-                setTimeout(() => processNext(), i * effectiveDelay);
-            }
-        });
+        // SpeedManager is required - throw error if not available
+        throw new Error('SpeedManager is required for batch processing');
     }
 
     /**

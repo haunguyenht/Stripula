@@ -116,11 +116,12 @@ export class SpeedExecutor {
         }
 
         // Call result callback immediately (for live streaming)
+        // Must await in case callback is async (e.g., credit deduction)
         if (onResult) {
             try {
-                onResult(taskResult, index);
+                await Promise.resolve(onResult(taskResult, index));
             } catch (err) {
-                // Logging disabled
+                // Callback error - continue processing
             }
         }
 
