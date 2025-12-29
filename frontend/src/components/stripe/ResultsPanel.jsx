@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { ChevronLeft, ChevronRight, Trash2, RefreshCw, Key, Copy } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Trash2, RefreshCw, Copy, CreditCard } from 'lucide-react';
 import { ResultsHeader, ResultsContent, ResultsFooter } from '../layout/panels/ResultsPanelSections';
 import { StatPillGroup } from '@/components/ui/stat-pill';
 import { Button } from '@/components/ui/button';
@@ -241,22 +241,32 @@ function Pagination({ currentPage, totalPages, onPageChange, pageSize, onPageSiz
 function DefaultEmptyState() {
   return (
     <motion.div
-      className="flex flex-col items-center justify-center py-16 text-center"
+      className="flex flex-col items-center justify-center py-16 text-center relative"
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
     >
+      {/* Subtle background pattern */}
+      <div className="absolute inset-0 pointer-events-none opacity-30 dark:opacity-20">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-40 w-40 rounded-full border border-dashed border-muted-foreground/20" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-56 w-56 rounded-full border border-dashed border-muted-foreground/10" />
+      </div>
+      
       <motion.div 
         className="relative mb-6"
-        animate={{ y: [0, -8, 0] }}
+        animate={{ y: [0, -6, 0] }}
         transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
       >
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[rgb(248,247,247)] dark:bg-white/10">
-          <Key className="h-8 w-8 text-[rgb(145,134,131)] dark:text-white/50" />
+        {/* Glow behind icon */}
+        <div className="absolute inset-0 rounded-2xl bg-primary/10 dark:bg-[#AB726F]/20 blur-xl scale-150" />
+        <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-[rgb(248,247,247)] to-white dark:from-white/10 dark:to-white/5 border border-[rgb(237,234,233)] dark:border-white/10">
+          <CreditCard className="h-7 w-7 text-muted-foreground" />
         </div>
       </motion.div>
-      <p className="text-lg font-semibold text-[rgb(37,27,24)] dark:text-white">No results yet</p>
-      <p className="text-sm text-[rgb(145,134,131)] dark:text-white/50 mt-1">Results will appear here</p>
+      <p className="text-base font-semibold text-foreground">No results yet</p>
+      <p className="text-sm text-muted-foreground mt-1 max-w-[200px]">
+        Enter cards and start validation to see results
+      </p>
     </motion.div>
   );
 }
@@ -265,21 +275,48 @@ function DefaultLoadingState() {
   return (
     <motion.div
       className="flex flex-col items-center justify-center py-16"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
     >
-      <motion.div 
-        className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent mb-4"
-        animate={{ rotate: 360 }}
-        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-      />
+      {/* Decorative background glow */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-50">
+        <motion.div
+          className="h-32 w-32 rounded-full bg-primary/10 dark:bg-[#AB726F]/10 blur-3xl"
+          animate={{ scale: [1, 1.2, 1] }}
+          transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+        />
+      </div>
+      
+      {/* Card icon with orbit spinner */}
+      <div className="relative mb-6">
+        <motion.div
+          className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 dark:from-white/10 dark:to-white/5"
+          animate={{ scale: [1, 1.02, 1] }}
+          transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+        >
+          <CreditCard className="h-7 w-7 text-primary dark:text-white/70" />
+        </motion.div>
+        {/* Orbiting dot */}
+        <motion.div
+          className="absolute inset-0"
+          animate={{ rotate: 360 }}
+          transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+        >
+          <div className="absolute -top-1 left-1/2 -translate-x-1/2 h-2 w-2 rounded-full bg-primary dark:bg-[#AB726F] shadow-lg shadow-primary/50 dark:shadow-[#AB726F]/50" />
+        </motion.div>
+      </div>
+      
       <motion.p 
-        className="text-sm text-muted-foreground"
-        animate={{ opacity: [1, 0.5, 1] }}
-        transition={{ duration: 1.5, repeat: Infinity }}
+        className="text-sm font-medium text-foreground"
+        animate={{ opacity: [0.7, 1, 0.7] }}
+        transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
       >
-        Processing...
+        Processing cards...
       </motion.p>
+      <p className="text-xs text-muted-foreground mt-1">
+        Results will appear as they complete
+      </p>
     </motion.div>
   );
 }

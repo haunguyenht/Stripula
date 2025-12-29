@@ -7,7 +7,7 @@ import {
 } from '@radix-ui/react-icons';
 import { TelegramLoginButton } from '@/components/auth/TelegramLoginButton';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
-import { CursorSpotlight, GradientMesh, FloatingParticles } from '@/components/effects';
+import { CursorSpotlight, FloatingParticles } from '@/components/effects';
 import { useTiltEffect } from '@/hooks/useTiltEffect';
 import { useToast } from '@/hooks/useToast';
 import { cn } from '@/lib/utils';
@@ -114,19 +114,19 @@ export function LoginPage() {
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center p-6 sm:p-8 lg:p-12 relative overflow-hidden">
-      {/* Background Effects */}
-      <GradientMesh />
+      {/* Light mode: Simple solid background matching app */}
+      <div className="fixed inset-0 -z-20 bg-background dark:hidden" />
+      
+      {/* Dark mode: Immersive effects */}
+      <div className="fixed inset-0 -z-20 hidden dark:block bg-opux-tile" />
       <FloatingParticles count={35} showAurora={true} />
       <CursorSpotlight 
-        color="rgba(255, 100, 50, 0.12)"
+        color="rgba(255, 100, 50, 0.08)"
         darkColor="rgba(100, 150, 255, 0.1)"
         size={700}
-        opacity={0.25}
+        opacity={0.2}
         breathe={true}
       />
-      
-      {/* Dark mode tile background */}
-      <div className="fixed inset-0 -z-20 hidden dark:block bg-opux-tile" />
       
       {/* Dark mode vignette overlay */}
       <div className="fixed inset-0 pointer-events-none hidden dark:block bg-opux-vignette z-10" />
@@ -153,18 +153,19 @@ export function LoginPage() {
           ref={cardRef}
           variants={cardVariants}
           className={cn(
-            "relative rounded-[28px] overflow-hidden",
-            // Light mode styling
-            "bg-white/90 backdrop-blur-xl",
-            "border border-gray-200/80",
-            "shadow-[0_8px_40px_rgba(0,0,0,0.08),0_20px_60px_rgba(0,0,0,0.06)]",
+            "relative rounded-[28px] overflow-hidden group",
+            // Light mode styling - enhanced with warm shadows
+            "bg-white",
+            "border border-[rgb(237,234,233)]",
+            "shadow-[0_10px_40px_rgba(0,0,0,0.08),0_4px_12px_rgba(0,0,0,0.04)]",
             // Dark mode styling
             "dark:bg-[#0d1320]/85 dark:backdrop-blur-2xl",
             "dark:border-white/[0.12]",
             "dark:shadow-[0_0_80px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.05)]",
-            // Hover effects
-            "transition-shadow duration-500",
-            "hover:shadow-[0_12px_50px_rgba(0,0,0,0.12),0_30px_80px_rgba(0,0,0,0.08)]",
+            // Hover effects - enhanced for light mode
+            "transition-all duration-500 ease-out",
+            "hover:shadow-[0_20px_60px_rgba(0,0,0,0.12),0_8px_24px_rgba(255,100,50,0.08)]",
+            "hover:border-[rgb(255,200,180)]",
             "dark:hover:shadow-[0_0_100px_rgba(0,0,0,0.6),0_0_40px_rgba(100,150,255,0.1)]",
             "dark:hover:border-white/[0.18]"
           )}
@@ -174,8 +175,16 @@ export function LoginPage() {
           {/* Glare effect overlay */}
           <div style={glareStyle} className="z-10" />
           
+          {/* Animated gradient border on hover (light mode) */}
+          <motion.div 
+            className="absolute inset-0 rounded-[28px] opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none dark:hidden"
+            style={{
+              background: 'linear-gradient(135deg, rgba(255,150,100,0.1) 0%, transparent 50%, rgba(200,150,255,0.08) 100%)',
+            }}
+          />
+          
           {/* Animated border glow on hover (dark mode) */}
-          <div className="absolute inset-0 rounded-[28px] opacity-0 dark:group-hover:opacity-100 transition-opacity duration-500 pointer-events-none
+          <div className="absolute inset-0 rounded-[28px] opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none hidden dark:block
                           bg-gradient-to-br from-blue-500/10 via-transparent to-purple-500/10" />
 
           {/* Two Panel Layout */}
@@ -186,9 +195,43 @@ export function LoginPage() {
               className="relative flex-1 flex flex-col items-center justify-center p-8 lg:p-12
                          min-h-[320px] lg:min-h-[540px]
                          overflow-hidden
-                         bg-gradient-to-br from-gray-50/50 to-gray-100/30 dark:bg-transparent"
+                         bg-[rgb(250,249,249)] dark:bg-transparent"
               variants={panelVariants}
             >
+              {/* Light mode: Subtle animated gradient orbs */}
+              <div className="absolute inset-0 dark:hidden overflow-hidden">
+                <motion.div 
+                  className={cn(
+                    "absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full",
+                    !reducedMotion && "animate-orb-1"
+                  )}
+                  style={{
+                    background: 'radial-gradient(circle, rgba(255,150,100,0.15) 0%, transparent 70%)',
+                    filter: 'blur(40px)',
+                  }}
+                />
+                <motion.div 
+                  className={cn(
+                    "absolute -bottom-[15%] -right-[10%] w-[45%] h-[45%] rounded-full",
+                    !reducedMotion && "animate-orb-2"
+                  )}
+                  style={{
+                    background: 'radial-gradient(circle, rgba(180,150,255,0.12) 0%, transparent 70%)',
+                    filter: 'blur(35px)',
+                  }}
+                />
+                <motion.div 
+                  className={cn(
+                    "absolute top-[40%] left-[30%] w-[30%] h-[30%] rounded-full",
+                    !reducedMotion && "animate-orb-3"
+                  )}
+                  style={{
+                    background: 'radial-gradient(circle, rgba(255,200,150,0.1) 0%, transparent 70%)',
+                    filter: 'blur(30px)',
+                  }}
+                />
+              </div>
+              
               {/* Dark mode: Enhanced glow effect */}
               <div className="absolute inset-0 hidden dark:flex items-center justify-center overflow-hidden">
                 <motion.div 
@@ -196,7 +239,7 @@ export function LoginPage() {
                   style={{
                     background: 'radial-gradient(circle, rgba(100, 150, 255, 0.15) 0%, rgba(150, 100, 200, 0.08) 40%, transparent 70%)',
                   }}
-                  animate={{
+                  animate={reducedMotion ? {} : {
                     scale: [1, 1.1, 1],
                     opacity: [0.5, 0.7, 0.5],
                   }}
@@ -217,23 +260,42 @@ export function LoginPage() {
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ delay: 0.4, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
                 >
-                  {/* Light mode: Animated Gradient Card */}
+                  {/* Light mode: Animated Gradient Card with enhanced effects */}
                   <motion.div 
                     className="dark:hidden relative w-full h-full rounded-3xl overflow-hidden
                                border-t-[10px] border-b-[10px] border-white
                                ring-1 ring-black/5"
                     animate={reducedMotion ? {} : { 
-                      y: [0, -10, 0],
-                      boxShadow: [
-                        '0 20px 40px rgba(0,0,0,0.1), 0 8px 20px rgba(0,0,0,0.08)',
-                        '0 30px 60px rgba(0,0,0,0.15), 0 15px 30px rgba(0,0,0,0.1)',
-                        '0 20px 40px rgba(0,0,0,0.1), 0 8px 20px rgba(0,0,0,0.08)'
-                      ]
+                      y: [0, -12, 0],
+                      rotateY: [0, 3, 0, -3, 0],
+                      rotateX: [0, -2, 0, 2, 0],
                     }}
                     transition={{ 
-                      duration: 5,
-                      repeat: Infinity,
-                      ease: 'easeInOut'
+                      y: {
+                        duration: 4,
+                        repeat: Infinity,
+                        ease: 'easeInOut'
+                      },
+                      rotateY: {
+                        duration: 8,
+                        repeat: Infinity,
+                        ease: 'easeInOut'
+                      },
+                      rotateX: {
+                        duration: 6,
+                        repeat: Infinity,
+                        ease: 'easeInOut'
+                      }
+                    }}
+                    style={{
+                      boxShadow: '0 25px 50px rgba(0,0,0,0.12), 0 10px 25px rgba(0,0,0,0.08), 0 0 0 1px rgba(255,255,255,0.5) inset',
+                      transformStyle: 'preserve-3d',
+                    }}
+                    whileHover={reducedMotion ? {} : {
+                      scale: 1.05,
+                      rotateY: 5,
+                      rotateX: -5,
+                      boxShadow: '0 35px 70px rgba(0,0,0,0.15), 0 15px 35px rgba(0,0,0,0.1), 0 0 0 1px rgba(255,255,255,0.6) inset',
                     }}
                   >
                     {/* Animated gradient background */}
@@ -248,9 +310,39 @@ export function LoginPage() {
                       }} 
                     />
                     
-                    {/* Shine overlay */}
-                    <div className="absolute inset-0 opacity-60
-                                    bg-[radial-gradient(ellipse_at_30%_20%,rgba(255,255,255,0.8),transparent_50%)]" />
+                    {/* Animated shine overlay */}
+                    <motion.div 
+                      className="absolute inset-0"
+                      style={{
+                        background: 'linear-gradient(135deg, rgba(255,255,255,0.4) 0%, transparent 50%, rgba(255,255,255,0.1) 100%)',
+                      }}
+                      animate={reducedMotion ? {} : {
+                        opacity: [0.4, 0.7, 0.4],
+                      }}
+                      transition={{
+                        duration: 3,
+                        repeat: Infinity,
+                        ease: 'easeInOut',
+                      }}
+                    />
+                    
+                    {/* Shine sweep effect */}
+                    <motion.div 
+                      className="absolute inset-0 opacity-30"
+                      style={{
+                        background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.8) 50%, transparent 100%)',
+                        transform: 'translateX(-100%)',
+                      }}
+                      animate={reducedMotion ? {} : {
+                        transform: ['translateX(-100%)', 'translateX(100%)'],
+                      }}
+                      transition={{
+                        duration: 3,
+                        repeat: Infinity,
+                        repeatDelay: 2,
+                        ease: 'easeInOut',
+                      }}
+                    />
                     
                     {/* Subtle pattern overlay */}
                     <div 
@@ -383,24 +475,19 @@ export function LoginPage() {
                   </motion.p>
                 </motion.div>
 
-                {/* Telegram Login Button with glow effect */}
+                {/* Telegram Login Button */}
                 <motion.div
                   className="flex justify-center py-4"
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.6, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
                 >
-                  <div className={cn(
-                    "relative rounded-xl",
-                    !reducedMotion && "animate-telegram-pulse"
-                  )}>
-                    <TelegramLoginButton
-                      buttonSize="large"
-                      cornerRadius={12}
-                      onSuccess={handleLoginSuccess}
-                      onError={handleLoginError}
-                    />
-                  </div>
+                  <TelegramLoginButton
+                    buttonSize="large"
+                    cornerRadius={12}
+                    onSuccess={handleLoginSuccess}
+                    onError={handleLoginError}
+                  />
                 </motion.div>
 
                 {/* Divider with expand animation */}

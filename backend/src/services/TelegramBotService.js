@@ -60,7 +60,6 @@ export class TelegramBotService {
 
         const card = result.card || result.fullCard || 'N/A';
         const status = result.status || 'APPROVED';
-        const message = result.message || 'Success';
         const bin = result.binData;
 
         // Format BIN info (scheme is the brand from BIN lookup API)
@@ -81,24 +80,25 @@ export class TelegramBotService {
         // Status emoji
         const statusEmoji = status === 'APPROVED' ? '✅' : status === 'LIVE' ? '🟢' : '✓';
 
-        // Clean professional template
+        // Build card info line
         const cardInfo = [brand, cardType, category].filter(Boolean).join(' • ');
         
+        // Sleek Minimal Design
         const formattedMessage = `
-<b>💎 STRIPULA CHECKER</b>
+┏━━ ${statusEmoji} <b>${status}</b> ━━━━━━━━━━━━━┓
 
-${statusEmoji} <b>${status}</b>
-━━━━━━━━━━━━━━━━━━━━
-💳 <code>${card}</code>
+ 💳 <code>${card}</code>
 
-📋 <b>Card:</b> ${cardInfo}
-🏦 <b>Bank:</b> ${bank}
-🌍 <b>Country:</b> ${country} ${countryFlag}
+ ────────────────────────────
+ ${cardInfo}
+ 🏦 ${bank}
+ ${countryFlag} ${country}
+ ────────────────────────────
 
-🔗 <b>Gateway:</b> ${gatewayDisplay}
-👤 <b>User:</b> ${userName} [${userTier}]
-━━━━━━━━━━━━━━━━━━━━
-<i>⚡ Dev by Howard</i>
+ ⚡ ${gatewayDisplay}
+ 👤 ${userName} • ${userTier}
+
+┗━━━━━━━━ <b>STRIPULA</b> ━━━━━━━━━┛
 `.trim();
 
         // Send to user
@@ -145,94 +145,84 @@ ${statusEmoji} <b>${status}</b>
         const userTier = (user?.tier || 'free').toUpperCase();
         const userName = user?.first_name || 'User';
 
-        // Balance display with available + pending
-        let balanceLine = '💵 Balance unavailable';
-        if (balance !== undefined && balance !== null) {
-            const balanceAmount = (balance / 100).toFixed(2);
-            let balanceEmoji = '💵';
-            if (status === 'LIVE+') balanceEmoji = '💰';
-            else if (status === 'LIVE0') balanceEmoji = '⚖️';
-            else if (status === 'LIVE-') balanceEmoji = '📉';
-            
-            balanceLine = `${balanceEmoji} <b>Available:</b> ${currencySymbol}${balanceAmount} ${currency}`;
-            
-            // Add pending balance if exists
-            if (pendingBalance !== undefined && pendingBalance !== null && pendingBalance !== 0) {
-                const pendingAmount = (pendingBalance / 100).toFixed(2);
-                balanceLine += `\n⏳ <b>Pending:</b> ${currencySymbol}${pendingAmount} ${currency}`;
-            }
-        }
-
-        // Capabilities line
-        const capLines = [];
-        if (chargesEnabled !== undefined) {
-            capLines.push(`${chargesEnabled ? '✅' : '❌'} Charges`);
-        }
-        if (payoutsEnabled !== undefined) {
-            capLines.push(`${payoutsEnabled ? '✅' : '❌'} Payouts`);
-        }
-        if (capabilities.cardPayments !== undefined) {
-            capLines.push(`${capabilities.cardPayments ? '✅' : '❌'} Card Payments`);
-        }
-        if (capabilities.transfers !== undefined) {
-            capLines.push(`${capabilities.transfers ? '✅' : '❌'} Transfers`);
-        }
-        const capabilitiesLine = capLines.length > 0 ? capLines.join(' | ') : '';
-
-        const inputMethod = isManualInput ? 'Manual' : 'Batch';
-        
         // Status emoji based on balance status
         let statusEmoji = '🟢';
         let statusLabel = status;
         if (status === 'LIVE+') {
             statusEmoji = '💰';
-            statusLabel = 'LIVE (Positive Balance)';
+            statusLabel = 'LIVE+';
         } else if (status === 'LIVE0') {
             statusEmoji = '⚖️';
-            statusLabel = 'LIVE (Zero Balance)';
+            statusLabel = 'LIVE0';
         } else if (status === 'LIVE-') {
             statusEmoji = '📉';
-            statusLabel = 'LIVE (Negative Balance)';
+            statusLabel = 'LIVE-';
+        }
+
+        // Mode indicator
+        const modeIndicator = livemode === true ? '🟢 PROD' : livemode === false ? '🧪 TEST' : '';
+
+        // Balance section
+        let balanceSection = ' 💵 Balance unavailable';
+        if (balance !== undefined && balance !== null) {
+            const balanceAmount = (balance / 100).toFixed(2);
+            balanceSection = ` 💵 ${currencySymbol}${balanceAmount} ${currency}`;
+            
+            if (pendingBalance !== undefined && pendingBalance !== null && pendingBalance !== 0) {
+                const pendingAmount = (pendingBalance / 100).toFixed(2);
+                balanceSection += `\n ⏳ ${currencySymbol}${pendingAmount} pending`;
+            }
+        }
+
+        // Capabilities grid (2x2)
+        const caps = [];
+        if (chargesEnabled !== undefined) {
+            caps.push(`${chargesEnabled ? '✅' : '❌'} Charges`);
+        }
+        if (payoutsEnabled !== undefined) {
+            caps.push(`${payoutsEnabled ? '✅' : '❌'} Payouts`);
+        }
+        if (capabilities.cardPayments !== undefined) {
+            caps.push(`${capabilities.cardPayments ? '✅' : '❌'} Cards`);
+        }
+        if (capabilities.transfers !== undefined) {
+            caps.push(`${capabilities.transfers ? '✅' : '❌'} Transfers`);
         }
         
-        // Mode indicator - production vs test
-        const modeLabel = livemode === true ? '🟢 Production' : livemode === false ? '🧪 Test Mode' : '';
-
-        // Build account info section
-        let accountSection = `🏢 <b>Account:</b> ${accountName}`;
-        if (accountEmail && accountEmail !== 'N/A') {
-            accountSection += `\n📧 <b>Email:</b> ${accountEmail}`;
-        }
-        if (accountId && accountId !== 'N/A') {
-            accountSection += `\n🆔 <b>ID:</b> <code>${accountId}</code>`;
-        }
-        if (countryFlag || countryName !== 'N/A') {
-            accountSection += `\n🌍 <b>Country:</b> ${countryFlag} ${countryName}`;
+        // Format capabilities in 2 columns
+        let capsSection = '';
+        if (caps.length > 0) {
+            const col1 = caps.filter((_, i) => i % 2 === 0);
+            const col2 = caps.filter((_, i) => i % 2 === 1);
+            capsSection = col1.map((c, i) => ` ${c}${col2[i] ? `  ${col2[i]}` : ''}`).join('\n');
         }
 
-        // Build PK key section if available
-        let pkSection = '';
-        if (pkKey) {
-            pkSection = `\n\n🔓 <b>PK Key:</b>\n<code>${pkKey}</code>`;
-        }
+        // PK Key section
+        const pkSection = pkKey ? `\n ────────────────────────────\n 🔓 <code>${pkKey}</code>` : '';
 
-        // Clean professional template for SK keys
+        const inputMethod = isManualInput ? 'Manual' : 'Batch';
+
+        // Sleek Minimal Design for SK Keys
         const formattedMessage = `
-<b>🔑 STRIPULA SK CHECKER</b>
+┏━━ ${statusEmoji} <b>${statusLabel}</b> ━━━━━━━━━━━━━━┓${modeIndicator ? `\n 📡 ${modeIndicator}` : ''}
 
-${statusEmoji} <b>${statusLabel}</b>${modeLabel ? `\n📡 <b>Mode:</b> ${modeLabel}` : ''}
-━━━━━━━━━━━━━━━━━━━━
-🔐 <code>${key}</code>
+ 🔐 <code>${key}</code>
 
-${accountSection}
+ ────────────────────────────
+ 🏢 ${accountName}${accountEmail !== 'N/A' ? `\n 📧 ${accountEmail}` : ''}
+ 🆔 <code>${accountId}</code>
+ ${countryFlag} ${countryName}
+ ────────────────────────────
 
-${balanceLine}
-${capabilitiesLine ? `\n⚡ ${capabilitiesLine}` : ''}${pkSection}
+${balanceSection}
 
-📋 <b>Method:</b> ${inputMethod} Check
-👤 <b>User:</b> ${userName} [${userTier}]
-━━━━━━━━━━━━━━━━━━━━
-<i>⚡ Dev by Howard</i>
+${capsSection}${pkSection}
+
+ ────────────────────────────
+ 📋 ${inputMethod} Check
+ 👤 ${userName} • ${userTier}
+
+┗━━━━━━━━ <b>STRIPULA</b> ━━━━━━━━━┛
 `.trim();
 
         // Send to user
@@ -256,10 +246,17 @@ ${capabilitiesLine ? `\n⚡ ${capabilitiesLine}` : ''}${pkSection}
 
         const timestamp = new Date().toLocaleString('en-US', { timeZone: 'UTC' });
         const message = `
-⚙️ <b>${title}</b>
+┏━━ ⚙️ <b>SYSTEM</b> ━━━━━━━━━━━━━┓
 
-${details}
-⏰ ${timestamp} UTC
+ <b>${title}</b>
+
+ ────────────────────────────
+${details.split('\n').map(line => ` ${line}`).join('\n')}
+ ────────────────────────────
+
+ ⏰ ${timestamp} UTC
+
+┗━━━━━━━━ <b>STRIPULA</b> ━━━━━━━━━┛
 `.trim();
 
         await this.sendMessage(this.adminChatId, message);
