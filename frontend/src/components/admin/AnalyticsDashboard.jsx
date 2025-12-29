@@ -3,86 +3,92 @@ import { motion } from 'motion/react';
 import { 
   BarChart3, 
   Loader2, 
-  Users,
-  UserCheck,
+  Users, 
+  Activity,
   Coins,
   Key,
-  KeyRound,
-  RefreshCw,
-  Calendar,
   TrendingUp,
+  Calendar,
+  RefreshCw,
   Shield,
   Award,
   Crown,
   Gem,
-  User
+  User,
+  Percent,
+  CheckCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/hooks/useToast';
+import { Label } from '@/components/ui/label';
 import { spring } from '@/lib/motion';
 
 /**
  * AnalyticsDashboard Component
- * Admin analytics view with key metrics
+ * Admin analytics with key metrics and visualizations
+ * Redesigned with hero stat cards and animated progress bars
  * 
- * Requirements: 3.4
+ * Requirements: 3.1
  */
 
 const API_BASE = '/api';
 
 const TIER_CONFIG = {
-  free: { icon: User, color: 'text-slate-500', bg: 'bg-slate-500/10' },
-  bronze: { icon: Shield, color: 'text-amber-600', bg: 'bg-amber-500/10' },
-  silver: { icon: Award, color: 'text-slate-400', bg: 'bg-slate-400/10' },
-  gold: { icon: Crown, color: 'text-yellow-500', bg: 'bg-yellow-500/10' },
-  diamond: { icon: Gem, color: 'text-sky-500', bg: 'bg-sky-500/10' },
+  free: { icon: User, color: 'slate', gradient: 'from-slate-500 to-slate-600' },
+  bronze: { icon: Shield, color: 'amber', gradient: 'from-amber-500 to-amber-600' },
+  silver: { icon: Award, color: 'slate', gradient: 'from-slate-400 to-slate-500' },
+  gold: { icon: Crown, color: 'yellow', gradient: 'from-yellow-500 to-amber-500' },
+  diamond: { icon: Gem, color: 'cyan', gradient: 'from-cyan-400 to-blue-500' },
 };
 
 /**
- * Stat Card Component
+ * Hero Stat Card Component
  */
-function StatCard({ icon: Icon, label, value, subtext, color, trend }) {
+function HeroStatCard({ icon: Icon, label, value, subValue, color, delay = 0 }) {
+  const colorClasses = {
+    blue: 'from-blue-500 to-blue-600',
+    emerald: 'from-emerald-500 to-emerald-600',
+    amber: 'from-amber-500 to-amber-600',
+    purple: 'from-purple-500 to-purple-600',
+    primary: 'from-[rgb(255,64,23)] to-[rgb(220,50,20)]'
+  };
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
+      initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={spring.soft}
+      transition={{ delay, ...spring.soft }}
+      className={cn(
+        "relative overflow-hidden rounded-2xl p-6",
+        "bg-gradient-to-br",
+        colorClasses[color] || colorClasses.blue
+      )}
     >
-      <Card variant="elevated" className="h-full">
-        <CardContent className="p-4">
-          <div className="flex items-start justify-between">
-            <div className={cn("p-2 rounded-lg", color || "bg-primary/10")}>
-              <Icon className={cn(
-                "h-5 w-5",
-                color?.includes('emerald') ? "text-emerald-600 dark:text-emerald-400" :
-                color?.includes('blue') ? "text-blue-600 dark:text-blue-400" :
-                color?.includes('amber') ? "text-amber-600 dark:text-amber-400" :
-                color?.includes('violet') ? "text-violet-600 dark:text-violet-400" :
-                color?.includes('cyan') ? "text-cyan-600 dark:text-cyan-400" :
-                "text-primary"
-              )} />
-            </div>
-            {trend && (
-              <Badge variant={trend > 0 ? 'success' : 'secondary'} className="text-xs">
-                <TrendingUp className="h-3 w-3 mr-1" />
-                {trend > 0 ? '+' : ''}{trend}%
-              </Badge>
-            )}
+      {/* Background Pattern */}
+      <div className="absolute inset-0 opacity-10">
+        <div className="absolute -right-4 -top-4 h-32 w-32 rounded-full bg-white/20" />
+        <div className="absolute -right-8 -bottom-8 h-40 w-40 rounded-full bg-white/10" />
+      </div>
+
+      <div className="relative">
+        <div className="flex items-center justify-between mb-4">
+          <div className="h-12 w-12 rounded-xl bg-white/20 flex items-center justify-center">
+            <Icon className="h-6 w-6 text-white" />
           </div>
-          <div className="mt-3">
-            <p className="text-2xl font-bold">{value?.toLocaleString() ?? '-'}</p>
-            <p className="text-sm text-muted-foreground">{label}</p>
-            {subtext && (
-              <p className="text-xs text-muted-foreground/70 mt-1">{subtext}</p>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+          {subValue && (
+            <Badge className="bg-white/20 text-white border-0 text-xs">
+              {subValue}
+            </Badge>
+          )}
+        </div>
+
+        <p className="text-white/80 text-sm font-medium mb-1">{label}</p>
+        <p className="text-3xl font-bold text-white">
+          {typeof value === 'number' ? value.toLocaleString() : value}
+        </p>
+      </div>
     </motion.div>
   );
 }
@@ -90,50 +96,89 @@ function StatCard({ icon: Icon, label, value, subtext, color, trend }) {
 /**
  * Tier Distribution Card
  */
-function TierDistribution({ usersByTier }) {
-  if (!usersByTier || Object.keys(usersByTier).length === 0) {
-    return null;
-  }
+function TierDistribution({ usersByTier, totalUsers }) {
+  if (!usersByTier || Object.keys(usersByTier).length === 0) return null;
 
-  const total = Object.values(usersByTier).reduce((sum, count) => sum + count, 0);
   const tiers = ['free', 'bronze', 'silver', 'gold', 'diamond'];
+  const maxCount = Math.max(...Object.values(usersByTier), 1);
 
   return (
-    <Card variant="elevated">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">
-          Users by Tier
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        {tiers.map(tier => {
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.2, ...spring.soft }}
+      className={cn(
+        "rounded-2xl overflow-hidden",
+        "bg-white dark:bg-[rgba(30,41,59,0.5)]",
+        "border border-[rgb(237,234,233)] dark:border-white/10",
+        "dark:backdrop-blur-sm shadow-sm dark:shadow-none"
+      )}
+    >
+      <div className="px-6 py-5 border-b border-[rgb(237,234,233)] dark:border-white/10">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-xl bg-purple-500/10 flex items-center justify-center">
+            <Users className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-[rgb(37,27,24)] dark:text-white">User Tiers</h3>
+            <p className="text-xs text-muted-foreground">Distribution across tiers</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="p-6 space-y-4">
+        {tiers.map((tier, index) => {
           const count = usersByTier[tier] || 0;
-          const percentage = total > 0 ? (count / total) * 100 : 0;
+          const percentage = totalUsers > 0 ? ((count / totalUsers) * 100).toFixed(1) : 0;
           const config = TIER_CONFIG[tier];
-          const TierIcon = config.icon;
+          const Icon = config.icon;
 
           return (
-            <div key={tier} className="space-y-1">
-              <div className="flex items-center justify-between text-sm">
+            <motion.div
+              key={tier}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.3 + index * 0.1, ...spring.soft }}
+            >
+              <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
-                  <TierIcon className={cn("h-4 w-4", config.color)} />
-                  <span className="capitalize">{tier}</span>
+                  <div className={cn(
+                    "h-7 w-7 rounded-lg flex items-center justify-center",
+                    `bg-${config.color}-500/10`
+                  )}>
+                    <Icon className={cn("h-4 w-4", `text-${config.color}-500`)} />
+                  </div>
+                  <span className="text-sm font-medium capitalize text-[rgb(37,27,24)] dark:text-white">
+                    {tier}
+                  </span>
                 </div>
-                <span className="font-medium">{count.toLocaleString()}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold text-[rgb(37,27,24)] dark:text-white">
+                    {count.toLocaleString()}
+                  </span>
+                  <Badge variant="secondary" className="text-[10px] h-5">
+                    {percentage}%
+                  </Badge>
+                </div>
               </div>
-              <div className="h-2 bg-muted/50 rounded-full overflow-hidden">
+
+              {/* Progress Bar */}
+              <div className="h-2 bg-[rgb(250,247,245)] dark:bg-white/5 rounded-full overflow-hidden">
                 <motion.div
-                  className={cn("h-full rounded-full", config.bg.replace('/10', ''))}
                   initial={{ width: 0 }}
-                  animate={{ width: `${percentage}%` }}
-                  transition={{ duration: 0.5, ease: "easeOut" }}
+                  animate={{ width: `${(count / maxCount) * 100}%` }}
+                  transition={{ delay: 0.5 + index * 0.1, duration: 0.8, ease: 'easeOut' }}
+                  className={cn(
+                    "h-full rounded-full bg-gradient-to-r",
+                    config.gradient
+                  )}
                 />
               </div>
-            </div>
+            </motion.div>
           );
         })}
-      </CardContent>
-    </Card>
+      </div>
+    </motion.div>
   );
 }
 
@@ -146,46 +191,103 @@ function KeysStats({ keysGenerated, keysRedeemed }) {
     : 0;
 
   return (
-    <Card variant="elevated">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">
-          Redeem Keys
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-2 gap-4">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.3, ...spring.soft }}
+      className={cn(
+        "rounded-2xl overflow-hidden",
+        "bg-white dark:bg-[rgba(30,41,59,0.5)]",
+        "border border-[rgb(237,234,233)] dark:border-white/10",
+        "dark:backdrop-blur-sm shadow-sm dark:shadow-none"
+      )}
+    >
+      <div className="px-6 py-5 border-b border-[rgb(237,234,233)] dark:border-white/10">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+            <Key className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+          </div>
           <div>
-            <div className="flex items-center gap-2 mb-1">
-              <Key className="h-4 w-4 text-violet-500" />
+            <h3 className="font-semibold text-[rgb(37,27,24)] dark:text-white">Key Statistics</h3>
+            <p className="text-xs text-muted-foreground">Generation and redemption</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="p-6">
+        {/* Circular Progress */}
+        <div className="flex items-center justify-center mb-6">
+          <div className="relative">
+            <svg className="w-32 h-32 transform -rotate-90">
+              <circle
+                cx="64"
+                cy="64"
+                r="56"
+                stroke="currentColor"
+                strokeWidth="8"
+                fill="none"
+                className="text-[rgb(250,247,245)] dark:text-white/5"
+              />
+              <motion.circle
+                cx="64"
+                cy="64"
+                r="56"
+                stroke="url(#gradient)"
+                strokeWidth="8"
+                fill="none"
+                strokeLinecap="round"
+                initial={{ strokeDasharray: '0 352' }}
+                animate={{ strokeDasharray: `${(redemptionRate / 100) * 352} 352` }}
+                transition={{ delay: 0.5, duration: 1, ease: 'easeOut' }}
+              />
+              <defs>
+                <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#10b981" />
+                  <stop offset="100%" stopColor="#059669" />
+                </linearGradient>
+              </defs>
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className="text-2xl font-bold text-[rgb(37,27,24)] dark:text-white">
+                {redemptionRate}%
+              </span>
+              <span className="text-xs text-muted-foreground">Redemption</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 gap-4">
+          <div className={cn(
+            "p-4 rounded-xl",
+            "bg-[rgb(250,247,245)] dark:bg-white/5",
+            "border border-[rgb(237,234,233)] dark:border-white/10"
+          )}>
+            <div className="flex items-center gap-2 mb-2">
+              <Key className="h-4 w-4 text-blue-500" />
               <span className="text-xs text-muted-foreground">Generated</span>
             </div>
-            <p className="text-xl font-bold">{keysGenerated?.toLocaleString() ?? 0}</p>
+            <p className="text-xl font-bold text-[rgb(37,27,24)] dark:text-white">
+              {keysGenerated?.toLocaleString() || 0}
+            </p>
           </div>
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <KeyRound className="h-4 w-4 text-emerald-500" />
+
+          <div className={cn(
+            "p-4 rounded-xl",
+            "bg-[rgb(250,247,245)] dark:bg-white/5",
+            "border border-[rgb(237,234,233)] dark:border-white/10"
+          )}>
+            <div className="flex items-center gap-2 mb-2">
+              <CheckCircle className="h-4 w-4 text-emerald-500" />
               <span className="text-xs text-muted-foreground">Redeemed</span>
             </div>
-            <p className="text-xl font-bold">{keysRedeemed?.toLocaleString() ?? 0}</p>
+            <p className="text-xl font-bold text-[rgb(37,27,24)] dark:text-white">
+              {keysRedeemed?.toLocaleString() || 0}
+            </p>
           </div>
         </div>
-        
-        <div className="mt-4 pt-3 border-t border-border">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Redemption Rate</span>
-            <span className="font-medium">{redemptionRate}%</span>
-          </div>
-          <div className="h-2 bg-muted/50 rounded-full overflow-hidden mt-2">
-            <motion.div
-              className="h-full bg-emerald-500 rounded-full"
-              initial={{ width: 0 }}
-              animate={{ width: `${Math.min(redemptionRate, 100)}%` }}
-              transition={{ duration: 0.5, ease: "easeOut" }}
-            />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+      </div>
+    </motion.div>
   );
 }
 
@@ -194,14 +296,12 @@ export function AnalyticsDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [startDate, setStartDate] = useState(() => {
     const date = new Date();
-    date.setDate(date.getDate() - 30);
+    date.setMonth(date.getMonth() - 1);
     return date.toISOString().split('T')[0];
   });
   const [endDate, setEndDate] = useState(() => {
     return new Date().toISOString().split('T')[0];
   });
-  
-  const { error } = useToast();
 
   /**
    * Fetch analytics from API
@@ -210,9 +310,10 @@ export function AnalyticsDashboard() {
     setIsLoading(true);
     
     try {
-      const params = new URLSearchParams();
-      if (startDate) params.append('startDate', startDate);
-      if (endDate) params.append('endDate', endDate);
+      const params = new URLSearchParams({
+        startDate,
+        endDate
+      });
 
       const response = await fetch(`${API_BASE}/admin/analytics?${params}`, {
         method: 'GET',
@@ -224,9 +325,9 @@ export function AnalyticsDashboard() {
 
       if (response.ok && data.status === 'OK') {
         setAnalytics(data.analytics || data);
-      } else {
       }
     } catch (err) {
+      // Silent fail
     } finally {
       setIsLoading(false);
     }
@@ -234,96 +335,218 @@ export function AnalyticsDashboard() {
 
   useEffect(() => {
     fetchAnalytics();
-  }, [startDate, endDate]); // Don't include fetchAnalytics to avoid infinite loop
+  }, [startDate, endDate]);
 
   return (
     <div className="space-y-6">
-      {/* Date Range Selector */}
-      <Card variant="elevated">
-        <CardContent className="p-4">
+      {/* Date Range Card */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className={cn(
+          "rounded-2xl overflow-hidden",
+          "bg-white dark:bg-[rgba(30,41,59,0.5)]",
+          "border border-[rgb(237,234,233)] dark:border-white/10",
+          "dark:backdrop-blur-sm shadow-sm dark:shadow-none"
+        )}
+      >
+        <div className="px-6 py-5 border-b border-[rgb(237,234,233)] dark:border-white/10 bg-gradient-to-br from-[rgb(250,247,245)] to-transparent dark:from-white/[0.02] dark:to-transparent">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-primary/10 dark:bg-primary/20 flex items-center justify-center">
+                <BarChart3 className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-[rgb(37,27,24)] dark:text-white">
+                  Analytics
+                </h2>
+                <p className="text-xs text-muted-foreground">Usage statistics and insights</p>
+              </div>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={fetchAnalytics} 
+              disabled={isLoading}
+              className="rounded-xl"
+            >
+              <RefreshCw className={cn("h-4 w-4 mr-2", isLoading && "animate-spin")} />
+              Refresh
+            </Button>
+          </div>
+        </div>
+
+        <div className="p-6">
           <div className="flex flex-wrap items-end gap-4">
             <div className="space-y-2">
-              <Label className="flex items-center gap-2 text-xs">
-                <Calendar className="h-3.5 w-3.5" />
+              <Label className="text-xs font-medium flex items-center gap-1.5">
+                <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
                 Start Date
               </Label>
               <Input
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="w-40"
+                className="w-40 rounded-xl"
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-xs">End Date</Label>
+              <Label className="text-xs font-medium flex items-center gap-1.5">
+                <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+                End Date
+              </Label>
               <Input
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="w-40"
+                className="w-40 rounded-xl"
               />
             </div>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={fetchAnalytics}
-              disabled={isLoading}
-            >
-              <RefreshCw className={cn("h-4 w-4 mr-2", isLoading && "animate-spin")} />
-              Refresh
-            </Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </motion.div>
 
+      {/* Loading State */}
       {isLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <div className="flex items-center justify-center py-20">
+          <div className="text-center">
+            <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto mb-4" />
+            <p className="text-sm text-muted-foreground">Loading analytics...</p>
+          </div>
         </div>
       ) : !analytics ? (
-        <div className="text-center py-12 text-muted-foreground">
-          <BarChart3 className="h-12 w-12 mx-auto mb-3 opacity-30" />
-          <p>No analytics data available</p>
+        <div className="text-center py-20">
+          <div className="h-16 w-16 rounded-2xl bg-[rgb(250,247,245)] dark:bg-white/5 flex items-center justify-center mx-auto mb-4">
+            <BarChart3 className="h-8 w-8 text-muted-foreground/50" />
+          </div>
+          <h3 className="text-lg font-medium text-[rgb(37,27,24)] dark:text-white mb-1">No data available</h3>
+          <p className="text-sm text-muted-foreground">Try adjusting the date range</p>
         </div>
       ) : (
         <>
-          {/* Key Metrics */}
+          {/* Hero Stats Grid */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <StatCard
+            <HeroStatCard
               icon={Users}
               label="Total Users"
-              value={analytics.totalUsers}
-              color="bg-blue-500/10"
+              value={analytics.totalUsers || 0}
+              color="blue"
+              delay={0}
             />
-            <StatCard
-              icon={UserCheck}
+            <HeroStatCard
+              icon={Activity}
               label="Active Users"
-              value={analytics.activeUsers}
-              subtext="Last 30 days"
-              color="bg-emerald-500/10"
+              value={analytics.activeUsers || 0}
+              subValue={analytics.totalUsers > 0 
+                ? `${((analytics.activeUsers / analytics.totalUsers) * 100).toFixed(0)}%` 
+                : '0%'}
+              color="emerald"
+              delay={0.1}
             />
-            <StatCard
+            <HeroStatCard
               icon={Coins}
               label="Credits Consumed"
-              value={analytics.totalCreditsConsumed}
-              color="bg-amber-500/10"
+              value={analytics.creditsConsumed || 0}
+              color="amber"
+              delay={0.2}
             />
-            <StatCard
+            <HeroStatCard
               icon={Key}
               label="Keys Generated"
-              value={analytics.totalKeysGenerated ?? analytics.keysGenerated}
-              color="bg-violet-500/10"
+              value={analytics.totalKeysGenerated || 0}
+              color="purple"
+              delay={0.3}
             />
           </div>
 
           {/* Detailed Stats */}
           <div className="grid md:grid-cols-2 gap-6">
-            <TierDistribution usersByTier={analytics.usersByTier} />
+            <TierDistribution 
+              usersByTier={analytics.usersByTier} 
+              totalUsers={analytics.totalUsers || 0}
+            />
             <KeysStats 
-              keysGenerated={analytics.totalKeysGenerated ?? analytics.keysGenerated ?? 0}
-              keysRedeemed={analytics.totalKeysRedeemed ?? analytics.keysRedeemed ?? 0}
+              keysGenerated={analytics.totalKeysGenerated || 0} 
+              keysRedeemed={analytics.totalKeysRedeemed || 0} 
             />
           </div>
+
+          {/* Additional Metrics */}
+          {(analytics.validationsToday !== undefined || analytics.averageCreditsPerUser !== undefined) && (
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              {analytics.validationsToday !== undefined && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4, ...spring.soft }}
+                  className={cn(
+                    "p-6 rounded-2xl",
+                    "bg-white dark:bg-[rgba(30,41,59,0.5)]",
+                    "border border-[rgb(237,234,233)] dark:border-white/10",
+                    "dark:backdrop-blur-sm shadow-sm dark:shadow-none"
+                  )}
+                >
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="h-10 w-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
+                      <TrendingUp className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <span className="text-sm text-muted-foreground">Validations Today</span>
+                  </div>
+                  <p className="text-2xl font-bold text-[rgb(37,27,24)] dark:text-white">
+                    {analytics.validationsToday?.toLocaleString() || 0}
+                  </p>
+                </motion.div>
+              )}
+
+              {analytics.averageCreditsPerUser !== undefined && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5, ...spring.soft }}
+                  className={cn(
+                    "p-6 rounded-2xl",
+                    "bg-white dark:bg-[rgba(30,41,59,0.5)]",
+                    "border border-[rgb(237,234,233)] dark:border-white/10",
+                    "dark:backdrop-blur-sm shadow-sm dark:shadow-none"
+                  )}
+                >
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="h-10 w-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
+                      <Coins className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                    </div>
+                    <span className="text-sm text-muted-foreground">Avg Credits/User</span>
+                  </div>
+                  <p className="text-2xl font-bold text-[rgb(37,27,24)] dark:text-white">
+                    {(analytics.averageCreditsPerUser || 0).toFixed(1)}
+                  </p>
+                </motion.div>
+              )}
+
+              {analytics.newUsersThisWeek !== undefined && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.6, ...spring.soft }}
+                  className={cn(
+                    "p-6 rounded-2xl",
+                    "bg-white dark:bg-[rgba(30,41,59,0.5)]",
+                    "border border-[rgb(237,234,233)] dark:border-white/10",
+                    "dark:backdrop-blur-sm shadow-sm dark:shadow-none"
+                  )}
+                >
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="h-10 w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+                      <Users className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                    </div>
+                    <span className="text-sm text-muted-foreground">New This Week</span>
+                  </div>
+                  <p className="text-2xl font-bold text-[rgb(37,27,24)] dark:text-white">
+                    {analytics.newUsersThisWeek?.toLocaleString() || 0}
+                  </p>
+                </motion.div>
+              )}
+            </div>
+          )}
         </>
       )}
     </div>

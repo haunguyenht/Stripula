@@ -1,65 +1,27 @@
 import { useMemo } from 'react';
 import { motion } from 'motion/react';
-import { 
-  Zap, Clock, TrendingUp, Loader2, 
-  Shield, Award, Crown, Gem, Sparkles 
-} from 'lucide-react';
+import { Zap, Clock, TrendingUp, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSpeedComparison } from '@/hooks/useSpeedComparison';
 import { transition, softStaggerContainer, softStaggerItem } from '@/lib/motion';
+import { getTierConfig, TIER_ORDER } from '@/components/navigation/config/tier-config';
 
 /**
  * SpeedComparison Component
  * 
- * Displays a comparison table of speed settings across all tiers
- * Highlights the current user's tier and shows estimated time savings
+ * Displays a comparison table of speed settings across all tiers.
+ * Highlights the current user's tier and shows estimated time savings.
+ * Uses shared tier configuration for consistent styling.
  * 
  * Requirements: 6.1, 6.2, 6.3, 6.4
  * 
  * @param {string} gatewayId - Gateway ID (auth, charge, shopify)
  * @param {string} className - Additional CSS classes
+ * @param {boolean} hideHeader - Whether to hide the header
  */
-
-const tierConfigs = {
-  free: { 
-    icon: Sparkles, 
-    label: 'Starter', 
-    color: 'text-violet-500',
-    bgColor: 'bg-violet-500/10',
-    borderColor: 'border-violet-500/20'
-  },
-  bronze: { 
-    icon: Shield, 
-    label: 'Bronze', 
-    color: 'text-amber-600',
-    bgColor: 'bg-amber-500/10',
-    borderColor: 'border-amber-500/20'
-  },
-  silver: { 
-    icon: Award, 
-    label: 'Silver', 
-    color: 'text-slate-400',
-    bgColor: 'bg-slate-400/10',
-    borderColor: 'border-slate-400/20'
-  },
-  gold: { 
-    icon: Crown, 
-    label: 'Gold', 
-    color: 'text-yellow-500',
-    bgColor: 'bg-yellow-500/10',
-    borderColor: 'border-yellow-500/20'
-  },
-  diamond: { 
-    icon: Gem, 
-    label: 'Diamond', 
-    color: 'text-cyan-500',
-    bgColor: 'bg-cyan-500/10',
-    borderColor: 'border-cyan-500/20'
-  },
-};
 
 const gatewayLabels = {
   auth: 'Auth',
@@ -128,12 +90,12 @@ export function SpeedComparison({ gatewayId = 'auth', className, hideHeader = fa
           initial="initial"
           animate="animate"
         >
-          {comparisonWithSavings.map((tierData, index) => {
-            const config = tierConfigs[tierData.tier] || tierConfigs.free;
+          {comparisonWithSavings.map((tierData) => {
+            // Use shared tier config
+            const config = getTierConfig(tierData.tier);
             const TierIcon = config.icon;
             const isCurrentTier = tierData.tier === userTier;
-            const isBetterTier = comparison.findIndex(c => c.tier === tierData.tier) > 
-                                 comparison.findIndex(c => c.tier === userTier);
+            const isBetterTier = TIER_ORDER.indexOf(tierData.tier) > TIER_ORDER.indexOf(userTier);
 
             return (
               <motion.div

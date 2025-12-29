@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   CreditCard, 
   Loader2, 
@@ -7,38 +7,47 @@ import {
   Check,
   X,
   AlertCircle,
-  RotateCcw
+  RotateCcw,
+  Shield,
+  Award,
+  Crown,
+  Gem,
+  User,
+  Edit2,
+  Info
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Slider } from '@/components/ui/slider';
 import { ConfirmationDialog } from '@/components/ui/ConfirmationDialog';
 import { useCardInputLimits } from '@/hooks/useCardInputLimits';
 import { useConfirmation } from '@/hooks/useConfirmation';
 import { useToast } from '@/hooks/useToast';
+import { spring } from '@/lib/motion';
 
 /**
  * TierLimitsConfig Component
  * Admin panel for configuring card input limits per tier
+ * Redesigned with tier cards and slider inputs
  * 
  * Requirements: 7.1, 7.2, 7.5
  */
 
 const API_BASE = '/api';
 
-const TIER_LABELS = {
-  free: 'Free',
-  bronze: 'Bronze',
-  silver: 'Silver',
-  gold: 'Gold',
-  diamond: 'Diamond'
+const TIER_CONFIG = {
+  free: { icon: User, color: 'slate', label: 'Free', gradient: 'from-slate-500 to-slate-600' },
+  bronze: { icon: Shield, color: 'amber', label: 'Bronze', gradient: 'from-amber-500 to-amber-600' },
+  silver: { icon: Award, color: 'slate', label: 'Silver', gradient: 'from-slate-400 to-slate-500' },
+  gold: { icon: Crown, color: 'yellow', label: 'Gold', gradient: 'from-yellow-500 to-amber-500' },
+  diamond: { icon: Gem, color: 'cyan', label: 'Diamond', gradient: 'from-cyan-400 to-blue-500' }
 };
 
 const TIER_ORDER = ['free', 'bronze', 'silver', 'gold', 'diamond'];
 
-// Validation bounds (Requirements: 7.6)
+// Validation bounds
 const LIMIT_BOUNDS = {
   MIN: 100,
   MAX: 10000
@@ -46,7 +55,6 @@ const LIMIT_BOUNDS = {
 
 /**
  * Validate a limit value
- * Requirements: 7.6
  */
 function validateLimit(value) {
   if (value === '' || value === null || value === undefined) {
@@ -74,22 +82,28 @@ function validateLimit(value) {
 }
 
 /**
- * TierLimitRow - Inline editable row for a tier's card limit
+ * TierLimitCard - Card-based display for a tier's limit
  */
-function TierLimitRow({ tier, limit, defaultLimit, isCustom, onUpdate, isUpdating }) {
+function TierLimitCard({ tier, limit, defaultLimit, isCustom, onUpdate, isUpdating, index }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(limit);
+  const [sliderValue, setSliderValue] = useState(limit);
   const [error, setError] = useState(null);
+
+  const tierConfig = TIER_CONFIG[tier] || TIER_CONFIG.free;
+  const TierIcon = tierConfig.icon;
 
   // Sync edit value when limit changes externally
   useEffect(() => {
     if (!isEditing) {
       setEditValue(limit);
+      setSliderValue(limit);
     }
   }, [limit, isEditing]);
 
   const handleEdit = useCallback(() => {
     setEditValue(limit);
+    setSliderValue(limit);
     setError(null);
     setIsEditing(true);
   }, [limit]);
@@ -97,11 +111,11 @@ function TierLimitRow({ tier, limit, defaultLimit, isCustom, onUpdate, isUpdatin
   const handleCancel = useCallback(() => {
     setIsEditing(false);
     setEditValue(limit);
+    setSliderValue(limit);
     setError(null);
   }, [limit]);
 
   const handleSave = useCallback(async () => {
-    // Validate before saving
     const validation = validateLimit(editValue);
     if (!validation.valid) {
       setError(validation.error);
@@ -110,7 +124,6 @@ function TierLimitRow({ tier, limit, defaultLimit, isCustom, onUpdate, isUpdatin
 
     const newLimit = parseInt(editValue, 10);
     
-    // Don't save if unchanged
     if (newLimit === limit) {
       setIsEditing(false);
       return;
@@ -121,7 +134,7 @@ function TierLimitRow({ tier, limit, defaultLimit, isCustom, onUpdate, isUpdatin
     if (result.success) {
       setIsEditing(false);
       setError(null);
-    } else {
+    } else if (!result.cancelled) {
       setError(result.error);
     }
   }, [tier, editValue, limit, onUpdate]);
@@ -129,123 +142,208 @@ function TierLimitRow({ tier, limit, defaultLimit, isCustom, onUpdate, isUpdatin
   const handleInputChange = useCallback((e) => {
     const value = e.target.value;
     setEditValue(value);
-    // Clear error on input change
+    const numValue = parseInt(value, 10);
+    if (!isNaN(numValue) && numValue >= LIMIT_BOUNDS.MIN && numValue <= LIMIT_BOUNDS.MAX) {
+      setSliderValue(numValue);
+    }
     if (error) {
       const validation = validateLimit(value);
       setError(validation.error);
     }
   }, [error]);
 
-  const handleKeyDown = useCallback((e) => {
-    if (e.key === 'Enter') {
-      handleSave();
-    } else if (e.key === 'Escape') {
-      handleCancel();
-    }
-  }, [handleSave, handleCancel]);
+  const handleSliderChange = useCallback((values) => {
+    const value = values[0];
+    setSliderValue(value);
+    setEditValue(value.toString());
+    setError(null);
+  }, []);
+
+  // Calculate progress percentage for visual indicator
+  const progressPercent = ((limit - LIMIT_BOUNDS.MIN) / (LIMIT_BOUNDS.MAX - LIMIT_BOUNDS.MIN)) * 100;
 
   return (
-    <motion.tr
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.05, ...spring.soft }}
       className={cn(
-        "border-b border-border/50 last:border-0",
-        "hover:bg-muted/30 transition-colors"
+        "group relative rounded-xl overflow-hidden transition-all duration-200",
+        "bg-white dark:bg-white/[0.02]",
+        "border border-[rgb(237,234,233)] dark:border-white/5",
+        "hover:border-[rgb(255,64,23)]/20 dark:hover:border-white/10",
+        "hover:shadow-sm dark:hover:bg-white/[0.04]"
       )}
     >
-      {/* Tier Name */}
-      <td className="py-3 px-4">
-        <div className="flex items-center gap-2">
-          <span className="font-medium">{TIER_LABELS[tier]}</span>
-          {isCustom && (
-            <Badge variant="secondary" className="text-xs">Custom</Badge>
-          )}
+      {/* Tier Header */}
+      <div className={cn(
+        "px-4 py-3 flex items-center justify-between",
+        "border-b border-[rgb(237,234,233)] dark:border-white/5",
+        "bg-gradient-to-r",
+        `${tierConfig.gradient}/5`
+      )}>
+        <div className="flex items-center gap-3">
+          <div className={cn(
+            "h-9 w-9 rounded-lg flex items-center justify-center",
+            `bg-${tierConfig.color}-500/10`
+          )}>
+            <TierIcon className={cn("h-4.5 w-4.5", `text-${tierConfig.color}-500`)} />
+          </div>
+          <div>
+            <h4 className="font-semibold text-[rgb(37,27,24)] dark:text-white text-sm">
+              {tierConfig.label}
+            </h4>
+            {/* Progress Bar */}
+            <div className="flex items-center gap-2 mt-1">
+              <div className="w-20 h-1.5 bg-[rgb(250,247,245)] dark:bg-white/5 rounded-full overflow-hidden">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${progressPercent}%` }}
+                  transition={{ duration: 0.5, ease: 'easeOut' }}
+                  className={cn(
+                    "h-full rounded-full bg-gradient-to-r",
+                    tierConfig.gradient
+                  )}
+                />
+              </div>
+              <span className="text-[10px] text-muted-foreground">
+                {Math.round(progressPercent)}%
+              </span>
+            </div>
+          </div>
         </div>
-      </td>
-
-      {/* Card Limit */}
-      <td className="py-3 px-4">
-        {isEditing ? (
-          <div className="flex flex-col gap-1">
-            <Input
-              type="number"
-              min={LIMIT_BOUNDS.MIN}
-              max={LIMIT_BOUNDS.MAX}
-              value={editValue}
-              onChange={handleInputChange}
-              onKeyDown={handleKeyDown}
-              className={cn(
-                "w-28 h-8 text-sm",
-                error && "border-red-500 focus-visible:border-red-500"
-              )}
-              autoFocus
-            />
-            {error && (
-              <span className="text-xs text-red-500">{error}</span>
-            )}
-          </div>
-        ) : (
-          <div className="flex items-center gap-1.5 text-sm">
-            <CreditCard className="h-3.5 w-3.5 text-primary" />
-            <span>{limit.toLocaleString()} cards</span>
-          </div>
-        )}
-      </td>
-
-      {/* Default Value */}
-      <td className="py-3 px-4 text-sm text-muted-foreground">
-        {defaultLimit.toLocaleString()}
-      </td>
-
-      {/* Actions */}
-      <td className="py-3 px-4">
-        <div className="flex items-center gap-1">
-          {isEditing ? (
-            <>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7"
-                onClick={handleSave}
-                disabled={isUpdating}
-              >
-                {isUpdating ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Check className="h-3.5 w-3.5 text-emerald-500" />
-                )}
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7"
-                onClick={handleCancel}
-                disabled={isUpdating}
-              >
-                <X className="h-3.5 w-3.5 text-red-500" />
-              </Button>
-            </>
-          ) : (
+        <div className="flex items-center gap-2">
+          {isCustom && (
+            <Badge variant="secondary" className="text-[10px] h-5">Custom</Badge>
+          )}
+          {!isEditing && (
             <Button
               variant="ghost"
-              size="sm"
-              className="h-7 text-xs"
+              size="icon"
+              className="h-8 w-8 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
               onClick={handleEdit}
             >
-              Edit
+              <Edit2 className="h-3.5 w-3.5" />
             </Button>
           )}
         </div>
-      </td>
-    </motion.tr>
+      </div>
+
+      {/* Content */}
+      <div className="p-4">
+        <AnimatePresence mode="wait">
+          {isEditing ? (
+            <motion.div
+              key="editing"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="space-y-4"
+            >
+              {/* Slider */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">Card Limit</span>
+                  <span className="text-xs text-muted-foreground">
+                    Default: {defaultLimit.toLocaleString()}
+                  </span>
+                </div>
+                <Slider
+                  value={[sliderValue]}
+                  onValueChange={handleSliderChange}
+                  min={LIMIT_BOUNDS.MIN}
+                  max={LIMIT_BOUNDS.MAX}
+                  step={100}
+                  className="w-full"
+                />
+                <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                  <span>{LIMIT_BOUNDS.MIN.toLocaleString()}</span>
+                  <span>{LIMIT_BOUNDS.MAX.toLocaleString()}</span>
+                </div>
+              </div>
+
+              {/* Input */}
+              <div className="space-y-2">
+                <Input
+                  type="number"
+                  min={LIMIT_BOUNDS.MIN}
+                  max={LIMIT_BOUNDS.MAX}
+                  value={editValue}
+                  onChange={handleInputChange}
+                  className={cn(
+                    "h-9 rounded-lg text-center",
+                    error && "border-red-500 focus-visible:border-red-500"
+                  )}
+                />
+                {error && (
+                  <p className="text-xs text-red-500 flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" />
+                    {error}
+                  </p>
+                )}
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCancel}
+                  disabled={isUpdating}
+                  className="flex-1 h-8 rounded-lg"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={handleSave}
+                  disabled={isUpdating}
+                  className="flex-1 h-8 rounded-lg"
+                >
+                  {isUpdating ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <>
+                      <Check className="h-3.5 w-3.5 mr-1" />
+                      Save
+                    </>
+                  )}
+                </Button>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="display"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <div className={cn(
+                "p-4 rounded-lg text-center",
+                "bg-[rgb(250,247,245)] dark:bg-white/5",
+                "border border-[rgb(237,234,233)] dark:border-white/10"
+              )}>
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <CreditCard className="h-4 w-4 text-primary" />
+                  <span className="text-xs text-muted-foreground">Max Cards</span>
+                </div>
+                <p className="text-2xl font-bold text-[rgb(37,27,24)] dark:text-white">
+                  {limit.toLocaleString()}
+                </p>
+                {isCustom && (
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    Default: {defaultLimit.toLocaleString()}
+                  </p>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </motion.div>
   );
 }
 
-
-/**
- * TierLimitsConfig - Main component
- * Requirements: 7.1, 7.2, 7.5
- */
 export function TierLimitsConfig() {
   const { 
     limits, 
@@ -263,7 +361,6 @@ export function TierLimitsConfig() {
 
   /**
    * Update a single tier limit
-   * Requirements: 7.2, 7.3
    */
   const handleUpdateLimit = useCallback(async (tier, newLimit) => {
     setIsUpdating(prev => ({ ...prev, [tier]: true }));
@@ -286,8 +383,7 @@ export function TierLimitsConfig() {
       const data = await response.json();
       
       if (data.status === 'OK') {
-        success(`Updated ${TIER_LABELS[tier]} limit to ${newLimit.toLocaleString()} cards`);
-        // Refresh to get updated data (SSE will also update, but this ensures immediate sync)
+        success(`Updated ${TIER_CONFIG[tier]?.label || tier} limit to ${newLimit.toLocaleString()} cards`);
         await refresh();
         return { success: true };
       }
@@ -303,32 +399,13 @@ export function TierLimitsConfig() {
 
   /**
    * Handle update with confirmation
-   * Requirements: 7.2
    */
   const handleUpdateWithConfirmation = useCallback(async (tier, newLimit) => {
     const currentLimit = limits[tier];
     
-    // Show confirmation dialog
     const confirmed = await confirmation.confirm({
       title: 'Update Card Limit',
-      description: `Change ${TIER_LABELS[tier]} tier limit from ${currentLimit.toLocaleString()} to ${newLimit.toLocaleString()} cards?`,
-      content: (
-        <div className="space-y-3 py-2">
-          <div className="p-3 rounded-lg bg-muted/50 border border-border">
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Current limit:</span>
-              <span className="font-medium">{currentLimit.toLocaleString()} cards</span>
-            </div>
-            <div className="flex justify-between text-sm mt-1">
-              <span className="text-muted-foreground">New limit:</span>
-              <span className="font-medium text-primary">{newLimit.toLocaleString()} cards</span>
-            </div>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            This change will affect all {TIER_LABELS[tier]} tier users immediately.
-          </p>
-        </div>
-      ),
+      description: `Change ${TIER_CONFIG[tier]?.label || tier} tier limit from ${currentLimit.toLocaleString()} to ${newLimit.toLocaleString()} cards?`,
       confirmText: 'Update Limit',
       cancelText: 'Cancel'
     });
@@ -342,32 +419,11 @@ export function TierLimitsConfig() {
 
   /**
    * Reset all limits to defaults
-   * Requirements: 7.5
    */
   const handleResetToDefaults = useCallback(async () => {
-    // Show confirmation dialog
     const confirmed = await confirmation.confirm({
       title: 'Reset All Tier Limits',
       description: 'Are you sure you want to reset all tier limits to their default values?',
-      content: (
-        <div className="space-y-3 py-2">
-          <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
-            <p className="text-sm text-amber-600 dark:text-amber-400 font-medium mb-2">
-              This will reset:
-            </p>
-            <ul className="text-xs text-muted-foreground space-y-1">
-              {TIER_ORDER.map(tier => (
-                <li key={tier}>
-                  • {TIER_LABELS[tier]}: {limits[tier]?.toLocaleString()} → {defaults[tier]?.toLocaleString()} cards
-                </li>
-              ))}
-            </ul>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            All custom configurations will be replaced with default values.
-          </p>
-        </div>
-      ),
       confirmText: 'Reset All',
       cancelText: 'Cancel',
       destructive: true
@@ -404,7 +460,7 @@ export function TierLimitsConfig() {
     } finally {
       setIsResetting(false);
     }
-  }, [limits, defaults, confirmation, success, showError, refresh]);
+  }, [confirmation, success, showError, refresh]);
 
   // Check if any limits are custom
   const hasCustomLimits = TIER_ORDER.some(tier => metadata[tier]?.isCustom);
@@ -412,126 +468,142 @@ export function TierLimitsConfig() {
   // Loading state
   if (isLoading) {
     return (
-      <Card variant="elevated">
-        <CardContent className="py-12">
-          <div className="flex flex-col items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+      <div className={cn(
+        "rounded-2xl overflow-hidden",
+        "bg-white dark:bg-[rgba(30,41,59,0.5)]",
+        "border border-[rgb(237,234,233)] dark:border-white/10",
+        "dark:backdrop-blur-sm shadow-sm dark:shadow-none"
+      )}>
+        <div className="flex items-center justify-center py-20">
+          <div className="text-center">
+            <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto mb-4" />
             <p className="text-sm text-muted-foreground">Loading tier limits...</p>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     );
   }
 
   // Error state
   if (error) {
     return (
-      <Card variant="elevated">
-        <CardContent className="py-12">
-          <div className="flex flex-col items-center justify-center">
-            <AlertCircle className="h-8 w-8 text-red-500 mb-4" />
+      <div className={cn(
+        "rounded-2xl overflow-hidden",
+        "bg-white dark:bg-[rgba(30,41,59,0.5)]",
+        "border border-[rgb(237,234,233)] dark:border-white/10",
+        "dark:backdrop-blur-sm shadow-sm dark:shadow-none"
+      )}>
+        <div className="flex items-center justify-center py-20">
+          <div className="text-center">
+            <div className="h-16 w-16 rounded-2xl bg-red-500/10 flex items-center justify-center mx-auto mb-4">
+              <AlertCircle className="h-8 w-8 text-red-500" />
+            </div>
             <p className="text-sm text-muted-foreground mb-4">{error}</p>
-            <Button variant="outline" onClick={refresh}>
+            <Button variant="outline" onClick={refresh} className="rounded-xl">
               <RefreshCw className="h-4 w-4 mr-2" />
               Retry
             </Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     );
   }
 
   return (
-    <Card variant="elevated">
-      <CardHeader className="pb-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <CreditCard className="h-5 w-5 text-primary" />
-              Tier Card Limits
-            </CardTitle>
-            <CardDescription className="mt-1">
-              Configure maximum card input limits per user tier
-            </CardDescription>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={refresh}
-              disabled={isResetting}
-            >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh
-            </Button>
-            {hasCustomLimits && (
+    <>
+      <div className={cn(
+        "rounded-2xl overflow-hidden",
+        "bg-white dark:bg-[rgba(30,41,59,0.5)]",
+        "border border-[rgb(237,234,233)] dark:border-white/10",
+        "dark:backdrop-blur-sm shadow-sm dark:shadow-none"
+      )}>
+        {/* Header */}
+        <div className="px-6 py-5 border-b border-[rgb(237,234,233)] dark:border-white/10 bg-gradient-to-br from-[rgb(250,247,245)] to-transparent dark:from-white/[0.02] dark:to-transparent">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-primary/10 dark:bg-primary/20 flex items-center justify-center">
+                <CreditCard className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-[rgb(37,27,24)] dark:text-white">
+                  Tier Card Limits
+                </h2>
+                <p className="text-xs text-muted-foreground">Configure maximum card input limits per tier</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
               <Button 
                 variant="outline" 
                 size="sm" 
-                onClick={handleResetToDefaults}
+                onClick={refresh}
                 disabled={isResetting}
-                className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20"
+                className="rounded-xl"
               >
-                {isResetting ? (
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                ) : (
-                  <RotateCcw className="h-4 w-4 mr-2" />
-                )}
-                Reset All
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Refresh
               </Button>
-            )}
+              {hasCustomLimits && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleResetToDefaults}
+                  disabled={isResetting}
+                  className="rounded-xl text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20 border-red-200 dark:border-red-500/20"
+                >
+                  {isResetting ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : (
+                    <RotateCcw className="h-4 w-4 mr-2" />
+                  )}
+                  Reset All
+                </Button>
+              )}
+            </div>
           </div>
         </div>
-      </CardHeader>
-      <CardContent>
-        {/* Limits Table */}
-        <div className="rounded-lg border border-border overflow-hidden">
-          <table className="w-full">
-            <thead>
-              <tr className="bg-muted/50 border-b border-border">
-                <th className="py-2.5 px-4 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Tier
-                </th>
-                <th className="py-2.5 px-4 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Card Limit
-                </th>
-                <th className="py-2.5 px-4 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Default
-                </th>
-                <th className="py-2.5 px-4 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-24">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {TIER_ORDER.map(tier => (
-                <TierLimitRow
-                  key={tier}
-                  tier={tier}
-                  limit={limits[tier] || defaults[tier]}
-                  defaultLimit={defaults[tier]}
-                  isCustom={metadata[tier]?.isCustom || false}
-                  onUpdate={handleUpdateWithConfirmation}
-                  isUpdating={isUpdating[tier] || false}
-                />
-              ))}
-            </tbody>
-          </table>
-        </div>
 
-        {/* Help text */}
-        <div className="mt-6 p-4 rounded-lg bg-muted/30 border border-border/50">
-          <h4 className="text-sm font-medium mb-2">Configuration Guide</h4>
-          <ul className="text-xs text-muted-foreground space-y-1">
-            <li>• <strong>Card Limit</strong>: Maximum number of cards a user can input per validation batch</li>
-            <li>• Limits must be between {LIMIT_BOUNDS.MIN.toLocaleString()} and {LIMIT_BOUNDS.MAX.toLocaleString()} cards</li>
-            <li>• Higher tiers should have higher limits to provide better value</li>
-            <li>• Changes apply immediately to all users of that tier</li>
-          </ul>
-        </div>
-      </CardContent>
+        {/* Content */}
+        <div className="p-6">
+          {/* Tier Cards Grid */}
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+            {TIER_ORDER.map((tier, index) => (
+              <TierLimitCard
+                key={tier}
+                tier={tier}
+                limit={limits[tier] || defaults[tier]}
+                defaultLimit={defaults[tier]}
+                isCustom={metadata[tier]?.isCustom || false}
+                onUpdate={handleUpdateWithConfirmation}
+                isUpdating={isUpdating[tier] || false}
+                index={index}
+              />
+            ))}
+          </div>
 
-      {/* Confirmation Dialog */}
+          {/* Help Info */}
+          <div className={cn(
+            "mt-6 p-4 rounded-xl",
+            "bg-[rgb(250,247,245)] dark:bg-white/5",
+            "border border-[rgb(237,234,233)] dark:border-white/10"
+          )}>
+            <div className="flex items-start gap-3">
+              <Info className="h-5 w-5 text-blue-500 mt-0.5 shrink-0" />
+              <div>
+                <h4 className="text-sm font-medium text-[rgb(37,27,24)] dark:text-white mb-2">
+                  Configuration Guide
+                </h4>
+                <ul className="text-xs text-muted-foreground space-y-1">
+                  <li>• <strong>Card Limit</strong>: Maximum number of cards a user can input per validation batch</li>
+                  <li>• Limits must be between {LIMIT_BOUNDS.MIN.toLocaleString()} and {LIMIT_BOUNDS.MAX.toLocaleString()} cards</li>
+                  <li>• Higher tiers should have higher limits to provide better value</li>
+                  <li>• Changes apply immediately to all users of that tier</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <ConfirmationDialog
         open={confirmation.isOpen}
         onOpenChange={confirmation.setOpen}
@@ -540,7 +612,7 @@ export function TierLimitsConfig() {
         isLoading={confirmation.isLoading}
         {...confirmation.config}
       />
-    </Card>
+    </>
   );
 }
 

@@ -6,33 +6,19 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
+import { getTierConfig } from '@/components/navigation/config/tier-config';
 
 const API_BASE = '/api';
 
-const TIER_CLAIM_AMOUNTS = {
-  free: 10,
-  bronze: 15,
-  silver: 20,
-  gold: 30,
-  diamond: 50
-};
-
-const TIER_COLORS = {
-  free: 'from-gray-400 to-gray-500',
-  bronze: 'from-amber-600 to-amber-700',
-  silver: 'from-slate-400 to-slate-500',
-  gold: 'from-yellow-400 to-yellow-600',
-  diamond: 'from-cyan-400 to-blue-500'
-};
-
-const TIER_GLOW = {
-  free: 'shadow-gray-500/20',
-  bronze: 'shadow-amber-500/30',
-  silver: 'shadow-slate-400/30',
-  gold: 'shadow-yellow-500/40',
-  diamond: 'shadow-cyan-400/50'
-};
-
+/**
+ * DailyClaimCard Component
+ * 
+ * Displays daily credit claim status with countdown timer.
+ * Uses shared tier configuration for consistent styling.
+ * 
+ * @param {string} className - Additional CSS classes
+ * @param {Function} onClaim - Callback when claim is successful
+ */
 export function DailyClaimCard({ className, onClaim }) {
   const { user, isAuthenticated, refreshUser } = useAuth();
   const [claimStatus, setClaimStatus] = useState(null);
@@ -42,7 +28,10 @@ export function DailyClaimCard({ className, onClaim }) {
   const [claimSuccess, setClaimSuccess] = useState(false);
 
   const tier = user?.tier || 'free';
-  const claimAmount = claimStatus?.claimAmount || TIER_CLAIM_AMOUNTS[tier] || 10;
+  const tierConfig = getTierConfig(tier);
+  
+  // Use claim amount from API response, fallback to tier config if not available
+  const claimAmount = claimStatus?.claimAmount || 10;
 
   const fetchClaimStatus = useCallback(async () => {
     if (!isAuthenticated) return;
@@ -67,7 +56,7 @@ export function DailyClaimCard({ className, onClaim }) {
         }
       }
     } catch (err) {
-
+      // Silent fail
     } finally {
       setIsLoading(false);
     }
@@ -102,7 +91,7 @@ export function DailyClaimCard({ className, onClaim }) {
         setTimeout(() => setClaimSuccess(false), 3000);
       }
     } catch (err) {
-
+      // Silent fail
     } finally {
       setIsClaiming(false);
     }
@@ -149,13 +138,21 @@ export function DailyClaimCard({ className, onClaim }) {
   const time = formatCountdown(countdown);
   const progress = countdown ? ((86400000 - countdown) / 86400000) * 100 : 100;
 
+  // Get gradient colors from tier config
+  const gradientFrom = tierConfig.progressGradient?.from || '#9ca3af';
+  const gradientTo = tierConfig.progressGradient?.to || '#6b7280';
+
   return (
     <Card 
       variant="elevated" 
       className={cn(
         "overflow-hidden transition-all duration-500 relative",
+        // Light mode
+        "bg-white border-gray-100",
+        // Dark mode
+        "dark:bg-white/[0.02] dark:border-white/[0.06]",
         claimSuccess && "ring-2 ring-emerald-500/50",
-        canClaim && `shadow-lg ${TIER_GLOW[tier]}`,
+        canClaim && `shadow-lg ${tierConfig.glowColor}`,
         className
       )}
     >
@@ -167,8 +164,8 @@ export function DailyClaimCard({ className, onClaim }) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className={cn(
-              "absolute inset-0 bg-gradient-to-br opacity-5",
-              TIER_COLORS[tier]
+              "absolute inset-0 bg-gradient-to-br opacity-10",
+              tierConfig.bgGradient
             )}
           />
         )}
@@ -182,19 +179,23 @@ export function DailyClaimCard({ className, onClaim }) {
               className={cn(
                 "flex items-center justify-center w-10 h-10 rounded-xl border",
                 canClaim 
-                  ? `bg-gradient-to-br ${TIER_COLORS[tier]} border-transparent` 
-                  : "bg-gradient-to-br from-violet-500/10 to-purple-500/10 dark:from-violet-400/15 dark:to-purple-400/15 border-violet-500/20 dark:border-violet-400/20"
+                  ? cn("bg-gradient-to-br border-transparent", tierConfig.bgGradient)
+                  : cn(
+                      "bg-gradient-to-br from-violet-500/10 to-purple-500/10",
+                      "dark:from-violet-400/15 dark:to-purple-400/15",
+                      "border-violet-500/20 dark:border-violet-400/20"
+                    )
               )}
               animate={canClaim ? { scale: [1, 1.05, 1] } : {}}
               transition={{ repeat: Infinity, duration: 2 }}
             >
               <Gift className={cn(
                 "h-5 w-5",
-                canClaim ? "text-white" : "text-violet-600 dark:text-violet-400"
+                canClaim ? tierConfig.color : "text-violet-600 dark:text-violet-400"
               )} />
             </motion.div>
             <div>
-              <h3 className="font-semibold text-sm flex items-center gap-2">
+              <h3 className="font-semibold text-sm flex items-center gap-2 text-foreground">
                 Daily Bonus
                 {canClaim && (
                   <motion.span
@@ -206,8 +207,8 @@ export function DailyClaimCard({ className, onClaim }) {
                   </motion.span>
                 )}
               </h3>
-              <p className="text-xs text-muted-foreground capitalize">
-                {tier} tier · +{claimAmount} credits/day
+              <p className="text-xs text-muted-foreground">
+                <span className="capitalize">{tierConfig.label}</span> tier · +{claimAmount} credits/day
               </p>
             </div>
           </div>
@@ -237,7 +238,7 @@ export function DailyClaimCard({ className, onClaim }) {
               className={cn(
                 "w-full h-12 text-base font-semibold relative overflow-hidden",
                 "bg-gradient-to-r hover:opacity-90 transition-opacity",
-                TIER_COLORS[tier]
+                tierConfig.bgGradient
               )}
             >
               {isClaiming ? (
@@ -285,7 +286,7 @@ export function DailyClaimCard({ className, onClaim }) {
                     fill="none"
                     strokeWidth="6"
                     strokeLinecap="round"
-                    className={cn("text-transparent stroke-[url(#gradient)]")}
+                    className="stroke-[url(#daily-claim-gradient)]"
                     style={{
                       strokeDasharray: 264,
                       strokeDashoffset: 264 - (264 * progress) / 100
@@ -295,26 +296,16 @@ export function DailyClaimCard({ className, onClaim }) {
                     transition={{ duration: 0.5 }}
                   />
                   <defs>
-                    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                      <stop offset="0%" stopColor={
-                        tier === 'diamond' ? '#22d3ee' :
-                        tier === 'gold' ? '#facc15' :
-                        tier === 'silver' ? '#94a3b8' :
-                        tier === 'bronze' ? '#d97706' : '#9ca3af'
-                      } />
-                      <stop offset="100%" stopColor={
-                        tier === 'diamond' ? '#3b82f6' :
-                        tier === 'gold' ? '#ca8a04' :
-                        tier === 'silver' ? '#64748b' :
-                        tier === 'bronze' ? '#b45309' : '#6b7280'
-                      } />
+                    <linearGradient id="daily-claim-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor={gradientFrom} />
+                      <stop offset="100%" stopColor={gradientTo} />
                     </linearGradient>
                   </defs>
                 </svg>
                 
                 {/* Time display in center */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-2xl font-bold tabular-nums tracking-tight">
+                  <span className="text-2xl font-bold tabular-nums tracking-tight text-foreground">
                     {time.hours}:{time.minutes}
                   </span>
                   <motion.span 
@@ -338,3 +329,5 @@ export function DailyClaimCard({ className, onClaim }) {
     </Card>
   );
 }
+
+export default DailyClaimCard;

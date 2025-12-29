@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { FileText, AlertTriangle, Copy, Trash2, Clock, Coins, CreditCard, ShieldAlert } from 'lucide-react';
+import { FileText, AlertTriangle, Copy, Trash2, Clock, Coins, CreditCard, ShieldAlert, Upload, ChevronRight } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -15,33 +15,14 @@ import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 
 /**
- * ImportPreviewDialog Component
+ * ImportPreviewDialog - Redesigned for OrangeAI/OPUX Design System
  * 
- * Displays import preview with stats, sample cards, and options
- * to keep/remove duplicates and expired cards.
- * Shows tier limit warnings when imported cards exceed user's limit.
+ * Modern import preview dialog with:
+ * - Glass morphism stat cards
+ * - Visual tier limit indicators
+ * - Clean toggle options
  * 
  * Requirements: 6.3, 6.4, 7.1, 7.2, 7.3, 7.4
- * 
- * @param {Object} props
- * @param {boolean} props.open - Whether dialog is open
- * @param {function} props.onOpenChange - Callback when open state changes
- * @param {Object} props.stats - Import statistics
- * @param {number} props.stats.totalParsed - Total cards parsed
- * @param {number} props.stats.duplicatesRemoved - Duplicates found
- * @param {number} props.stats.expiredRemoved - Expired cards found
- * @param {number} props.stats.invalidRows - Invalid rows skipped
- * @param {number} props.stats.luhnFailedRemoved - Cards failing Luhn validation
- * @param {number} props.stats.invalidFormatRemoved - Cards with invalid format
- * @param {boolean} props.stats.truncated - Whether file was truncated
- * @param {number} props.stats.finalCount - Final card count after filtering
- * @param {string[]} props.sampleCards - First 5 cards as sample
- * @param {function} props.onConfirm - Callback when user confirms: (options) => void
- * @param {function} props.onCancel - Callback when user cancels
- * @param {number} props.effectiveRate - Credit rate per card (for cost estimate)
- * @param {number} props.balance - Current credit balance
- * @param {number} props.tierLimit - Maximum cards allowed for user's tier (Requirement 6.4)
- * @param {string} props.userTier - User's tier name (e.g., 'free', 'bronze')
  */
 export function ImportPreviewDialog({
   open,
@@ -70,7 +51,7 @@ export function ImportPreviewDialog({
     return count;
   }, [stats, keepDuplicates, keepExpired]);
 
-  // Requirement 6.3, 6.4: Check if imported cards exceed tier limit
+  // Check if imported cards exceed tier limit
   const exceedsTierLimit = useMemo(() => {
     return finalCardCount > tierLimit;
   }, [finalCardCount, tierLimit]);
@@ -80,7 +61,6 @@ export function ImportPreviewDialog({
   }, [finalCardCount, tierLimit, exceedsTierLimit]);
 
   // Calculate estimated credit cost
-  // Requirement 7.4: Display estimated credit cost based on card count
   const estimatedCost = useMemo(() => {
     return Math.ceil(finalCardCount * effectiveRate);
   }, [finalCardCount, effectiveRate]);
@@ -102,56 +82,93 @@ export function ImportPreviewDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
+        {/* Header */}
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5 text-primary" />
-            Import Preview
-          </DialogTitle>
-          <DialogDescription>
-            Review imported cards before adding to input
-          </DialogDescription>
+          <div className="flex items-start gap-4">
+            <div className={cn(
+              "shrink-0 p-2.5 rounded-xl ring-1",
+              "bg-primary/10 dark:bg-primary/15",
+              "ring-primary/20 dark:ring-primary/25"
+            )}>
+              <Upload className="h-5 w-5 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0 space-y-1.5 pt-0.5">
+              <DialogTitle>Import Preview</DialogTitle>
+              <DialogDescription>
+                Review imported cards before adding to input
+              </DialogDescription>
+            </div>
+          </div>
         </DialogHeader>
 
-        <div className="space-y-4 py-2">
-          {/* Tier Limit Warning - Requirement 6.3, 6.4 */}
+        <div className="space-y-3">
+          {/* Tier Limit Warning */}
           {exceedsTierLimit && (
-            <div className="flex items-start gap-2 px-3 py-2 rounded-lg bg-rose-500/10 border border-rose-500/30">
-              <ShieldAlert className="h-4 w-4 text-rose-500 shrink-0 mt-0.5" />
-              <div className="text-xs">
-                <p className="font-medium text-rose-700 dark:text-rose-300">
-                  Exceeds tier limit
-                </p>
-                <p className="text-rose-600 dark:text-rose-400 mt-0.5">
-                  You have {finalCardCount} cards but your {userTier} tier limit is {tierLimit}. 
-                  Please reduce by {tierLimitExcess} card{tierLimitExcess > 1 ? 's' : ''} to continue.
-                </p>
+            <div className={cn(
+              "rounded-xl p-3",
+              "bg-rose-50 dark:bg-rose-500/[0.08]",
+              "border border-rose-200/80 dark:border-rose-500/20"
+            )}>
+              <div className="flex items-start gap-2.5">
+                <ShieldAlert className="h-4 w-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+                <div className="space-y-0.5">
+                  <p className="text-[13px] font-semibold text-rose-700 dark:text-rose-300">
+                    Exceeds tier limit
+                  </p>
+                  <p className="text-[12px] leading-relaxed text-rose-600/90 dark:text-rose-400/80">
+                    You have {finalCardCount} cards but your {userTier} tier limit is {tierLimit}. 
+                    Please reduce by {tierLimitExcess} card{tierLimitExcess > 1 ? 's' : ''} to continue.
+                  </p>
+                </div>
               </div>
             </div>
           )}
 
-          {/* Tier Limit Display - Requirement 6.4 */}
-          <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-muted/50 dark:bg-white/5 border border-border/50">
-            <div className="flex items-center gap-1.5">
-              <CreditCard className="h-3.5 w-3.5 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground">Tier limit ({userTier}):</span>
+          {/* Tier Limit Progress */}
+          <div className={cn(
+            "rounded-xl p-3",
+            "bg-neutral-50 dark:bg-white/[0.03]",
+            "border border-neutral-200/60 dark:border-white/[0.06]"
+          )}>
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <CreditCard className="h-3.5 w-3.5 text-neutral-500 dark:text-white/50" />
+                <span className="text-[12px] text-neutral-500 dark:text-white/50">
+                  Tier limit ({userTier})
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className={cn(
+                  "text-[13px] font-bold font-mono",
+                  exceedsTierLimit ? "text-rose-600 dark:text-rose-400" : "text-neutral-900 dark:text-white"
+                )}>
+                  {finalCardCount} / {tierLimit}
+                </span>
+                {!exceedsTierLimit && (
+                  <Badge className="text-[9px] h-4 bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-0">
+                    OK
+                  </Badge>
+                )}
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <span className={cn(
-                "text-xs font-semibold",
-                exceedsTierLimit ? "text-rose-600 dark:text-rose-400" : "text-foreground"
-              )}>
-                {finalCardCount} / {tierLimit}
-              </span>
-              {!exceedsTierLimit && (
-                <Badge variant="secondary" className="text-[9px] h-4 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                  OK
-                </Badge>
-              )}
+            {/* Progress bar */}
+            <div className="h-1.5 rounded-full bg-neutral-200 dark:bg-white/10 overflow-hidden">
+              <div 
+                className={cn(
+                  "h-full rounded-full transition-all duration-300",
+                  exceedsTierLimit 
+                    ? "bg-rose-500" 
+                    : finalCardCount / tierLimit > 0.8 
+                      ? "bg-amber-500" 
+                      : "bg-emerald-500"
+                )}
+                style={{ width: `${Math.min(100, (finalCardCount / tierLimit) * 100)}%` }}
+              />
             </div>
           </div>
 
-          {/* Stats Grid - Requirement 7.1 */}
-          <div className="grid grid-cols-2 gap-3">
+          {/* Stats Grid */}
+          <div className="grid grid-cols-2 gap-2">
             <StatCard
               label="Total Parsed"
               value={stats.totalParsed || 0}
@@ -207,25 +224,35 @@ export function ImportPreviewDialog({
 
           {/* Truncation Warning */}
           {stats.truncated && (
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/30">
-              <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
-              <span className="text-xs text-amber-700 dark:text-amber-300">
-                File truncated to 10,000 cards ({stats.truncatedCount || 0} cards skipped)
-              </span>
+            <div className={cn(
+              "rounded-xl p-3",
+              "bg-amber-50 dark:bg-amber-500/[0.08]",
+              "border border-amber-200/80 dark:border-amber-500/20"
+            )}>
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                <span className="text-[12px] font-medium text-amber-700 dark:text-amber-300">
+                  File truncated to 10,000 cards ({stats.truncatedCount || 0} skipped)
+                </span>
+              </div>
             </div>
           )}
 
-          {/* Sample Preview - Requirement 7.2 */}
+          {/* Sample Preview */}
           {sampleCards.length > 0 && (
             <div className="space-y-2">
-              <Label className="text-xs font-medium text-muted-foreground">
-                Sample Preview (first 5 cards)
+              <Label className="text-[11px] font-medium uppercase tracking-wider text-neutral-400 dark:text-white/40">
+                Sample Preview (first 5)
               </Label>
-              <div className="rounded-lg border bg-muted/30 dark:bg-white/5 p-2 space-y-1 max-h-32 overflow-y-auto">
+              <div className={cn(
+                "rounded-xl p-3 space-y-1 max-h-28 overflow-y-auto",
+                "bg-neutral-50 dark:bg-white/[0.03]",
+                "border border-neutral-200/60 dark:border-white/[0.06]"
+              )}>
                 {sampleCards.map((card, idx) => (
                   <div
                     key={idx}
-                    className="font-mono text-[10px] text-muted-foreground truncate"
+                    className="font-mono text-[11px] text-neutral-500 dark:text-white/50 truncate"
                   >
                     {maskCard(card)}
                   </div>
@@ -234,14 +261,20 @@ export function ImportPreviewDialog({
             </div>
           )}
 
-          {/* Options - Requirement 7.3 */}
+          {/* Options */}
           {((stats.duplicatesRemoved || 0) > 0 || (stats.expiredRemoved || 0) > 0) && (
-            <div className="space-y-3 pt-2 border-t">
-              <Label className="text-xs font-medium">Import Options</Label>
+            <div className={cn(
+              "rounded-xl p-4 space-y-3",
+              "bg-neutral-50 dark:bg-white/[0.03]",
+              "border border-neutral-200/60 dark:border-white/[0.06]"
+            )}>
+              <Label className="text-[11px] font-medium uppercase tracking-wider text-neutral-400 dark:text-white/40">
+                Import Options
+              </Label>
               
               {(stats.duplicatesRemoved || 0) > 0 && (
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="keep-duplicates" className="text-xs text-muted-foreground">
+                  <Label htmlFor="keep-duplicates" className="text-[13px] text-neutral-600 dark:text-white/70 cursor-pointer">
                     Keep duplicate cards ({stats.duplicatesRemoved})
                   </Label>
                   <Switch
@@ -254,7 +287,7 @@ export function ImportPreviewDialog({
               
               {(stats.expiredRemoved || 0) > 0 && (
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="keep-expired" className="text-xs text-muted-foreground">
+                  <Label htmlFor="keep-expired" className="text-[13px] text-neutral-600 dark:text-white/70 cursor-pointer">
                     Keep expired cards ({stats.expiredRemoved})
                   </Label>
                   <Switch
@@ -267,35 +300,42 @@ export function ImportPreviewDialog({
             </div>
           )}
 
-          {/* Credit Cost Estimate - Requirement 7.4 */}
+          {/* Credit Cost Estimate */}
           <div className={cn(
-            "flex items-center justify-between px-3 py-2 rounded-lg text-xs",
+            "rounded-xl p-3",
             hasSufficientCredits
-              ? "bg-muted/50 dark:bg-white/5 border border-border/50"
-              : "bg-amber-500/10 border border-amber-500/30"
+              ? "bg-neutral-50 dark:bg-white/[0.03] border border-neutral-200/60 dark:border-white/[0.06]"
+              : "bg-amber-50 dark:bg-amber-500/[0.08] border border-amber-200/80 dark:border-amber-500/20"
           )}>
-            <div className="flex items-center gap-1.5">
-              <Coins className={cn(
-                "h-3.5 w-3.5",
-                hasSufficientCredits ? "text-muted-foreground" : "text-amber-500"
-              )} />
-              <span className="text-muted-foreground">Est. max cost:</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className={cn(
-                "font-semibold",
-                hasSufficientCredits ? "text-foreground" : "text-amber-700 dark:text-amber-300"
-              )}>
-                {estimatedCost} credits
-              </span>
-              <Badge variant="secondary" className="text-[9px] h-4">
-                {effectiveRate}/card
-              </Badge>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Coins className={cn(
+                  "h-4 w-4",
+                  hasSufficientCredits ? "text-neutral-500 dark:text-white/50" : "text-amber-600 dark:text-amber-400"
+                )} />
+                <span className={cn(
+                  "text-[12px]",
+                  hasSufficientCredits ? "text-neutral-500 dark:text-white/50" : "text-amber-700 dark:text-amber-300"
+                )}>
+                  Est. max cost:
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className={cn(
+                  "text-[14px] font-bold font-mono",
+                  hasSufficientCredits ? "text-neutral-900 dark:text-white" : "text-amber-700 dark:text-amber-300"
+                )}>
+                  {estimatedCost} credits
+                </span>
+                <Badge className="text-[9px] h-4 bg-neutral-100 dark:bg-white/10 text-neutral-500 dark:text-white/50 border-0">
+                  {effectiveRate}/card
+                </Badge>
+              </div>
             </div>
           </div>
 
           {!hasSufficientCredits && (
-            <div className="flex items-center gap-2 text-xs text-amber-600 dark:text-amber-400">
+            <div className="flex items-center justify-center gap-2 text-[11px] text-amber-600 dark:text-amber-400">
               <AlertTriangle className="h-3.5 w-3.5" />
               <span>
                 You have {balance} credits. May stop early if all cards are LIVE.
@@ -304,16 +344,34 @@ export function ImportPreviewDialog({
           )}
         </div>
 
-        <DialogFooter className="gap-2 sm:gap-0">
-          <Button variant="outline" onClick={handleCancel}>
+        <DialogFooter>
+          <Button 
+            variant="outline" 
+            onClick={handleCancel}
+            className={cn(
+              "h-10 font-medium text-[14px]",
+              "border-neutral-200 text-neutral-700",
+              "hover:bg-neutral-100 hover:border-neutral-300",
+              "dark:border-white/10 dark:text-white/70",
+              "dark:hover:bg-white/[0.06] dark:hover:border-white/20"
+            )}
+          >
             Cancel
           </Button>
           <Button 
             onClick={handleConfirm}
             disabled={exceedsTierLimit}
+            className="h-10 font-medium text-[14px] min-w-[140px] gap-1.5"
             title={exceedsTierLimit ? `Reduce cards to ${tierLimit} or fewer` : undefined}
           >
-            {exceedsTierLimit ? `Exceeds Limit (${tierLimit})` : `Import ${finalCardCount} Cards`}
+            {exceedsTierLimit ? (
+              `Exceeds Limit (${tierLimit})`
+            ) : (
+              <>
+                Import {finalCardCount} Cards
+                <ChevronRight className="h-4 w-4" />
+              </>
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -327,23 +385,31 @@ export function ImportPreviewDialog({
 function StatCard({ label, value, icon: Icon, variant = 'default', highlight = false }) {
   return (
     <div className={cn(
-      "flex items-center gap-2 px-3 py-2 rounded-lg",
-      variant === 'warning' && "bg-amber-500/10 dark:bg-amber-500/20",
-      variant === 'error' && "bg-rose-500/10 dark:bg-rose-500/20",
-      variant === 'default' && "bg-muted/50 dark:bg-white/5",
-      highlight && "ring-1 ring-primary/20"
+      "flex items-center gap-2.5 px-3 py-2.5 rounded-xl",
+      "border",
+      variant === 'warning' && "bg-amber-50 dark:bg-amber-500/[0.08] border-amber-200/60 dark:border-amber-500/15",
+      variant === 'error' && "bg-rose-50 dark:bg-rose-500/[0.08] border-rose-200/60 dark:border-rose-500/15",
+      variant === 'default' && "bg-neutral-50 dark:bg-white/[0.03] border-neutral-200/60 dark:border-white/[0.06]",
+      highlight && "ring-1 ring-primary/20 dark:ring-primary/25"
     )}>
-      <Icon className={cn(
-        "h-4 w-4 shrink-0",
-        variant === 'warning' && "text-amber-500",
-        variant === 'error' && "text-rose-500",
-        variant === 'default' && "text-muted-foreground"
-      )} />
+      <div className={cn(
+        "flex items-center justify-center w-7 h-7 rounded-lg shrink-0",
+        variant === 'warning' && "bg-amber-100 dark:bg-amber-500/15",
+        variant === 'error' && "bg-rose-100 dark:bg-rose-500/15",
+        variant === 'default' && "bg-neutral-100 dark:bg-white/[0.06]"
+      )}>
+        <Icon className={cn(
+          "h-3.5 w-3.5",
+          variant === 'warning' && "text-amber-600 dark:text-amber-400",
+          variant === 'error' && "text-rose-600 dark:text-rose-400",
+          variant === 'default' && "text-neutral-500 dark:text-white/50"
+        )} />
+      </div>
       <div className="min-w-0">
-        <p className="text-[10px] text-muted-foreground truncate">{label}</p>
+        <p className="text-[10px] uppercase tracking-wider text-neutral-400 dark:text-white/40 truncate">{label}</p>
         <p className={cn(
-          "text-sm font-semibold",
-          highlight && "text-primary"
+          "text-[14px] font-bold font-mono",
+          highlight ? "text-primary" : "text-neutral-900 dark:text-white"
         )}>
           {value.toLocaleString()}
         </p>
@@ -354,12 +420,10 @@ function StatCard({ label, value, icon: Icon, variant = 'default', highlight = f
 
 /**
  * Mask card number for preview display
- * Shows first 6 and last 4 digits
  */
 function maskCard(card) {
   if (!card) return '';
   
-  // Extract card number (first part before delimiter)
   const parts = card.split(/[|:,\s]/);
   const number = parts[0] || '';
   
@@ -367,7 +431,6 @@ function maskCard(card) {
   
   const masked = number.slice(0, 6) + '****' + number.slice(-4);
   
-  // Reconstruct with other parts
   if (parts.length > 1) {
     return [masked, ...parts.slice(1)].join('|');
   }

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   Users, 
   Loader2, 
@@ -20,10 +20,11 @@ import {
   X,
   Check,
   Plus,
-  Minus
+  Minus,
+  MoreHorizontal,
+  Calendar
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -35,12 +36,20 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '@/components/ui/select';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/useToast';
 import { useAuth } from '@/contexts/AuthContext';
 
 /**
  * UsersList Component
  * Admin table for viewing and managing users
+ * Redesigned with OrangeAI (light) / OPUX (dark) design system
  * 
  * Requirements: 3.1, 3.2, 3.5
  */
@@ -56,20 +65,12 @@ const TIER_OPTIONS = [
   { value: 'diamond', label: 'Diamond' },
 ];
 
-const TIER_ICONS = {
-  free: User,
-  bronze: Shield,
-  silver: Award,
-  gold: Crown,
-  diamond: Gem,
-};
-
-const TIER_COLORS = {
-  free: 'text-slate-500',
-  bronze: 'text-amber-600 dark:text-amber-400',
-  silver: 'text-slate-400',
-  gold: 'text-yellow-500',
-  diamond: 'text-sky-500',
+const TIER_CONFIG = {
+  free: { icon: User, color: 'text-slate-500', bg: 'bg-slate-500/10', border: 'border-slate-500/20' },
+  bronze: { icon: Shield, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20' },
+  silver: { icon: Award, color: 'text-slate-400', bg: 'bg-slate-400/10', border: 'border-slate-400/20' },
+  gold: { icon: Crown, color: 'text-yellow-500', bg: 'bg-yellow-500/10', border: 'border-yellow-500/20' },
+  diamond: { icon: Gem, color: 'text-cyan-500', bg: 'bg-cyan-500/10', border: 'border-cyan-500/20' },
 };
 
 /**
@@ -124,48 +125,59 @@ function FlagModal({ user, onClose, onSave }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-background rounded-xl border border-border shadow-xl p-6 w-full max-w-md mx-4"
+        exit={{ opacity: 0, scale: 0.95 }}
+        className={cn(
+          "w-full max-w-md mx-4 rounded-2xl overflow-hidden",
+          "bg-white dark:bg-[rgba(30,41,59,0.95)]",
+          "border border-[rgb(237,234,233)] dark:border-white/10",
+          "shadow-xl dark:shadow-none"
+        )}
       >
+        <div className="p-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold flex items-center gap-2">
-            <Flag className="h-5 w-5 text-amber-500" />
+            <h3 className="text-lg font-semibold flex items-center gap-2 text-[rgb(37,27,24)] dark:text-white">
+              <div className="h-8 w-8 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                <Flag className="h-4 w-4 text-amber-500" />
+              </div>
             Flag User
           </h3>
-          <Button variant="ghost" size="icon" onClick={onClose}>
+            <Button variant="ghost" size="icon" onClick={onClose} className="rounded-lg">
             <X className="h-4 w-4" />
           </Button>
         </div>
         
         <p className="text-sm text-muted-foreground mb-4">
-          Flagging <span className="font-medium">{user.username || user.firstName}</span> will restrict their account access.
+            Flagging <span className="font-medium text-foreground">{user.username || user.firstName}</span> will restrict their account access.
         </p>
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label>Reason for flagging</Label>
+              <Label className="text-xs font-medium">Reason for flagging</Label>
             <Input
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder="e.g., Suspicious activity, Terms violation"
               maxLength={200}
+                className="rounded-xl"
             />
           </div>
 
           <div className="flex gap-2 pt-2">
-            <Button variant="outline" onClick={onClose} className="flex-1">
+              <Button variant="outline" onClick={onClose} className="flex-1 rounded-xl">
               Cancel
             </Button>
             <Button 
               onClick={handleSave} 
               disabled={isLoading || !reason.trim()} 
-              className="flex-1 bg-amber-600 hover:bg-amber-700"
+                className="flex-1 rounded-xl bg-amber-600 hover:bg-amber-700 text-white"
             >
               {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Flag User'}
             </Button>
+            </div>
           </div>
         </div>
       </motion.div>
@@ -220,33 +232,53 @@ function CreditsModal({ user, onClose, onSave }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-background rounded-xl border border-border shadow-xl p-6 w-full max-w-md mx-4"
+        exit={{ opacity: 0, scale: 0.95 }}
+        className={cn(
+          "w-full max-w-md mx-4 rounded-2xl overflow-hidden",
+          "bg-white dark:bg-[rgba(30,41,59,0.95)]",
+          "border border-[rgb(237,234,233)] dark:border-white/10",
+          "shadow-xl dark:shadow-none"
+        )}
       >
+        <div className="p-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold">Adjust Credits</h3>
-          <Button variant="ghost" size="icon" onClick={onClose}>
+            <h3 className="text-lg font-semibold flex items-center gap-2 text-[rgb(37,27,24)] dark:text-white">
+              <div className="h-8 w-8 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                <Coins className="h-4 w-4 text-amber-500" />
+              </div>
+              Adjust Credits
+            </h3>
+            <Button variant="ghost" size="icon" onClick={onClose} className="rounded-lg">
             <X className="h-4 w-4" />
           </Button>
         </div>
         
-        <p className="text-sm text-muted-foreground mb-4">
-          Adjusting credits for <span className="font-medium">{user.username || user.firstName}</span>
-          <br />
-          Current balance: <span className="font-medium">{user.creditBalance?.toLocaleString() || 0}</span>
-        </p>
+          <div className={cn(
+            "p-3 rounded-xl mb-4",
+            "bg-[rgb(250,247,245)] dark:bg-white/5",
+            "border border-[rgb(237,234,233)] dark:border-white/10"
+          )}>
+            <p className="text-sm text-muted-foreground">
+              Adjusting credits for <span className="font-medium text-foreground">{user.username || user.firstName}</span>
+            </p>
+            <p className="text-lg font-bold text-[rgb(37,27,24)] dark:text-white mt-1">
+              Current balance: <span className="text-amber-600 dark:text-amber-400">{user.creditBalance?.toLocaleString() || 0}</span>
+            </p>
+          </div>
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label>Amount (positive to add, negative to remove)</Label>
+              <Label className="text-xs font-medium">Amount (positive to add, negative to remove)</Label>
             <div className="flex gap-2">
               <Button
                 variant="outline"
                 size="icon"
                 onClick={() => setAmount(prev => String((parseInt(prev) || 0) - 100))}
+                  className="rounded-xl"
               >
                 <Minus className="h-4 w-4" />
               </Button>
@@ -255,12 +287,13 @@ function CreditsModal({ user, onClose, onSave }) {
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="0"
-                className="text-center"
+                  className="text-center rounded-xl"
               />
               <Button
                 variant="outline"
                 size="icon"
                 onClick={() => setAmount(prev => String((parseInt(prev) || 0) + 100))}
+                  className="rounded-xl"
               >
                 <Plus className="h-4 w-4" />
               </Button>
@@ -268,26 +301,218 @@ function CreditsModal({ user, onClose, onSave }) {
           </div>
 
           <div className="space-y-2">
-            <Label>Reason</Label>
+              <Label className="text-xs font-medium">Reason</Label>
             <Input
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder="e.g., Compensation for issue"
               maxLength={200}
+                className="rounded-xl"
             />
           </div>
 
           <div className="flex gap-2 pt-2">
-            <Button variant="outline" onClick={onClose} className="flex-1">
+              <Button variant="outline" onClick={onClose} className="flex-1 rounded-xl">
               Cancel
             </Button>
-            <Button onClick={handleSave} disabled={isLoading} className="flex-1">
+              <Button onClick={handleSave} disabled={isLoading} className="flex-1 rounded-xl">
               {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save'}
             </Button>
+            </div>
           </div>
         </div>
       </motion.div>
     </div>
+  );
+}
+
+/**
+ * User Row Component
+ */
+function UserRow({ user, index, currentUser, onEditTier, onCredits, onFlag, onUnflag, editingTier, setEditingTier, handleUpdateTier, actionLoading }) {
+  const tier = user.tier || 'free';
+  const tierConfig = TIER_CONFIG[tier] || TIER_CONFIG.free;
+  const TierIcon = tierConfig.icon;
+  const isFlagged = user.flagged || user.is_flagged;
+  const createdAt = user.createdAt || user.created_at;
+  const isSelf = currentUser?.id === user.id;
+  const isTargetAdmin = user.isAdmin || user.is_admin;
+  const canFlag = !isSelf && !isTargetAdmin;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.03 }}
+      className={cn(
+        "group p-4 rounded-xl transition-all duration-200",
+        "bg-white dark:bg-white/[0.02]",
+        "border border-[rgb(237,234,233)] dark:border-white/5",
+        "hover:border-[rgb(255,64,23)]/20 dark:hover:border-white/10",
+        "hover:shadow-sm dark:hover:bg-white/[0.04]",
+        isFlagged && "border-red-200 dark:border-red-500/20 bg-red-50/50 dark:bg-red-500/5"
+      )}
+    >
+      <div className="flex items-center gap-4">
+        {/* Avatar */}
+        <div className="shrink-0">
+          {user.photoUrl || user.photo_url ? (
+            <img 
+              src={user.photoUrl || user.photo_url} 
+              alt=""
+              className="h-12 w-12 rounded-xl object-cover border border-[rgb(237,234,233)] dark:border-white/10"
+            />
+          ) : (
+            <div className="h-12 w-12 rounded-xl bg-[rgb(250,247,245)] dark:bg-white/5 flex items-center justify-center border border-[rgb(237,234,233)] dark:border-white/10">
+              <User className="h-5 w-5 text-muted-foreground" />
+            </div>
+          )}
+        </div>
+
+        {/* User Info */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <p className="font-semibold text-[rgb(37,27,24)] dark:text-white truncate">
+              {user.firstName || user.first_name || 'Unknown'}
+              {user.lastName || user.last_name ? ` ${user.lastName || user.last_name}` : ''}
+            </p>
+            {isFlagged && (
+              <Badge variant="destructive" className="text-[10px] h-5">
+                <Flag className="h-3 w-3 mr-1" />
+                Flagged
+              </Badge>
+            )}
+            {isTargetAdmin && (
+              <Badge variant="outline" className="text-[10px] h-5 bg-primary/10 text-primary border-primary/20">
+                Admin
+              </Badge>
+            )}
+          </div>
+          {user.username && (
+            <p className="text-xs text-muted-foreground">@{user.username}</p>
+          )}
+        </div>
+
+        {/* Tier Badge */}
+        <div className="hidden sm:block">
+          {editingTier === user.id ? (
+            <div className="flex items-center gap-1">
+              <Select 
+                defaultValue={tier}
+                onValueChange={(v) => handleUpdateTier(user.id, v)}
+              >
+                <SelectTrigger className="h-8 w-28 text-xs rounded-lg">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {TIER_OPTIONS.filter(t => t.value !== 'all').map(t => (
+                    <SelectItem key={t.value} value={t.value}>
+                      {t.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={() => setEditingTier(null)}
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setEditingTier(user.id)}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg",
+                "transition-colors",
+                tierConfig.bg,
+                tierConfig.border,
+                "border",
+                "hover:opacity-80"
+              )}
+            >
+              <TierIcon className={cn("h-3.5 w-3.5", tierConfig.color)} />
+              <span className={cn("capitalize text-xs font-medium", tierConfig.color)}>{tier}</span>
+              <Edit2 className="h-3 w-3 opacity-50 ml-1" />
+            </button>
+          )}
+        </div>
+
+        {/* Credits */}
+        <button
+          onClick={() => onCredits(user)}
+          className={cn(
+            "hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg",
+            "bg-amber-500/10 border border-amber-500/20",
+            "hover:bg-amber-500/15 transition-colors"
+          )}
+        >
+          <Coins className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+          <span className="font-semibold text-sm text-amber-600 dark:text-amber-400">
+            {(user.creditBalance ?? user.credit_balance ?? 0).toLocaleString()}
+          </span>
+        </button>
+
+        {/* Join Date */}
+        <div className="hidden lg:flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Calendar className="h-3.5 w-3.5" />
+          {formatDate(createdAt)}
+        </div>
+
+        {/* Actions */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg">
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuItem onClick={() => onCredits(user)}>
+              <Coins className="h-4 w-4 mr-2 text-amber-500" />
+              Adjust Credits
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setEditingTier(user.id)}>
+              <Crown className="h-4 w-4 mr-2 text-yellow-500" />
+              Change Tier
+            </DropdownMenuItem>
+            {canFlag && (
+              <>
+                <DropdownMenuSeparator />
+                {isFlagged ? (
+                  <DropdownMenuItem 
+                    onClick={() => onUnflag(user)}
+                    disabled={actionLoading === user.id}
+                    className="text-emerald-600"
+                  >
+                    <FlagOff className="h-4 w-4 mr-2" />
+                    Unflag User
+                  </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem 
+                    onClick={() => onFlag(user)}
+                    className="text-amber-600"
+                  >
+                    <Flag className="h-4 w-4 mr-2" />
+                    Flag User
+                  </DropdownMenuItem>
+                )}
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      {/* Flag Reason Tooltip */}
+      {isFlagged && (user.flagReason || user.flag_reason) && (
+        <div className="mt-3 pt-3 border-t border-red-200 dark:border-red-500/20">
+          <p className="text-xs text-red-600 dark:text-red-400">
+            <span className="font-medium">Reason:</span> {user.flagReason || user.flag_reason}
+          </p>
+        </div>
+      )}
+    </motion.div>
   );
 }
 
@@ -339,9 +564,9 @@ export function UsersList() {
         setUsers(data.users || []);
         setTotal(data.total || 0);
         setTotalPages(Math.ceil((data.total || 0) / limit));
-      } else {
       }
     } catch (err) {
+      // Silent fail
     } finally {
       setIsLoading(false);
     }
@@ -353,7 +578,7 @@ export function UsersList() {
     }, search ? 300 : 0);
     
     return () => clearTimeout(debounce);
-  }, [page, search, tierFilter]); // Don't include fetchUsers to avoid infinite loop
+  }, [page, search, tierFilter]);
 
   /**
    * Update user tier
@@ -386,7 +611,7 @@ export function UsersList() {
   }, [fetchUsers, success, error]);
 
   /**
-   * Unflag a user (flagging uses modal)
+   * Unflag a user
    */
   const handleUnflag = useCallback(async (user) => {
     setActionLoading(user.id);
@@ -415,25 +640,46 @@ export function UsersList() {
 
   return (
     <>
-      <Card variant="elevated">
-        <CardHeader className="pb-4">
+      <div className={cn(
+        "rounded-2xl overflow-hidden",
+        "bg-white dark:bg-[rgba(30,41,59,0.5)]",
+        "border border-[rgb(237,234,233)] dark:border-white/10",
+        "dark:backdrop-blur-sm shadow-sm dark:shadow-none"
+      )}>
+        {/* Header */}
+        <div className="px-6 py-5 border-b border-[rgb(237,234,233)] dark:border-white/10 bg-gradient-to-br from-[rgb(250,247,245)] to-transparent dark:from-white/[0.02] dark:to-transparent">
           <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2 text-lg">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-primary/10 dark:bg-primary/20 flex items-center justify-center">
               <Users className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-[rgb(37,27,24)] dark:text-white flex items-center gap-2">
               Users
               {total > 0 && (
-                <Badge variant="secondary" className="ml-2">
-                  {total}
+                    <Badge variant="secondary" className="text-xs">
+                      {total.toLocaleString()}
                 </Badge>
               )}
-            </CardTitle>
-            <Button variant="ghost" size="sm" onClick={fetchUsers} disabled={isLoading}>
-              <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
+                </h2>
+                <p className="text-xs text-muted-foreground">Manage user accounts and permissions</p>
+              </div>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={fetchUsers} 
+              disabled={isLoading}
+              className="rounded-xl"
+            >
+              <RefreshCw className={cn("h-4 w-4 mr-2", isLoading && "animate-spin")} />
+              Refresh
             </Button>
           </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Search and Filters */}
+        </div>
+
+        {/* Filters */}
+        <div className="px-6 py-4 border-b border-[rgb(237,234,233)] dark:border-white/10">
           <div className="flex flex-wrap gap-3">
             <div className="flex-1 min-w-[200px]">
               <div className="relative">
@@ -442,7 +688,7 @@ export function UsersList() {
                   placeholder="Search by username..."
                   value={search}
                   onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-                  className="pl-9"
+                  className="pl-9 rounded-xl"
                 />
               </div>
             </div>
@@ -450,7 +696,7 @@ export function UsersList() {
             <div className="flex items-center gap-2">
               <Filter className="h-4 w-4 text-muted-foreground" />
               <Select value={tierFilter} onValueChange={(v) => { setTierFilter(v); setPage(1); }}>
-                <SelectTrigger className="w-32">
+                <SelectTrigger className="w-32 rounded-xl">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -462,206 +708,53 @@ export function UsersList() {
                 </SelectContent>
               </Select>
             </div>
+            </div>
           </div>
 
-          {/* Users Table */}
+        {/* Content */}
+        <div className="p-4">
           {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <div className="flex items-center justify-center py-16">
+              <div className="text-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-3" />
+                <p className="text-sm text-muted-foreground">Loading users...</p>
+              </div>
             </div>
           ) : users.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <Users className="h-12 w-12 mx-auto mb-3 opacity-30" />
-              <p>No users found</p>
+            <div className="text-center py-16">
+              <div className="h-16 w-16 rounded-2xl bg-[rgb(250,247,245)] dark:bg-white/5 flex items-center justify-center mx-auto mb-4">
+                <Users className="h-8 w-8 text-muted-foreground/50" />
+              </div>
+              <h3 className="text-lg font-medium text-[rgb(37,27,24)] dark:text-white mb-1">No users found</h3>
+              <p className="text-sm text-muted-foreground">Try adjusting your search or filters</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border">
-                    <th className="text-left py-3 px-2 font-medium text-muted-foreground">User</th>
-                    <th className="text-left py-3 px-2 font-medium text-muted-foreground">Tier</th>
-                    <th className="text-left py-3 px-2 font-medium text-muted-foreground">Credits</th>
-                    <th className="text-left py-3 px-2 font-medium text-muted-foreground">Status</th>
-                    <th className="text-left py-3 px-2 font-medium text-muted-foreground">Joined</th>
-                    <th className="text-right py-3 px-2 font-medium text-muted-foreground">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {users.map((user, index) => {
-                    const tier = user.tier || 'free';
-                    const TierIcon = TIER_ICONS[tier] || User;
-                    const isFlagged = user.flagged || user.is_flagged;
-                    const createdAt = user.createdAt || user.created_at;
-                    
-                    return (
-                      <motion.tr
+            <div className="space-y-3">
+              <AnimatePresence mode="popLayout">
+                {users.map((user, index) => (
+                  <UserRow
                         key={user.id}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: index * 0.03 }}
-                        className={cn(
-                          "border-b border-border/50 hover:bg-muted/30 transition-colors",
-                          isFlagged && "bg-red-500/5"
-                        )}
-                      >
-                        <td className="py-3 px-2">
-                          <div className="flex items-center gap-3">
-                            {user.photoUrl || user.photo_url ? (
-                              <img 
-                                src={user.photoUrl || user.photo_url} 
-                                alt=""
-                                className="h-8 w-8 rounded-full object-cover"
-                              />
-                            ) : (
-                              <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
-                                <User className="h-4 w-4 text-muted-foreground" />
-                              </div>
-                            )}
-                            <div>
-                              <p className="font-medium">
-                                {user.firstName || user.first_name || 'Unknown'}
-                                {user.lastName || user.last_name ? ` ${user.lastName || user.last_name}` : ''}
-                              </p>
-                              {user.username && (
-                                <p className="text-xs text-muted-foreground">@{user.username}</p>
-                              )}
-                            </div>
-                          </div>
-                        </td>
-                        <td className="py-3 px-2">
-                          {editingTier === user.id ? (
-                            <div className="flex items-center gap-1">
-                              <Select 
-                                defaultValue={tier}
-                                onValueChange={(v) => handleUpdateTier(user.id, v)}
-                              >
-                                <SelectTrigger className="h-7 w-24 text-xs">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {TIER_OPTIONS.filter(t => t.value !== 'all').map(t => (
-                                    <SelectItem key={t.value} value={t.value}>
-                                      {t.label}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-6 w-6"
-                                onClick={() => setEditingTier(null)}
-                              >
-                                <X className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          ) : (
-                            <button
-                              onClick={() => setEditingTier(user.id)}
-                              className={cn(
-                                "flex items-center gap-1.5 px-2 py-1 rounded-md",
-                                "hover:bg-muted/50 transition-colors",
-                                TIER_COLORS[tier]
-                              )}
-                            >
-                              <TierIcon className="h-3.5 w-3.5" />
-                              <span className="capitalize text-xs font-medium">{tier}</span>
-                              <Edit2 className="h-3 w-3 opacity-50" />
-                            </button>
-                          )}
-                        </td>
-                        <td className="py-3 px-2">
-                          <button
-                            onClick={() => setCreditsModal(user)}
-                            className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 hover:underline"
-                          >
-                            <Coins className="h-3.5 w-3.5" />
-                            <span className="font-medium">
-                              {(user.creditBalance ?? user.credit_balance ?? 0).toLocaleString()}
-                            </span>
-                          </button>
-                        </td>
-                        <td className="py-3 px-2">
-                          {isFlagged ? (
-                            <div className="group relative">
-                              <Badge variant="destructive" className="text-xs cursor-help">
-                                <Flag className="h-3 w-3 mr-1" />
-                                Flagged
-                              </Badge>
-                              {(user.flagReason || user.flag_reason) && (
-                                <div className="absolute left-0 top-full mt-1 z-10 hidden group-hover:block">
-                                  <div className="bg-popover text-popover-foreground text-xs rounded-md border shadow-md p-2 max-w-[200px]">
-                                    <p className="font-medium mb-1">Reason:</p>
-                                    <p className="text-muted-foreground">{user.flagReason || user.flag_reason}</p>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          ) : (
-                            <Badge variant="success" className="text-xs">
-                              Active
-                            </Badge>
-                          )}
-                        </td>
-                        <td className="py-3 px-2 text-muted-foreground text-xs">
-                          {formatDate(createdAt)}
-                        </td>
-                        <td className="py-3 px-2 text-right">
-                          {(() => {
-                            const isSelf = currentUser?.id === user.id;
-                            const isTargetAdmin = user.isAdmin || user.is_admin;
-                            const canFlag = !isSelf && !isTargetAdmin;
-                            
-                            if (!canFlag) {
-                              return (
-                                <span className="text-xs text-muted-foreground px-2">
-                                  {isSelf ? 'You' : 'Admin'}
-                                </span>
-                              );
-                            }
-                            
-                            return (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className={cn(
-                                  "h-7",
-                                  isFlagged 
-                                    ? "text-emerald-600 hover:text-emerald-600 hover:bg-emerald-500/10" 
-                                    : "text-amber-600 hover:text-amber-600 hover:bg-amber-500/10"
-                                )}
-                                onClick={() => isFlagged ? handleUnflag(user) : setFlagModal(user)}
-                                disabled={actionLoading === user.id}
-                              >
-                                {actionLoading === user.id ? (
-                                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                ) : isFlagged ? (
-                                  <>
-                                    <FlagOff className="h-3.5 w-3.5 mr-1" />
-                                    Unflag
-                                  </>
-                                ) : (
-                                  <>
-                                    <Flag className="h-3.5 w-3.5 mr-1" />
-                                    Flag
-                                  </>
-                                )}
-                              </Button>
-                            );
-                          })()}
-                        </td>
-                      </motion.tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                    user={user}
+                    index={index}
+                    currentUser={currentUser}
+                    onEditTier={setEditingTier}
+                    onCredits={setCreditsModal}
+                    onFlag={setFlagModal}
+                    onUnflag={handleUnflag}
+                    editingTier={editingTier}
+                    setEditingTier={setEditingTier}
+                    handleUpdateTier={handleUpdateTier}
+                    actionLoading={actionLoading}
+                  />
+                ))}
+              </AnimatePresence>
             </div>
           )}
+        </div>
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between pt-2">
+          <div className="px-6 py-4 border-t border-[rgb(237,234,233)] dark:border-white/10 flex items-center justify-between">
               <p className="text-sm text-muted-foreground">
                 Page {page} of {totalPages}
               </p>
@@ -671,6 +764,7 @@ export function UsersList() {
                   size="sm"
                   onClick={() => setPage(p => Math.max(1, p - 1))}
                   disabled={page === 1 || isLoading}
+                className="rounded-xl"
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
@@ -679,16 +773,17 @@ export function UsersList() {
                   size="sm"
                   onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                   disabled={page === totalPages || isLoading}
+                className="rounded-xl"
                 >
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
             </div>
           )}
-        </CardContent>
-      </Card>
+      </div>
 
       {/* Credits Modal */}
+      <AnimatePresence>
       {creditsModal && (
         <CreditsModal
           user={creditsModal}
@@ -696,8 +791,10 @@ export function UsersList() {
           onSave={fetchUsers}
         />
       )}
+      </AnimatePresence>
 
       {/* Flag Modal */}
+      <AnimatePresence>
       {flagModal && (
         <FlagModal
           user={flagModal}
@@ -705,6 +802,7 @@ export function UsersList() {
           onSave={fetchUsers}
         />
       )}
+      </AnimatePresence>
     </>
   );
 }

@@ -1,78 +1,71 @@
 import { useState, useEffect, useCallback } from 'react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   Key, 
   Loader2, 
   Copy, 
   Check, 
-  Trash2,
+  Coins, 
+  Crown,
   ChevronLeft,
   ChevronRight,
-  Filter,
+  Trash2,
   RefreshCw,
   Clock,
-  Ban,
+  AlertCircle,
   CheckCircle,
-  XCircle
+  XCircle,
+  Filter
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from '@/components/ui/select';
 import { useToast } from '@/hooks/useToast';
-import { spring } from '@/lib/motion';
+import { ConfirmationDialog } from '@/components/ui/ConfirmationDialog';
+import { useConfirmation } from '@/hooks/useConfirmation';
 
 /**
  * KeysList Component
- * Admin table for viewing and managing redeem keys
+ * Admin list for viewing and managing generated keys
+ * Redesigned with filter chips, status badges, and improved layout
  * 
- * Requirements: 4.7, 4.8
+ * Requirements: 3.1
  */
 
 const API_BASE = '/api';
 
-const STATUS_OPTIONS = [
-  { value: 'all', label: 'All Status' },
-  { value: 'unused', label: 'Unused' },
-  { value: 'used', label: 'Used' },
-  { value: 'expired', label: 'Expired' },
-  { value: 'revoked', label: 'Revoked' },
-];
-
-const TYPE_OPTIONS = [
+const TYPE_FILTERS = [
   { value: 'all', label: 'All Types' },
   { value: 'credits', label: 'Credits' },
   { value: 'tier', label: 'Tier' },
 ];
 
+const STATUS_FILTERS = [
+  { value: 'all', label: 'All Status', icon: null },
+  { value: 'active', label: 'Active', icon: CheckCircle, color: 'emerald' },
+  { value: 'used', label: 'Used', icon: Check, color: 'blue' },
+  { value: 'expired', label: 'Expired', icon: Clock, color: 'amber' },
+  { value: 'revoked', label: 'Revoked', icon: XCircle, color: 'red' },
+];
+
 /**
- * Get status badge variant and label
+ * Get key status and styling
  */
 function getKeyStatus(key) {
-  if (key.revokedAt || key.revoked_at) {
-    return { status: 'revoked', label: 'Revoked', variant: 'destructive' };
+  const isRevoked = key.revokedAt || key.revoked_at;
+  const isExpired = key.expiresAt && new Date(key.expiresAt) < new Date();
+  const isFullyUsed = key.currentUses >= key.maxUses;
+
+  if (isRevoked) {
+    return { status: 'revoked', label: 'Revoked', variant: 'destructive', icon: XCircle, color: 'red' };
   }
-  
-  const expiresAt = key.expiresAt || key.expires_at;
-  if (expiresAt && new Date(expiresAt) < new Date()) {
-    return { status: 'expired', label: 'Expired', variant: 'warning' };
+  if (isExpired) {
+    return { status: 'expired', label: 'Expired', variant: 'secondary', icon: Clock, color: 'amber' };
   }
-  
-  const currentUses = key.currentUses ?? key.current_uses ?? 0;
-  const maxUses = key.maxUses ?? key.max_uses ?? 1;
-  
-  if (currentUses >= maxUses) {
-    return { status: 'used', label: 'Used', variant: 'secondary' };
+  if (isFullyUsed) {
+    return { status: 'used', label: 'Fully Used', variant: 'secondary', icon: Check, color: 'blue' };
   }
-  
-  return { status: 'unused', label: 'Unused', variant: 'success' };
+  return { status: 'active', label: 'Active', variant: 'default', icon: CheckCircle, color: 'emerald' };
 }
 
 /**
@@ -83,10 +76,183 @@ function formatDate(dateString) {
   return new Date(dateString).toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
+    year: 'numeric'
   });
+}
+
+/**
+ * Format relative time
+ */
+function formatRelativeTime(dateString) {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = date - now;
+  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+  
+  if (diffDays < 0) return 'Expired';
+  if (diffDays === 0) return 'Today';
+  if (diffDays === 1) return 'Tomorrow';
+  if (diffDays <= 7) return `${diffDays} days`;
+  return formatDate(dateString);
+}
+
+/**
+ * Filter Chip Component
+ */
+function FilterChip({ label, isActive, onClick, icon: Icon, color }) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200",
+        isActive 
+          ? color === 'emerald' ? "bg-emerald-500 text-white"
+          : color === 'blue' ? "bg-blue-500 text-white"
+          : color === 'amber' ? "bg-amber-500 text-white"
+          : color === 'red' ? "bg-red-500 text-white"
+          : "bg-primary text-primary-foreground"
+          : "bg-[rgb(250,247,245)] dark:bg-white/5 text-muted-foreground hover:bg-[rgb(237,234,233)] dark:hover:bg-white/10"
+      )}
+    >
+      {Icon && <Icon className="h-3 w-3" />}
+      {label}
+    </button>
+  );
+}
+
+/**
+ * Key Card Component
+ */
+function KeyCard({ keyItem, index, onCopy, onRevoke, copiedCode, isRevoking }) {
+  const { status, label, icon: StatusIcon, color } = getKeyStatus(keyItem);
+  const isActive = status === 'active';
+  const isCredits = keyItem.type === 'credits';
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      transition={{ delay: index * 0.03 }}
+      className={cn(
+        "group p-4 rounded-xl transition-all duration-200",
+        "bg-white dark:bg-white/[0.02]",
+        "border border-[rgb(237,234,233)] dark:border-white/5",
+        "hover:border-[rgb(255,64,23)]/20 dark:hover:border-white/10",
+        "hover:shadow-sm dark:hover:bg-white/[0.04]",
+        !isActive && "opacity-75"
+      )}
+    >
+      <div className="flex items-start gap-4">
+        {/* Type Icon */}
+        <div className={cn(
+          "h-10 w-10 rounded-xl flex items-center justify-center shrink-0",
+          isCredits ? "bg-amber-500/10" : "bg-purple-500/10"
+        )}>
+          {isCredits ? (
+            <Coins className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+          ) : (
+            <Crown className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+          )}
+        </div>
+
+        {/* Key Info */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <code className="text-sm font-mono tracking-wider text-[rgb(37,27,24)] dark:text-white">
+              {keyItem.code}
+            </code>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
+              onClick={() => onCopy(keyItem.code)}
+            >
+              {copiedCode === keyItem.code ? (
+                <Check className="h-3 w-3 text-emerald-500" />
+              ) : (
+                <Copy className="h-3 w-3" />
+              )}
+            </Button>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            {/* Value Badge */}
+            <Badge variant="secondary" className="text-[10px] h-5">
+              {isCredits ? `${keyItem.value} credits` : keyItem.value}
+            </Badge>
+
+            {/* Status Badge */}
+            <Badge 
+              variant={status === 'active' ? 'default' : 'secondary'}
+              className={cn(
+                "text-[10px] h-5",
+                color === 'emerald' && "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
+                color === 'blue' && "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
+                color === 'amber' && "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
+                color === 'red' && "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20"
+              )}
+            >
+              <StatusIcon className="h-3 w-3 mr-1" />
+              {label}
+            </Badge>
+
+            {/* Uses */}
+            <span className="text-muted-foreground">
+              {keyItem.currentUses || keyItem.current_uses || 0}/{keyItem.maxUses || keyItem.max_uses || 1} uses
+            </span>
+          </div>
+        </div>
+
+        {/* Meta & Actions */}
+        <div className="flex flex-col items-end gap-2 shrink-0">
+          <span className="text-xs text-muted-foreground">
+            {formatDate(keyItem.createdAt || keyItem.created_at)}
+          </span>
+          
+          {keyItem.expiresAt && isActive && (
+            <span className={cn(
+              "text-xs",
+              new Date(keyItem.expiresAt) < new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+                ? "text-amber-600 dark:text-amber-400"
+                : "text-muted-foreground"
+            )}>
+              Expires: {formatRelativeTime(keyItem.expiresAt)}
+            </span>
+          )}
+
+          {isActive && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onRevoke(keyItem)}
+              disabled={isRevoking === keyItem.id}
+              className="h-7 px-2 text-xs text-red-600 hover:text-red-700 hover:bg-red-500/10 rounded-lg"
+            >
+              {isRevoking === keyItem.id ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <>
+                  <Trash2 className="h-3 w-3 mr-1" />
+                  Revoke
+                </>
+              )}
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Note */}
+      {keyItem.note && (
+        <div className="mt-3 pt-3 border-t border-[rgb(237,234,233)] dark:border-white/5">
+          <p className="text-xs text-muted-foreground">
+            <span className="font-medium">Note:</span> {keyItem.note}
+          </p>
+        </div>
+      )}
+    </motion.div>
+  );
 }
 
 export function KeysList({ refreshTrigger }) {
@@ -101,6 +267,7 @@ export function KeysList({ refreshTrigger }) {
   const [revokingId, setRevokingId] = useState(null);
   
   const { success, error } = useToast();
+  const confirmation = useConfirmation();
   const limit = 10;
 
   /**
@@ -134,9 +301,9 @@ export function KeysList({ refreshTrigger }) {
         setKeys(data.keys || []);
         setTotal(data.total || 0);
         setTotalPages(Math.ceil((data.total || 0) / limit));
-      } else {
       }
     } catch (err) {
+      // Silent fail
     } finally {
       setIsLoading(false);
     }
@@ -144,38 +311,10 @@ export function KeysList({ refreshTrigger }) {
 
   useEffect(() => {
     fetchKeys();
-  }, [page, typeFilter, statusFilter, refreshTrigger]); // Don't include fetchKeys to avoid infinite loop
+  }, [page, typeFilter, statusFilter, refreshTrigger]);
 
   /**
-   * Revoke a key
-   */
-  const handleRevoke = useCallback(async (keyId) => {
-    setRevokingId(keyId);
-    
-    try {
-      const response = await fetch(`${API_BASE}/admin/keys/${keyId}`, {
-        method: 'DELETE',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' }
-      });
-
-      const data = await response.json();
-
-      if (response.ok && data.status === 'OK') {
-        success('Key revoked successfully');
-        fetchKeys();
-      } else {
-        error(data.message || 'Failed to revoke key');
-      }
-    } catch (err) {
-      error('Network error. Please try again.');
-    } finally {
-      setRevokingId(null);
-    }
-  }, [fetchKeys, success, error]);
-
-  /**
-   * Copy key code to clipboard
+   * Copy key code
    */
   const handleCopy = useCallback(async (code) => {
     try {
@@ -187,171 +326,165 @@ export function KeysList({ refreshTrigger }) {
     }
   }, [error]);
 
+  /**
+   * Revoke a key
+   */
+  const handleRevoke = useCallback(async (key) => {
+    const confirmed = await confirmation.confirm({
+      title: 'Revoke Key',
+      description: `Are you sure you want to revoke key "${key.code}"? This action cannot be undone.`,
+      confirmText: 'Revoke',
+      destructive: true
+    });
+
+    if (!confirmed) return;
+
+    setRevokingId(key.id);
+    
+    try {
+      const response = await fetch(`${API_BASE}/admin/keys/${key.id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.status === 'OK') {
+        success('Key revoked');
+        fetchKeys();
+      } else {
+        error(data.message || 'Failed to revoke key');
+      }
+    } catch (err) {
+      error('Network error');
+    } finally {
+      setRevokingId(null);
+    }
+  }, [fetchKeys, success, error, confirmation]);
+
   return (
-    <Card variant="elevated">
-      <CardHeader className="pb-4">
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Key className="h-5 w-5 text-primary" />
-            Redeem Keys
-            {total > 0 && (
-              <Badge variant="secondary" className="ml-2">
-                {total}
-              </Badge>
-            )}
-          </CardTitle>
-          <Button variant="ghost" size="sm" onClick={fetchKeys} disabled={isLoading}>
-            <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Filters */}
-        <div className="flex flex-wrap gap-3">
-          <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-muted-foreground" />
-            <Select value={typeFilter} onValueChange={(v) => { setTypeFilter(v); setPage(1); }}>
-              <SelectTrigger className="w-32">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {TYPE_OPTIONS.map(opt => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+    <>
+      <div className={cn(
+        "rounded-2xl overflow-hidden",
+        "bg-white dark:bg-[rgba(30,41,59,0.5)]",
+        "border border-[rgb(237,234,233)] dark:border-white/10",
+        "dark:backdrop-blur-sm shadow-sm dark:shadow-none"
+      )}>
+        {/* Header */}
+        <div className="px-6 py-5 border-b border-[rgb(237,234,233)] dark:border-white/10 bg-gradient-to-br from-[rgb(250,247,245)] to-transparent dark:from-white/[0.02] dark:to-transparent">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-primary/10 dark:bg-primary/20 flex items-center justify-center">
+                <Key className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-[rgb(37,27,24)] dark:text-white flex items-center gap-2">
+                  Redeem Keys
+                  {total > 0 && (
+                    <Badge variant="secondary" className="text-xs">
+                      {total.toLocaleString()}
+                    </Badge>
+                  )}
+                </h2>
+                <p className="text-xs text-muted-foreground">View and manage generated keys</p>
+              </div>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={fetchKeys} 
+              disabled={isLoading}
+              className="rounded-xl"
+            >
+              <RefreshCw className={cn("h-4 w-4 mr-2", isLoading && "animate-spin")} />
+              Refresh
+            </Button>
           </div>
-          
-          <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
-            <SelectTrigger className="w-32">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {STATUS_OPTIONS.map(opt => (
-                <SelectItem key={opt.value} value={opt.value}>
-                  {opt.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
         </div>
 
-        {/* Keys Table */}
-        {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        {/* Filter Chips */}
+        <div className="px-6 py-4 border-b border-[rgb(237,234,233)] dark:border-white/10">
+          <div className="space-y-3">
+            {/* Type Filters */}
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground mr-2">Type:</span>
+              <div className="flex flex-wrap gap-2">
+                {TYPE_FILTERS.map(filter => (
+                  <FilterChip
+                    key={filter.value}
+                    label={filter.label}
+                    isActive={typeFilter === filter.value}
+                    onClick={() => { setTypeFilter(filter.value); setPage(1); }}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Status Filters */}
+            <div className="flex items-center gap-2">
+              <div className="w-4" />
+              <span className="text-xs text-muted-foreground mr-2">Status:</span>
+              <div className="flex flex-wrap gap-2">
+                {STATUS_FILTERS.map(filter => (
+                  <FilterChip
+                    key={filter.value}
+                    label={filter.label}
+                    icon={filter.icon}
+                    color={filter.color}
+                    isActive={statusFilter === filter.value}
+                    onClick={() => { setStatusFilter(filter.value); setPage(1); }}
+                  />
+                ))}
+              </div>
+            </div>
           </div>
-        ) : keys.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground">
-            <Key className="h-12 w-12 mx-auto mb-3 opacity-30" />
-            <p>No keys found</p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border">
-                  <th className="text-left py-3 px-2 font-medium text-muted-foreground">Code</th>
-                  <th className="text-left py-3 px-2 font-medium text-muted-foreground">Type</th>
-                  <th className="text-left py-3 px-2 font-medium text-muted-foreground">Value</th>
-                  <th className="text-left py-3 px-2 font-medium text-muted-foreground">Uses</th>
-                  <th className="text-left py-3 px-2 font-medium text-muted-foreground">Status</th>
-                  <th className="text-left py-3 px-2 font-medium text-muted-foreground">Created</th>
-                  <th className="text-right py-3 px-2 font-medium text-muted-foreground">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {keys.map((key, index) => {
-                  const { status, label, variant } = getKeyStatus(key);
-                  const currentUses = key.currentUses ?? key.current_uses ?? 0;
-                  const maxUses = key.maxUses ?? key.max_uses ?? 1;
-                  const createdAt = key.createdAt || key.created_at;
-                  
-                  return (
-                    <motion.tr
-                      key={key.id}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: index * 0.03 }}
-                      className="border-b border-border/50 hover:bg-muted/30 transition-colors"
-                    >
-                      <td className="py-3 px-2">
-                        <div className="flex items-center gap-2">
-                          <code className="text-xs font-mono bg-muted px-2 py-1 rounded">
-                            {key.code}
-                          </code>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6"
-                            onClick={() => handleCopy(key.code)}
-                          >
-                            {copiedCode === key.code ? (
-                              <Check className="h-3 w-3 text-emerald-500" />
-                            ) : (
-                              <Copy className="h-3 w-3" />
-                            )}
-                          </Button>
-                        </div>
-                      </td>
-                      <td className="py-3 px-2 capitalize">{key.type}</td>
-                      <td className="py-3 px-2">
-                        {key.type === 'credits' ? (
-                          <span className="text-amber-600 dark:text-amber-400 font-medium">
-                            {key.value} credits
-                          </span>
-                        ) : (
-                          <span className="capitalize font-medium">{key.value}</span>
-                        )}
-                      </td>
-                      <td className="py-3 px-2">
-                        <span className={cn(
-                          currentUses >= maxUses && "text-muted-foreground"
-                        )}>
-                          {currentUses}/{maxUses}
-                        </span>
-                      </td>
-                      <td className="py-3 px-2">
-                        <Badge variant={variant} className="text-xs">
-                          {label}
-                        </Badge>
-                      </td>
-                      <td className="py-3 px-2 text-muted-foreground text-xs">
-                        {formatDate(createdAt)}
-                      </td>
-                      <td className="py-3 px-2 text-right">
-                        {status === 'unused' && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 text-destructive hover:text-destructive hover:bg-destructive/10"
-                            onClick={() => handleRevoke(key.id)}
-                            disabled={revokingId === key.id}
-                          >
-                            {revokingId === key.id ? (
-                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                            ) : (
-                              <>
-                                <Ban className="h-3.5 w-3.5 mr-1" />
-                                Revoke
-                              </>
-                            )}
-                          </Button>
-                        )}
-                      </td>
-                    </motion.tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
+        </div>
+
+        {/* Content */}
+        <div className="p-4">
+          {isLoading ? (
+            <div className="flex items-center justify-center py-16">
+              <div className="text-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-3" />
+                <p className="text-sm text-muted-foreground">Loading keys...</p>
+              </div>
+            </div>
+          ) : keys.length === 0 ? (
+            <div className="text-center py-16">
+              <div className="h-16 w-16 rounded-2xl bg-[rgb(250,247,245)] dark:bg-white/5 flex items-center justify-center mx-auto mb-4">
+                <Key className="h-8 w-8 text-muted-foreground/50" />
+              </div>
+              <h3 className="text-lg font-medium text-[rgb(37,27,24)] dark:text-white mb-1">No keys found</h3>
+              <p className="text-sm text-muted-foreground">
+                {typeFilter !== 'all' || statusFilter !== 'all' 
+                  ? 'Try adjusting your filters' 
+                  : 'Generate some keys to get started'}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <AnimatePresence mode="popLayout">
+                {keys.map((key, index) => (
+                  <KeyCard
+                    key={key.id}
+                    keyItem={key}
+                    index={index}
+                    onCopy={handleCopy}
+                    onRevoke={handleRevoke}
+                    copiedCode={copiedCode}
+                    isRevoking={revokingId}
+                  />
+                ))}
+              </AnimatePresence>
+            </div>
+          )}
+        </div>
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-between pt-2">
+          <div className="px-6 py-4 border-t border-[rgb(237,234,233)] dark:border-white/10 flex items-center justify-between">
             <p className="text-sm text-muted-foreground">
               Page {page} of {totalPages}
             </p>
@@ -361,6 +494,7 @@ export function KeysList({ refreshTrigger }) {
                 size="sm"
                 onClick={() => setPage(p => Math.max(1, p - 1))}
                 disabled={page === 1 || isLoading}
+                className="rounded-xl"
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
@@ -369,14 +503,23 @@ export function KeysList({ refreshTrigger }) {
                 size="sm"
                 onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages || isLoading}
+                className="rounded-xl"
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+
+      <ConfirmationDialog
+        open={confirmation.isOpen}
+        onOpenChange={confirmation.setOpen}
+        onConfirm={confirmation.handleConfirm}
+        onCancel={confirmation.handleCancel}
+        {...confirmation.config}
+      />
+    </>
   );
 }
 

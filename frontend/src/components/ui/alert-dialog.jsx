@@ -11,7 +11,10 @@ import {
 import { Button } from "@/components/ui/Button"
 
 /**
- * ConfirmDialog - A confirmation dialog using the existing Dialog component
+ * ConfirmDialog - Redesigned Confirmation Dialog
+ * 
+ * Clean, modern confirmation dialog using the Dialog component
+ * with improved visual hierarchy and styling for both themes.
  * 
  * @param {boolean} open - Whether the dialog is open
  * @param {Function} onOpenChange - Callback when open state changes
@@ -46,28 +49,32 @@ export function ConfirmDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[440px] p-7">
-        <DialogHeader className="space-y-2.5">
+      <DialogContent className="sm:max-w-[420px]">
+        <DialogHeader className="space-y-3">
           <DialogTitle className="text-lg font-semibold tracking-tight">
             {title}
           </DialogTitle>
           {description && (
-            <DialogDescription className="text-[14px] leading-relaxed text-neutral-600 dark:text-white/60">
+            <DialogDescription className="text-[14px] leading-relaxed">
               {description}
             </DialogDescription>
           )}
         </DialogHeader>
-        <DialogFooter className="mt-6 pt-0 gap-3 sm:gap-3">
+        <DialogFooter className="pt-2 gap-3 sm:gap-3">
           <Button 
             variant="outline" 
             onClick={handleCancel}
             className={cn(
-              "flex-1 sm:flex-none",
-              "font-medium",
-              "border-neutral-200 dark:border-white/10",
-              "text-neutral-700 dark:text-white/70",
-              "hover:bg-neutral-100 dark:hover:bg-white/5",
-              "hover:text-neutral-900 dark:hover:text-white"
+              "flex-1 sm:flex-none h-10",
+              "font-medium text-[14px]",
+              // Light mode
+              "border-neutral-200 text-neutral-700",
+              "hover:bg-neutral-100 hover:text-neutral-900",
+              "hover:border-neutral-300",
+              // Dark mode
+              "dark:border-white/10 dark:text-white/70",
+              "dark:hover:bg-white/[0.06] dark:hover:text-white",
+              "dark:hover:border-white/20"
             )}
           >
             {cancelLabel}
@@ -75,7 +82,16 @@ export function ConfirmDialog({
           <Button 
             variant={variant} 
             onClick={handleConfirm}
-            className="flex-1 sm:flex-none min-w-[120px] font-medium"
+            className={cn(
+              "flex-1 sm:flex-none min-w-[120px] h-10",
+              "font-medium text-[14px]",
+              variant === "destructive" && [
+                "bg-red-600 hover:bg-red-700",
+                "dark:bg-red-600 dark:hover:bg-red-500",
+                "shadow-sm hover:shadow-md",
+                "shadow-red-600/20 hover:shadow-red-600/30"
+              ]
+            )}
           >
             {confirmLabel}
           </Button>

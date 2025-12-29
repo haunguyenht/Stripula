@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Loader2, AlertCircle, Info, AlertTriangle, CheckCircle2 } from "lucide-react"
+import { Loader2, AlertCircle, Info, AlertTriangle, CheckCircle2, HelpCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
   Dialog,
@@ -13,10 +13,10 @@ import {
 import { Button } from "@/components/ui/Button"
 
 /**
- * ConfirmationDialog - Redesigned
+ * ConfirmationDialog - Redesigned for OrangeAI/OPUX Design System
  * 
  * A modern, reusable confirmation dialog with:
- * - Optional icon indicators
+ * - Optional icon indicators with proper theming
  * - Improved typography and spacing
  * - Better visual hierarchy
  * - Smooth loading states
@@ -38,29 +38,34 @@ import { Button } from "@/components/ui/Button"
 
 const VARIANT_CONFIG = {
   default: {
-    icon: null,
+    icon: HelpCircle,
     iconBg: "bg-neutral-100 dark:bg-white/10",
-    iconColor: "text-neutral-600 dark:text-white/70",
+    iconColor: "text-neutral-500 dark:text-white/60",
+    iconRing: "ring-neutral-200/50 dark:ring-white/10",
   },
   danger: {
     icon: AlertCircle,
-    iconBg: "bg-red-50 dark:bg-red-500/10",
+    iconBg: "bg-red-50 dark:bg-red-500/15",
     iconColor: "text-red-600 dark:text-red-400",
+    iconRing: "ring-red-100 dark:ring-red-500/20",
   },
   warning: {
     icon: AlertTriangle,
-    iconBg: "bg-amber-50 dark:bg-amber-500/10",
+    iconBg: "bg-amber-50 dark:bg-amber-500/15",
     iconColor: "text-amber-600 dark:text-amber-400",
+    iconRing: "ring-amber-100 dark:ring-amber-500/20",
   },
   success: {
     icon: CheckCircle2,
-    iconBg: "bg-emerald-50 dark:bg-emerald-500/10",
+    iconBg: "bg-emerald-50 dark:bg-emerald-500/15",
     iconColor: "text-emerald-600 dark:text-emerald-400",
+    iconRing: "ring-emerald-100 dark:ring-emerald-500/20",
   },
   info: {
     icon: Info,
-    iconBg: "bg-blue-50 dark:bg-blue-500/10",
+    iconBg: "bg-blue-50 dark:bg-blue-500/15",
     iconColor: "text-blue-600 dark:text-blue-400",
+    iconRing: "ring-blue-100 dark:ring-blue-500/20",
   },
 };
 
@@ -105,16 +110,18 @@ export function ConfirmationDialog({
       <DialogContent className="sm:max-w-[420px]">
         <DialogHeader>
           {/* Icon + Title Row */}
-          <div className="flex items-start gap-3">
+          <div className="flex items-start gap-4">
             {IconComponent && (
               <div className={cn(
-                "shrink-0 p-2 rounded-xl",
-                variantConfig.iconBg
+                "shrink-0 p-2.5 rounded-xl",
+                "ring-1",
+                variantConfig.iconBg,
+                variantConfig.iconRing
               )}>
                 <IconComponent className={cn("h-5 w-5", variantConfig.iconColor)} />
               </div>
             )}
-            <div className="flex-1 min-w-0 space-y-1">
+            <div className="flex-1 min-w-0 space-y-1.5 pt-0.5">
               <DialogTitle>{title}</DialogTitle>
               {description && (
                 <DialogDescription>{description}</DialogDescription>
@@ -135,11 +142,15 @@ export function ConfirmationDialog({
             onClick={handleCancel}
             disabled={isLoading}
             className={cn(
-              "font-medium",
-              "border-neutral-200 dark:border-white/10",
-              "text-neutral-700 dark:text-white/70",
-              "hover:bg-neutral-100 dark:hover:bg-white/5",
-              "hover:text-neutral-900 dark:hover:text-white"
+              "h-10 font-medium text-[14px]",
+              // Light mode
+              "border-neutral-200 text-neutral-700",
+              "hover:bg-neutral-100 hover:text-neutral-900",
+              "hover:border-neutral-300",
+              // Dark mode
+              "dark:border-white/10 dark:text-white/70",
+              "dark:hover:bg-white/[0.06] dark:hover:text-white",
+              "dark:hover:border-white/20"
             )}
           >
             {cancelText}
@@ -149,8 +160,13 @@ export function ConfirmationDialog({
             onClick={handleConfirm}
             disabled={isLoading}
             className={cn(
-              "font-medium min-w-[100px]",
-              isDestructive && "bg-red-600 hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700"
+              "h-10 font-medium text-[14px] min-w-[100px]",
+              isDestructive && [
+                "bg-red-600 hover:bg-red-700",
+                "dark:bg-red-600 dark:hover:bg-red-500",
+                "shadow-sm hover:shadow-md",
+                "shadow-red-600/20 hover:shadow-red-600/30"
+              ]
             )}
           >
             {isLoading ? (

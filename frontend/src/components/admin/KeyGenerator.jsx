@@ -7,16 +7,19 @@ import {
   Check, 
   Coins, 
   Crown,
+  Sparkles,
   Calendar,
   Hash,
-  RefreshCw
+  Users,
+  AlertCircle,
+  ClipboardList
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { 
   Select, 
   SelectContent, 
@@ -29,19 +32,39 @@ import { spring } from '@/lib/motion';
 
 /**
  * KeyGenerator Component
- * Admin tool for generating redeem keys
+ * Form for generating redeemable keys
+ * Redesigned with split layout, visual type selectors
  * 
- * Requirements: 4.1, 4.2, 4.3, 4.5, 4.6
+ * Requirements: 3.1
  */
 
 const API_BASE = '/api';
 
-const TIER_OPTIONS = [
-  { value: 'bronze', label: 'Bronze' },
-  { value: 'silver', label: 'Silver' },
-  { value: 'gold', label: 'Gold' },
-  { value: 'diamond', label: 'Diamond' },
+const KEY_TYPES = [
+  { 
+    value: 'credits', 
+    label: 'Credits', 
+    icon: Coins, 
+    description: 'Add credits to user balance',
+    color: 'amber'
+  },
+  { 
+    value: 'tier', 
+    label: 'Tier Upgrade', 
+    icon: Crown, 
+    description: 'Upgrade user tier level',
+    color: 'purple'
+  },
 ];
+
+const TIER_OPTIONS = [
+  { value: 'bronze', label: 'Bronze', color: 'amber' },
+  { value: 'silver', label: 'Silver', color: 'slate' },
+  { value: 'gold', label: 'Gold', color: 'yellow' },
+  { value: 'diamond', label: 'Diamond', color: 'cyan' },
+];
+
+const CREDIT_PRESETS = [50, 100, 250, 500, 1000];
 
 export function KeyGenerator({ onKeysGenerated }) {
   const [type, setType] = useState('credits');
@@ -57,76 +80,40 @@ export function KeyGenerator({ onKeysGenerated }) {
   
   const { success, error } = useToast();
 
-  /**
-   * Generate keys via API
-   */
   const handleGenerate = useCallback(async () => {
-    // Validate inputs
-    const qty = parseInt(quantity, 10);
-    if (isNaN(qty) || qty < 1 || qty > 100) {
-      error('Quantity must be between 1 and 100');
-      return;
-    }
-
-    const uses = parseInt(maxUses, 10);
-    if (isNaN(uses) || uses < 1) {
-      error('Max uses must be at least 1');
-      return;
-    }
-
-    if (type === 'credits') {
-      const amount = parseInt(creditAmount, 10);
-      if (isNaN(amount) || amount < 1) {
-        error('Credit amount must be at least 1');
-        return;
-      }
-    }
-
     setIsLoading(true);
-    setGeneratedKeys([]);
-
+    
     try {
-      const payload = {
-        type,
-        value: type === 'credits' ? parseInt(creditAmount, 10) : tierValue,
-        quantity: qty,
-        maxUses: uses,
-        note: note.trim() || undefined,
-      };
-
-      if (expiresAt) {
-        payload.expiresAt = new Date(expiresAt).toISOString();
-      }
-
       const response = await fetch(`${API_BASE}/admin/keys/generate`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify({
+          type,
+          value: type === 'credits' ? parseInt(creditAmount, 10) : tierValue,
+          quantity: parseInt(quantity, 10),
+          maxUses: parseInt(maxUses, 10),
+          expiresAt: expiresAt || null,
+          note: note.trim() || null
+        })
       });
 
       const data = await response.json();
 
       if (response.ok && data.status === 'OK') {
         setGeneratedKeys(data.keys || []);
-        success(`Generated ${data.keys?.length || 0} keys successfully`);
-        
-        if (onKeysGenerated) {
-          onKeysGenerated(data.keys);
-        }
+        success(`Generated ${data.keys?.length || 0} keys`);
+        if (onKeysGenerated) onKeysGenerated();
       } else {
         error(data.message || 'Failed to generate keys');
       }
     } catch (err) {
-      error('Network error. Please try again.');
+      error('Network error');
     } finally {
       setIsLoading(false);
     }
   }, [type, creditAmount, tierValue, quantity, maxUses, expiresAt, note, success, error, onKeysGenerated]);
 
-  /**
-   * Copy key to clipboard
-   */
   const handleCopyKey = useCallback(async (code, index) => {
     try {
       await navigator.clipboard.writeText(code);
@@ -137,195 +124,288 @@ export function KeyGenerator({ onKeysGenerated }) {
     }
   }, [error]);
 
-  /**
-   * Copy all keys to clipboard
-   */
   const handleCopyAll = useCallback(async () => {
     try {
       const allCodes = generatedKeys.map(k => k.code).join('\n');
       await navigator.clipboard.writeText(allCodes);
-      success('All keys copied to clipboard');
+      success('All keys copied!');
     } catch (err) {
       error('Failed to copy');
     }
   }, [generatedKeys, success, error]);
 
-  /**
-   * Reset form
-   */
   const handleReset = useCallback(() => {
     setGeneratedKeys([]);
-    setCreditAmount('100');
-    setTierValue('bronze');
-    setQuantity('1');
-    setMaxUses('1');
-    setExpiresAt('');
     setNote('');
+    setExpiresAt('');
   }, []);
 
+  const selectedType = KEY_TYPES.find(t => t.value === type);
+
   return (
-    <Card variant="elevated">
-      <CardHeader className="pb-4">
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <Key className="h-5 w-5 text-primary" />
-          Generate Redeem Keys
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Type Selection */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label>Key Type</Label>
-            <Select value={type} onValueChange={setType}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="credits">
-                  <div className="flex items-center gap-2">
-                    <Coins className="h-4 w-4 text-amber-500" />
-                    Credits
-                  </div>
-                </SelectItem>
-                <SelectItem value="tier">
-                  <div className="flex items-center gap-2">
-                    <Crown className="h-4 w-4 text-yellow-500" />
-                    Tier Upgrade
-                  </div>
-                </SelectItem>
-              </SelectContent>
-            </Select>
+    <div className={cn(
+      "rounded-2xl overflow-hidden",
+      "bg-white dark:bg-[rgba(30,41,59,0.5)]",
+      "border border-[rgb(237,234,233)] dark:border-white/10",
+      "dark:backdrop-blur-sm shadow-sm dark:shadow-none"
+    )}>
+      {/* Header */}
+      <div className="px-6 py-5 border-b border-[rgb(237,234,233)] dark:border-white/10 bg-gradient-to-br from-[rgb(250,247,245)] to-transparent dark:from-white/[0.02] dark:to-transparent">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-xl bg-primary/10 dark:bg-primary/20 flex items-center justify-center">
+            <Key className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold text-[rgb(37,27,24)] dark:text-white">
+              Generate Keys
+            </h2>
+            <p className="text-xs text-muted-foreground">Create redeemable keys for credits or tier upgrades</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Content - Split Layout */}
+      <div className="grid md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-[rgb(237,234,233)] dark:divide-white/10">
+        {/* Left: Form */}
+        <div className="p-6 space-y-6">
+          {/* Type Selection */}
+          <div className="space-y-3">
+            <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Key Type</Label>
+            <div className="grid grid-cols-2 gap-3">
+              {KEY_TYPES.map((keyType) => {
+                const Icon = keyType.icon;
+                const isSelected = type === keyType.value;
+                return (
+                  <button
+                    key={keyType.value}
+                    onClick={() => setType(keyType.value)}
+                    className={cn(
+                      "relative p-4 rounded-xl text-left transition-all duration-200",
+                      "border-2",
+                      isSelected 
+                        ? keyType.color === 'amber'
+                          ? "border-amber-500 bg-amber-500/10"
+                          : "border-purple-500 bg-purple-500/10"
+                        : "border-[rgb(237,234,233)] dark:border-white/10 hover:border-primary/30"
+                    )}
+                  >
+                    <div className={cn(
+                      "h-10 w-10 rounded-lg flex items-center justify-center mb-3",
+                      keyType.color === 'amber' 
+                        ? "bg-amber-500/20" 
+                        : "bg-purple-500/20"
+                    )}>
+                      <Icon className={cn(
+                        "h-5 w-5",
+                        keyType.color === 'amber' 
+                          ? "text-amber-600 dark:text-amber-400" 
+                          : "text-purple-600 dark:text-purple-400"
+                      )} />
+                    </div>
+                    <p className="font-semibold text-[rgb(37,27,24)] dark:text-white text-sm">{keyType.label}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{keyType.description}</p>
+                    {isSelected && (
+                      <motion.div
+                        layoutId="selected-type"
+                        className={cn(
+                          "absolute top-2 right-2 h-5 w-5 rounded-full flex items-center justify-center",
+                          keyType.color === 'amber' ? "bg-amber-500" : "bg-purple-500"
+                        )}
+                        transition={spring.soft}
+                      >
+                        <Check className="h-3 w-3 text-white" />
+                      </motion.div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {/* Value Input */}
-          <div className="space-y-2">
-            <Label>{type === 'credits' ? 'Credit Amount' : 'Tier'}</Label>
+          <div className="space-y-3">
+            <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              {type === 'credits' ? 'Credit Amount' : 'Target Tier'}
+            </Label>
+            
             {type === 'credits' ? (
-              <Input
-                type="number"
-                min="1"
-                value={creditAmount}
-                onChange={(e) => setCreditAmount(e.target.value)}
-                placeholder="100"
-              />
+              <div className="space-y-3">
+                <div className="flex flex-wrap gap-2">
+                  {CREDIT_PRESETS.map(preset => (
+                    <button
+                      key={preset}
+                      onClick={() => setCreditAmount(String(preset))}
+                      className={cn(
+                        "px-3 py-1.5 rounded-lg text-sm font-medium transition-colors",
+                        creditAmount === String(preset)
+                          ? "bg-amber-500 text-white"
+                          : "bg-[rgb(250,247,245)] dark:bg-white/5 hover:bg-amber-500/10 text-muted-foreground"
+                      )}
+                    >
+                      {preset}
+                    </button>
+                  ))}
+                </div>
+                <Input
+                  type="number"
+                  value={creditAmount}
+                  onChange={(e) => setCreditAmount(e.target.value)}
+                  placeholder="Custom amount"
+                  min="1"
+                  className="rounded-xl"
+                />
+              </div>
             ) : (
               <Select value={tierValue} onValueChange={setTierValue}>
-                <SelectTrigger>
+                <SelectTrigger className="rounded-xl">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   {TIER_OPTIONS.map(tier => (
                     <SelectItem key={tier.value} value={tier.value}>
-                      {tier.label}
+                      <span className="capitalize">{tier.label}</span>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             )}
           </div>
-        </div>
 
-        {/* Quantity and Max Uses */}
-        <div className="grid grid-cols-2 gap-4">
+          {/* Quantity & Max Uses */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label className="text-xs font-medium flex items-center gap-1.5">
+                <Hash className="h-3.5 w-3.5 text-muted-foreground" />
+                Quantity
+              </Label>
+              <Input
+                type="number"
+                value={quantity}
+                onChange={(e) => setQuantity(e.target.value)}
+                min="1"
+                max="100"
+                className="rounded-xl"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-medium flex items-center gap-1.5">
+                <Users className="h-3.5 w-3.5 text-muted-foreground" />
+                Max Uses
+              </Label>
+              <Input
+                type="number"
+                value={maxUses}
+                onChange={(e) => setMaxUses(e.target.value)}
+                min="1"
+                className="rounded-xl"
+              />
+            </div>
+          </div>
+
+          {/* Expiration Date */}
           <div className="space-y-2">
-            <Label className="flex items-center gap-2">
-              <Hash className="h-3.5 w-3.5" />
-              Quantity (1-100)
+            <Label className="text-xs font-medium flex items-center gap-1.5">
+              <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+              Expiration Date (Optional)
             </Label>
             <Input
-              type="number"
-              min="1"
-              max="100"
-              value={quantity}
-              onChange={(e) => setQuantity(e.target.value)}
-              placeholder="1"
+              type="date"
+              value={expiresAt}
+              onChange={(e) => setExpiresAt(e.target.value)}
+              min={new Date().toISOString().split('T')[0]}
+              className="rounded-xl"
             />
           </div>
 
+          {/* Note */}
           <div className="space-y-2">
-            <Label>Max Uses per Key</Label>
-            <Input
-              type="number"
-              min="1"
-              value={maxUses}
-              onChange={(e) => setMaxUses(e.target.value)}
-              placeholder="1"
+            <Label className="text-xs font-medium">Note (Optional)</Label>
+            <Textarea
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="Internal note for this batch..."
+              maxLength={200}
+              rows={2}
+              className="rounded-xl resize-none"
             />
           </div>
-        </div>
 
-        {/* Expiration Date */}
-        <div className="space-y-2">
-          <Label className="flex items-center gap-2">
-            <Calendar className="h-3.5 w-3.5" />
-            Expiration Date (Optional)
-          </Label>
-          <Input
-            type="datetime-local"
-            value={expiresAt}
-            onChange={(e) => setExpiresAt(e.target.value)}
-          />
-        </div>
-
-        {/* Note */}
-        <div className="space-y-2">
-          <Label>Note (Optional)</Label>
-          <Input
-            type="text"
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            placeholder="e.g., Giveaway batch #1"
-            maxLength={100}
-          />
-        </div>
-
-        {/* Generate Button */}
-        <div className="flex gap-2">
+          {/* Generate Button */}
           <Button 
             onClick={handleGenerate} 
             disabled={isLoading}
-            className="flex-1"
+            className="w-full h-12 rounded-xl text-base font-semibold"
           >
             {isLoading ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                <Loader2 className="h-5 w-5 mr-2 animate-spin" />
                 Generating...
               </>
             ) : (
               <>
-                <Key className="h-4 w-4 mr-2" />
+                <Sparkles className="h-5 w-5 mr-2" />
                 Generate Keys
               </>
             )}
           </Button>
-          {generatedKeys.length > 0 && (
-            <Button variant="outline" onClick={handleReset}>
-              <RefreshCw className="h-4 w-4" />
-            </Button>
-          )}
         </div>
 
-        {/* Generated Keys Display */}
-        <AnimatePresence>
-          {generatedKeys.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={spring.soft}
-              className="space-y-3"
-            >
-              <div className="flex items-center justify-between">
-                <Label className="text-sm text-muted-foreground">
-                  Generated {generatedKeys.length} key{generatedKeys.length > 1 ? 's' : ''}
-                </Label>
-                <Button variant="ghost" size="sm" onClick={handleCopyAll}>
-                  <Copy className="h-3.5 w-3.5 mr-1" />
+        {/* Right: Generated Keys Preview */}
+        <div className="p-6 bg-[rgb(250,247,245)] dark:bg-white/[0.02]">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <ClipboardList className="h-4 w-4 text-muted-foreground" />
+              <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Generated Keys
+              </Label>
+            </div>
+            {generatedKeys.length > 0 && (
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCopyAll}
+                  className="h-8 rounded-lg text-xs"
+                >
+                  <Copy className="h-3 w-3 mr-1.5" />
                   Copy All
                 </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleReset}
+                  className="h-8 rounded-lg text-xs"
+                >
+                  Clear
+                </Button>
               </div>
-              
-              <div className="max-h-48 overflow-y-auto space-y-2 rounded-lg border border-border p-2 bg-muted/30">
+            )}
+          </div>
+
+          <AnimatePresence mode="popLayout">
+            {generatedKeys.length === 0 ? (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="flex flex-col items-center justify-center py-12 text-center"
+              >
+                <div className="h-16 w-16 rounded-2xl bg-white dark:bg-white/5 border border-[rgb(237,234,233)] dark:border-white/10 flex items-center justify-center mb-4">
+                  <Key className="h-7 w-7 text-muted-foreground/30" />
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  No keys generated yet
+                </p>
+                <p className="text-xs text-muted-foreground/70 mt-1">
+                  Configure and click Generate
+                </p>
+              </motion.div>
+            ) : (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="space-y-2 max-h-[400px] overflow-y-auto pr-1"
+              >
                 {generatedKeys.map((key, index) => (
                   <motion.div
                     key={key.id || index}
@@ -333,39 +413,65 @@ export function KeyGenerator({ onKeysGenerated }) {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.05 }}
                     className={cn(
-                      "flex items-center justify-between p-2 rounded-md",
-                      "bg-background border border-border/50",
+                      "flex items-center justify-between p-3 rounded-xl",
+                      "bg-white dark:bg-white/5",
+                      "border border-[rgb(237,234,233)] dark:border-white/10",
                       "hover:border-primary/30 transition-colors"
                     )}
                   >
-                    <code className="text-sm font-mono tracking-wider">
-                      {key.code}
-                    </code>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="secondary" className="text-xs">
-                        {key.type === 'credits' ? `${key.value} credits` : key.value}
-                      </Badge>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7"
-                        onClick={() => handleCopyKey(key.code, index)}
-                      >
-                        {copiedIndex === index ? (
-                          <Check className="h-3.5 w-3.5 text-emerald-500" />
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={cn(
+                        "h-8 w-8 rounded-lg flex items-center justify-center shrink-0",
+                        type === 'credits' ? "bg-amber-500/10" : "bg-purple-500/10"
+                      )}>
+                        {type === 'credits' ? (
+                          <Coins className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                         ) : (
-                          <Copy className="h-3.5 w-3.5" />
+                          <Crown className="h-4 w-4 text-purple-600 dark:text-purple-400" />
                         )}
-                      </Button>
+                      </div>
+                      <div className="min-w-0">
+                        <code className="text-sm font-mono tracking-wider text-[rgb(37,27,24)] dark:text-white block truncate">
+                          {key.code}
+                        </code>
+                        <Badge variant="secondary" className="text-[10px] h-4 mt-1">
+                          {type === 'credits' ? `${creditAmount} credits` : tierValue}
+                        </Badge>
+                      </div>
                     </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 shrink-0 rounded-lg"
+                      onClick={() => handleCopyKey(key.code, index)}
+                    >
+                      {copiedIndex === index ? (
+                        <Check className="h-4 w-4 text-emerald-500" />
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )}
+                    </Button>
                   </motion.div>
                 ))}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </CardContent>
-    </Card>
+
+                {/* Summary */}
+                <div className={cn(
+                  "mt-4 p-3 rounded-xl",
+                  "bg-emerald-500/10 border border-emerald-500/20"
+                )}>
+                  <div className="flex items-center gap-2">
+                    <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                    <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                      {generatedKeys.length} key{generatedKeys.length !== 1 ? 's' : ''} generated
+                    </span>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
+    </div>
   );
 }
 

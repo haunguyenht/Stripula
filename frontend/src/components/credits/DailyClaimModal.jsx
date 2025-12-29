@@ -15,43 +15,46 @@ import { useAuth } from '@/contexts/AuthContext';
 
 const API_BASE = '/api';
 
-const TIER_CLAIM_AMOUNTS = {
-  free: 10,
-  bronze: 15,
-  silver: 20,
-  gold: 30,
-  diamond: 50
-};
-
 const TIER_COLORS = {
-  free: 'from-gray-400 to-gray-500',
-  bronze: 'from-amber-600 to-amber-700',
-  silver: 'from-slate-400 to-slate-500',
-  gold: 'from-yellow-400 to-yellow-600',
-  diamond: 'from-cyan-400 to-blue-500'
-};
-
-const TIER_BG = {
-  free: 'bg-gray-500/10',
-  bronze: 'bg-amber-500/10',
-  silver: 'bg-slate-400/10',
-  gold: 'bg-yellow-500/10',
-  diamond: 'bg-cyan-400/10'
-};
-
-const TIER_GLOW = {
-  free: 'shadow-gray-500/20',
-  bronze: 'shadow-amber-500/30',
-  silver: 'shadow-slate-400/30',
-  gold: 'shadow-yellow-500/40',
-  diamond: 'shadow-cyan-400/50'
+  free: {
+    gradient: 'from-neutral-400 to-neutral-500',
+    bg: 'bg-neutral-500/10 dark:bg-neutral-400/15',
+    glow: 'shadow-neutral-500/20',
+    text: 'text-neutral-600 dark:text-neutral-300',
+  },
+  bronze: {
+    gradient: 'from-amber-600 to-amber-700',
+    bg: 'bg-amber-500/10 dark:bg-amber-500/15',
+    glow: 'shadow-amber-500/30',
+    text: 'text-amber-700 dark:text-amber-300',
+  },
+  silver: {
+    gradient: 'from-slate-400 to-slate-500',
+    bg: 'bg-slate-400/10 dark:bg-slate-400/15',
+    glow: 'shadow-slate-400/30',
+    text: 'text-slate-600 dark:text-slate-300',
+  },
+  gold: {
+    gradient: 'from-yellow-400 to-yellow-600',
+    bg: 'bg-yellow-500/10 dark:bg-yellow-500/15',
+    glow: 'shadow-yellow-500/40',
+    text: 'text-yellow-700 dark:text-yellow-300',
+  },
+  diamond: {
+    gradient: 'from-cyan-400 to-blue-500',
+    bg: 'bg-cyan-400/10 dark:bg-cyan-400/15',
+    glow: 'shadow-cyan-400/50',
+    text: 'text-cyan-700 dark:text-cyan-300',
+  }
 };
 
 /**
- * DailyClaimModal - Popup modal for daily credit claim
+ * DailyClaimModal - Redesigned for OrangeAI/OPUX Design System
  * 
- * Shows automatically when daily claim is available (if autoShow is true).
- * Features animated gift icon, tier-based styling, and celebration effects.
+ * Modern daily credit claim modal with:
+ * - Tier-based gradient styling
+ * - Animated gift icon and particles
+ * - Glass morphism effects in dark mode
  */
 export function DailyClaimModal({ 
   open, 
@@ -68,7 +71,9 @@ export function DailyClaimModal({
   const [dismissed, setDismissed] = useState(false);
 
   const tier = user?.tier || 'free';
-  const claimAmount = claimStatus?.claimAmount || TIER_CLAIM_AMOUNTS[tier] || 10;
+  const tierConfig = TIER_COLORS[tier] || TIER_COLORS.free;
+  // Use claim amount from API only - no hardcoded fallback
+  const claimAmount = claimStatus?.claimAmount || 0;
 
   const isOpen = open !== undefined ? open : internalOpen;
   const setIsOpen = onOpenChange || setInternalOpen;
@@ -89,7 +94,6 @@ export function DailyClaimModal({
         if (data.status === 'OK') {
           setClaimStatus(data);
           
-          // Auto-show modal if claim is available and autoShow is enabled
           if (autoShow && data.canClaim && !dismissed && open === undefined) {
             setInternalOpen(true);
           }
@@ -127,7 +131,6 @@ export function DailyClaimModal({
         if (refreshUser) await refreshUser();
         if (onClaim) onClaim(data.amount);
 
-        // Close modal after showing success
         setTimeout(() => {
           setIsOpen(false);
           setClaimSuccess(false);
@@ -149,7 +152,6 @@ export function DailyClaimModal({
     fetchClaimStatus();
   }, [fetchClaimStatus]);
 
-  // Reset dismissed state on new session (every 6 hours)
   useEffect(() => {
     const lastDismiss = localStorage.getItem('dailyClaimDismissed');
     if (lastDismiss) {
@@ -164,7 +166,6 @@ export function DailyClaimModal({
     }
   }, []);
 
-  // Persist dismiss state
   useEffect(() => {
     if (dismissed) {
       localStorage.setItem('dailyClaimDismissed', Date.now().toString());
@@ -179,35 +180,66 @@ export function DailyClaimModal({
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent 
         className={cn(
-          "sm:max-w-md overflow-hidden",
-          canClaim && `shadow-lg ${TIER_GLOW[tier]}`
+          "sm:max-w-[380px] overflow-hidden",
+          canClaim && `shadow-lg ${tierConfig.glow}`
         )} 
         hideCloseButton
       >
-        {/* Light mode: subtle gradient overlay */}
+        {/* Gradient overlay for tier theming */}
         {canClaim && (
           <div className={cn(
-            "absolute inset-0 opacity-[0.03] pointer-events-none",
-            `bg-gradient-to-br ${TIER_COLORS[tier]}`
+            "absolute inset-0 opacity-[0.04] dark:opacity-[0.08] pointer-events-none",
+            `bg-gradient-to-br ${tierConfig.gradient}`
           )} />
         )}
         
+        {/* Animated particles */}
+        <AnimatePresence>
+          {(canClaim || claimSuccess) && (
+            <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-2xl">
+              {[...Array(8)].map((_, i) => (
+                <motion.div
+                  key={i}
+                  className={cn("absolute rounded-full", tierConfig.bg)}
+                  style={{
+                    width: 6 + Math.random() * 10,
+                    height: 6 + Math.random() * 10,
+                    left: `${10 + Math.random() * 80}%`,
+                    top: `${10 + Math.random() * 80}%`,
+                  }}
+                  initial={{ opacity: 0, scale: 0 }}
+                  animate={{ 
+                    opacity: [0.4, 0.7, 0.4],
+                    scale: [0.8, 1.2, 0.8],
+                    y: [0, -15, 0]
+                  }}
+                  transition={{ 
+                    repeat: Infinity, 
+                    duration: 2 + Math.random() * 2,
+                    delay: Math.random() * 0.5 
+                  }}
+                  exit={{ opacity: 0, scale: 0 }}
+                />
+              ))}
+            </div>
+          )}
+        </AnimatePresence>
+
         <DialogHeader className="text-center sm:text-center relative z-10">
-          <DialogTitle className="flex items-center justify-center gap-2">
+          {/* Gift Icon */}
+          <DialogTitle className="flex items-center justify-center">
             <motion.div
               className={cn(
-                "p-3 rounded-2xl shadow-lg",
-                `bg-gradient-to-br ${TIER_COLORS[tier]}`,
-                // Light mode shadow
-                "shadow-black/10",
-                // Dark mode glow
-                `dark:shadow-lg dark:${TIER_GLOW[tier]}`
+                "p-4 rounded-2xl",
+                `bg-gradient-to-br ${tierConfig.gradient}`,
+                "shadow-lg",
+                tierConfig.glow
               )}
               animate={canClaim && !claimSuccess ? { 
-                scale: [1, 1.1, 1],
-                rotate: [0, -5, 5, 0]
+                scale: [1, 1.08, 1],
+                rotate: [0, -4, 4, 0]
               } : {}}
-              transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+              transition={{ repeat: Infinity, duration: 2.5, ease: "easeInOut" }}
             >
               {claimSuccess ? (
                 <motion.div
@@ -222,22 +254,26 @@ export function DailyClaimModal({
               )}
             </motion.div>
           </DialogTitle>
+          
           <DialogDescription asChild>
-            <div className="space-y-2 pt-2">
-              <p className={cn(
-                "text-lg font-semibold",
-                // Light mode
-                "text-neutral-900",
-                // Dark mode
-                "dark:text-white"
-              )}>
+            <div className="space-y-3 pt-4">
+              <p className="text-lg font-semibold text-neutral-900 dark:text-white">
                 {claimSuccess ? 'Credits Added!' : 'Daily Bonus Available!'}
               </p>
               <div className="flex items-center justify-center gap-2">
-                <Badge variant="outline" className="capitalize">
+                <Badge 
+                  variant="outline" 
+                  className={cn(
+                    "capitalize font-medium",
+                    "border-neutral-200 dark:border-white/15"
+                  )}
+                >
                   {tier} Tier
                 </Badge>
-                <Badge className={cn("bg-gradient-to-r text-white border-0", TIER_COLORS[tier])}>
+                <Badge className={cn(
+                  "text-white border-0 font-semibold",
+                  `bg-gradient-to-r ${tierConfig.gradient}`
+                )}>
                   <Coins className="h-3 w-3 mr-1" />
                   +{claimAmount}
                 </Badge>
@@ -246,74 +282,35 @@ export function DailyClaimModal({
           </DialogDescription>
         </DialogHeader>
 
-        {/* Animated coins/sparkles background */}
-        <AnimatePresence>
-          {(canClaim || claimSuccess) && (
-            <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-2xl">
-              {[...Array(8)].map((_, i) => (
-                <motion.div
-                  key={i}
-                  className={cn("absolute", TIER_BG[tier])}
-                  style={{
-                    width: 8 + Math.random() * 12,
-                    height: 8 + Math.random() * 12,
-                    borderRadius: '50%',
-                    left: `${10 + Math.random() * 80}%`,
-                    top: `${10 + Math.random() * 80}%`,
-                  }}
-                  initial={{ opacity: 0, scale: 0 }}
-                  animate={{ 
-                    opacity: [0.3, 0.6, 0.3],
-                    scale: [0.8, 1.2, 0.8],
-                    y: [0, -20, 0]
-                  }}
-                  transition={{ 
-                    repeat: Infinity, 
-                    duration: 2 + Math.random() * 2,
-                    delay: Math.random() * 0.5 
-                  }}
-                  exit={{ opacity: 0, scale: 0 }}
-                />
-              ))}
-            </div>
-          )}
-        </AnimatePresence>
-
         {/* Content */}
-        <div className="relative z-10 space-y-4 py-4">
+        <div className="relative z-10 py-2">
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              <Loader2 className="h-8 w-8 animate-spin text-neutral-400 dark:text-white/40" />
             </div>
           ) : claimSuccess ? (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="text-center py-4"
+              className="text-center py-6"
             >
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: [0, 1.2, 1] }}
                 transition={{ duration: 0.5 }}
-                className={cn(
-                  "inline-flex items-center gap-2 text-3xl font-bold",
-                  "text-emerald-600 dark:text-emerald-400"
-                )}
+                className="inline-flex items-center gap-2 text-3xl font-bold text-emerald-600 dark:text-emerald-400"
               >
-                <Sparkles className="h-8 w-8" />
+                <Sparkles className="h-7 w-7" />
                 +{claimAmount}
-                <Sparkles className="h-8 w-8" />
+                <Sparkles className="h-7 w-7" />
               </motion.div>
-              <p className="text-sm text-muted-foreground mt-2">
+              <p className="text-[13px] text-neutral-500 dark:text-white/50 mt-2">
                 Credits added to your balance!
               </p>
             </motion.div>
           ) : canClaim ? (
             <div className="space-y-4">
-              <p className={cn(
-                "text-center text-sm",
-                "text-neutral-500 dark:text-white/60"
-              )}>
+              <p className="text-center text-[14px] text-neutral-500 dark:text-white/60">
                 Claim your free daily credits now!
               </p>
               
@@ -321,11 +318,11 @@ export function DailyClaimModal({
                 onClick={handleClaim}
                 disabled={isClaiming}
                 className={cn(
-                  "w-full h-14 text-lg font-semibold relative overflow-hidden border-0",
+                  "w-full h-12 text-base font-semibold text-white border-0",
                   "bg-gradient-to-r hover:opacity-90 transition-opacity",
-                  // Add shadow for depth
                   "shadow-lg",
-                  TIER_COLORS[tier]
+                  tierConfig.gradient,
+                  tierConfig.glow
                 )}
               >
                 {isClaiming ? (
@@ -345,26 +342,24 @@ export function DailyClaimModal({
                 variant="ghost"
                 size="sm"
                 onClick={handleDismiss}
-                className={cn(
-                  "w-full",
-                  "text-neutral-400 hover:text-neutral-600",
-                  "dark:text-white/40 dark:hover:text-white/80"
-                )}
+                className="w-full text-neutral-400 hover:text-neutral-600 dark:text-white/40 dark:hover:text-white/70"
               >
                 Remind me later
               </Button>
             </div>
           ) : (
-            <div className="text-center py-4">
-              <Clock className={cn(
-                "h-8 w-8 mx-auto mb-2",
-                "text-neutral-400 dark:text-white/40"
-              )} />
-              <p className={cn(
-                "text-sm",
-                "text-neutral-500 dark:text-white/55"
+            <div className="text-center py-6">
+              <div className={cn(
+                "inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-3",
+                "bg-neutral-100 dark:bg-white/[0.06]"
               )}>
-                Already claimed today. Come back tomorrow!
+                <Clock className="h-7 w-7 text-neutral-400 dark:text-white/40" />
+              </div>
+              <p className="text-[14px] text-neutral-500 dark:text-white/55">
+                Already claimed today
+              </p>
+              <p className="text-[12px] text-neutral-400 dark:text-white/40 mt-1">
+                Come back tomorrow!
               </p>
             </div>
           )}
