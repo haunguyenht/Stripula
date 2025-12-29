@@ -16,8 +16,12 @@ import {
   ResultCard, 
   ResultCardContent, 
   ResultCardActions, 
-  ResultCardLoadingOverlay 
+  ResultCardLoadingOverlay,
+  ResultCardHeader,
+  ResultCardDataZone,
+  ResultCardPill,
 } from '@/components/ui/result-card';
+import { DurationDisplay, CopyButton } from '@/components/ui/result-card-parts';
 import { cn } from '@/lib/utils';
 
 /**
@@ -493,6 +497,11 @@ const KeyResultCard = React.memo(function KeyResultCard({ result, isSelected, is
     }
   }, [result.pkKey]);
 
+  const handleCopySk = useCallback((e) => {
+    e.stopPropagation();
+    onCopy();
+  }, [onCopy]);
+
   const isLive = result.status?.startsWith('LIVE');
   const isDead = result.status === 'DEAD';
   const skKey = result.fullKey || result.key;
@@ -507,6 +516,7 @@ const KeyResultCard = React.memo(function KeyResultCard({ result, isSelected, is
     const accountName = result.accountName && result.accountName !== 'N/A' ? result.accountName : 'Unknown';
     success(`Key selected • ${accountName}`);
   }, [isDead, onSelect, warning, success, result.accountName]);
+
   const availableBalance = ((result.availableBalance || 0) / 100).toFixed(2);
   const pendingBalance = ((result.pendingBalance || 0) / 100).toFixed(2);
   const symbol = result.currencySymbol || '$';
@@ -514,13 +524,13 @@ const KeyResultCard = React.memo(function KeyResultCard({ result, isSelected, is
   // Truncate key to show prefix...last4
   const truncateKey = useCallback((key) => {
     if (!key || key.length < 20) return key;
-    const prefix = key.substring(0, 12); // e.g., "sk_live_51QF"
+    const prefix = key.substring(0, 12);
     const suffix = key.slice(-4);
     return `${prefix}...${suffix}`;
   }, []);
   
   // Map status for ResultCard
-  const cardStatus = isLive ? 'LIVE' : result.status;
+  const cardStatus = isLive ? 'live' : 'dead';
   
   return (
     <ResultCard
@@ -529,140 +539,152 @@ const KeyResultCard = React.memo(function KeyResultCard({ result, isSelected, is
       isLoading={isRefreshing}
       onClick={handleClick}
       className={cn(
-        "group relative w-full max-w-full overflow-hidden",
+        "group relative w-full max-w-full",
         isDead && "cursor-not-allowed opacity-70"
       )}
     >
-      <ResultCardContent className="space-y-1.5 w-full overflow-hidden">
-        {/* Row 1: Status + Account name + Balance + Pending */}
-        <div className="flex items-center gap-2 w-full min-w-0 flex-wrap">
-          {/* Status dot */}
-          <div className={cn(
-            "w-2 h-2 rounded-full shrink-0",
-            isLive ? "bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)]" : "bg-red-500"
-          )} />
-          
-          {/* Account name */}
-          <span className="font-medium text-sm truncate min-w-0 max-w-[50%]">
-            {result.accountName && result.accountName !== 'N/A' 
-              ? result.accountName 
-              : 'Unknown'}
-          </span>
-
-          {/* Balance + Pending (right after name) */}
-          <span className="text-xs font-semibold text-emerald-500 shrink-0">
-            {symbol}{availableBalance}
-          </span>
-          {parseFloat(pendingBalance) > 0 && (
-            <span className="text-[10px] text-amber-500 shrink-0">
-              +{symbol}{pendingBalance}
+      <ResultCardContent>
+        {/* Zone 1: Header - Status + Account Identity + Balance */}
+        <ResultCardHeader>
+          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+            {/* Status indicator with glow */}
+            <div className={cn(
+              "w-2.5 h-2.5 rounded-full shrink-0 transition-shadow",
+              isLive 
+                ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]" 
+                : "bg-rose-500 shadow-[0_0_6px_rgba(244,63,94,0.4)]"
+            )} />
+            
+            {/* Account name */}
+            <span className="font-semibold text-sm text-neutral-800 dark:text-white/90 truncate min-w-0">
+              {result.accountName && result.accountName !== 'N/A' 
+                ? result.accountName 
+                : 'Unknown'}
             </span>
-          )}
-        </div>
+          </div>
 
-        {/* Row 2: Email + Country/Currency + Verified */}
-        <div className="flex items-center gap-2 text-xs text-muted-foreground w-full min-w-0 flex-wrap">
+          {/* Balance display */}
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+              {symbol}{availableBalance}
+            </span>
+            {parseFloat(pendingBalance) > 0 && (
+              <span className="text-[11px] font-medium text-amber-600 dark:text-amber-400">
+                +{symbol}{pendingBalance}
+              </span>
+            )}
+            <DurationDisplay duration={result.duration} showIcon={false} />
+          </div>
+        </ResultCardHeader>
+
+        {/* Zone 2: Account metadata */}
+        <div className="flex items-center gap-2 mt-2 text-[11px] text-neutral-500 dark:text-white/50 flex-wrap">
           {result.accountEmail && result.accountEmail !== 'N/A' && (
-            <span className="truncate min-w-0 max-w-[50%]">{result.accountEmail}</span>
+            <span className="truncate max-w-[180px]">{result.accountEmail}</span>
           )}
           {result.countryFlag && (
             <span className="shrink-0">{result.countryFlag} {result.currency}</span>
           )}
           {result.chargeableVerified && (
-            <span className="text-emerald-500 flex items-center gap-0.5 shrink-0">
-              <BadgeCheck className="h-3 w-3" />
+            <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-medium shrink-0">
+              <BadgeCheck className="h-3.5 w-3.5" />
               Verified
             </span>
           )}
         </div>
 
-        {/* Row 3: Capabilities + Duration */}
-        <div className="flex items-center gap-1 flex-wrap">
+        {/* Zone 3: Capabilities */}
+        <div className="flex items-center gap-1.5 mt-2.5 flex-wrap">
           {result.isChargeable && (
-            <Badge variant="outline" className="h-4 text-[9px] px-1 border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+            <ResultCardPill variant="success">
               Chargeable
-            </Badge>
+            </ResultCardPill>
           )}
           {result.chargesEnabled && (
-            <Badge variant="outline" className="h-4 text-[9px] px-1">Charges</Badge>
+            <ResultCardPill>Charges</ResultCardPill>
           )}
           {result.payoutsEnabled && (
-            <Badge variant="outline" className="h-4 text-[9px] px-1">Payouts</Badge>
+            <ResultCardPill>Payouts</ResultCardPill>
           )}
           {result.capabilities?.cardPayments && (
-            <Badge variant="outline" className="h-4 text-[9px] px-1">Cards</Badge>
-          )}
-          {result.duration && (
-            <span className="text-[9px] text-muted-foreground ml-auto">
-              {(result.duration / 1000).toFixed(1)}s
-            </span>
+            <ResultCardPill>Cards</ResultCardPill>
           )}
         </div>
 
-        {/* Row 4: Keys (truncated for cleaner display) */}
-        <div className="pt-2 border-t border-[rgb(230,225,223)]/50 dark:border-white/10 space-y-1 w-full overflow-hidden">
-          {/* SK */}
-          <div className="flex items-center gap-1.5 w-full">
-            <span className="text-[9px] text-muted-foreground shrink-0 w-4">SK</span>
+        {/* Zone 4: Keys section */}
+        <ResultCardDataZone className="mt-3 pt-3">
+          {/* SK Key */}
+          <div className="flex items-center gap-2 w-full">
+            <span className="text-[9px] font-semibold text-neutral-400 dark:text-white/40 shrink-0 w-5 uppercase">SK</span>
             <code 
-              className="text-[10px] font-mono text-foreground/80 dark:text-white/70 flex-1 min-w-0"
+              className="text-[10px] font-mono text-neutral-600 dark:text-white/70 flex-1 min-w-0 truncate"
               title={skKey}
             >
               {truncateKey(skKey)}
             </code>
-            <button
-              onClick={(e) => { e.stopPropagation(); onCopy(); }}
-              className="text-muted-foreground hover:text-foreground dark:hover:text-white p-0.5 shrink-0"
-              title="Copy full SK key"
-            >
-              {isCopied ? <Check className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3" />}
-            </button>
+            <CopyButton
+              value={skKey}
+              isCopied={isCopied}
+              onCopy={handleCopySk}
+              title="Copy SK key"
+              size="sm"
+            />
           </div>
           
-          {/* PK */}
+          {/* PK Key */}
           {result.pkKey && (
-            <div className="flex items-center gap-1.5 w-full">
-              <span className="text-[9px] text-muted-foreground shrink-0 w-4">PK</span>
+            <div className="flex items-center gap-2 w-full mt-1.5">
+              <span className="text-[9px] font-semibold text-neutral-400 dark:text-white/40 shrink-0 w-5 uppercase">PK</span>
               <code 
-                className="text-[10px] font-mono text-foreground/80 dark:text-white/70 flex-1 min-w-0"
+                className="text-[10px] font-mono text-neutral-600 dark:text-white/70 flex-1 min-w-0 truncate"
                 title={result.pkKey}
               >
                 {truncateKey(result.pkKey)}
               </code>
-              <button
-                onClick={handleCopyPk}
-                className="text-muted-foreground hover:text-foreground dark:hover:text-white p-0.5 shrink-0"
-                title="Copy full PK key"
-              >
-                {pkCopied ? <Check className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3" />}
-              </button>
+              <CopyButton
+                value={result.pkKey}
+                isCopied={pkCopied}
+                onCopy={handleCopyPk}
+                title="Copy PK key"
+                size="sm"
+              />
             </div>
           )}
-        </div>
+        </ResultCardDataZone>
       </ResultCardContent>
 
       {/* Action buttons (top right, visible on hover) */}
       <ResultCardActions>
         <button
           onClick={(e) => { e.stopPropagation(); onRefresh(); }}
-          className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
+          className={cn(
+            "p-1.5 rounded-lg transition-all",
+            "text-neutral-400 hover:text-neutral-600",
+            "dark:text-white/40 dark:hover:text-white/70",
+            "hover:bg-neutral-100 dark:hover:bg-white/10"
+          )}
           title="Refresh"
         >
-          <RefreshCw className={cn("h-3 w-3", isRefreshing && "animate-spin")} />
+          <RefreshCw className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin")} />
         </button>
         <button
           onClick={(e) => { e.stopPropagation(); onDelete(); }}
-          className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+          className={cn(
+            "p-1.5 rounded-lg transition-all",
+            "text-neutral-400 hover:text-rose-500",
+            "dark:text-white/40 dark:hover:text-rose-400",
+            "hover:bg-rose-50 dark:hover:bg-rose-500/10"
+          )}
           title="Delete"
         >
-          <Trash2 className="h-3 w-3" />
+          <Trash2 className="h-3.5 w-3.5" />
         </button>
       </ResultCardActions>
 
       {/* Refreshing overlay */}
       {isRefreshing && (
         <ResultCardLoadingOverlay>
-          <RefreshCw className="h-4 w-4 animate-spin" />
+          <RefreshCw className="h-5 w-5 animate-spin text-neutral-500 dark:text-white/60" />
         </ResultCardLoadingOverlay>
       )}
     </ResultCard>

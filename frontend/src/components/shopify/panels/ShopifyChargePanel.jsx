@@ -34,7 +34,22 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Celebration, useCelebration } from '@/components/ui/Celebration';
-import { ResultCard, ResultCardContent } from '@/components/ui/result-card';
+import { 
+  ResultCard, 
+  ResultCardContent,
+  ResultCardHeader,
+  ResultCardDataZone,
+  ResultCardResponseZone,
+  ResultCardMessage,
+  ResultCardPill,
+} from '@/components/ui/result-card';
+import { 
+  BINDataDisplay, 
+  DurationDisplay, 
+  CopyButton,
+  CardNumber,
+  GatewayBadge,
+} from '@/components/ui/result-card-parts';
 import { BrandIcon } from '@/components/ui/brand-icons';
 import { CreditInfo, CreditSummary, EffectiveRateBadge, BatchConfirmDialog, BATCH_CONFIRM_THRESHOLD } from '@/components/credits';
 import { cn } from '@/lib/utils';
@@ -918,9 +933,9 @@ const ShopifyResultItem = React.memo(function ShopifyResultItem({ result, index,
   const friendlyMessage = formatShopifyMessage(result);
   const binData = result.binData;
   const supportedBrands = result.supportedBrands || [];
+  const isCopied = copiedCard === result.id;
 
-  const handleCopy = useCallback((e) => {
-    e.stopPropagation();
+  const handleCopy = useCallback(() => {
     onCopy(result);
   }, [onCopy, result]);
 
@@ -930,89 +945,66 @@ const ShopifyResultItem = React.memo(function ShopifyResultItem({ result, index,
     return 'error';
   };
 
+  const getEffectiveStatus = () => {
+    if (isApproved) return 'approved';
+    if (isDeclined) return 'declined';
+    return 'error';
+  };
+
   return (
-    <ResultCard status={status} interactive>
-      <ResultCardContent className="py-2.5 px-3">
-        {/* Row 1: Status + Card Number + Copy */}
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 min-w-0 flex-1">
+    <ResultCard status={getEffectiveStatus()} interactive>
+      <ResultCardContent>
+        {/* Zone 1: Header - Status + Card Number + Actions */}
+        <ResultCardHeader>
+          <div className="flex items-center gap-3 min-w-0 flex-1">
             <Badge variant={getBadgeVariant()} className="text-[10px] font-semibold shrink-0">
               {status}
             </Badge>
-            <span className="font-mono text-xs text-muted-foreground truncate">{cardDisplay}</span>
+            <CardNumber card={cardDisplay} />
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6 shrink-0"
-            onClick={handleCopy}
-          >
-            {copiedCard === result.id ? (
-              <Check className="h-3 w-3 text-emerald-500" />
-            ) : (
-              <Copy className="h-3 w-3" />
-            )}
-          </Button>
-        </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <DurationDisplay duration={result.duration} />
+            <CopyButton 
+              value={cardDisplay}
+              isCopied={isCopied}
+              onCopy={handleCopy}
+              title="Copy card"
+            />
+          </div>
+        </ResultCardHeader>
 
-        {/* Row 2: BIN Data badges - only show for approved cards */}
+        {/* Zone 2: Rich Data - BIN info (only for approved) */}
         {isApproved && binData && (
-          <div className="flex flex-wrap items-center gap-1.5 mt-2">
-            {binData.scheme && (
-              <span title={toTitleCase(binData.scheme)}>
-                <BrandIcon scheme={binData.scheme} />
-              </span>
-            )}
-            {binData.type && (
-              <Badge variant="outline" className="text-[9px] h-5">
-                {toTitleCase(binData.type)}
-              </Badge>
-            )}
-            {binData.category && (
-              <Badge variant="outline" className="text-[9px] h-5">
-                {toTitleCase(binData.category)}
-              </Badge>
-            )}
-            {(binData.countryEmoji || binData.countryCode) && (
-              <span className="text-sm" title={binData.country || binData.countryCode}>
-                {binData.countryEmoji || binData.countryCode}
-              </span>
-            )}
-            {binData.bank && binData.bank.toLowerCase() !== 'unknown' && (
-              <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-                <Building2 className="h-3 w-3" />
-                {toTitleCase(binData.bank)}
-              </span>
-            )}
-          </div>
+          <ResultCardDataZone>
+            <BINDataDisplay binData={binData} />
+          </ResultCardDataZone>
         )}
 
-        {/* Row 3: Supported brands for approved */}
+        {/* Supported brands for approved */}
         {isApproved && supportedBrands.length > 0 && (
-          <div className="flex flex-wrap items-center gap-1 mt-2">
-            <CreditCard className="h-3 w-3 text-muted-foreground" />
+          <div className="flex flex-wrap items-center gap-1.5 mt-2.5">
+            <CreditCard className="h-3 w-3 text-neutral-400 dark:text-white/40" />
             {supportedBrands.map((brand, i) => (
-              <Badge key={i} variant="outline" className="text-[9px] h-5">
+              <ResultCardPill key={i}>
                 {brand}
-              </Badge>
+              </ResultCardPill>
             ))}
           </div>
         )}
 
-        {/* Row 4: Message + Domain */}
-        <p className={cn(
-          "text-[10px] mt-1.5 truncate",
-          isApproved ? "text-emerald-600 dark:text-emerald-400" :
-            isDeclined ? "text-rose-500 dark:text-rose-400" : "text-amber-500 dark:text-amber-400"
-        )}>
-          {friendlyMessage}
-          {result.domain && (
-            <span className="text-muted-foreground"> • {result.domain}</span>
+        {/* Zone 3: Response - Message + Domain/Price */}
+        <ResultCardResponseZone>
+          <ResultCardMessage status={status} className="truncate flex-1">
+            {friendlyMessage}
+          </ResultCardMessage>
+          {(result.domain || result.price) && (
+            <span className="text-[10px] font-medium text-neutral-400 dark:text-white/40 shrink-0">
+              {result.domain && result.domain}
+              {result.domain && result.price && ' • '}
+              {result.price && result.price}
+            </span>
           )}
-          {result.price && (
-            <span className="text-muted-foreground"> • {result.price}</span>
-          )}
-        </p>
+        </ResultCardResponseZone>
       </ResultCardContent>
     </ResultCard>
   );

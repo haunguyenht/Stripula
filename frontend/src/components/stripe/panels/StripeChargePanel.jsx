@@ -34,7 +34,23 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Celebration, useCelebration } from '@/components/ui/Celebration';
-import { ResultCard, ResultCardContent } from '@/components/ui/result-card';
+import { 
+  ResultCard, 
+  ResultCardContent,
+  ResultCardHeader,
+  ResultCardDataZone,
+  ResultCardResponseZone,
+  ResultCardSecurityZone,
+  ResultCardMessage,
+  ResultCardPill,
+} from '@/components/ui/result-card';
+import { 
+  BINDataDisplay, 
+  SecurityIndicators,
+  DurationDisplay, 
+  CopyButton,
+  CardNumber,
+} from '@/components/ui/result-card-parts';
 import { BrandIcon } from '@/components/ui/brand-icons';
 import { CreditInfo, CreditSummary, EffectiveRateBadge, BatchConfirmDialog, BATCH_CONFIRM_THRESHOLD } from '@/components/credits';
 import { cn } from '@/lib/utils';
@@ -1025,14 +1041,15 @@ const ChargeResultItem = React.memo(function ChargeResultItem({ result, index, c
   const gateway = result.gateway;
   const duration = result.duration;
 
-  const handleCopy = useCallback((e) => {
-    e.stopPropagation();
+  const handleCopy = useCallback(() => {
     onCopy(result);
   }, [onCopy, result]);
 
+  const isCopied = copiedCard === result.id;
+
   const getBadgeVariant = () => {
-    if (isApproved) return 'approved'; // Green for charged
-    if (is3DS || isLiveDecline) return 'coral'; // Orange for live but not charged
+    if (isApproved) return 'approved';
+    if (is3DS || isLiveDecline) return 'coral';
     if (isDeclined) return 'declined';
     return 'error';
   };
@@ -1045,7 +1062,6 @@ const ChargeResultItem = React.memo(function ChargeResultItem({ result, index, c
     return 'ERROR';
   };
 
-  // Get effective status for card styling
   const getEffectiveStatus = () => {
     if (isApproved) return 'approved';
     if (is3DS) return '3ds';
@@ -1054,144 +1070,72 @@ const ChargeResultItem = React.memo(function ChargeResultItem({ result, index, c
     return 'error';
   };
 
+  // Check if we have security data to show
+  const hasSecurityData = isApproved && (
+    (avsCheck && avsCheck !== 'unknown') || 
+    (cvcCheck && cvcCheck !== 'unknown') || 
+    (riskLevel && riskLevel !== 'unknown')
+  );
+
   return (
     <ResultCard status={getEffectiveStatus()} interactive>
-      <ResultCardContent className="py-3 px-3.5">
-        {/* Row 1: Status + Card Number + Copy */}
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2.5 min-w-0 flex-1">
-            <Badge variant={getBadgeVariant()} className="text-[10px] font-medium shrink-0">
+      <ResultCardContent>
+        {/* Zone 1: Header - Status + Card Number + Actions */}
+        <ResultCardHeader>
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <Badge variant={getBadgeVariant()} className="text-[10px] font-semibold shrink-0">
               {getBadgeLabel()}
             </Badge>
-            <span className="font-mono text-[11px] text-neutral-500 dark:text-white/60 truncate tracking-tight">
-              {cardDisplay}
-            </span>
+            <CardNumber card={cardDisplay} />
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6 shrink-0 text-neutral-400 hover:text-neutral-600 dark:text-white/40 dark:hover:text-white/70"
-            onClick={handleCopy}
-          >
-            {copiedCard === result.id ? (
-              <Check className="h-3 w-3 text-emerald-500" />
-            ) : (
-              <Copy className="h-3 w-3" />
-            )}
-          </Button>
-        </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <DurationDisplay duration={duration} />
+            <CopyButton 
+              value={cardDisplay}
+              isCopied={isCopied}
+              onCopy={handleCopy}
+              title="Copy card"
+            />
+          </div>
+        </ResultCardHeader>
 
-        {/* Row 2: BIN Data badges - show for LIVE cards (approved or 3DS) */}
-        {isLive && binData && (
-          <div className="flex flex-wrap items-center gap-1.5 mt-2.5">
-            {binData.scheme && (
-              <span title={toTitleCase(binData.scheme)}>
-                <BrandIcon scheme={binData.scheme} />
-              </span>
-            )}
-            {binData.type && (
-              <span className="text-[10px] font-normal text-neutral-500 dark:text-white/50 px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-white/5">
-                {toTitleCase(binData.type)}
-              </span>
-            )}
-            {binData.category && (
-              <span className="text-[10px] font-normal text-neutral-500 dark:text-white/50 px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-white/5">
-                {toTitleCase(binData.category)}
-              </span>
-            )}
-            {(binData.countryEmoji || binData.countryCode) && (
-              <span className="text-sm" title={binData.country || binData.countryCode}>
-                {binData.countryEmoji || binData.countryCode}
-              </span>
-            )}
-            {binData.bank && binData.bank.toLowerCase() !== 'unknown' && (
-              <span className="text-[10px] font-normal text-neutral-400 dark:text-white/40 flex items-center gap-1">
-                <Building2 className="h-2.5 w-2.5" />
-                {toTitleCase(binData.bank)}
-              </span>
-            )}
-          </div>
+        {/* Zone 2: Rich Data - BIN info (only for LIVE cards) */}
+        {isLive && (binData || result.brand || result.country) && (
+          <ResultCardDataZone>
+            <BINDataDisplay 
+              binData={binData}
+              brand={result.brand}
+              country={result.country}
+            />
+          </ResultCardDataZone>
         )}
 
-        {/* Row 3: Brand/Country from token (if no binData) - for LIVE cards */}
-        {isLive && !binData && (result.brand || result.country) && (
-          <div className="flex flex-wrap items-center gap-1.5 mt-2.5">
-            {result.brand && (
-              <span className="text-[10px] font-normal text-neutral-500 dark:text-white/50 px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-white/5">
-                {toTitleCase(result.brand)}
-              </span>
-            )}
-            {result.country && (
-              <span className="text-[10px] font-normal text-neutral-500 dark:text-white/50 px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-white/5">
-                {result.country}
-              </span>
-            )}
-          </div>
-        )}
-
-        {/* Row 4: Response message + Duration */}
-        <div className="flex items-center justify-between mt-2">
-          <p className={cn(
-            "text-[11px] font-normal leading-relaxed",
-            isLive ? "text-emerald-600 dark:text-emerald-400" :
-              isDeclined ? "text-rose-500 dark:text-rose-400" : "text-amber-600 dark:text-amber-400"
-          )}>
+        {/* Zone 3: Response - Message */}
+        <ResultCardResponseZone>
+          <ResultCardMessage status={getEffectiveStatus()} className="flex-1">
             {friendlyMessage}
-          </p>
-          {duration && (
-            <span className="text-[10px] font-normal text-neutral-400 dark:text-white/40 tabular-nums">
-              {(duration / 1000).toFixed(1)}s
-            </span>
-          )}
-        </div>
+          </ResultCardMessage>
+        </ResultCardResponseZone>
 
-        {/* Row 5: Security checks - only show for CHARGED cards with actual data */}
-        {isApproved && (avsCheck || cvcCheck || (riskLevel && riskLevel !== 'unknown')) && (
-          <div className="flex flex-wrap items-center gap-2.5 mt-2 pt-2 border-t border-neutral-100 dark:border-white/5">
-            {riskLevel && riskLevel !== 'unknown' && (
-              <span className={cn(
-                "text-[10px] font-normal flex items-center gap-1",
-                riskLevel === 'normal' || riskLevel === 'low'
-                  ? "text-neutral-500 dark:text-white/50"
-                  : "text-amber-600 dark:text-amber-400"
-              )}>
-                Risk: {riskLevel}
-                {riskScore != null && <span className="opacity-60">({riskScore})</span>}
-              </span>
-            )}
-            {cvcCheck && cvcCheck !== 'unknown' && (
-              <span className={cn(
-                "text-[10px] font-normal flex items-center gap-1",
-                cvcCheck === 'pass' || cvcCheck === 'match'
-                  ? "text-emerald-600 dark:text-emerald-400"
-                  : "text-rose-500 dark:text-rose-400"
-              )}>
-                CVC: {cvcCheck}
-              </span>
-            )}
-            {avsCheck && avsCheck !== 'unknown' && (
-              <span className={cn(
-                "text-[10px] font-normal flex items-center gap-1",
-                avsCheck === 'pass' || avsCheck === 'match'
-                  ? "text-emerald-600 dark:text-emerald-400"
-                  : "text-rose-500 dark:text-rose-400"
-              )}>
-                AVS: {avsCheck}
-              </span>
-            )}
-          </div>
+        {/* Zone 4: Security - Risk, CVC, AVS checks (only for CHARGED) */}
+        {hasSecurityData && (
+          <ResultCardSecurityZone>
+            <SecurityIndicators
+              riskLevel={riskLevel}
+              riskScore={riskScore}
+              cvcCheck={cvcCheck}
+              avsCheck={avsCheck}
+            />
+          </ResultCardSecurityZone>
         )}
 
-        {/* Row 6: VBV/3DS status for Live cards */}
+        {/* 3DS Status indicator */}
         {is3DS && vbvStatus && vbvStatus !== 'N/A' && (
-          <p className="text-[10px] font-normal mt-1.5 text-neutral-500 dark:text-white/50">
-            <span className="font-medium">3DS:</span>{' '}
-            {vbvPassed ? (
-              <span className="text-emerald-600 dark:text-emerald-400">Passed ✓</span>
-            ) : (
-              <span className="text-amber-600 dark:text-amber-400">Required</span>
-            )}
-          </p>
+          <div className="flex items-center gap-2 mt-2.5 pt-2.5 border-t border-neutral-100/80 dark:border-white/5">
+            <ResultCardPill variant={vbvPassed ? 'success' : 'warning'}>
+              3DS: {vbvPassed ? 'Passed ✓' : 'Required'}
+            </ResultCardPill>
+          </div>
         )}
       </ResultCardContent>
     </ResultCard>

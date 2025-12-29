@@ -28,7 +28,22 @@ import {
 
 import { Celebration, useCelebration } from '@/components/ui/Celebration';
 import { ProxyInput } from '@/components/ui/ProxyInput';
-import { ResultCard, ResultCardContent } from '@/components/ui/result-card';
+import { 
+  ResultCard, 
+  ResultCardContent,
+  ResultCardHeader,
+  ResultCardDataZone,
+  ResultCardResponseZone,
+  ResultCardSecurityZone,
+  ResultCardMessage,
+} from '@/components/ui/result-card';
+import { 
+  BINDataDisplay, 
+  SecurityIndicators,
+  DurationDisplay, 
+  CopyButton,
+  CardNumber,
+} from '@/components/ui/result-card-parts';
 import { BrandIcon } from '@/components/ui/brand-icons';
 import { cn } from '@/lib/utils';
 
@@ -931,135 +946,87 @@ const CardResultCard = React.memo(function CardResultCard({ result, copiedCard, 
   const resultId = result.id || result.card;
   const isCopied = copiedCard === resultId;
 
-  const handleClick = useCallback((e) => {
-    e.stopPropagation();
+  const handleCopy = useCallback(() => {
     onCopy(result);
   }, [onCopy, result]);
 
   const message = formatCardMessage(result);
 
+  // Check for BIN data (supports both nested and flat fields)
+  const hasBinData = result.binData || result.brand || result.type || result.country;
+  
+  // Check for security data
+  const hasSecurityData = isFullView && (
+    (result.riskLevel && result.riskLevel !== 'unknown') ||
+    (result.avsCheck && result.avsCheck !== 'unknown') ||
+    (result.cvcCheck && result.cvcCheck !== 'unknown')
+  );
+
   return (
-    <ResultCard status={result.status}>
+    <ResultCard status={result.status} interactive>
       <ResultCardContent>
-        {/* Row 1: Status + Card Number + Actions */}
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 min-w-0 flex-1">
-            <Badge variant={getStatusVariant(result.status)} className="text-[10px]">
+        {/* Zone 1: Header - Status + Card Number + Actions */}
+        <ResultCardHeader>
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <Badge variant={getStatusVariant(result.status)} className="text-[10px] font-semibold shrink-0">
               {result.status}
             </Badge>
-            {/* Show message for LIVE/APPROVED cards (e.g., "Approved $1.00", "Insufficient Funds - CCN Valid") */}
-            {isFullView && result.message && (
-              <span className="text-[10px] text-muted-foreground truncate" title={result.message}>
-                {result.message}
-              </span>
-            )}
-            <span className="text-xs font-mono text-muted-foreground truncate flex-1">{result.card}</span>
+            <CardNumber card={result.card} />
           </div>
-          <div className="flex items-center gap-1.5 shrink-0">
-            {result.duration && (
-              <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-                <Clock className="h-3 w-3" />
-                {formatDuration(result.duration)}s
-              </span>
-            )}
-            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleClick} title="Copy card">
-              {isCopied ? <Check className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3" />}
-            </Button>
+          <div className="flex items-center gap-2 shrink-0">
+            <DurationDisplay duration={result.duration} />
+            <CopyButton 
+              value={result.card}
+              isCopied={isCopied}
+              onCopy={handleCopy}
+              title="Copy card"
+            />
           </div>
-        </div>
+        </ResultCardHeader>
 
-        {/* Row 2: BIN info - only show for approved/live cards */}
-        {/* Supports both nested binData (Auth/Charge) and flat fields (SK-based) */}
-        {isFullView && (result.binData || result.brand) && (
-          <div className="flex flex-wrap items-center gap-1.5 mt-2">
-            {/* Card scheme/brand icon */}
-            {(result.binData?.scheme || result.brand) && (
-              <span title={toTitleCase(result.binData?.scheme || result.brand)}>
-                <BrandIcon scheme={result.binData?.scheme || result.brand} />
-              </span>
-            )}
-            {/* Card type (credit/debit) */}
-            {(result.binData?.type || result.type) && (
-              <Badge variant="outline" className="text-[10px]">{toTitleCase(result.binData?.type || result.type)}</Badge>
-            )}
-            {/* Card category (classic, gold, platinum) */}
-            {(result.binData?.category || result.category) && (
-              <Badge variant="outline" className="text-[10px]">{toTitleCase(result.binData?.category || result.category)}</Badge>
-            )}
-            {/* Country - prefer emoji, fallback to code */}
-            {(result.binData?.countryEmoji || result.binData?.countryCode || result.binData?.country || result.countryFlag || result.country) && (
-              <span
-                className="text-sm"
-                title={result.binData?.country || result.binData?.countryCode || result.country}
-              >
-                {result.binData?.countryEmoji || result.binData?.countryCode || result.countryFlag || result.country || ''}
-              </span>
-            )}
-            {/* Bank name */}
-            {(result.binData?.bank || result.bank) && (
-              <span className="text-[10px] text-muted-foreground flex items-center gap-1 truncate max-w-[140px]">
-                <Building2 className="h-3 w-3 shrink-0" />
-                {toTitleCase(result.binData?.bank || result.bank)}
-              </span>
-            )}
-          </div>
+        {/* Zone 2: Rich Data - BIN info (only for LIVE/APPROVED) */}
+        {isFullView && hasBinData && (
+          <ResultCardDataZone>
+            <BINDataDisplay 
+              binData={result.binData}
+              brand={result.brand}
+              type={result.type}
+              category={result.category}
+              country={result.country}
+              countryFlag={result.countryFlag}
+              bank={result.bank}
+            />
+          </ResultCardDataZone>
         )}
 
-        {/* Row 3: Security checks - only show when data exists */}
-        {isFullView && (result.riskLevel || result.avsCheck || result.cvcCheck) && (
-          <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
-            {result.riskLevel && result.riskLevel !== 'unknown' && (
-              <span className={cn(
-                "text-[10px] flex items-center gap-1",
-                result.riskLevel === 'normal' || result.riskLevel === 'low'
-                  ? "text-muted-foreground"
-                  : "text-amber-500"
-              )}>
-                <ShieldAlert className="h-3 w-3" />
-                Risk: {result.riskLevel}
-              </span>
-            )}
-            {result.cvcCheck && result.cvcCheck !== 'unknown' && (
-              <span className={cn(
-                "text-[10px] flex items-center gap-1",
-                result.cvcCheck === 'pass' || result.cvcCheck === 'match'
-                  ? "text-emerald-500"
-                  : "text-red-500"
-              )}>
-                {result.cvcCheck === 'pass' || result.cvcCheck === 'match'
-                  ? <ShieldCheck className="h-3 w-3" />
-                  : <ShieldX className="h-3 w-3" />}
-                CVC
-              </span>
-            )}
-            {result.avsCheck && result.avsCheck !== 'unknown' && (
-              <span className={cn(
-                "text-[10px] flex items-center gap-1",
-                result.avsCheck === 'pass' || result.avsCheck === 'match'
-                  ? "text-emerald-500"
-                  : "text-red-500"
-              )}>
-                {result.avsCheck === 'pass' || result.avsCheck === 'match'
-                  ? <ShieldCheck className="h-3 w-3" />
-                  : <ShieldX className="h-3 w-3" />}
-                AVS
-              </span>
-            )}
-          </div>
+        {/* Zone 3: Response - Message (for LIVE/APPROVED or errors) */}
+        {(isFullView && result.message) && (
+          <ResultCardResponseZone>
+            <ResultCardMessage status={result.status} className="truncate flex-1">
+              {result.message}
+            </ResultCardMessage>
+          </ResultCardResponseZone>
         )}
 
-        {/* Row 3: Message */}
+        {/* Zone 4: Security - Risk, CVC, AVS checks (only for LIVE/APPROVED with data) */}
+        {hasSecurityData && (
+          <ResultCardSecurityZone>
+            <SecurityIndicators
+              riskLevel={result.riskLevel}
+              riskScore={result.riskScore}
+              cvcCheck={result.cvcCheck}
+              avsCheck={result.avsCheck}
+            />
+          </ResultCardSecurityZone>
+        )}
+
+        {/* Error/Declined message (non-live cards) */}
         {!isFullView && message && (
-          <p className={cn(
-            "text-xs mt-2 truncate",
-            (result.status === 'DIE' || result.status === 'DEAD' || result.status === 'DECLINED')
-              ? "text-rose-500 dark:text-rose-400"
-              : result.status === 'ERROR' || result.status === 'RETRY'
-                ? "text-amber-500 dark:text-amber-400"
-                : "text-muted-foreground"
-          )} title={message}>
-            {message.length > 80 ? message.substring(0, 80) + '...' : message}
-          </p>
+          <ResultCardResponseZone>
+            <ResultCardMessage status={result.status} className="truncate">
+              {message.length > 80 ? message.substring(0, 80) + '...' : message}
+            </ResultCardMessage>
+          </ResultCardResponseZone>
         )}
       </ResultCardContent>
     </ResultCard>

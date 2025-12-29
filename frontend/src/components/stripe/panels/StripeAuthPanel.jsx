@@ -34,7 +34,21 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Celebration, useCelebration } from '@/components/ui/Celebration';
-import { ResultCard, ResultCardContent } from '@/components/ui/result-card';
+import { 
+  ResultCard, 
+  ResultCardContent,
+  ResultCardHeader,
+  ResultCardDataZone,
+  ResultCardResponseZone,
+  ResultCardMessage,
+} from '@/components/ui/result-card';
+import { 
+  BINDataDisplay, 
+  DurationDisplay, 
+  CopyButton,
+  CardNumber,
+  GatewayBadge,
+} from '@/components/ui/result-card-parts';
 import { BrandIcon } from '@/components/ui/brand-icons';
 import { CreditInfo, CreditSummary, EffectiveRateBadge, BatchConfirmDialog, useBatchConfirmation, BATCH_CONFIRM_THRESHOLD } from '@/components/credits';
 import { cn } from '@/lib/utils';
@@ -1009,9 +1023,9 @@ const AuthResultItem = React.memo(function AuthResultItem({ result, index, copie
   const cardDisplay = result.fullCard || result.card || 'Unknown';
   const friendlyMessage = formatAuthMessage(result);
   const binData = result.binData;
+  const isCopied = copiedCard === result.id;
 
-  const handleCopy = useCallback((e) => {
-    e.stopPropagation();
+  const handleCopy = useCallback(() => {
     onCopy(result);
   }, [onCopy, result]);
 
@@ -1031,89 +1045,40 @@ const AuthResultItem = React.memo(function AuthResultItem({ result, index, copie
 
   return (
     <ResultCard status={getEffectiveStatus()} interactive>
-      <ResultCardContent className="py-3 px-3.5">
-        {/* Row 1: Status + Card Number + Copy */}
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2.5 min-w-0 flex-1">
-            <Badge variant={getBadgeVariant()} className="text-[10px] font-medium shrink-0">
+      <ResultCardContent>
+        {/* Zone 1: Header - Status + Card Number + Actions */}
+        <ResultCardHeader>
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <Badge variant={getBadgeVariant()} className="text-[10px] font-semibold shrink-0">
               {status}
             </Badge>
-            <span className="font-mono text-[11px] text-neutral-500 dark:text-white/60 truncate tracking-tight">
-              {cardDisplay}
-            </span>
+            <CardNumber card={cardDisplay} />
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6 shrink-0 text-neutral-400 hover:text-neutral-600 dark:text-white/40 dark:hover:text-white/70"
-            onClick={handleCopy}
-          >
-            {copiedCard === result.id ? (
-              <Check className="h-3 w-3 text-emerald-500" />
-            ) : (
-              <Copy className="h-3 w-3" />
-            )}
-          </Button>
-        </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <DurationDisplay duration={result.duration} />
+            <CopyButton 
+              value={cardDisplay}
+              isCopied={isCopied}
+              onCopy={handleCopy}
+              title="Copy card"
+            />
+          </div>
+        </ResultCardHeader>
 
-        {/* Row 2: BIN Data badges - only show for approved cards */}
+        {/* Zone 2: Rich Data - BIN info (only for approved) */}
         {isApproved && binData && (
-          <div className="flex flex-wrap items-center gap-1.5 mt-2.5">
-            {/* Card scheme/brand icon */}
-            {binData.scheme && (
-              <span title={toTitleCase(binData.scheme)}>
-                <BrandIcon scheme={binData.scheme} />
-              </span>
-            )}
-            {/* Card type (credit/debit) */}
-            {binData.type && (
-              <span className="text-[10px] font-normal text-neutral-500 dark:text-white/50 px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-white/5">
-                {toTitleCase(binData.type)}
-              </span>
-            )}
-            {/* Card category (classic, gold, platinum) */}
-            {binData.category && (
-              <span className="text-[10px] font-normal text-neutral-500 dark:text-white/50 px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-white/5">
-                {toTitleCase(binData.category)}
-              </span>
-            )}
-            {/* Country - prefer emoji, fallback to code */}
-            {(binData.countryEmoji || binData.countryCode || binData.country) && (
-              <span
-                className="text-sm"
-                title={binData.country || binData.countryCode}
-              >
-                {binData.countryEmoji || binData.countryCode || ''}
-              </span>
-            )}
-            {/* Bank name */}
-            {binData.bank && binData.bank.toLowerCase() !== 'unknown' && (
-              <span className="text-[10px] font-normal text-neutral-400 dark:text-white/40 flex items-center gap-1">
-                <Building2 className="h-2.5 w-2.5" />
-                {toTitleCase(binData.bank)}
-              </span>
-            )}
-          </div>
+          <ResultCardDataZone>
+            <BINDataDisplay binData={binData} />
+          </ResultCardDataZone>
         )}
 
-        {/* Row 3: Message + Site + Duration */}
-        <div className="flex items-center justify-between mt-2">
-          <p className={cn(
-            "text-[11px] font-normal leading-relaxed truncate flex-1",
-            isApproved ? "text-emerald-600 dark:text-emerald-400" :
-              isDeclined ? "text-rose-500 dark:text-rose-400" : "text-amber-600 dark:text-amber-400"
-          )}>
+        {/* Zone 3: Response - Message + Gateway */}
+        <ResultCardResponseZone>
+          <ResultCardMessage status={status} className="truncate flex-1">
             {friendlyMessage}
-            {result.site && (
-              <span className="text-neutral-400 dark:text-white/40"> • {result.site}</span>
-            )}
-          </p>
-          {result.duration && (
-            <span className="text-[10px] font-normal text-neutral-400 dark:text-white/40 tabular-nums ml-2">
-              {(result.duration / 1000).toFixed(1)}s
-            </span>
-          )}
-        </div>
+          </ResultCardMessage>
+          <GatewayBadge site={result.site} />
+        </ResultCardResponseZone>
       </ResultCardContent>
     </ResultCard>
   );

@@ -1569,6 +1569,178 @@
   .empty-state-subtitle {
     @apply mt-1 text-sm text-muted-foreground;
   }
+
+  /* =========================================
+     PREMIUM RESULT CARD SYSTEM
+     Luxurious glass morphism with status glows
+     ========================================= */
+  
+  /* Premium Result Card - Base */
+  .premium-result-card {
+    @apply relative rounded-2xl overflow-hidden;
+    @apply transition-all duration-300 ease-out;
+    contain: layout paint;
+  }
+  
+  /* Premium left accent bar */
+  .premium-result-card::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    border-radius: 16px 0 0 16px;
+    z-index: 10;
+  }
+  
+  /* Light mode premium cards */
+  .premium-result-card {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.9));
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    box-shadow: 
+      0 4px 20px -4px rgba(0, 0, 0, 0.08),
+      0 2px 8px -2px rgba(0, 0, 0, 0.04);
+  }
+  
+  .premium-result-card:hover {
+    box-shadow: 
+      0 8px 30px -4px rgba(0, 0, 0, 0.12),
+      0 4px 12px -2px rgba(0, 0, 0, 0.06);
+    transform: translateY(-1px);
+  }
+  
+  /* Dark mode premium glass */
+  .dark .premium-result-card {
+    background: linear-gradient(135deg, rgba(40, 40, 44, 0.85), rgba(32, 32, 36, 0.9));
+    backdrop-filter: blur(20px) saturate(150%);
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow: 
+      0 8px 25px -5px rgba(0, 0, 0, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+  
+  .dark .premium-result-card:hover {
+    border-color: rgba(255, 255, 255, 0.12);
+    box-shadow: 
+      0 12px 35px -5px rgba(0, 0, 0, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  }
+  
+  /* Status variants - Light mode */
+  .premium-result-card-live,
+  .premium-result-card-approved {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.9));
+    border-color: rgba(16, 185, 129, 0.15);
+    box-shadow: 
+      0 4px 20px -4px rgba(16, 185, 129, 0.15),
+      0 2px 8px -2px rgba(0, 0, 0, 0.04);
+  }
+  
+  .premium-result-card-live::before,
+  .premium-result-card-approved::before {
+    background: linear-gradient(180deg, #10b981, #059669);
+  }
+  
+  .premium-result-card-live:hover,
+  .premium-result-card-approved:hover {
+    box-shadow: 
+      0 8px 30px -4px rgba(16, 185, 129, 0.25),
+      0 4px 12px -2px rgba(0, 0, 0, 0.06);
+  }
+  
+  .premium-result-card-3ds {
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.08), rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.9));
+    border-color: rgba(249, 115, 22, 0.15);
+    box-shadow: 
+      0 4px 20px -4px rgba(249, 115, 22, 0.15),
+      0 2px 8px -2px rgba(0, 0, 0, 0.04);
+  }
+  
+  .premium-result-card-3ds::before {
+    background: linear-gradient(180deg, #f97316, #ea580c);
+  }
+  
+  .premium-result-card-dead,
+  .premium-result-card-declined {
+    background: linear-gradient(135deg, rgba(244, 63, 94, 0.05), rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.9));
+    border-color: rgba(244, 63, 94, 0.12);
+    box-shadow: 
+      0 4px 16px -4px rgba(244, 63, 94, 0.1),
+      0 2px 6px -2px rgba(0, 0, 0, 0.04);
+  }
+  
+  .premium-result-card-dead::before,
+  .premium-result-card-declined::before {
+    background: linear-gradient(180deg, #f43f5e, #e11d48);
+  }
+  
+  .premium-result-card-error {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.05), rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.9));
+    border-color: rgba(245, 158, 11, 0.12);
+    box-shadow: 
+      0 4px 16px -4px rgba(245, 158, 11, 0.1),
+      0 2px 6px -2px rgba(0, 0, 0, 0.04);
+  }
+  
+  .premium-result-card-error::before {
+    background: linear-gradient(180deg, #f59e0b, #d97706);
+  }
+  
+  /* Status variants - Dark mode with ambient glow */
+  .dark .premium-result-card-live,
+  .dark .premium-result-card-approved {
+    background: linear-gradient(135deg, rgba(52, 211, 153, 0.08), rgba(40, 40, 44, 0.85), rgba(32, 32, 36, 0.9));
+    border-color: rgba(52, 211, 153, 0.2);
+    box-shadow: 
+      0 0 30px -5px rgba(52, 211, 153, 0.2),
+      0 8px 25px -5px rgba(0, 0, 0, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+  
+  .dark .premium-result-card-live:hover,
+  .dark .premium-result-card-approved:hover {
+    box-shadow: 
+      0 0 40px -5px rgba(52, 211, 153, 0.3),
+      0 12px 35px -5px rgba(0, 0, 0, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  }
+  
+  .dark .premium-result-card-3ds {
+    background: linear-gradient(135deg, rgba(251, 146, 60, 0.08), rgba(40, 40, 44, 0.85), rgba(32, 32, 36, 0.9));
+    border-color: rgba(251, 146, 60, 0.2);
+    box-shadow: 
+      0 0 30px -5px rgba(251, 146, 60, 0.2),
+      0 8px 25px -5px rgba(0, 0, 0, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+  
+  .dark .premium-result-card-3ds:hover {
+    box-shadow: 
+      0 0 40px -5px rgba(251, 146, 60, 0.3),
+      0 12px 35px -5px rgba(0, 0, 0, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  }
+  
+  .dark .premium-result-card-dead,
+  .dark .premium-result-card-declined {
+    background: linear-gradient(135deg, rgba(251, 113, 133, 0.05), rgba(40, 40, 44, 0.85), rgba(32, 32, 36, 0.9));
+    border-color: rgba(251, 113, 133, 0.15);
+    box-shadow: 
+      0 0 20px -5px rgba(251, 113, 133, 0.1),
+      0 8px 25px -5px rgba(0, 0, 0, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+  
+  .dark .premium-result-card-error {
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.05), rgba(40, 40, 44, 0.85), rgba(32, 32, 36, 0.9));
+    border-color: rgba(251, 191, 36, 0.15);
+    box-shadow: 
+      0 0 20px -5px rgba(251, 191, 36, 0.1),
+      0 8px 25px -5px rgba(0, 0, 0, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
 }
 
 /* =========================================
