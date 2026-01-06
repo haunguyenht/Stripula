@@ -167,16 +167,16 @@ export function ProfilePage() {
 
   return (
     <div className="h-full flex flex-col">
-      {/* Combined Header + Tabs - Ultra compact on mobile/tablet */}
+      {/* Combined Header + Tabs - Ultra compact */}
       <motion.div 
-        className="flex-shrink-0 px-3 md:px-4 pt-2 md:pt-4 pb-1 md:pb-2 max-w-xl mx-auto w-full"
+        className="flex-shrink-0 px-3 md:px-4 pt-1 md:pt-2 pb-1 max-w-xl mx-auto w-full"
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
       >
         {/* Desktop: Show full header (768px+) */}
         <div className="hidden md:block">
-          <ProfileHeader profile={profile} tier={tier} />
+          <ProfileHeader profile={profile} tier={tier} compact />
         </div>
         
         {/* Mobile/Tablet: Inline compact header (<768px) */}
@@ -210,7 +210,7 @@ export function ProfilePage() {
 
         {/* Tab Navigation - Icons only on mobile/tablet */}
         <div className={cn(
-          "p-0.5 md:p-1.5 rounded-lg md:rounded-2xl",
+          "p-0.5 md:p-1 rounded-lg md:rounded-xl",
           // Light: Vintage Banking aged paper with inset shadow
           "bg-gradient-to-b from-[hsl(40,38%,94%)] to-[hsl(38,35%,91%)]",
           "shadow-[inset_0_1px_3px_hsl(25,30%,35%,0.06),0_1px_0_rgba(255,255,255,0.6)]",
@@ -229,8 +229,8 @@ export function ProfilePage() {
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={cn(
-                    "relative flex items-center justify-center py-1.5 md:py-3 px-1 md:px-2 rounded-md md:rounded-xl",
-                    "md:flex-col md:gap-1.5",
+                    "relative flex items-center justify-center py-1.5 md:py-2 px-1 md:px-2 rounded-md md:rounded-lg",
+                    "md:flex-col md:gap-1",
                     "transition-colors duration-200",
                     "focus:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(25,60%,50%)]/50 dark:focus-visible:ring-amber-500/50",
                     isActive 
@@ -247,7 +247,7 @@ export function ProfilePage() {
                     <motion.div
                       layoutId="activeProfileTab"
                       className={cn(
-                        "absolute inset-0 rounded-md md:rounded-xl",
+                        "absolute inset-0 rounded-md md:rounded-lg",
                         "bg-gradient-to-b from-[hsl(44,45%,99%)] to-[hsl(42,40%,96%)]",
                         "shadow-[0_1px_3px_hsl(25,30%,35%,0.08),inset_0_1px_0_rgba(255,255,255,0.7)]",
                         "border border-[hsl(30,25%,82%)]",
@@ -258,11 +258,11 @@ export function ProfilePage() {
                   )}
                   
                   <Icon className={cn(
-                    "relative z-10 w-4 h-4 md:w-5 md:h-5 transition-transform duration-200",
+                    "relative z-10 w-4 h-4 transition-transform duration-200",
                     isActive && "scale-110"
                   )} />
                   {/* Label - hidden on mobile/tablet */}
-                  <span className="hidden md:block relative z-10 text-[10px] font-bold uppercase tracking-wide">
+                  <span className="hidden md:block relative z-10 text-[9px] font-bold uppercase tracking-wide">
                     {tab.label}
                   </span>
                 </motion.button>

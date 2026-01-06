@@ -356,8 +356,11 @@ export function KeysValidationPanel({
           id="sk-keys-input"
           name="sk-keys-input"
           className={cn(
-            "font-mono text-[10px] sm:text-xs min-h-[60px] sm:min-h-[100px] resize-none border-0 rounded-none focus-visible:ring-0 focus-visible:ring-offset-0",
-            "dark:bg-transparent p-2 sm:p-3",
+            "font-mono text-[10px] sm:text-xs min-h-[60px] sm:min-h-[100px] resize-none",
+            "border-0 dark:border-0 rounded-none dark:rounded-none shadow-none dark:shadow-none",
+            "bg-transparent dark:bg-transparent",
+            "focus-visible:ring-0 focus-visible:ring-offset-0 dark:focus-visible:ring-0",
+            "p-2 sm:p-3",
             isLoading && "opacity-50"
           )}
           placeholder="Enter SK keys (one per line)&#10;sk_live_xxxxx"

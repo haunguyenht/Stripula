@@ -23,7 +23,7 @@ export function ProfileHeader({ profile, tier, className, compact = false }) {
       transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
       className={cn(
         "flex items-center gap-3 sm:flex-col sm:gap-0",
-        compact ? "py-1 sm:py-4" : "py-2 sm:py-4",
+        compact ? "py-0.5 sm:py-1" : "py-2 sm:py-4",
         className
       )}
     >
@@ -37,8 +37,8 @@ export function ProfileHeader({ profile, tier, className, compact = false }) {
         {/* Animated tier ring */}
         <motion.div
           className={cn(
-            "absolute rounded-lg sm:rounded-2xl opacity-60",
-            compact ? "-inset-1 sm:-inset-2" : "-inset-1.5 sm:-inset-2",
+            "absolute rounded-lg sm:rounded-xl opacity-60",
+            compact ? "-inset-0.5 sm:-inset-1" : "-inset-1.5 sm:-inset-2",
             "bg-gradient-to-br",
             config.bgGradient
           )}
@@ -55,7 +55,7 @@ export function ProfileHeader({ profile, tier, className, compact = false }) {
         {/* Avatar */}
         <div className={cn(
           "relative rounded-lg sm:rounded-xl overflow-hidden",
-          compact ? "w-12 h-12 sm:w-20 sm:h-20" : "w-16 h-16 sm:w-20 sm:h-20",
+          compact ? "w-10 h-10 sm:w-12 sm:h-12" : "w-16 h-16 sm:w-20 sm:h-20",
           "bg-gradient-to-br from-[hsl(40,40%,96%)] to-[hsl(35,35%,94%)]",
           // Dark mode (reset gradient)
           "dark:bg-none dark:bg-zinc-800",
@@ -81,9 +81,9 @@ export function ProfileHeader({ profile, tier, className, compact = false }) {
         {/* Tier badge */}
         <motion.div 
           className={cn(
-            "absolute rounded-md sm:rounded-xl",
+            "absolute rounded-md sm:rounded-lg",
             compact 
-              ? "-bottom-1 -right-1 p-1 sm:-bottom-2 sm:-right-2 sm:p-2" 
+              ? "-bottom-0.5 -right-0.5 p-0.5 sm:-bottom-1 sm:-right-1 sm:p-1" 
               : "-bottom-1.5 -right-1.5 p-1.5 sm:-bottom-2 sm:-right-2 sm:p-2",
             "bg-gradient-to-b from-[hsl(40,45%,97%)] to-[hsl(38,40%,94%)]",
             // Dark mode (reset gradient)
@@ -100,7 +100,7 @@ export function ProfileHeader({ profile, tier, className, compact = false }) {
             transition={config.iconTransition}
           >
             <TierIcon className={cn(
-              compact ? "w-3 h-3 sm:w-4 sm:h-4" : "w-3.5 h-3.5 sm:w-4 sm:h-4",
+              compact ? "w-2.5 h-2.5 sm:w-3 sm:h-3" : "w-3.5 h-3.5 sm:w-4 sm:h-4",
               config.color
             )} />
           </motion.div>
@@ -109,7 +109,7 @@ export function ProfileHeader({ profile, tier, className, compact = false }) {
 
       {/* Name and username - horizontal on mobile when compact */}
       <div className={cn(
-        compact ? "text-left sm:text-center sm:mt-4" : "text-center mt-3 sm:mt-4"
+        compact ? "text-left sm:text-center sm:mt-1" : "text-center mt-3 sm:mt-4"
       )}>
         <motion.h2
           initial={{ opacity: 0 }}
@@ -117,7 +117,7 @@ export function ProfileHeader({ profile, tier, className, compact = false }) {
           transition={{ delay: 0.2 }}
           className={cn(
             "font-semibold",
-            compact ? "text-sm sm:text-lg" : "text-base sm:text-lg",
+            compact ? "text-xs sm:text-sm" : "text-base sm:text-lg",
             "text-[hsl(25,35%,25%)] dark:text-white"
           )}
         >
@@ -128,7 +128,7 @@ export function ProfileHeader({ profile, tier, className, compact = false }) {
           <motion.p 
             className={cn(
               "text-muted-foreground",
-              compact ? "text-[10px] sm:text-sm" : "text-xs sm:text-sm"
+              compact ? "text-[9px] sm:text-xs" : "text-xs sm:text-sm"
             )}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

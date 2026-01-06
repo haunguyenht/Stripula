@@ -6,7 +6,7 @@ import { gatewaySSE } from '@/lib/services/gatewaySSE';
  * useCardInputLimits Hook
  * 
  * Fetches tier-based card input limits from backend and subscribes to shared SSE
- * for real-time updates.
+ * for real-time updates. No fallback defaults - database values are required.
  * 
  * Requirements: 1.1, 1.2, 1.3
  * 
@@ -15,15 +15,6 @@ import { gatewaySSE } from '@/lib/services/gatewaySSE';
 
 const API_BASE = '/api';
 
-// Default tier limits (fallback if API unavailable)
-const DEFAULT_TIER_LIMITS = {
-  free: 500,
-  bronze: 1000,
-  silver: 1500,
-  gold: 2000,
-  diamond: 3000
-};
-
 // Warning threshold (80% of limit)
 const WARNING_THRESHOLD = 0.8;
 
@@ -31,9 +22,8 @@ export function useCardInputLimits() {
   const subscriberId = useId();
   const { user, isAuthenticated } = useAuth();
   
-  // State
-  const [limits, setLimits] = useState(DEFAULT_TIER_LIMITS);
-  const [defaults, setDefaults] = useState(DEFAULT_TIER_LIMITS);
+  // State - start with null/empty to indicate no data loaded
+  const [limits, setLimits] = useState(null);
   const [metadata, setMetadata] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -46,6 +36,7 @@ export function useCardInputLimits() {
 
   /**
    * Fetch tier limits from API
+   * No fallback defaults - database values are required
    */
   const fetchLimits = useCallback(async () => {
     if (!isAuthenticated) {
@@ -55,6 +46,7 @@ export function useCardInputLimits() {
 
     try {
       setIsLoading(true);
+      setError(null);
       const response = await fetch(`${API_BASE}/system/tier-limits`, {
         method: 'GET',
         credentials: 'include',
@@ -67,21 +59,21 @@ export function useCardInputLimits() {
         const data = await response.json();
         if (data.status === 'OK' && data.limits) {
           setLimits(data.limits);
-          setDefaults(data.defaults || DEFAULT_TIER_LIMITS);
           setMetadata(data.metadata || {});
           setLastUpdate(new Date(data.timestamp));
           setError(null);
+        } else {
+          setError(data.error?.message || 'Failed to fetch tier limits');
+          setLimits(null);
         }
       } else {
-        setError('Failed to fetch tier limits');
-        setLimits(DEFAULT_TIER_LIMITS);
-        setDefaults(DEFAULT_TIER_LIMITS);
+        const errorData = await response.json().catch(() => ({}));
+        setError(errorData.error?.message || 'Failed to fetch tier limits');
+        setLimits(null);
       }
     } catch (err) {
-
-      setError('Network error');
-      setLimits(DEFAULT_TIER_LIMITS);
-      setDefaults(DEFAULT_TIER_LIMITS);
+      setError('Network error - tier limits unavailable');
+      setLimits(null);
     } finally {
       setIsLoading(false);
     }
@@ -138,10 +130,13 @@ export function useCardInputLimits() {
 
   /**
    * Get limit for a specific tier
+   * Returns null if limits not loaded or tier not found
    */
   const getUserLimit = useCallback((tier) => {
+    if (!limits) return null;
     const normalizedTier = (tier || 'free').toLowerCase();
-    return limits[normalizedTier] || DEFAULT_TIER_LIMITS[normalizedTier] || DEFAULT_TIER_LIMITS.free;
+    const limit = limits[normalizedTier];
+    return limit !== undefined ? limit : null;
   }, [limits]);
 
   /**
@@ -162,15 +157,34 @@ export function useCardInputLimits() {
 
   /**
    * Get detailed limit status for a card count
+   * Returns error status if limits not loaded
    */
   const getLimitStatus = useCallback((cardCount, tier) => {
     const targetTier = tier || userTier;
     const limit = getUserLimit(targetTier);
+    
+    // If limit is null (not loaded), return error status
+    if (limit === null) {
+      return {
+        isWithinLimit: false,
+        limit: null,
+        cardCount,
+        excess: 0,
+        percentage: 0,
+        remaining: 0,
+        isWarning: false,
+        isError: true,
+        tier: targetTier,
+        unavailable: true,
+        errorMessage: 'Tier limits not loaded'
+      };
+    }
+
     const withinLimit = cardCount <= limit;
     const excess = withinLimit ? 0 : cardCount - limit;
     const percentage = limit > 0 ? (cardCount / limit) * 100 : 0;
     const isWarning = percentage >= WARNING_THRESHOLD * 100 && withinLimit;
-    const isError = !withinLimit;
+    const isErrorStatus = !withinLimit;
 
     return {
       isWithinLimit: withinLimit,
@@ -180,18 +194,18 @@ export function useCardInputLimits() {
       percentage: Math.min(percentage, 100),
       remaining: Math.max(0, limit - cardCount),
       isWarning,
-      isError,
-      tier: targetTier
+      isError: isErrorStatus,
+      tier: targetTier,
+      unavailable: false
     };
   }, [getUserLimit, userTier]);
 
   /**
-   * Get default limit for a tier
+   * Check if limits data is available
    */
-  const getDefaultLimit = useCallback((tier) => {
-    const normalizedTier = (tier || 'free').toLowerCase();
-    return defaults[normalizedTier] || DEFAULT_TIER_LIMITS[normalizedTier] || DEFAULT_TIER_LIMITS.free;
-  }, [defaults]);
+  const isAvailable = useMemo(() => {
+    return limits !== null && !error;
+  }, [limits, error]);
 
   /**
    * Check if a tier has a custom limit
@@ -210,32 +224,30 @@ export function useCardInputLimits() {
 
   return useMemo(() => ({
     limits,
-    defaults,
     metadata,
     isLoading,
     error,
     lastUpdate,
     userTier,
+    isAvailable,
     getUserLimit,
     getCurrentUserLimit,
     isWithinLimit,
     getLimitStatus,
-    getDefaultLimit,
     isCustomLimit,
     refresh
   }), [
     limits,
-    defaults,
     metadata,
     isLoading,
     error,
     lastUpdate,
     userTier,
+    isAvailable,
     getUserLimit,
     getCurrentUserLimit,
     isWithinLimit,
     getLimitStatus,
-    getDefaultLimit,
     isCustomLimit,
     refresh
   ]);

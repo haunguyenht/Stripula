@@ -23,12 +23,14 @@ export function BatchConfirmDialog({
   onOpenChange,
   cardCount = 0,
   balance = 0,
-  effectiveRate = 1,
+  effectiveRate: effectiveRateProp,
   gatewayName = "Gateway",
   onConfirm,
   onCancel,
   isLoading = false,
 }) {
+  // Handle null/undefined effectiveRate (default param doesn't handle null)
+  const effectiveRate = effectiveRateProp ?? 1;
   const estimatedCost = useMemo(() => Math.ceil(cardCount * effectiveRate), [cardCount, effectiveRate]);
   const hasSufficientCredits = useMemo(() => balance >= estimatedCost, [balance, estimatedCost]);
   const shortfall = useMemo(() => hasSufficientCredits ? 0 : estimatedCost - balance, [hasSufficientCredits, estimatedCost, balance]);

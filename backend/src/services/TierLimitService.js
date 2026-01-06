@@ -6,18 +6,6 @@ import { supabase, isSupabaseConfigured } from '../infrastructure/database/Supab
 export const VALID_TIERS = ['free', 'bronze', 'silver', 'gold', 'diamond'];
 
 /**
- * Default card limits per tier
- * Requirements: 1.1
- */
-export const DEFAULT_TIER_LIMITS = {
-    free: 500,
-    bronze: 1000,
-    silver: 1500,
-    gold: 2000,
-    diamond: 3000
-};
-
-/**
  * Tier limit validation bounds
  * Requirements: 7.6
  */
@@ -51,6 +39,7 @@ export class TierLimitService {
      * Requirements: 1.1, 7.3
      * 
      * @returns {Promise<Object>} Tier limits with metadata
+     * @throws {Error} If database not configured or query fails
      */
     async getTierLimits() {
         // Try cache first
@@ -59,9 +48,9 @@ export class TierLimitService {
             return cached;
         }
 
-        // If database not configured, return defaults
+        // Database must be configured - no fallbacks
         if (!isSupabaseConfigured()) {
-            return this._getDefaultLimitsResponse();
+            throw new Error('Database not configured - tier limits unavailable');
         }
 
         // Fetch from database
@@ -71,11 +60,15 @@ export class TierLimitService {
             .order('tier');
 
         if (error) {
-            return this._getDefaultLimitsResponse();
+            throw new Error(`Failed to fetch tier limits: ${error.message}`);
         }
 
-        // Build response with defaults for missing tiers
-        const result = this._buildLimitsResponse(limits || []);
+        if (!limits || limits.length === 0) {
+            throw new Error('Tier limits not configured in database');
+        }
+
+        // Build response - requires all tiers to be present
+        const result = this._buildLimitsResponse(limits);
         
         // Update cache
         this._updateCache(result);
@@ -90,6 +83,7 @@ export class TierLimitService {
      * 
      * @param {string} tier - User tier
      * @returns {Promise<number>} Card limit for the tier
+     * @throws {Error} If tier not found or database unavailable
      */
     async getTierLimit(tier) {
         if (!tier || !VALID_TIERS.includes(tier.toLowerCase())) {
@@ -98,7 +92,13 @@ export class TierLimitService {
 
         const normalizedTier = tier.toLowerCase();
         const limits = await this.getTierLimits();
-        return limits.limits[normalizedTier] || DEFAULT_TIER_LIMITS[normalizedTier];
+        
+        const limit = limits.limits[normalizedTier];
+        if (limit === undefined || limit === null) {
+            throw new Error(`Tier limit not configured for tier: ${normalizedTier}`);
+        }
+        
+        return limit;
     }
 
     /**
@@ -133,9 +133,13 @@ export class TierLimitService {
 
         const normalizedTier = tier.toLowerCase();
 
-        // Get current limit
+        // Get current limit from database
         const currentLimits = await this.getTierLimits();
-        const oldLimit = currentLimits.limits[normalizedTier] || DEFAULT_TIER_LIMITS[normalizedTier];
+        const oldLimit = currentLimits.limits[normalizedTier];
+        
+        if (oldLimit === undefined || oldLimit === null) {
+            throw new Error(`Current tier limit not found for tier: ${normalizedTier}`);
+        }
 
         // Update in database
         const { data: updated, error } = await supabase
@@ -166,33 +170,44 @@ export class TierLimitService {
             tier: normalizedTier,
             oldLimit,
             newLimit: limit,
-            defaultLimit: DEFAULT_TIER_LIMITS[normalizedTier],
-            isCustom: limit !== DEFAULT_TIER_LIMITS[normalizedTier],
             updatedAt: updated.updated_at
         };
     }
 
 
     /**
-     * Reset all tier limits to defaults (admin only)
+     * Reset all tier limits to their default values (admin only)
      * 
      * Requirements: 7.5
      * 
      * @param {string} adminId - Admin user ID making the change
+     * @param {Object} defaultLimits - Default limits to reset to (must be provided)
      * @returns {Promise<Object>} Result with reset limits
+     * @throws {Error} If database not configured or defaults not provided
      */
-    async resetToDefaults(adminId) {
+    async resetToDefaults(adminId, defaultLimits) {
         if (!isSupabaseConfigured()) {
             throw new Error('Database not configured');
+        }
+
+        if (!defaultLimits || typeof defaultLimits !== 'object') {
+            throw new Error('Default limits must be provided for reset operation');
+        }
+
+        // Validate all tiers have default values
+        for (const tier of VALID_TIERS) {
+            if (defaultLimits[tier] === undefined || defaultLimits[tier] === null) {
+                throw new Error(`Default limit not provided for tier: ${tier}`);
+            }
         }
 
         // Get current limits before reset
         const currentLimits = await this.getTierLimits();
         const oldLimits = { ...currentLimits.limits };
 
-        // Reset each tier to default
+        // Reset each tier to provided default
         for (const tier of VALID_TIERS) {
-            const defaultLimit = DEFAULT_TIER_LIMITS[tier];
+            const defaultLimit = defaultLimits[tier];
             
             const { error } = await supabase
                 .from('tier_card_limits')
@@ -206,6 +221,7 @@ export class TierLimitService {
                 });
 
             if (error) {
+                throw new Error(`Failed to reset tier ${tier}: ${error.message}`);
             }
         }
 
@@ -213,13 +229,12 @@ export class TierLimitService {
         this.invalidateCache();
 
         // Broadcast SSE event for reset
-        this._broadcastTierLimitsReset(oldLimits, DEFAULT_TIER_LIMITS);
+        this._broadcastTierLimitsReset(oldLimits, defaultLimits);
 
         return {
             success: true,
             oldLimits,
-            newLimits: { ...DEFAULT_TIER_LIMITS },
-            defaults: { ...DEFAULT_TIER_LIMITS }
+            newLimits: { ...defaultLimits }
         };
     }
 
@@ -322,58 +337,34 @@ export class TierLimitService {
      * @private
      * @param {Array} rows - Database rows
      * @returns {Object} Formatted limits response
+     * @throws {Error} If any tier is missing from database
      */
     _buildLimitsResponse(rows) {
         const limitsMap = new Map(rows.map(r => [r.tier, r]));
         
         const limits = {};
         const metadata = {};
+        const missingTiers = [];
 
         for (const tier of VALID_TIERS) {
             const row = limitsMap.get(tier);
             if (row) {
                 limits[tier] = row.card_limit;
                 metadata[tier] = {
-                    isCustom: row.card_limit !== DEFAULT_TIER_LIMITS[tier],
                     updatedAt: row.updated_at,
                     updatedBy: row.updated_by
                 };
             } else {
-                limits[tier] = DEFAULT_TIER_LIMITS[tier];
-                metadata[tier] = {
-                    isCustom: false,
-                    updatedAt: null,
-                    updatedBy: null
-                };
+                missingTiers.push(tier);
             }
+        }
+
+        if (missingTiers.length > 0) {
+            throw new Error(`Tier limits not configured for tiers: ${missingTiers.join(', ')}`);
         }
 
         return {
             limits,
-            defaults: { ...DEFAULT_TIER_LIMITS },
-            metadata
-        };
-    }
-
-    /**
-     * Get default limits response (used when database not available)
-     * 
-     * @private
-     * @returns {Object} Default limits response
-     */
-    _getDefaultLimitsResponse() {
-        const metadata = {};
-        for (const tier of VALID_TIERS) {
-            metadata[tier] = {
-                isCustom: false,
-                updatedAt: null,
-                updatedBy: null
-            };
-        }
-
-        return {
-            limits: { ...DEFAULT_TIER_LIMITS },
-            defaults: { ...DEFAULT_TIER_LIMITS },
             metadata
         };
     }
@@ -400,7 +391,6 @@ export class TierLimitService {
             tier,
             oldLimit,
             newLimit,
-            isCustom: newLimit !== DEFAULT_TIER_LIMITS[tier],
             timestamp: new Date().toISOString()
         });
     }

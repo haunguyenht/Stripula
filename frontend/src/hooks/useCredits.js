@@ -6,6 +6,7 @@ import { useGatewayCreditRates } from '@/hooks/useGatewayCreditRates';
  * useCredits Hook
  * Provides credit balance, gateway rates, and credit operations for validation panels.
  * Now integrates with useGatewayCreditRates for real-time rate updates.
+ * No fallback defaults - database values are required.
  * 
  * Requirements: 4.3, 4.4, 4.6, 11.1, 11.2, 11.3, 14.2
  * 
@@ -16,18 +17,6 @@ import { useGatewayCreditRates } from '@/hooks/useGatewayCreditRates';
 
 const API_BASE = '/api';
 
-// Default gateway rates (fallback if API unavailable)
-// Based on billing type: auth/shopify use pricing_live, charge uses pricing_approved
-const DEFAULT_GATEWAY_RATES = {
-  auth: 3.0,      // Uses pricing_live
-  charge: 5.0,    // Uses pricing_approved
-  skbased: 5.0,   // Uses pricing_approved (SK charge)
-  'skbased-auth': 3.0, // Uses pricing_live
-  shopify: 3.0    // Uses pricing_live
-};
-
-
-
 export function useCredits(options = {}) {
   const { gatewayId = 'auth' } = options;
   const { user, isAuthenticated, refreshUser, updateCreditBalance } = useAuth();
@@ -37,6 +26,8 @@ export function useCredits(options = {}) {
     getEffectiveRate: getGatewayEffectiveRate, 
     getBaseRate: getGatewayBaseRate,
     getRate: getGatewayRate,
+    isAvailable: ratesAvailable,
+    error: ratesError,
     userTier: ratesTier
   } = useGatewayCreditRates();
 
@@ -44,7 +35,7 @@ export function useCredits(options = {}) {
   const [creditData, setCreditData] = useState(() => ({
     balance: user?.creditBalance ?? user?.credit_balance ?? 0,
     tier: user?.tier || 'free',
-    gatewayRate: DEFAULT_GATEWAY_RATES[gatewayId] || 1.0,
+    gatewayRate: null, // No default - must come from database
     isLoading: !user, // Not loading if we already have user data
     error: null
   }));
@@ -52,14 +43,10 @@ export function useCredits(options = {}) {
   const [creditsConsumed, setCreditsConsumed] = useState(0);
   const [liveCardsCount, setLiveCardsCount] = useState(0);
 
-  // Get gateway rate from real-time rates or fallback to default
+  // Get gateway rate from real-time rates - no fallback
   const gatewayRate = useMemo(() => {
     const rateFromService = getGatewayBaseRate(gatewayId);
-    if (rateFromService) return rateFromService;
-    
-    // Fallback to default based on gateway type
-    const gatewayType = gatewayId.split('-')[0];
-    return DEFAULT_GATEWAY_RATES[gatewayType] || DEFAULT_GATEWAY_RATES[gatewayId] || 1.0;
+    return rateFromService; // Can be null if not available
   }, [gatewayId, getGatewayBaseRate]);
 
   // Get rate info for display (includes isCustom flag)
@@ -69,6 +56,7 @@ export function useCredits(options = {}) {
 
   /**
    * Fetch credit data from backend
+   * No fallback defaults - database values are required
    */
   const fetchCreditData = useCallback(async () => {
     if (!isAuthenticated) {
@@ -93,27 +81,33 @@ export function useCredits(options = {}) {
           setCreditData({
             balance: data.credits?.balance ?? data.user?.creditBalance ?? data.user?.credit_balance ?? 0,
             tier,
-            gatewayRate: DEFAULT_GATEWAY_RATES[gatewayId] || 1.0,
+            gatewayRate: null, // Rate comes from useGatewayCreditRates
             isLoading: false,
             error: null
           });
+        } else {
+          setCreditData(prev => ({
+            ...prev,
+            isLoading: false,
+            error: data.error?.message || 'Failed to load credit data'
+          }));
         }
       } else {
+        const errorData = await response.json().catch(() => ({}));
         setCreditData(prev => ({
           ...prev,
           isLoading: false,
-          error: 'Failed to load credit data'
+          error: errorData.error?.message || 'Failed to load credit data'
         }));
       }
     } catch (err) {
-
       setCreditData(prev => ({
         ...prev,
         isLoading: false,
-        error: 'Network error'
+        error: 'Network error - credit data unavailable'
       }));
     }
-  }, [isAuthenticated, gatewayId]);
+  }, [isAuthenticated]);
 
   // Fetch on mount and when auth changes
   useEffect(() => {
@@ -143,24 +137,29 @@ export function useCredits(options = {}) {
 
   /**
    * Get effective rate (same for all tiers - no multiplier)
-   * Uses real-time rates from useGatewayCreditRates when available
+   * Uses real-time rates from useGatewayCreditRates - no fallback
    * Requirements: 11.1, 11.3
    */
   const effectiveRate = useMemo(() => {
-    // Try to get effective rate from real-time service first
+    // Get effective rate from real-time service - can be null
     const rateFromService = getGatewayEffectiveRate(gatewayId);
-    if (rateFromService) return rateFromService;
-    
-    // Fallback to local gateway rate
-    return gatewayRate;
-  }, [gatewayId, gatewayRate, getGatewayEffectiveRate]);
+    return rateFromService; // No fallback - returns null if unavailable
+  }, [gatewayId, getGatewayEffectiveRate]);
+
+  /**
+   * Check if rate data is available for calculations
+   */
+  const rateDataAvailable = useMemo(() => {
+    return effectiveRate !== null && ratesAvailable;
+  }, [effectiveRate, ratesAvailable]);
 
   /**
    * Calculate estimated cost for a batch
    * @param {number} cardCount - Number of cards in batch
-   * @returns {number} - Estimated maximum credit cost
+   * @returns {number|null} - Estimated maximum credit cost, or null if rate unavailable
    */
   const calculateEstimatedCost = useCallback((cardCount) => {
+    if (effectiveRate === null) return null;
     // Worst case: all cards are LIVE
     return Math.ceil(cardCount * effectiveRate);
   }, [effectiveRate]);
@@ -168,18 +167,30 @@ export function useCredits(options = {}) {
   /**
    * Calculate actual cost based on LIVE cards
    * @param {number} liveCount - Number of LIVE cards
-   * @returns {number} - Actual credit cost
+   * @returns {number|null} - Actual credit cost, or null if rate unavailable
    */
   const calculateActualCost = useCallback((liveCount) => {
+    if (effectiveRate === null) return null;
     return Math.ceil(liveCount * effectiveRate);
   }, [effectiveRate]);
 
   /**
    * Check if user has sufficient credits for a batch
    * @param {number} cardCount - Number of cards in batch
-   * @returns {Object} - { sufficient, currentBalance, requiredCredits, shortfall }
+   * @returns {Object} - { sufficient, currentBalance, requiredCredits, shortfall, rateUnavailable }
    */
   const checkSufficientCredits = useCallback((cardCount) => {
+    if (effectiveRate === null) {
+      return {
+        sufficient: false,
+        currentBalance: creditData.balance,
+        requiredCredits: null,
+        shortfall: null,
+        rateUnavailable: true,
+        error: 'Credit rate unavailable - cannot calculate cost'
+      };
+    }
+    
     const requiredCredits = calculateEstimatedCost(cardCount);
     const sufficient = creditData.balance >= requiredCredits;
     
@@ -187,9 +198,10 @@ export function useCredits(options = {}) {
       sufficient,
       currentBalance: creditData.balance,
       requiredCredits,
-      shortfall: sufficient ? 0 : requiredCredits - creditData.balance
+      shortfall: sufficient ? 0 : requiredCredits - creditData.balance,
+      rateUnavailable: false
     };
-  }, [creditData.balance, calculateEstimatedCost]);
+  }, [creditData.balance, effectiveRate, calculateEstimatedCost]);
 
   /**
    * Track credits consumed during a batch operation
@@ -199,6 +211,8 @@ export function useCredits(options = {}) {
    */
   const trackLiveCard = useCallback((creditCost) => {
     const cost = creditCost ?? effectiveRate;
+    if (cost === null) return; // Cannot track without rate
+    
     setLiveCardsCount(prev => prev + 1);
     setCreditsConsumed(prev => prev + cost);
     // Optimistically update balance for live feedback
@@ -267,13 +281,16 @@ export function useCredits(options = {}) {
     gatewayRate,
     effectiveRate,
     isLoading: creditData.isLoading,
-    error: creditData.error,
+    error: creditData.error || ratesError,
     
-    // Rate info from real-time service (includes isCustom flag)
+    // Rate availability
+    rateDataAvailable,
+    ratesError,
+    
+    // Rate info from real-time service
     // Requirements: 11.1, 11.4
     rateInfo,
     baseRate: gatewayRate,
-    isCustomRate: rateInfo?.isCustom || false,
     
     // Tracking state
     creditsConsumed,
@@ -295,6 +312,8 @@ export function useCredits(options = {}) {
     creditData,
     gatewayRate,
     effectiveRate,
+    rateDataAvailable,
+    ratesError,
     rateInfo,
     creditsConsumed,
     liveCardsCount,

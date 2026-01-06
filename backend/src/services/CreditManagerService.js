@@ -39,25 +39,21 @@ export const CONCURRENCY_CONFIG = {
 };
 
 /**
- * Default pricing fallback (used when database config not available)
- * Fixed values per status - no ranges, no tier multipliers
- */
-export const DEFAULT_PRICING = {
-    approved: 5,  // Credits for APPROVED cards
-    live: 3,      // Credits for LIVE cards
-    dead: 0,
-    error: 0,
-    captcha: 0
-};
-
-/**
  * Calculate credit cost for a single card based on status
- * @param {Object} pricing - Pricing config { approved: number, live: number }
+ * @param {Object} pricing - Pricing config { approved: number, live: number } (required)
  * @param {string} resultStatus - Result status (approved, live, dead, error, etc.)
  * @returns {number} Credit cost to deduct
+ * @throws {Error} If pricing not provided or missing required fields
  */
 export function calculateCreditCost(pricing, resultStatus) {
-    const config = pricing || DEFAULT_PRICING;
+    if (!pricing) {
+        throw new Error('Pricing configuration is required');
+    }
+
+    if (pricing.approved === undefined || pricing.live === undefined) {
+        throw new Error('Pricing must include approved and live rates');
+    }
+
     const statusLower = resultStatus.toLowerCase();
 
     // Dead/error/captcha/declined are always free
@@ -67,11 +63,11 @@ export function calculateCreditCost(pricing, resultStatus) {
 
     // Return fixed cost for status
     if (statusLower === 'approved') {
-        return config.approved ?? DEFAULT_PRICING.approved;
+        return pricing.approved;
     }
 
     if (statusLower === 'live') {
-        return config.live ?? DEFAULT_PRICING.live;
+        return pricing.live;
     }
 
     return 0;
@@ -79,17 +75,25 @@ export function calculateCreditCost(pricing, resultStatus) {
 
 /**
  * Calculate total credit cost for a batch
- * @param {Object} pricing - Pricing config { approved: number, live: number }
+ * @param {Object} pricing - Pricing config { approved: number, live: number } (required)
  * @param {Object} counts - Status counts { approved: number, live: number }
  * @returns {number} Total credit cost
+ * @throws {Error} If pricing not provided or missing required fields
  */
 export function calculateBatchCreditCost(pricing, counts) {
-    const config = pricing || DEFAULT_PRICING;
+    if (!pricing) {
+        throw new Error('Pricing configuration is required');
+    }
+
+    if (pricing.approved === undefined || pricing.live === undefined) {
+        throw new Error('Pricing must include approved and live rates');
+    }
+
     const approvedCount = counts?.approved || 0;
     const liveCount = counts?.live || 0;
 
-    const approvedCost = approvedCount * (config.approved ?? DEFAULT_PRICING.approved);
-    const liveCost = liveCount * (config.live ?? DEFAULT_PRICING.live);
+    const approvedCost = approvedCount * pricing.approved;
+    const liveCost = liveCount * pricing.live;
 
     return approvedCost + liveCost;
 }
@@ -433,13 +437,22 @@ export class CreditManagerService {
      * 
      * @param {string} gatewayId - Gateway ID
      * @returns {Promise<Object>} Pricing { approved: number, live: number }
+     * @throws {Error} If pricing not configured
      */
     async getGatewayPricing(gatewayId) {
         const config = await this.getGatewayConfig(gatewayId);
 
+        if (!config) {
+            throw new Error(`Gateway configuration not found: ${gatewayId}`);
+        }
+
+        if (config.pricing_approved === undefined || config.pricing_live === undefined) {
+            throw new Error(`Pricing not configured for gateway: ${gatewayId}`);
+        }
+
         return {
-            approved: config?.pricing_approved ?? DEFAULT_PRICING.approved,
-            live: config?.pricing_live ?? DEFAULT_PRICING.live
+            approved: config.pricing_approved,
+            live: config.pricing_live
         };
     }
 
@@ -765,30 +778,25 @@ export class CreditManagerService {
      * Requirement: 9.2
      * 
      * @param {string} gatewayId - Gateway ID
-     * @returns {Promise<Object|null>} Gateway config or null
+     * @returns {Promise<Object>} Gateway config
+     * @throws {Error} If database not configured or gateway not found
      */
     async getGatewayConfig(gatewayId) {
         if (!isSupabaseConfigured()) {
-            // Return default pricing if database not configured
-            return {
-                gateway_id: gatewayId,
-                pricing_approved: DEFAULT_PRICING.approved,
-                pricing_live: DEFAULT_PRICING.live,
-                is_active: true
-            };
+            throw new Error('Database not configured - gateway configuration unavailable');
         }
 
         // Check cache first (Requirement 9.2 - 60 second TTL)
         const cachedConfig = this._gatewayConfigCache.get(gatewayId);
-        if (cachedConfig !== null) {
+        if (cachedConfig !== null && cachedConfig !== undefined) {
             return cachedConfig;
         }
 
         // Check if we have any cached data (bulk retrieval optimization)
         const allCached = this._gatewayConfigCache.getAll();
         if (Object.keys(allCached).length > 0) {
-            // Cache exists but this gateway isn't in it - return null
-            return null;
+            // Cache exists but this gateway isn't in it
+            throw new Error(`Gateway configuration not found: ${gatewayId}`);
         }
 
         // Refresh cache from database
@@ -797,38 +805,37 @@ export class CreditManagerService {
             .select('*');
 
         if (error) {
-            // Return default on error
-            return {
-                gateway_id: gatewayId,
-                pricing_approved: DEFAULT_PRICING.approved,
-                pricing_live: DEFAULT_PRICING.live,
-                is_active: true
-            };
+            throw new Error(`Failed to fetch gateway configurations: ${error.message}`);
+        }
+
+        if (!configs || configs.length === 0) {
+            throw new Error('No gateway configurations found in database');
         }
 
         // Build cache map and store all configs
         const cacheEntries = {};
-        for (const config of (configs || [])) {
+        for (const config of configs) {
             cacheEntries[config.gateway_id] = config;
         }
         this._gatewayConfigCache.setAll(cacheEntries);
 
-        return cacheEntries[gatewayId] || null;
+        const gatewayConfig = cacheEntries[gatewayId];
+        if (!gatewayConfig) {
+            throw new Error(`Gateway configuration not found: ${gatewayId}`);
+        }
+
+        return gatewayConfig;
     }
 
     /**
      * Get all active gateway configurations
      * 
      * @returns {Promise<Array>} Array of active gateway configs
+     * @throws {Error} If database not configured or query fails
      */
     async getActiveGateways() {
         if (!isSupabaseConfigured()) {
-            // Return defaults if database not configured
-            return [
-                { gateway_id: 'auth', gateway_name: 'Auth Gateway', pricing_approved: DEFAULT_PRICING.approved, pricing_live: DEFAULT_PRICING.live, is_active: true },
-                { gateway_id: 'charge', gateway_name: 'Charge Gateway', pricing_approved: DEFAULT_PRICING.approved, pricing_live: DEFAULT_PRICING.live, is_active: true },
-                { gateway_id: 'shopify', gateway_name: 'Shopify Gateway', pricing_approved: DEFAULT_PRICING.approved, pricing_live: DEFAULT_PRICING.live, is_active: true }
-            ];
+            throw new Error('Database not configured - gateway configurations unavailable');
         }
 
         const { data: configs, error } = await supabase
@@ -840,7 +847,11 @@ export class CreditManagerService {
             throw new Error(`Failed to get gateway configs: ${error.message}`);
         }
 
-        return configs || [];
+        if (!configs || configs.length === 0) {
+            throw new Error('No active gateway configurations found in database');
+        }
+
+        return configs;
     }
 
     /**

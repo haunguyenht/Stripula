@@ -165,29 +165,30 @@ export function useGatewayCreditRates() {
    * Get effective rate for a gateway (based on billing type)
    * - Auth/Shopify gateways: use pricing_live
    * - Charge gateways: use pricing_approved
+   * Returns null if rate not found (no fallback defaults)
    */
   const getEffectiveRate = useCallback((gatewayId) => {
     const rate = rates.find(r => r.gatewayId === gatewayId);
     const billingType = getGatewayBillingType(gatewayId);
     
     if (!rate) {
-      // Default fallback rates
-      if (gatewayId.startsWith('auth-')) return 3.0; // pricing_live default
-      if (gatewayId.startsWith('charge-')) return 5.0; // pricing_approved default
-      if (gatewayId.startsWith('skbased-auth-')) return 3.0;
-      if (gatewayId.startsWith('skbased-')) return 5.0;
-      if (gatewayId.startsWith('shopify-')) return 3.0;
-      return 3.0;
+      // No fallback - return null to indicate rate not available
+      return null;
     }
     
     // Return correct rate based on billing type
     if (rate.pricing) {
-      return billingType === 'approved' 
-        ? (rate.pricing.approved ?? 5) 
-        : (rate.pricing.live ?? 3);
+      const pricingRate = billingType === 'approved' 
+        ? rate.pricing.approved 
+        : rate.pricing.live;
+      
+      if (pricingRate === undefined || pricingRate === null) {
+        return null;
+      }
+      return pricingRate;
     }
     
-    return rate.effectiveRate || rate.rate;
+    return rate.effectiveRate ?? rate.rate ?? null;
   }, [rates, getGatewayBillingType]);
 
   /**
@@ -207,13 +208,14 @@ export function useGatewayCreditRates() {
 
   /**
    * Get pricing config for a gateway
+   * Returns null if pricing not found (no fallback defaults)
    */
   const getPricing = useCallback((gatewayId) => {
     const rate = rates.find(r => r.gatewayId === gatewayId);
     if (rate?.pricing) {
       return rate.pricing;
     }
-    return { approved: 5, live: 3 };
+    return null;
   }, [rates]);
 
   /**
@@ -223,12 +225,20 @@ export function useGatewayCreditRates() {
     await fetchRates();
   }, [fetchRates]);
 
+  /**
+   * Check if rates data is available
+   */
+  const isAvailable = useMemo(() => {
+    return rates.length > 0 && !error;
+  }, [rates, error]);
+
   return useMemo(() => ({
     rates,
     isLoading,
     error,
     lastUpdate,
     userTier,
+    isAvailable,
     getRate,
     getEffectiveRate,
     getBaseRate,
@@ -244,6 +254,7 @@ export function useGatewayCreditRates() {
     error,
     lastUpdate,
     userTier,
+    isAvailable,
     getRate,
     getEffectiveRate,
     getBaseRate,

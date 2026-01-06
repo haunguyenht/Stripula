@@ -3,6 +3,19 @@ import { useTheme } from '@/hooks/useTheme';
 import { useState, useEffect, useRef, memo, useMemo } from 'react';
 import { motion } from 'motion/react';
 
+// Generate floating dust motes for light mode (like aged paper)
+const generateDustMotes = (count = 8) => {
+  return Array.from({ length: count }, (_, i) => ({
+    id: i,
+    size: Math.random() * 2 + 0.5,
+    x: Math.random() * 100,
+    y: Math.random() * 100,
+    duration: Math.random() * 25 + 30,
+    delay: Math.random() * 15,
+    opacity: Math.random() * 0.15 + 0.05,
+  }));
+};
+
 /**
  * AppBackground - Dual Theme Design System Background
  * 
@@ -33,37 +46,6 @@ import { motion } from 'motion/react';
  * - Memoized particle generation
  */
 
-// Generate floating aurora particles with memoization (dark mode) - Enhanced for premium feel
-const generateParticles = (count = 24) => {
-  return Array.from({ length: count }, (_, i) => ({
-    id: i,
-    size: Math.random() * 4 + 1.5,
-    x: Math.random() * 100,
-    y: Math.random() * 100,
-    duration: Math.random() * 18 + 22,
-    delay: Math.random() * 12,
-    color: [
-      'rgba(139, 92, 246, 0.5)',  // Indigo - richer
-      'rgba(34, 211, 238, 0.4)',   // Cyan - richer
-      'rgba(236, 72, 153, 0.45)', // Pink - richer
-      'rgba(168, 85, 247, 0.45)', // Purple - new
-    ][Math.floor(Math.random() * 4)],
-    blur: Math.random() * 2.5 + 1.5,
-  }));
-};
-
-// Generate floating dust motes for light mode (like aged paper)
-const generateDustMotes = (count = 12) => {
-  return Array.from({ length: count }, (_, i) => ({
-    id: i,
-    size: Math.random() * 2 + 0.5,
-    x: Math.random() * 100,
-    y: Math.random() * 100,
-    duration: Math.random() * 25 + 30,
-    delay: Math.random() * 15,
-    opacity: Math.random() * 0.15 + 0.05,
-  }));
-};
 
 const AppBackground = memo(function AppBackground({ className }) {
   const { theme } = useTheme();
@@ -77,9 +59,8 @@ const AppBackground = memo(function AppBackground({ className }) {
       : false
   );
   
-  // Memoize particles/motes to prevent regeneration on re-renders - Enhanced counts
-  const particles = useMemo(() => generateParticles(24), []);
-  const dustMotes = useMemo(() => generateDustMotes(12), []);
+  // Memoize dust motes for light mode
+  const dustMotes = useMemo(() => generateDustMotes(8), []);
 
   useEffect(() => {
     if (!isDark) {
@@ -390,225 +371,135 @@ const AppBackground = memo(function AppBackground({ className }) {
   }
 
   // ============================================
-  // DARK MODE: Liquid Aurora Background
+  // DARK MODE: Obsidian Nebula Background (Static CSS - No Lag)
   // ============================================
   return (
     <div 
       className={cn(
         "fixed inset-0 -z-10 overflow-hidden",
-        "bg-[hsl(220_18%_7%)]",
         className
       )}
       aria-hidden="true"
+      style={{
+        // Rich gradient base - deep obsidian with purple/blue undertones
+        background: `
+          radial-gradient(ellipse 80% 50% at 20% 20%, rgba(139, 92, 246, 0.15) 0%, transparent 50%),
+          radial-gradient(ellipse 60% 80% at 80% 30%, rgba(34, 211, 238, 0.12) 0%, transparent 45%),
+          radial-gradient(ellipse 70% 60% at 70% 80%, rgba(236, 72, 153, 0.1) 0%, transparent 50%),
+          radial-gradient(ellipse 50% 50% at 30% 70%, rgba(99, 102, 241, 0.12) 0%, transparent 45%),
+          radial-gradient(ellipse 100% 100% at 50% 50%, rgba(139, 92, 246, 0.08) 0%, transparent 60%),
+          linear-gradient(180deg, hsl(250, 30%, 8%) 0%, hsl(240, 25%, 6%) 50%, hsl(250, 20%, 5%) 100%)
+        `,
+      }}
     >
-      {/* Layer 1: Base tile pattern */}
+      {/* Layer 1: Subtle dot grid pattern */}
       <div 
-        className="absolute inset-0 bg-opux-tile opacity-60"
-        style={{ transform: 'translateZ(0)' }}
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          backgroundImage: `radial-gradient(circle at center, rgba(139, 92, 246, 0.2) 1px, transparent 1px)`,
+          backgroundSize: '48px 48px',
+          opacity: 0.25,
+        }}
       />
 
-      {/* Layer 2: Aurora nebula layer - PREMIUM enhanced animated gradient blobs */}
+      {/* Layer 2: Mesh gradient overlay for depth */}
       <div 
-        className="absolute inset-0 overflow-hidden"
-        style={{ transform: 'translateZ(0)' }}
-      >
-        {/* Primary aurora blob - indigo/violet (top-left) - ENHANCED */}
-        <motion.div
-          className="absolute -top-[25%] -left-[15%] w-[70%] h-[70%]"
-          style={{
-            background: 'radial-gradient(ellipse 100% 80% at center, rgba(139, 92, 246, 0.25) 0%, rgba(124, 58, 237, 0.12) 35%, transparent 65%)',
-            filter: 'blur(80px)',
-          }}
-          animate={prefersReducedMotion.current ? {} : {
-            x: [0, 70, 25, 0],
-            y: [0, 50, -25, 0],
-            scale: [1, 1.1, 1.15, 1],
-            rotate: [0, 6, -4, 0],
-          }}
-          transition={{
-            duration: 28,
-            repeat: Infinity,
-            ease: 'easeInOut',
-          }}
-        />
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: `
+            conic-gradient(from 45deg at 25% 25%, rgba(139, 92, 246, 0.06) 0deg, transparent 90deg, rgba(34, 211, 238, 0.04) 180deg, transparent 270deg),
+            conic-gradient(from 225deg at 75% 75%, rgba(236, 72, 153, 0.05) 0deg, transparent 90deg, rgba(99, 102, 241, 0.04) 180deg, transparent 270deg)
+          `,
+        }}
+      />
 
-        {/* Secondary aurora blob - cyan/teal (top-right) - ENHANCED */}
-        <motion.div
-          className="absolute -top-[15%] -right-[10%] w-[60%] h-[60%]"
-          style={{
-            background: 'radial-gradient(ellipse 90% 100% at center, rgba(34, 211, 238, 0.22) 0%, rgba(6, 182, 212, 0.1) 40%, transparent 65%)',
-            filter: 'blur(90px)',
-          }}
-          animate={prefersReducedMotion.current ? {} : {
-            x: [0, -60, -25, 0],
-            y: [0, 70, 35, 0],
-            scale: [1, 1.15, 1.08, 1],
-            rotate: [0, -10, 5, 0],
-          }}
-          transition={{
-            duration: 30,
-            repeat: Infinity,
-            ease: 'easeInOut',
-            delay: 3,
-          }}
-        />
+      {/* Layer 3: Large aurora glow spots (static) */}
+      <div 
+        className="absolute -top-[20%] -left-[10%] w-[60%] h-[60%] pointer-events-none"
+        style={{
+          background: 'radial-gradient(ellipse at center, rgba(139, 92, 246, 0.2) 0%, rgba(124, 58, 237, 0.08) 40%, transparent 70%)',
+          filter: 'blur(60px)',
+        }}
+      />
+      <div 
+        className="absolute -top-[10%] -right-[10%] w-[55%] h-[55%] pointer-events-none"
+        style={{
+          background: 'radial-gradient(ellipse at center, rgba(34, 211, 238, 0.18) 0%, rgba(6, 182, 212, 0.06) 45%, transparent 70%)',
+          filter: 'blur(70px)',
+        }}
+      />
+      <div 
+        className="absolute -bottom-[15%] left-[20%] w-[50%] h-[50%] pointer-events-none"
+        style={{
+          background: 'radial-gradient(ellipse at center, rgba(236, 72, 153, 0.15) 0%, rgba(244, 114, 182, 0.05) 45%, transparent 70%)',
+          filter: 'blur(65px)',
+        }}
+      />
+      <div 
+        className="absolute bottom-[10%] -right-[5%] w-[40%] h-[45%] pointer-events-none"
+        style={{
+          background: 'radial-gradient(ellipse at center, rgba(168, 85, 247, 0.12) 0%, transparent 60%)',
+          filter: 'blur(55px)',
+        }}
+      />
 
-        {/* Tertiary aurora blob - pink/rose (bottom) - ENHANCED */}
-        <motion.div
-          className="absolute -bottom-[20%] left-[15%] w-[55%] h-[55%]"
-          style={{
-            background: 'radial-gradient(ellipse at center, rgba(236, 72, 153, 0.18) 0%, rgba(244, 114, 182, 0.08) 40%, transparent 65%)',
-            filter: 'blur(85px)',
-          }}
-          animate={prefersReducedMotion.current ? {} : {
-            x: [0, 80, 35, 0],
-            y: [0, -60, -25, 0],
-            scale: [1, 1.18, 1.1, 1],
-            rotate: [0, 8, -5, 0],
-          }}
-          transition={{
-            duration: 26,
-            repeat: Infinity,
-            ease: 'easeInOut',
-            delay: 5,
-          }}
-        />
+      {/* Layer 4: Center ambient glow */}
+      <div 
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[70%] h-[60%] pointer-events-none"
+        style={{
+          background: 'radial-gradient(ellipse at center, rgba(139, 92, 246, 0.1) 0%, rgba(34, 211, 238, 0.05) 40%, transparent 70%)',
+          filter: 'blur(80px)',
+        }}
+      />
 
-        {/* Quaternary aurora blob - mixed indigo-cyan (center-right) - ENHANCED */}
-        <motion.div
-          className="absolute top-[25%] right-[5%] w-[45%] h-[50%]"
-          style={{
-            background: 'radial-gradient(ellipse at center, rgba(99, 102, 241, 0.15) 0%, rgba(34, 211, 238, 0.1) 50%, transparent 70%)',
-            filter: 'blur(100px)',
-          }}
-          animate={prefersReducedMotion.current ? {} : {
-            x: [0, -50, 25, 0],
-            y: [0, 40, -50, 0],
-            opacity: [0.75, 1, 0.85, 0.75],
-            scale: [1, 1.12, 0.95, 1],
-          }}
-          transition={{
-            duration: 34,
-            repeat: Infinity,
-            ease: 'easeInOut',
-            delay: 2,
-          }}
-        />
-
-        {/* NEW: Fifth aurora blob - purple accent (bottom-right) */}
-        <motion.div
-          className="absolute -bottom-[10%] -right-[10%] w-[45%] h-[45%]"
-          style={{
-            background: 'radial-gradient(ellipse at center, rgba(168, 85, 247, 0.15) 0%, rgba(139, 92, 246, 0.06) 45%, transparent 70%)',
-            filter: 'blur(75px)',
-          }}
-          animate={prefersReducedMotion.current ? {} : {
-            x: [0, -40, -15, 0],
-            y: [0, -35, 15, 0],
-            scale: [1, 1.1, 1.05, 1],
-          }}
-          transition={{
-            duration: 22,
-            repeat: Infinity,
-            ease: 'easeInOut',
-            delay: 7,
-          }}
-        />
-
-        {/* Ambient center glow - subtle breathing - ENHANCED */}
-        <motion.div
-          className="absolute top-[30%] left-[25%] w-[50%] h-[45%]"
-          style={{
-            background: 'radial-gradient(ellipse at center, rgba(139, 92, 246, 0.1) 0%, rgba(34, 211, 238, 0.06) 40%, transparent 70%)',
-            filter: 'blur(120px)',
-          }}
-          animate={prefersReducedMotion.current ? {} : {
-            opacity: [0.6, 0.9, 0.7, 0.6],
-            scale: [1, 1.08, 0.96, 1],
-          }}
-          transition={{
-            duration: 20,
-            repeat: Infinity,
-            ease: 'easeInOut',
-            delay: 1,
-          }}
-        />
-      </div>
-
-      {/* Layer 3: Floating aurora particles */}
-      {!prefersReducedMotion.current && (
-        <div 
-          className="absolute inset-0 overflow-hidden pointer-events-none"
-          style={{ transform: 'translateZ(0)' }}
-        >
-          {particles.map((particle) => (
-            <motion.div
-              key={particle.id}
-              className="absolute rounded-full"
-              style={{
-                width: particle.size,
-                height: particle.size,
-                left: `${particle.x}%`,
-                top: `${particle.y}%`,
-                background: particle.color,
-                filter: `blur(${particle.blur}px)`,
-                boxShadow: `0 0 ${particle.size * 3}px ${particle.color}`,
-              }}
-              animate={{
-                y: [0, -30, -15, 0],
-                x: [0, 15, -10, 0],
-                opacity: [0.3, 0.7, 0.5, 0.3],
-                scale: [1, 1.2, 0.9, 1],
-              }}
-              transition={{
-                duration: particle.duration,
-                repeat: Infinity,
-                ease: 'easeInOut',
-                delay: particle.delay,
-              }}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* Layer 4: Grainy texture overlay */}
+      {/* Layer 5: Grainy texture overlay */}
       <div 
         className={cn(
-          "absolute inset-0 bg-opux-grainy",
+          "absolute inset-0 bg-opux-grainy pointer-events-none",
           "transition-opacity duration-500 ease-out",
-          isVisible && grainyLoaded ? "opacity-30" : "opacity-0"
+          isVisible && grainyLoaded ? "opacity-25" : "opacity-0"
         )}
-        style={{ 
-          transform: 'translateZ(0)',
-          mixBlendMode: 'overlay'
-        }}
+        style={{ mixBlendMode: 'overlay' }}
       />
 
-      {/* Layer 5: Top specular gradient - PREMIUM enhanced aurora tint */}
+      {/* Layer 6: Top specular gradient */}
       <div 
-        className="absolute inset-x-0 top-0 h-[50%]"
+        className="absolute inset-x-0 top-0 h-[45%] pointer-events-none"
         style={{
-          background: 'linear-gradient(180deg, rgba(139, 92, 246, 0.06) 0%, rgba(34, 211, 238, 0.03) 35%, transparent 100%)',
-          transform: 'translateZ(0)',
+          background: 'linear-gradient(180deg, rgba(139, 92, 246, 0.08) 0%, rgba(99, 102, 241, 0.04) 30%, transparent 100%)',
         }}
       />
 
-      {/* Layer 6: Bottom subtle depth - very subtle, no bright glow */}
+      {/* Layer 7: Edge aurora accents */}
       <div 
-        className="absolute inset-x-0 bottom-0 h-[25%]"
+        className="absolute inset-y-0 left-0 w-[12%] pointer-events-none"
         style={{
-          background: 'linear-gradient(0deg, rgba(0, 0, 0, 0.15) 0%, transparent 100%)',
-          transform: 'translateZ(0)',
+          background: 'linear-gradient(90deg, rgba(139, 92, 246, 0.08) 0%, transparent 100%)',
+        }}
+      />
+      <div 
+        className="absolute inset-y-0 right-0 w-[12%] pointer-events-none"
+        style={{
+          background: 'linear-gradient(-90deg, rgba(34, 211, 238, 0.06) 0%, transparent 100%)',
         }}
       />
 
-      {/* Layer 7: Vignette overlay - PREMIUM deeper depth */}
+      {/* Layer 8: Bottom depth shadow */}
       <div 
-        className="absolute inset-0"
+        className="absolute inset-x-0 bottom-0 h-[25%] pointer-events-none"
+        style={{
+          background: 'linear-gradient(0deg, rgba(0, 0, 0, 0.3) 0%, transparent 100%)',
+        }}
+      />
+
+      {/* Layer 9: Vignette overlay */}
+      <div 
+        className="absolute inset-0 pointer-events-none"
         style={{ 
-          boxShadow: 'inset 0 0 300px 120px hsl(222 20% 4% / 0.6), inset 0 0 120px 50px hsl(222 20% 4% / 0.35)',
-          transform: 'translateZ(0)',
-          pointerEvents: 'none',
+          boxShadow: `
+            inset 0 0 300px 100px hsl(250, 30%, 4%),
+            inset 0 0 120px 40px hsl(240, 25%, 5%)
+          `,
         }}
       />
     </div>

@@ -2,68 +2,6 @@ import { supabase, isSupabaseConfigured } from '../infrastructure/database/Supab
 import { GATEWAY_TYPES, getGatewayTypeInfo } from '../utils/constants.js';
 
 /**
- * Default pricing config for gateways
- * Pricing: approved (charged cards), live (validated cards), dead/error (free)
- * Single fixed values, not ranges
- */
-export const DEFAULT_GATEWAY_PRICING = {
-    approved: 5,  // Credits for APPROVED cards
-    live: 3,      // Credits for LIVE cards
-    dead: 0,
-    error: 0,
-    captcha: 0
-};
-
-/**
- * Default gateway rates by sub-type
- * Hierarchy: STRIPE (auth, charge, skbased-auth, skbased) | SHOPIFY
- */
-export const DEFAULT_GATEWAY_RATES = {
-    // Stripe sub-types
-    auth: {
-        rate: 1.0,
-        name: 'Auth Gateway',
-        description: 'WooCommerce SetupIntent validation',
-        parentType: 'stripe',
-        subType: 'auth',
-        pricing: DEFAULT_GATEWAY_PRICING
-    },
-    charge: {
-        rate: 3.0,
-        name: 'Charge Gateway',
-        description: 'PK-based charge validation',
-        parentType: 'stripe',
-        subType: 'charge',
-        pricing: DEFAULT_GATEWAY_PRICING
-    },
-    'skbased-auth': {
-        rate: 2.0,
-        name: 'SK Auth Gateway',
-        description: 'SK-based SetupIntent $0 authorization',
-        parentType: 'stripe',
-        subType: 'skbased-auth',
-        pricing: DEFAULT_GATEWAY_PRICING
-    },
-    skbased: {
-        rate: 3.0,
-        name: 'SK Charge Gateway',
-        description: 'SK-based charge with refund validation',
-        parentType: 'stripe',
-        subType: 'skbased',
-        pricing: DEFAULT_GATEWAY_PRICING
-    },
-    // Shopify (no sub-type)
-    shopify: {
-        rate: 2.0,
-        name: 'Shopify Gateway',
-        description: 'Shopify checkout validation',
-        parentType: 'shopify',
-        subType: null,
-        pricing: DEFAULT_GATEWAY_PRICING
-    }
-};
-
-/**
  * Credit rate validation constants
  * Requirements: 2.2, 5.5
  */
@@ -139,11 +77,11 @@ export class GatewayConfigService {
      * Requirement: 5.1
      * 
      * @returns {Promise<Array>} Array of active gateway configs
+     * @throws {Error} If database not configured or query fails
      */
     async getActiveGateways() {
         if (!isSupabaseConfigured()) {
-            // Return defaults if database not configured
-            return this._getDefaultGateways();
+            throw new Error('Database not configured - gateway configurations unavailable');
         }
 
         // Try to use cache first
@@ -160,15 +98,17 @@ export class GatewayConfigService {
             .order('gateway_id');
 
         if (error) {
+            throw new Error(`Failed to fetch gateway configurations: ${error.message}`);
+        }
 
-            // Return defaults on error
-            return this._getDefaultGateways();
+        if (!configs || configs.length === 0) {
+            throw new Error('No gateway configurations found in database');
         }
 
         // Update cache with all configs (we'll filter for active)
         await this._refreshCache();
 
-        return configs || [];
+        return configs;
     }
 
     /**
@@ -177,7 +117,8 @@ export class GatewayConfigService {
      * Requirement: 5.1
      * 
      * @param {string} gatewayId - Gateway ID (e.g., 'auth', 'charge', 'shopify')
-     * @returns {Promise<Object|null>} Gateway config or null if not found
+     * @returns {Promise<Object>} Gateway config
+     * @throws {Error} If gateway not found or database unavailable
      */
     async getGateway(gatewayId) {
         if (!gatewayId) {
@@ -185,13 +126,12 @@ export class GatewayConfigService {
         }
 
         if (!isSupabaseConfigured()) {
-            // Return default if database not configured
-            return this._getDefaultGateway(gatewayId);
+            throw new Error('Database not configured - gateway configuration unavailable');
         }
 
         // Try cache first
         const cached = this._getCachedGateway(gatewayId);
-        if (cached !== undefined) {
+        if (cached !== undefined && cached !== null) {
             return cached;
         }
 
@@ -204,11 +144,9 @@ export class GatewayConfigService {
 
         if (error) {
             if (error.code === 'PGRST116') {
-                // Not found - return default if available
-                return this._getDefaultGateway(gatewayId);
+                throw new Error(`Gateway configuration not found: ${gatewayId}`);
             }
-
-            return this._getDefaultGateway(gatewayId);
+            throw new Error(`Failed to fetch gateway configuration: ${error.message}`);
         }
 
         // Update cache
@@ -303,17 +241,30 @@ export class GatewayConfigService {
      * Create a new gateway configuration
      * 
      * @param {Object} config - Gateway configuration
-     * @param {string} config.gateway_id - Unique gateway ID
-     * @param {string} config.gateway_name - Display name
-     * @param {number} config.pricing_approved - Credits for APPROVED cards (default: 5)
-     * @param {number} config.pricing_live - Credits for LIVE cards (default: 3)
+     * @param {string} config.gateway_id - Unique gateway ID (required)
+     * @param {string} config.gateway_name - Display name (required)
+     * @param {number} config.pricing_approved - Credits for APPROVED cards (required)
+     * @param {number} config.pricing_live - Credits for LIVE cards (required)
      * @param {string} config.description - Gateway description
      * @param {boolean} config.is_active - Whether gateway is active (default: true)
      * @returns {Promise<Object>} Created gateway config
+     * @throws {Error} If required fields missing or database unavailable
      */
     async createGateway(config) {
         if (!config || !config.gateway_id) {
             throw new Error('Gateway ID is required');
+        }
+
+        if (!config.gateway_name) {
+            throw new Error('Gateway name is required');
+        }
+
+        if (config.pricing_approved === undefined || config.pricing_approved === null) {
+            throw new Error('pricing_approved is required');
+        }
+
+        if (config.pricing_live === undefined || config.pricing_live === null) {
+            throw new Error('pricing_live is required');
         }
 
         if (!isSupabaseConfigured()) {
@@ -322,9 +273,9 @@ export class GatewayConfigService {
 
         const insertData = {
             gateway_id: config.gateway_id,
-            gateway_name: config.gateway_name || config.gateway_id,
-            pricing_approved: config.pricing_approved ?? DEFAULT_GATEWAY_PRICING.approved,
-            pricing_live: config.pricing_live ?? DEFAULT_GATEWAY_PRICING.live,
+            gateway_name: config.gateway_name,
+            pricing_approved: config.pricing_approved,
+            pricing_live: config.pricing_live,
             description: config.description || '',
             is_active: config.is_active !== false,
             updated_at: new Date().toISOString()
@@ -366,11 +317,17 @@ export class GatewayConfigService {
      * Get the credit rate for a gateway
      * 
      * @param {string} gatewayId - Gateway ID
-     * @returns {Promise<number>} Credit rate (defaults to 1.0 if not found)
+     * @returns {Promise<number>} Credit rate (pricing_approved)
+     * @throws {Error} If gateway not found or pricing not configured
      */
     async getGatewayRate(gatewayId) {
         const gateway = await this.getGateway(gatewayId);
-        return gateway?.pricing_approved ?? DEFAULT_GATEWAY_PRICING.approved;
+        
+        if (gateway.pricing_approved === undefined || gateway.pricing_approved === null) {
+            throw new Error(`Pricing not configured for gateway: ${gatewayId}`);
+        }
+        
+        return gateway.pricing_approved;
     }
 
     /**
@@ -431,9 +388,10 @@ export class GatewayConfigService {
             throw new Error(`Gateway not found: ${gatewayId}`);
         }
 
-        const oldRate = existing.pricing_approved ?? DEFAULT_GATEWAY_PRICING.approved;
-        const defaultRate = DEFAULT_GATEWAY_PRICING.approved;
-        const isCustom = Math.abs(rate - defaultRate) > 0.001;
+        const oldRate = existing.pricing_approved;
+        if (oldRate === undefined || oldRate === null) {
+            throw new Error(`Current pricing not configured for gateway: ${gatewayId}`);
+        }
 
         // Update in database
         const { data: updated, error } = await supabase
@@ -457,32 +415,35 @@ export class GatewayConfigService {
         await this._logCreditRateAudit(gatewayId, oldRate, rate, adminId, CREDIT_RATE_AUDIT_ACTIONS.CHANGE);
 
         // Broadcast SSE event (Requirement 14.1)
-        this._broadcastCreditRateChange(gatewayId, oldRate, rate, isCustom);
+        this._broadcastCreditRateChange(gatewayId, oldRate, rate, true);
 
         return {
             success: true,
             gatewayId,
             oldRate,
             newRate: rate,
-            isCustom,
-            defaultRate,
             updatedAt: updated.updated_at
         };
     }
 
     /**
-     * Reset credit rate to default for a gateway
+     * Reset credit rate for a gateway (requires providing the default values)
      * 
      * Requirements: 4.4, 5.3
      * 
      * @param {string} gatewayId - Gateway ID
      * @param {string} adminId - Admin user ID making the change
-     * @returns {Promise<Object>} Result with old rate and default rate
-     * @throws {Error} If gateway not found
+     * @param {Object} defaultPricing - Default pricing { approved: number, live: number }
+     * @returns {Promise<Object>} Result with old rate and new rate
+     * @throws {Error} If gateway not found or defaults not provided
      */
-    async resetCreditRate(gatewayId, adminId) {
+    async resetCreditRate(gatewayId, adminId, defaultPricing) {
         if (!gatewayId) {
             throw new Error('Gateway ID is required');
+        }
+
+        if (!defaultPricing || defaultPricing.approved === undefined || defaultPricing.live === undefined) {
+            throw new Error('Default pricing (approved and live) must be provided for reset operation');
         }
 
         if (!isSupabaseConfigured()) {
@@ -491,19 +452,18 @@ export class GatewayConfigService {
 
         // Get current gateway config
         const existing = await this.getGateway(gatewayId);
-        if (!existing) {
-            throw new Error(`Gateway not found: ${gatewayId}`);
+
+        const oldRate = existing.pricing_approved;
+        if (oldRate === undefined || oldRate === null) {
+            throw new Error(`Current pricing not configured for gateway: ${gatewayId}`);
         }
 
-        const oldRate = existing.pricing_approved ?? DEFAULT_GATEWAY_PRICING.approved;
-        const defaultRate = DEFAULT_GATEWAY_PRICING.approved;
-
-        // Update to default pricing
+        // Update to provided default pricing
         const { data: updated, error } = await supabase
             .from('gateway_configs')
             .update({
-                pricing_approved: DEFAULT_GATEWAY_PRICING.approved,
-                pricing_live: DEFAULT_GATEWAY_PRICING.live,
+                pricing_approved: defaultPricing.approved,
+                pricing_live: defaultPricing.live,
                 updated_at: new Date().toISOString()
             })
             .eq('gateway_id', gatewayId)
@@ -518,18 +478,16 @@ export class GatewayConfigService {
         this.invalidateCache();
 
         // Log audit entry with reset action type (Requirement 10.4)
-        await this._logCreditRateAudit(gatewayId, oldRate, defaultRate, adminId, CREDIT_RATE_AUDIT_ACTIONS.RESET);
+        await this._logCreditRateAudit(gatewayId, oldRate, defaultPricing.approved, adminId, CREDIT_RATE_AUDIT_ACTIONS.RESET);
 
         // Broadcast SSE event
-        this._broadcastCreditRateChange(gatewayId, oldRate, defaultRate, false);
+        this._broadcastCreditRateChange(gatewayId, oldRate, defaultPricing.approved, false);
 
         return {
             success: true,
             gatewayId,
             oldRate,
-            newRate: defaultRate,
-            defaultRate,
-            isCustom: false,
+            newRate: defaultPricing.approved,
             updatedAt: updated.updated_at
         };
     }
@@ -567,9 +525,13 @@ export class GatewayConfigService {
             throw new Error(`Gateway not found: ${gatewayId}`);
         }
 
+        if (existing.pricing_approved === undefined || existing.pricing_live === undefined) {
+            throw new Error(`Current pricing not configured for gateway: ${gatewayId}`);
+        }
+
         const oldPricing = {
-            approved: existing.pricing_approved ?? DEFAULT_GATEWAY_PRICING.approved,
-            live: existing.pricing_live ?? DEFAULT_GATEWAY_PRICING.live
+            approved: existing.pricing_approved,
+            live: existing.pricing_live
         };
 
         const updateData = { updated_at: new Date().toISOString() };
@@ -640,7 +602,8 @@ export class GatewayConfigService {
      * Get credit rate for a gateway with metadata
      * 
      * @param {string} gatewayId - Gateway ID
-     * @returns {Promise<Object>} Credit rate info with isCustom flag
+     * @returns {Promise<Object>} Credit rate info
+     * @throws {Error} If gateway not found or pricing not configured
      */
     async getCreditRate(gatewayId) {
         if (!gatewayId) {
@@ -649,31 +612,16 @@ export class GatewayConfigService {
 
         const gateway = await this.getGateway(gatewayId);
 
-        if (!gateway) {
-            // Return defaults if gateway not in database
-            return {
-                gatewayId,
-                pricing: {
-                    approved: DEFAULT_GATEWAY_PRICING.approved,
-                    live: DEFAULT_GATEWAY_PRICING.live
-                },
-                isCustom: false,
-                updatedAt: null
-            };
+        if (gateway.pricing_approved === undefined || gateway.pricing_live === undefined) {
+            throw new Error(`Pricing not configured for gateway: ${gatewayId}`);
         }
-
-        const approvedRate = gateway.pricing_approved ?? DEFAULT_GATEWAY_PRICING.approved;
-        const liveRate = gateway.pricing_live ?? DEFAULT_GATEWAY_PRICING.live;
-        const isCustom = approvedRate !== DEFAULT_GATEWAY_PRICING.approved ||
-            liveRate !== DEFAULT_GATEWAY_PRICING.live;
 
         return {
             gatewayId,
             pricing: {
-                approved: approvedRate,
-                live: liveRate
+                approved: gateway.pricing_approved,
+                live: gateway.pricing_live
             },
-            isCustom,
             updatedAt: gateway.updated_at
         };
     }
@@ -682,22 +630,22 @@ export class GatewayConfigService {
      * Get all credit rates with metadata, pricing info, and type hierarchy
      * 
      * @returns {Promise<Array>} Array of credit rate info for all gateways
+     * @throws {Error} If pricing not configured for any gateway
      */
     async getAllCreditRates() {
         const gateways = await this.getActiveGateways();
 
         return gateways.map(gateway => {
-            const approvedRate = gateway.pricing_approved ?? DEFAULT_GATEWAY_PRICING.approved;
-            const liveRate = gateway.pricing_live ?? DEFAULT_GATEWAY_PRICING.live;
-            const isCustom = approvedRate !== DEFAULT_GATEWAY_PRICING.approved ||
-                liveRate !== DEFAULT_GATEWAY_PRICING.live;
+            if (gateway.pricing_approved === undefined || gateway.pricing_live === undefined) {
+                throw new Error(`Pricing not configured for gateway: ${gateway.gateway_id}`);
+            }
+
             const typeHierarchy = getGatewayTypeInfo(gateway.gateway_id);
 
             return {
                 gatewayId: gateway.gateway_id,
                 gatewayName: gateway.gateway_name,
-                rate: approvedRate, // Keep for backward compatibility
-                isCustom,
+                rate: gateway.pricing_approved, // Keep for backward compatibility
                 // Type hierarchy
                 parentType: gateway.parent_type || typeHierarchy.parentType,
                 subType: gateway.sub_type || typeHierarchy.subType,
@@ -705,8 +653,8 @@ export class GatewayConfigService {
                 updatedAt: gateway.updated_at,
                 // Pricing info from database (single values, not ranges)
                 pricing: {
-                    approved: gateway.pricing_approved ?? 5,
-                    live: gateway.pricing_live ?? 3
+                    approved: gateway.pricing_approved,
+                    live: gateway.pricing_live
                 }
             };
         });
@@ -982,31 +930,6 @@ export class GatewayConfigService {
     }
 
     /**
-     * Get default rate for a gateway based on its type
-     * 
-     * @private
-     * @param {string} gatewayId - Gateway ID
-     * @returns {number} Default credit rate
-     */
-    _getDefaultRateForGateway(gatewayId) {
-        // Check if there's a direct match in DEFAULT_GATEWAY_RATES
-        if (DEFAULT_GATEWAY_RATES[gatewayId]) {
-            return DEFAULT_GATEWAY_RATES[gatewayId].rate;
-        }
-
-        // Determine type from gateway ID prefix
-        const type = this._getGatewayType(gatewayId);
-
-        // Return default rate for type
-        if (DEFAULT_GATEWAY_RATES[type]) {
-            return DEFAULT_GATEWAY_RATES[type].rate;
-        }
-
-        // Fallback to 1.0
-        return 1.0;
-    }
-
-    /**
      * Get gateway sub-type from gateway ID
      * 
      * @private
@@ -1124,60 +1047,6 @@ export class GatewayConfigService {
         this._cacheTime = Date.now();
     }
 
-    /**
-     * Get default gateway configs (used when database not available)
-     * 
-     * @private
-     * @returns {Array} Default gateway configs
-     */
-    _getDefaultGateways() {
-        return Object.entries(DEFAULT_GATEWAY_RATES).map(([id, config]) => ({
-            gateway_id: id,
-            gateway_name: config.name,
-            base_credit_rate: config.rate,
-            is_active: true,
-            description: config.description,
-            updated_at: null
-        }));
-    }
-
-    /**
-     * Get a default gateway config by ID
-     * 
-     * @private
-     * @param {string} gatewayId - Gateway ID (e.g., 'auth-1', 'charge-2', 'skbased-auth-1')
-     * @returns {Object|null} Default config or null
-     */
-    _getDefaultGateway(gatewayId) {
-        // First try direct lookup
-        let defaultConfig = DEFAULT_GATEWAY_RATES[gatewayId];
-
-        // If not found, try to get config by gateway type
-        if (!defaultConfig) {
-            const typeInfo = getGatewayTypeInfo(gatewayId);
-            // Try subType first (e.g., 'auth', 'charge', 'skbased-auth')
-            if (typeInfo.subType) {
-                defaultConfig = DEFAULT_GATEWAY_RATES[typeInfo.subType];
-            }
-            // Fallback to parentType (e.g., 'shopify')
-            if (!defaultConfig && typeInfo.parentType) {
-                defaultConfig = DEFAULT_GATEWAY_RATES[typeInfo.parentType];
-            }
-        }
-
-        if (!defaultConfig) {
-            return null;
-        }
-
-        return {
-            gateway_id: gatewayId,
-            gateway_name: defaultConfig.name,
-            base_credit_rate: defaultConfig.rate,
-            is_active: true,
-            description: defaultConfig.description,
-            updated_at: null
-        };
-    }
 }
 
 

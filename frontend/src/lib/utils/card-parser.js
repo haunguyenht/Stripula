@@ -474,3 +474,30 @@ export function validateForSubmission(processResult) {
 
   return { canSubmit: true, reason: null, errorType: null };
 }
+
+/**
+ * Drop empty lines from card input while preserving cursor-friendly behavior.
+ * Removes consecutive empty lines and trailing empty lines, keeps single newline at end for typing.
+ * @param {string} input - Raw card input string
+ * @returns {string} Cleaned input with empty lines removed
+ */
+export function dropEmptyLines(input) {
+  if (!input) return input;
+  
+  // Split into lines and filter out empty ones
+  const lines = input.split('\n');
+  const nonEmptyLines = lines.filter(line => line.trim() !== '');
+  
+  // If input ends with newline(s), preserve one for typing continuation
+  const endsWithNewline = input.endsWith('\n');
+  
+  // Join non-empty lines
+  let result = nonEmptyLines.join('\n');
+  
+  // Add back single newline if user was at end of line (allows typing next card)
+  if (endsWithNewline && result.length > 0) {
+    result += '\n';
+  }
+  
+  return result;
+}

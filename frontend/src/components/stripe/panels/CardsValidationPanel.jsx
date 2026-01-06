@@ -6,7 +6,7 @@ import { useCardFilters } from '@/hooks/useCardFilters';
 import { useCardInputLimits } from '@/hooks/useCardInputLimits';
 import { useCredits } from '@/hooks/useCredits';
 import { useGatewayCreditRates } from '@/hooks/useGatewayCreditRates';
-import { processCardInput, getProcessingToastMessage, getTierLimitExceededMessage, validateForSubmission, getGeneratedCardsErrorMessage } from '@/lib/utils/card-parser';
+import { processCardInput, getProcessingToastMessage, getTierLimitExceededMessage, validateForSubmission, getGeneratedCardsErrorMessage, dropEmptyLines } from '@/lib/utils/card-parser';
 
 // Layout
 import { TwoPanelLayout } from '../../layout/TwoPanelLayout';
@@ -637,33 +637,59 @@ export function CardsValidationPanel({
           id="cards-input"
           name="cards-input"
           className={cn(
-            "font-mono text-[10px] sm:text-xs min-h-[60px] sm:min-h-[80px] resize-none border-0 rounded-none focus-visible:ring-0 focus-visible:ring-offset-0",
+            "font-mono text-[10px] sm:text-xs min-h-[60px] sm:min-h-[80px] resize-none",
+            "border-0 dark:border-0 rounded-none dark:rounded-none shadow-none dark:shadow-none",
             "bg-transparent dark:bg-transparent",
+            "focus-visible:ring-0 focus-visible:ring-offset-0 dark:focus-visible:ring-0",
             "p-2 sm:p-3",
             isLoading && "opacity-50"
           )}
           placeholder="Enter cards (one per line)&#10;4111111111111111|01|2025|123"
           value={cards}
-          onChange={(e) => setCards(e.target.value)}
+          onChange={(e) => setCards(dropEmptyLines(e.target.value))}
           onBlur={handleCardsBlur}
           disabled={isLoading}
         />
 
         {/* Action bar below textarea */}
-        <div className="flex items-center justify-between px-2 py-1.5 sm:px-3 sm:py-2 border-t border-[rgb(230,225,223)] bg-[rgb(250,249,249)] dark:border-white/10 dark:bg-white/5">
-          {/* Card count badge with tier limit */}
+        <div className="flex items-center justify-between px-2 py-1.5 sm:px-3 sm:py-2 border-t border-[rgb(230,225,223)] bg-[rgb(250,249,249)] dark:border-white/10 dark:bg-white/[0.02]">
+          {/* Liquid Glass Counter Badge */}
           <div className="flex items-center gap-1.5 sm:gap-2">
-            <Badge
-              variant={limitStatus.isError ? "destructive" : limitStatus.isWarning ? "warning" : "secondary"}
+            <div
               className={cn(
-                "text-[9px] sm:text-[10px] h-5 sm:h-6 px-1.5 sm:px-2",
-                limitStatus.isError && "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20",
-                limitStatus.isWarning && "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
+                "inline-flex items-center gap-1",
+                "text-[10px] sm:text-[11px] font-medium font-mono tracking-wide",
+                "h-6 sm:h-7 px-2.5 sm:px-3 rounded-lg",
+                // Light mode: Vintage parchment style
+                "bg-gradient-to-b from-[hsl(38,30%,94%)] to-[hsl(35,25%,90%)]",
+                "border border-[hsl(30,25%,78%)]",
+                "text-[hsl(25,40%,35%)]",
+                "shadow-[inset_0_1px_0_rgba(255,255,255,0.7),0_1px_2px_rgba(101,67,33,0.08)]",
+                // Dark mode: Reset gradient, apply liquid glass
+                "dark:bg-none dark:from-transparent dark:to-transparent",
+                "dark:bg-[rgba(255,255,255,0.04)] dark:backdrop-blur-xl",
+                "dark:border dark:border-white/[0.08]",
+                "dark:text-white/80",
+                "dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_4px_12px_rgba(0,0,0,0.3)]",
+                // Error state
+                limitStatus.isError && [
+                  "border-red-400/50 text-red-700",
+                  "dark:border-red-500/30 dark:text-red-400",
+                  "dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_0_16px_-4px_rgba(239,68,68,0.3)]",
+                ],
+                // Warning state
+                limitStatus.isWarning && [
+                  "border-amber-400/50 text-amber-700",
+                  "dark:border-amber-500/30 dark:text-amber-400",
+                  "dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_0_16px_-4px_rgba(251,191,36,0.3)]",
+                ]
               )}
             >
-              {cardCount}/{limitStatus.limit}
-              {limitStatus.isWarning && <AlertTriangle className="w-2.5 h-2.5 sm:w-3 sm:h-3 ml-0.5 sm:ml-1" />}
-            </Badge>
+              <span className="tabular-nums">{cardCount}</span>
+              <span className="text-current/50 dark:text-white/40">/</span>
+              <span className="tabular-nums text-current/70 dark:text-white/50">{limitStatus.limit}</span>
+              {limitStatus.isWarning && <AlertTriangle className="w-3 h-3 ml-0.5 opacity-80" />}
+            </div>
           </div>
 
           {/* Action buttons */}
