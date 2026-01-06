@@ -66,7 +66,7 @@ export function BatchConfigCard({
 
   return (
     <div className={cn(
-      "rounded-xl overflow-hidden",
+      "rounded-lg sm:rounded-xl overflow-hidden",
       // Light mode
       "bg-gray-50 border border-gray-100",
       // Dark mode - glass
@@ -75,9 +75,9 @@ export function BatchConfigCard({
     )}>
       {/* Gateway Section */}
       {sites.length > 0 && (
-        <div className="p-3 border-b border-gray-100 dark:border-white/[0.06]">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[10px] font-medium text-gray-400 dark:text-white/40 uppercase tracking-wide">
+        <div className="p-2 sm:p-3 border-b border-gray-100 dark:border-white/[0.06]">
+          <div className="flex items-center justify-between mb-1.5 sm:mb-2">
+            <span className="text-[9px] sm:text-[10px] font-medium text-gray-400 dark:text-white/40 uppercase tracking-wide">
               Gateway
             </span>
             {selectedGatewayStatus && (
@@ -92,23 +92,23 @@ export function BatchConfigCard({
 
           <Select value={selectedSite} onValueChange={onSiteChange} disabled={isLoading}>
             <SelectTrigger className={cn(
-              "h-8 w-full text-[13px]",
+              "h-7 sm:h-8 w-full text-[11px] sm:text-[13px]",
               "bg-white border-gray-200",
               "dark:bg-white/[0.04] dark:border-white/10",
               // Show warning border if selected gateway is unavailable
               selectedGatewayStatus && !selectedGatewayStatus.isAvailable && "border-amber-500/50"
             )}>
-              <div className="flex items-center gap-2 truncate">
+              <div className="flex items-center gap-1.5 sm:gap-2 truncate">
                 <SelectValue placeholder="Select gateway" />
                 {/* Show maintenance text in trigger when selected gateway is disabled */}
                 {selectedGatewayStatus?.state === 'maintenance' && (
-                  <span className="text-amber-500 text-[10px] font-medium">(Maintained)</span>
+                  <span className="text-amber-500 text-[9px] sm:text-[10px] font-medium">(Maintained)</span>
                 )}
                 {selectedGatewayStatus?.healthStatus === 'offline' && selectedGatewayStatus?.state !== 'maintenance' && (
-                  <span className="text-red-500 text-[10px] font-medium">(Offline)</span>
+                  <span className="text-red-500 text-[9px] sm:text-[10px] font-medium">(Offline)</span>
                 )}
                 {selectedGatewayStatus && !selectedGatewayStatus.isAvailable && selectedGatewayStatus?.state !== 'maintenance' && selectedGatewayStatus?.healthStatus !== 'offline' && (
-                  <span className="text-gray-500 text-[10px] font-medium">(Disabled)</span>
+                  <span className="text-gray-500 text-[9px] sm:text-[10px] font-medium">(Disabled)</span>
                 )}
               </div>
             </SelectTrigger>
@@ -124,7 +124,7 @@ export function BatchConfigCard({
                     disabled={!isAvailable}
                     className={cn(!isAvailable && "opacity-60")}
                   >
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 sm:gap-2">
                       {gatewayStatus && (
                         <GatewayStatusIndicator
                           state={gatewayStatus.state}
@@ -132,25 +132,25 @@ export function BatchConfigCard({
                           size="sm"
                         />
                       )}
-                      <span>{site.label}</span>
+                      <span className="text-[11px] sm:text-sm">{site.label}</span>
                       {/* Shopify: show domain or not configured */}
                       {site.configured !== undefined && (
                         site.configured ? (
-                          <span className="text-gray-400 dark:text-white/40 text-[10px]">({site.domain})</span>
+                          <span className="hidden sm:inline text-gray-400 dark:text-white/40 text-[10px]">({site.domain})</span>
                         ) : (
-                          <span className="text-amber-500 text-[10px]">(not configured)</span>
+                          <span className="text-amber-500 text-[9px] sm:text-[10px]">(not configured)</span>
                         )
                       )}
                       {/* Status indicators */}
                       {gatewayStatus?.state === 'maintenance' && (
-                        <span className="text-amber-500 text-[10px]">(maintenance)</span>
+                        <span className="text-amber-500 text-[9px] sm:text-[10px]">(maintenance)</span>
                       )}
                       {gatewayStatus?.healthStatus === 'offline' && gatewayStatus?.state !== 'maintenance' && (
-                        <span className="text-red-500 text-[10px]">(offline)</span>
+                        <span className="text-red-500 text-[9px] sm:text-[10px]">(offline)</span>
                       )}
                       {/* Fallback for disabled gateways without specific reason */}
                       {!isAvailable && gatewayStatus?.state !== 'maintenance' && gatewayStatus?.healthStatus !== 'offline' && (
-                        <span className="text-gray-500 text-[10px]">(disabled)</span>
+                        <span className="text-gray-500 text-[9px] sm:text-[10px]">(disabled)</span>
                       )}
                     </div>
                   </SelectItem>
@@ -160,13 +160,13 @@ export function BatchConfigCard({
           </Select>
 
           {/* Speed info */}
-          <div className="flex items-center gap-3 mt-2 text-[10px] text-gray-400 dark:text-white/40">
-            <span className="flex items-center gap-1">
-              <Zap className="w-3 h-3 text-amber-500" />
-              {concurrency} parallel
+          <div className="flex items-center gap-2 sm:gap-3 mt-1.5 sm:mt-2 text-[9px] sm:text-[10px] text-gray-400 dark:text-white/40">
+            <span className="flex items-center gap-0.5 sm:gap-1">
+              <Zap className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-amber-500" />
+              {concurrency}x
             </span>
-            <span className="flex items-center gap-1">
-              <Timer className="w-3 h-3 text-sky-500" />
+            <span className="flex items-center gap-0.5 sm:gap-1">
+              <Timer className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-sky-500" />
               {delay >= 1000 ? `${(delay / 1000).toFixed(1)}s` : `${delay}ms`}
             </span>
           </div>
@@ -175,20 +175,20 @@ export function BatchConfigCard({
 
       {/* Cost Section - Only show if authenticated and has cards */}
       {isAuthenticated && cardCount > 0 && (
-        <div className="p-3">
+        <div className="p-2 sm:p-3">
           {/* Stats row */}
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-4">
+          <div className="flex items-center justify-between mb-1.5 sm:mb-2">
+            <div className="flex items-center gap-3 sm:gap-4">
               <div>
-                <p className="text-[10px] text-gray-400 dark:text-white/40 uppercase tracking-wide">Cost</p>
-                <p className="text-sm font-bold tabular-nums text-gray-900 dark:text-white">
+                <p className="text-[9px] sm:text-[10px] text-gray-400 dark:text-white/40 uppercase tracking-wide">Cost</p>
+                <p className="text-xs sm:text-sm font-bold tabular-nums text-gray-900 dark:text-white">
                   {estimatedCost.toLocaleString()}
                 </p>
               </div>
               <div>
-                <p className="text-[10px] text-gray-400 dark:text-white/40 uppercase tracking-wide">Balance</p>
+                <p className="text-[9px] sm:text-[10px] text-gray-400 dark:text-white/40 uppercase tracking-wide">Balance</p>
                 <p className={cn(
-                  "text-sm font-bold tabular-nums",
+                  "text-xs sm:text-sm font-bold tabular-nums",
                   hasSufficientCredits ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"
                 )}>
                   {balance.toLocaleString()}
@@ -197,7 +197,7 @@ export function BatchConfigCard({
             </div>
             {/* Status badge */}
             <div className={cn(
-              "px-2 py-0.5 rounded text-[10px] font-medium",
+              "px-1.5 sm:px-2 py-0.5 rounded text-[9px] sm:text-[10px] font-medium",
               hasSufficientCredits 
                 ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" 
                 : "bg-amber-500/10 text-amber-600 dark:text-amber-400"
@@ -207,7 +207,7 @@ export function BatchConfigCard({
           </div>
 
           {/* Progress bar */}
-          <div className="h-1 rounded-full bg-gray-200 dark:bg-white/[0.08] overflow-hidden mb-2">
+          <div className="h-1 rounded-full bg-gray-200 dark:bg-white/[0.08] overflow-hidden mb-1.5 sm:mb-2">
             <div 
               className={cn(
                 "h-full rounded-full transition-all duration-500",
@@ -218,21 +218,22 @@ export function BatchConfigCard({
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-between text-[10px]">
-            <div className="flex items-center gap-2 text-gray-400 dark:text-white/40">
-              <span className="flex items-center gap-1">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+          <div className="flex items-center justify-between text-[9px] sm:text-[10px]">
+            <div className="flex items-center gap-1.5 sm:gap-2 text-gray-400 dark:text-white/40">
+              <span className="flex items-center gap-0.5 sm:gap-1">
+                <span className="h-1 w-1 sm:h-1.5 sm:w-1.5 rounded-full bg-emerald-500" />
                 Live: {pricingConfig.live || pricingConfig.approved}
               </span>
-              <span className="flex items-center gap-1">
-                <span className="h-1.5 w-1.5 rounded-full bg-gray-300 dark:bg-white/20" />
+              <span className="flex items-center gap-0.5 sm:gap-1">
+                <span className="h-1 w-1 sm:h-1.5 sm:w-1.5 rounded-full bg-gray-300 dark:bg-white/20" />
                 Dead: 0
               </span>
             </div>
             {!hasSufficientCredits && (
-              <span className="text-amber-600 dark:text-amber-400 flex items-center gap-1">
-                <AlertTriangle className="h-3 w-3" />
-                May stop early
+              <span className="text-amber-600 dark:text-amber-400 flex items-center gap-0.5 sm:gap-1">
+                <AlertTriangle className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                <span className="hidden xs:inline">May stop early</span>
+                <span className="xs:hidden">Low</span>
               </span>
             )}
           </div>

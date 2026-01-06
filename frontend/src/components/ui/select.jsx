@@ -32,31 +32,31 @@ const SelectTrigger = React.forwardRef(
         "text-[hsl(25,35%,20%)] placeholder:text-[hsl(25,15%,55%)]",
         "shadow-[inset_0_1px_2px_rgba(101,67,33,0.06)]",
         "focus:outline-none focus:border-[hsl(25,70%,50%)] focus:ring-2 focus:ring-[hsl(25,70%,50%)]/15",
-        // Dark mode: Liquid glass trigger with aurora focus
+        // Dark mode: PREMIUM Liquid glass trigger with aurora focus
         "dark:rounded-lg",
-        "dark:bg-[hsl(0_0%_100%/0.03)]",
-        "dark:backdrop-blur-[40px] dark:backdrop-saturate-[180%]",
-        "dark:border dark:border-[hsl(0_0%_100%/0.08)]",
+        "dark:bg-[hsl(0_0%_100%/0.04)]",
+        "dark:backdrop-blur-[60px] dark:backdrop-saturate-[200%]",
+        "dark:border dark:border-[hsl(0_0%_100%/0.1)]",
         "dark:text-white",
-        "dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]",
-        // Aurora focus state
+        "dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_4px_16px_rgba(0,0,0,0.2)]",
+        // PREMIUM Aurora focus state
         "dark:focus:outline-none",
-        "dark:focus:border-[hsl(250,90%,65%)/0.5]",
-        "dark:focus:ring-2 dark:focus:ring-[hsl(250,90%,65%)/0.2]",
-        "dark:focus:shadow-[0_0_16px_rgba(139,92,246,0.2),inset_0_1px_0_rgba(255,255,255,0.1)]",
+        "dark:focus:border-[hsl(252,95%,68%)/0.6]",
+        "dark:focus:ring-2 dark:focus:ring-[hsl(252,95%,68%)/0.25]",
+        "dark:focus:shadow-[0_0_24px_rgba(139,92,246,0.35),0_0_48px_rgba(34,211,238,0.12),inset_0_1px_0_rgba(255,255,255,0.12)]",
         // Hover state
-        "dark:hover:border-[hsl(0_0%_100%/0.12)]",
-        "dark:hover:bg-[hsl(0_0%_100%/0.04)]",
-        // Open state
-        "dark:data-[state=open]:border-[hsl(250,90%,65%)/0.5]",
-        "dark:data-[state=open]:shadow-[0_0_20px_rgba(139,92,246,0.25)]",
+        "dark:hover:border-[hsl(0_0%_100%/0.15)]",
+        "dark:hover:bg-[hsl(0_0%_100%/0.055)]",
+        // Open state - enhanced glow
+        "dark:data-[state=open]:border-[hsl(252,95%,68%)/0.6]",
+        "dark:data-[state=open]:shadow-[0_0_30px_rgba(139,92,246,0.35),0_0_60px_rgba(34,211,238,0.15)]",
         className
       )}
       {...props}
     >
       {children}
       <SelectPrimitive.Icon asChild>
-        <ChevronDown className="h-4 w-4 opacity-60 transition-transform duration-200 dark:opacity-70 [[data-state=open]_&]:rotate-180" />
+        <ChevronDown className="h-4 w-4 opacity-60 transition-transform duration-200 dark:opacity-75 [[data-state=open]_&]:rotate-180" />
       </SelectPrimitive.Icon>
     </SelectPrimitive.Trigger>
   )
@@ -115,14 +115,14 @@ const SelectContent = React.forwardRef(
           "rounded-lg bg-gradient-to-b from-[hsl(40,50%,97%)] to-[hsl(38,45%,95%)] border border-[hsl(30,35%,75%)]/50",
           "text-[hsl(25,35%,20%)]",
           "shadow-[0_8px_32px_rgba(101,67,33,0.12)]",
-          // Dark mode: Obsidian Aurora glass dropdown
+          // Dark mode: PREMIUM Obsidian Aurora glass dropdown
           "dark:rounded-xl",
-          "dark:bg-[rgb(15,18,28)]",
+          "dark:bg-[rgb(12,14,22)]",
           "dark:from-transparent dark:to-transparent",
-          "dark:backdrop-blur-[60px] dark:backdrop-saturate-[180%]",
-          "dark:border dark:border-white/[0.1]",
+          "dark:backdrop-blur-[80px] dark:backdrop-saturate-[220%]",
+          "dark:border dark:border-white/[0.12]",
           "dark:text-white",
-          "dark:shadow-[0_16px_64px_rgba(0,0,0,0.6),0_0_40px_-10px_rgba(139,92,246,0.2),inset_0_1px_0_rgba(255,255,255,0.08)]",
+          "dark:shadow-[0_20px_80px_rgba(0,0,0,0.65),0_0_60px_-15px_rgba(139,92,246,0.25),0_0_40px_-15px_rgba(34,211,238,0.12),inset_0_1px_0_rgba(255,255,255,0.1)]",
           position === "popper" &&
             "data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1",
           className
@@ -170,22 +170,23 @@ const SelectItem = React.forwardRef(
         "data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
         // Light mode: Vintage Banking - warm hover item
         "rounded-lg focus:bg-[hsl(38,40%,92%)] focus:text-[hsl(25,35%,20%)]",
-        // Dark mode: Aurora hover with glass effect
+        // Dark mode: PREMIUM Aurora hover with enhanced glass effect
         "dark:rounded-lg",
         "dark:text-white/90",
-        "dark:focus:bg-violet-500/20",
+        "dark:focus:bg-violet-500/25",
         "dark:focus:text-white",
-        "dark:focus:shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]",
-        // Highlighted state (keyboard navigation)
-        "dark:data-[highlighted]:bg-violet-500/15",
+        "dark:focus:shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_0_20px_-8px_rgba(139,92,246,0.3)]",
+        // Highlighted state (keyboard navigation) - enhanced
+        "dark:data-[highlighted]:bg-violet-500/20",
         "dark:data-[highlighted]:text-white",
+        "dark:data-[highlighted]:shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]",
         className
       )}
       {...props}
     >
       <span className="absolute right-2 flex h-3.5 w-3.5 items-center justify-center">
         <SelectPrimitive.ItemIndicator>
-          <Check className="h-4 w-4 text-primary dark:text-[hsl(250,90%,70%)] dark:drop-shadow-[0_0_4px_rgba(139,92,246,0.5)]" />
+          <Check className="h-4 w-4 text-primary dark:text-[hsl(252,95%,72%)] dark:drop-shadow-[0_0_6px_rgba(139,92,246,0.6)]" />
         </SelectPrimitive.ItemIndicator>
       </span>
       <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>

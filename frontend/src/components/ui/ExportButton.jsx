@@ -96,13 +96,13 @@ export function ExportButton({
           variant={variant}
           size={size}
           disabled={isDisabled}
-          className={cn("gap-1.5", className)}
+          className={cn("gap-1 sm:gap-1.5", className)}
           title={hasResults ? `Export ${filteredCount} results` : 'No results to export'}
         >
-          <Download className="h-3.5 w-3.5" />
-          {showLabel && <span>Export</span>}
+          <Download className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+          {showLabel && <span className="hidden sm:inline">Export</span>}
           {hasResults && (
-            <span className="text-[10px] opacity-70">({filteredCount})</span>
+            <span className="text-[9px] sm:text-[10px] opacity-70">({filteredCount})</span>
           )}
         </Button>
       </DropdownMenuTrigger>

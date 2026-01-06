@@ -11,13 +11,16 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 /**
- * NavDropdown - Obsidian Aurora Design System
+ * NavDropdown - Dual Theme Design System
  * 
- * Desktop navigation dropdown featuring:
- * - Aurora gradient active states
- * - Prismatic hover effects with glow
+ * LIGHT MODE: Vintage Banking
+ * - Copper foil active states
+ * - Warm hover effects
+ * 
+ * DARK MODE: PREMIUM Liquid Aurora
+ * - Aurora gradient active states with enhanced glow
+ * - Prismatic hover effects with multi-layer glow
  * - Crystalline dropdown panel
- * - Animated icon transitions
  */
 export function NavDropdown({ item, activeRoute, onNavigate, isActive, index = 0 }) {
   const Icon = item.icon;
@@ -37,39 +40,46 @@ export function NavDropdown({ item, activeRoute, onNavigate, isActive, index = 0
           onClick={() => !isDisabled && onNavigate(item.id)}
           disabled={isDisabled}
           className={cn(
-            "group gap-1.5 rounded-xl h-8 px-3.5 transition-all duration-300",
-            "font-medium text-sm relative overflow-hidden",
+            "group rounded-lg md:rounded-xl transition-all duration-300",
+            "font-medium text-xs md:text-sm relative overflow-hidden",
+            // Mobile-first: icon-only until md breakpoint
+            "gap-0 md:gap-1.5 h-7 md:h-8 px-2 md:px-3.5 min-w-[32px] md:min-w-0",
             // Light mode: Vintage Banking
             isActive 
               ? "bg-gradient-to-r from-[hsl(25,70%,48%)] to-[hsl(22,65%,40%)] text-[hsl(40,50%,96%)] shadow-sm" 
               : "bg-transparent hover:bg-[hsl(38,40%,92%)] text-[hsl(25,35%,25%)] hover:text-[hsl(25,75%,45%)]",
             // ═══════════════════════════════════════════════════════════
-            // DARK MODE: Clean with Purple accent
+            // DARK MODE: PREMIUM Liquid Aurora with enhanced glow
             // ═══════════════════════════════════════════════════════════
             isActive
-              // Active: Purple background (reset gradient first)
+              // Active: Aurora gradient with neon glow - KEEP gradient on hover
               ? [
-                  "dark:bg-none dark:bg-violet-500 dark:text-white dark:font-semibold",
+                  "dark:bg-gradient-to-r dark:from-violet-600 dark:to-cyan-500",
+                  "dark:text-white dark:font-semibold",
                   "dark:border-0",
-                  "dark:hover:bg-violet-400"
+                  "dark:shadow-[0_0_20px_rgba(139,92,246,0.4),0_0_40px_-10px_rgba(34,211,238,0.3)]",
+                  // Override light hover, keep aurora gradient
+                  "dark:hover:from-violet-500 dark:hover:to-cyan-400",
+                  "dark:hover:shadow-[0_0_28px_rgba(139,92,246,0.5),0_0_50px_-10px_rgba(34,211,238,0.4)]"
                 ]
-              // Inactive: Transparent with subtle hover
+              // Inactive: Transparent with aurora hover
               : [
                   "dark:bg-transparent dark:text-white/70",
-                  "dark:hover:bg-white/[0.08] dark:hover:text-white"
+                  "dark:hover:bg-violet-500/15 dark:hover:text-white",
+                  "dark:hover:shadow-[0_0_16px_-4px_rgba(139,92,246,0.3)]"
                 ],
             isDisabled && "opacity-50 cursor-not-allowed"
           )}
         >
           <Icon className={cn(
-            "h-4 w-4 transition-all duration-200",
+            "h-4 w-4 shrink-0 transition-all duration-200",
             isActive 
-              ? "text-[hsl(40,50%,96%)] dark:text-white" 
+              ? "text-[hsl(40,50%,96%)] dark:text-white dark:drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]" 
               : "text-[hsl(25,30%,50%)] group-hover:text-[hsl(25,75%,45%)] dark:text-white/60 dark:group-hover:text-white"
           )} />
-          <span>{item.label}</span>
+          <span className="hidden md:inline">{item.label}</span>
           {item.comingSoon && (
-            <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 opacity-70 dark:border-white/20">Soon</Badge>
+            <Badge variant="outline" className="hidden md:inline-flex text-[9px] px-1 py-0 h-4 opacity-70 dark:border-white/20">Soon</Badge>
           )}
         </Button>
       </motion.div>
@@ -89,38 +99,45 @@ export function NavDropdown({ item, activeRoute, onNavigate, isActive, index = 0
             variant="ghost"
             size="sm"
             className={cn(
-              "group gap-1.5 rounded-xl h-8 px-3.5 transition-all duration-300",
-              "font-medium text-sm relative overflow-hidden",
+              "group rounded-lg md:rounded-xl transition-all duration-300",
+              "font-medium text-xs md:text-sm relative overflow-hidden",
+              // Mobile-first: icon + chevron only until md breakpoint
+              "gap-0.5 md:gap-1.5 h-7 md:h-8 px-2 md:px-3.5 min-w-[40px] md:min-w-0",
               // Light mode: Vintage Banking
               isActive 
                 ? "bg-gradient-to-r from-[hsl(25,70%,48%)] to-[hsl(22,65%,40%)] text-[hsl(40,50%,96%)] shadow-sm" 
                 : "bg-transparent hover:bg-[hsl(38,40%,92%)] text-[hsl(25,35%,25%)] hover:text-[hsl(25,75%,45%)]",
-              // Dark mode: Clean with Purple accent
+              // Dark mode: PREMIUM Liquid Aurora with enhanced glow
               isActive
                 ? [
-                      "dark:bg-none dark:bg-violet-500 dark:text-white dark:font-semibold",
+                      "dark:bg-gradient-to-r dark:from-violet-600 dark:to-cyan-500",
+                      "dark:text-white dark:font-semibold",
                       "dark:border-0",
-                      "dark:hover:bg-violet-400"
+                      "dark:shadow-[0_0_20px_rgba(139,92,246,0.4),0_0_40px_-10px_rgba(34,211,238,0.3)]",
+                      // Override light hover, keep aurora gradient
+                      "dark:hover:from-violet-500 dark:hover:to-cyan-400",
+                      "dark:hover:shadow-[0_0_28px_rgba(139,92,246,0.5),0_0_50px_-10px_rgba(34,211,238,0.4)]"
                     ]
                   : [
                       "dark:bg-transparent dark:text-white/70",
-                      "dark:hover:bg-white/[0.08] dark:hover:text-white"
+                      "dark:hover:bg-violet-500/15 dark:hover:text-white",
+                      "dark:hover:shadow-[0_0_16px_-4px_rgba(139,92,246,0.3)]"
                     ],
                 isDisabled && "opacity-50 cursor-not-allowed"
               )}
               >
               <Icon className={cn(
-                "h-4 w-4 transition-all duration-200",
+                "h-4 w-4 shrink-0 transition-all duration-200",
                 isActive 
-                  ? "text-[hsl(40,50%,96%)] dark:text-white" 
+                  ? "text-[hsl(40,50%,96%)] dark:text-white dark:drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]" 
                   : "text-[hsl(25,30%,50%)] group-hover:text-[hsl(25,75%,45%)] dark:text-white/60 dark:group-hover:text-white"
               )} />
-              <span>{item.label}</span>
+              <span className="hidden md:inline">{item.label}</span>
               {item.comingSoon && (
-                <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 opacity-70 dark:border-white/20">Soon</Badge>
+                <Badge variant="outline" className="hidden md:inline-flex text-[9px] px-1 py-0 h-4 opacity-70 dark:border-white/20">Soon</Badge>
               )}
               <ChevronDown className={cn(
-                "h-3 w-3 transition-all duration-200",
+                "h-3 w-3 shrink-0 transition-all duration-200",
                 "opacity-50 group-hover:opacity-100",
                 isActive ? "dark:text-white/70" : "dark:text-white/40 dark:group-hover:text-white"
               )} />
@@ -135,9 +152,11 @@ export function NavDropdown({ item, activeRoute, onNavigate, isActive, index = 0
             "bg-gradient-to-b from-[hsl(40,50%,97%)] to-[hsl(38,45%,95%)]",
             "border-[hsl(30,35%,75%)]/50 rounded-xl",
             "shadow-[0_8px_32px_rgba(101,67,33,0.12)]",
-            // Dark mode: Simple dark panel
-            "dark:bg-zinc-900 dark:border-white/10 dark:rounded-xl",
-            "dark:shadow-[0_10px_40px_-10px_rgba(0,0,0,0.6)]"
+            // Dark mode: PREMIUM Liquid Aurora panel
+            "dark:bg-none dark:bg-[rgba(12,14,22,0.96)]",
+            "dark:backdrop-blur-[80px] dark:backdrop-saturate-[220%]",
+            "dark:border dark:border-[rgba(139,92,246,0.15)]",
+            "dark:shadow-[0_0_0_1px_rgba(139,92,246,0.1),0_0_50px_rgba(139,92,246,0.12),0_0_35px_rgba(34,211,238,0.08),0_20px_64px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(255,255,255,0.1)]"
           )}
         >
           {item.children.map((child, childIndex) => {
@@ -158,9 +177,10 @@ export function NavDropdown({ item, activeRoute, onNavigate, isActive, index = 0
                     // Light mode: Vintage Banking
                     "hover:bg-[hsl(38,40%,92%)]",
                     isChildActive && "bg-[hsl(25,75%,45%)]/8",
-                    // Dark mode: Simple hover
-                    "dark:hover:bg-white/[0.06]",
-                    isChildActive && "dark:bg-white/[0.08]"
+                    // Dark mode: PREMIUM Aurora hover
+                    "dark:hover:bg-[rgba(139,92,246,0.15)]",
+                    "dark:hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]",
+                    isChildActive && "dark:bg-[rgba(139,92,246,0.2)]"
                   )}
                 >
                   {/* Icon container */}
@@ -170,9 +190,9 @@ export function NavDropdown({ item, activeRoute, onNavigate, isActive, index = 0
                     isChildActive 
                       ? "bg-gradient-to-br from-[hsl(25,70%,48%)] to-[hsl(22,65%,40%)] text-[hsl(40,50%,96%)]" 
                       : "bg-[hsl(38,35%,90%)] text-[hsl(25,30%,50%)]",
-                    // Dark mode (reset gradient first)
+                    // Dark mode: PREMIUM Aurora icon container (reset gradient first)
                     isChildActive
-                      ? "dark:bg-none dark:bg-violet-500 dark:text-white"
+                      ? "dark:bg-none dark:bg-gradient-to-br dark:from-[hsl(250,90%,60%)] dark:to-[hsl(210,100%,60%)] dark:text-white dark:shadow-[0_0_12px_rgba(139,92,246,0.4)]"
                       : "dark:bg-white/[0.08] dark:text-white/70"
                   )}>
                     <ChildIcon className="h-4 w-4" />
@@ -205,7 +225,7 @@ export function NavDropdown({ item, activeRoute, onNavigate, isActive, index = 0
                       animate={{ scale: 1 }}
                       transition={{ type: 'spring', stiffness: 400, damping: 20 }}
                     >
-                      <Check className="h-4 w-4 text-[hsl(25,75%,45%)] dark:text-violet-400" />
+                      <Check className="h-4 w-4 text-[hsl(25,75%,45%)] dark:text-[hsl(250,90%,75%)] dark:drop-shadow-[0_0_6px_rgba(139,92,246,0.6)]" />
                     </motion.div>
                   )}
                 </DropdownMenuItem>

@@ -156,30 +156,30 @@ export function KeyGenerator({ onKeysGenerated }) {
 
   return (
     <div className={cn(
-      "rounded-2xl overflow-hidden",
+      "rounded-xl sm:rounded-2xl overflow-hidden",
       "bg-white dark:bg-[rgba(30,41,59,0.5)]",
       "border border-[rgb(237,234,233)] dark:border-white/10",
       "dark:backdrop-blur-sm shadow-sm dark:shadow-none"
     )}>
-      {/* Header */}
-      <div className="px-6 py-5 border-b border-[rgb(237,234,233)] dark:border-white/10 bg-gradient-to-br from-[rgb(250,247,245)] to-transparent dark:from-white/[0.02] dark:to-transparent">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-primary/10 dark:bg-primary/20 flex items-center justify-center">
-            <Key className="h-5 w-5 text-primary" />
+      {/* Header - Compact on mobile */}
+      <div className="px-3 py-3 sm:px-6 sm:py-5 border-b border-[rgb(237,234,233)] dark:border-white/10 bg-gradient-to-br from-[rgb(250,247,245)] to-transparent dark:from-white/[0.02] dark:to-transparent">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl bg-primary/10 dark:bg-primary/20 flex items-center justify-center shrink-0">
+            <Key className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
           </div>
-          <div>
-            <h2 className="text-lg font-semibold text-[rgb(37,27,24)] dark:text-white">
+          <div className="min-w-0">
+            <h2 className="text-sm sm:text-lg font-semibold text-[rgb(37,27,24)] dark:text-white">
               Generate Keys
             </h2>
-            <p className="text-xs text-muted-foreground">Create redeemable keys for credits or tier upgrades</p>
+            <p className="text-[10px] sm:text-xs text-muted-foreground truncate">Create redeemable keys</p>
           </div>
         </div>
       </div>
 
-      {/* Content - Split Layout */}
-      <div className="grid md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-[rgb(237,234,233)] dark:divide-white/10">
+      {/* Content - Split Layout (stack on mobile) */}
+      <div className="grid lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-[rgb(237,234,233)] dark:divide-white/10">
         {/* Left: Form */}
-        <div className="p-6 space-y-6">
+        <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
           {/* Type Selection */}
           <div className="space-y-3">
             <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Key Type</Label>
@@ -396,47 +396,48 @@ export function KeyGenerator({ onKeysGenerated }) {
           <Button 
             onClick={handleGenerate} 
             disabled={isLoading}
-            className="w-full h-12 rounded-xl text-base font-semibold"
+            className="w-full h-10 sm:h-12 rounded-lg sm:rounded-xl text-sm sm:text-base font-semibold"
           >
             {isLoading ? (
               <>
-                <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                Generating...
+                <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 mr-2 animate-spin" />
+                <span className="hidden xs:inline">Generating...</span>
+                <span className="xs:hidden">...</span>
               </>
             ) : (
               <>
-                <Sparkles className="h-5 w-5 mr-2" />
-                Generate Keys
+                <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
+                Generate
               </>
             )}
           </Button>
         </div>
 
         {/* Right: Generated Keys Preview */}
-        <div className="p-6 bg-[rgb(250,247,245)] dark:bg-white/[0.02]">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <ClipboardList className="h-4 w-4 text-muted-foreground" />
-              <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        <div className="p-3 sm:p-6 bg-[rgb(250,247,245)] dark:bg-white/[0.02]">
+          <div className="flex items-center justify-between mb-3 sm:mb-4 gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <ClipboardList className="h-4 w-4 text-muted-foreground shrink-0" />
+              <Label className="text-[10px] sm:text-xs font-medium uppercase tracking-wide text-muted-foreground truncate">
                 Generated Keys
               </Label>
             </div>
             {generatedKeys.length > 0 && (
-              <div className="flex gap-2">
+              <div className="flex gap-1 sm:gap-2 shrink-0">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={handleCopyAll}
-                  className="h-8 rounded-lg text-xs"
+                  className="h-7 sm:h-8 px-2 sm:px-3 rounded-lg text-[10px] sm:text-xs"
                 >
-                  <Copy className="h-3 w-3 mr-1.5" />
-                  Copy All
+                  <Copy className="h-3 w-3 sm:mr-1.5" />
+                  <span className="hidden sm:inline">Copy All</span>
                 </Button>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={handleReset}
-                  className="h-8 rounded-lg text-xs"
+                  className="h-7 sm:h-8 px-2 rounded-lg text-[10px] sm:text-xs"
                 >
                   Clear
                 </Button>

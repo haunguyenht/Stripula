@@ -30,7 +30,12 @@ export function ActionsPill({ user, onNavigate }) {
         <motion.button 
           onClick={handleCreditsClick}
           className={cn(
-            "relative flex items-center gap-2.5 px-3 py-2 rounded-2xl cursor-pointer",
+            // Mobile-first: very compact on small screens
+            "relative flex items-center",
+            "gap-1 xs:gap-1.5 md:gap-2.5",
+            "px-1.5 xs:px-2 md:px-3",
+            "py-1 xs:py-1.5 md:py-2",
+            "rounded-lg md:rounded-2xl cursor-pointer",
             "transition-all duration-400",
             // Light mode: Vintage copper coin aesthetic
             "bg-gradient-to-br from-[hsl(38,50%,96%)] to-[hsl(35,45%,92%)]",
@@ -63,8 +68,8 @@ export function ActionsPill({ user, onNavigate }) {
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
         >
-          {/* Holographic Coin Icon */}
-          <div className="relative">
+          {/* Holographic Coin Icon - smaller on mobile */}
+          <div className="relative shrink-0">
             {/* Rotating aurora reflection behind coin */}
             <motion.div
               className={cn(
@@ -84,10 +89,11 @@ export function ActionsPill({ user, onNavigate }) {
               }}
             />
             
-            {/* The coin itself */}
+            {/* The coin itself - mobile-first sizing */}
             <motion.div
               className={cn(
-                "relative w-7 h-7 rounded-full flex items-center justify-center",
+                "relative rounded-full flex items-center justify-center",
+                "w-5 h-5 xs:w-6 xs:h-6 md:w-7 md:h-7",
                 // Light mode: Copper coin
                 "bg-gradient-to-br from-[hsl(25,75%,55%)] via-[hsl(30,80%,50%)] to-[hsl(25,70%,40%)]",
                 "shadow-[inset_0_2px_4px_rgba(255,255,255,0.3),inset_0_-2px_4px_rgba(0,0,0,0.2),0_2px_6px_rgba(101,67,33,0.3)]",
@@ -115,9 +121,9 @@ export function ActionsPill({ user, onNavigate }) {
               style={{ transformStyle: 'preserve-3d' }}
             >
               {isLowCredits ? (
-                <TrendingUp className="h-3.5 w-3.5 text-white drop-shadow-sm" style={{ transform: 'rotate(-45deg)' }} />
+                <TrendingUp className="h-2.5 w-2.5 xs:h-3 xs:w-3 md:h-3.5 md:w-3.5 text-white drop-shadow-sm" style={{ transform: 'rotate(-45deg)' }} />
               ) : (
-                <Coins className="h-3.5 w-3.5 text-amber-900 dark:text-amber-800 drop-shadow-sm" />
+                <Coins className="h-2.5 w-2.5 xs:h-3 xs:w-3 md:h-3.5 md:w-3.5 text-amber-900 dark:text-amber-800 drop-shadow-sm" />
               )}
             </motion.div>
           </div>
@@ -126,7 +132,8 @@ export function ActionsPill({ user, onNavigate }) {
           <div className="flex flex-col items-start">
             <motion.span 
               className={cn(
-                "text-sm font-bold tabular-nums tracking-tight leading-none",
+                "font-bold tabular-nums tracking-tight leading-none",
+                "text-[11px] xs:text-xs md:text-sm",
                 // Light mode
                 "text-[hsl(25,50%,25%)]",
                 // Dark mode: Holographic gold gradient
@@ -140,10 +147,12 @@ export function ActionsPill({ user, onNavigate }) {
             >
               {credits.toLocaleString()}
             </motion.span>
+            {/* Hide "credits" label on mobile - show only on md+ */}
             <span className={cn(
-              "text-[9px] font-medium uppercase tracking-wider",
+              "text-[8px] md:text-[9px] font-medium uppercase tracking-wider",
               "text-[hsl(25,30%,50%)]",
-              "dark:text-white/40"
+              "dark:text-white/40",
+              "hidden md:block"
             )}>
               credits
             </span>

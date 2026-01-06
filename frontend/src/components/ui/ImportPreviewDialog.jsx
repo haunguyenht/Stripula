@@ -1,5 +1,20 @@
 import React, { useMemo } from 'react';
-import { FileText, AlertTriangle, Copy, Trash2, Clock, Coins, CreditCard, ShieldAlert, Upload, ChevronRight } from 'lucide-react';
+import { 
+  FileText, 
+  AlertTriangle, 
+  Copy, 
+  Trash2, 
+  Clock, 
+  Coins, 
+  CreditCard, 
+  ShieldAlert, 
+  Upload, 
+  ChevronRight,
+  CheckCircle2,
+  XCircle,
+  FileWarning
+} from 'lucide-react';
+import { motion } from 'motion/react';
 import {
   Dialog,
   DialogContent,
@@ -7,6 +22,7 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
+  DialogSection,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -15,14 +31,15 @@ import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 
 /**
- * ImportPreviewDialog - Redesigned for OrangeAI/OPUX Design System
+ * ImportPreviewDialog - Premium Dual Theme Design System
  * 
+ * ═══════════════════════════════════════════════════════════════════
  * Modern import preview dialog with:
- * - Glass morphism stat cards
- * - Visual tier limit indicators
- * - Clean toggle options
- * 
- * Requirements: 6.3, 6.4, 7.1, 7.2, 7.3, 7.4
+ * - Art Deco treasury styling (light) / Obsidian nebula glass (dark)
+ * - Animated stat cards with tier limit visualization
+ * - Clean toggle options with premium switches
+ * - Responsive layout for all screen sizes
+ * ═══════════════════════════════════════════════════════════════════
  */
 export function ImportPreviewDialog({
   open,
@@ -66,6 +83,7 @@ export function ImportPreviewDialog({
   }, [finalCardCount, effectiveRate]);
 
   const hasSufficientCredits = balance >= estimatedCost;
+  const tierUsagePercent = Math.min(100, (finalCardCount / tierLimit) * 100);
 
   const handleConfirm = () => {
     onConfirm?.({
@@ -81,19 +99,33 @@ export function ImportPreviewDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent size="default" className="sm:max-w-[480px]">
         {/* Header */}
         <DialogHeader>
-          <div className="flex items-start gap-4">
-            <div className={cn(
-              "shrink-0 p-2.5 rounded-xl ring-1",
-              "bg-primary/10 dark:bg-primary/15",
-              "ring-primary/20 dark:ring-primary/25"
-            )}>
-              <Upload className="h-5 w-5 text-primary" />
-            </div>
-            <div className="flex-1 min-w-0 space-y-1.5 pt-0.5">
-              <DialogTitle>Import Preview</DialogTitle>
+          <div className="flex items-start gap-3 xs:gap-4">
+            <motion.div 
+              className={cn(
+                "shrink-0 flex items-center justify-center",
+                "h-10 w-10 xs:h-11 xs:w-11 sm:h-12 sm:w-12",
+                "rounded-xl sm:rounded-2xl",
+                "ring-1",
+                // Light: Emerald treasury
+                "bg-gradient-to-br from-emerald-100 via-emerald-50 to-teal-50",
+                "ring-emerald-200/60",
+                "shadow-[inset_0_-2px_4px_rgba(0,0,0,0.03)]",
+                // Dark: Cyan aurora
+                "dark:from-cyan-500/20 dark:via-cyan-500/15 dark:to-emerald-500/10",
+                "dark:ring-cyan-500/30",
+                "dark:shadow-[0_0_24px_-4px_rgba(34,211,238,0.5)]"
+              )}
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ type: "spring", duration: 0.5 }}
+            >
+              <Upload className="h-5 w-5 xs:h-5.5 xs:w-5.5 sm:h-6 sm:w-6 text-emerald-600 dark:text-cyan-400" />
+            </motion.div>
+            <div className="flex-1 min-w-0 pt-0.5 space-y-1 xs:space-y-1.5">
+              <DialogTitle className="pr-6">Import Preview</DialogTitle>
               <DialogDescription>
                 Review imported cards before adding to input
               </DialogDescription>
@@ -101,84 +133,105 @@ export function ImportPreviewDialog({
           </div>
         </DialogHeader>
 
-        <div className="space-y-3">
+        <div className="space-y-3 xs:space-y-4">
           {/* Tier Limit Warning */}
           {exceedsTierLimit && (
-            <div className={cn(
-              "rounded-xl p-3",
-              "bg-rose-50 dark:bg-rose-500/[0.08]",
-              "border border-rose-200/80 dark:border-rose-500/20"
-            )}>
-              <div className="flex items-start gap-2.5">
-                <ShieldAlert className="h-4 w-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
-                <div className="space-y-0.5">
-                  <p className="text-[13px] font-semibold text-rose-700 dark:text-rose-300">
-                    Exceeds tier limit
-                  </p>
-                  <p className="text-[12px] leading-relaxed text-rose-600/90 dark:text-rose-400/80">
-                    You have {finalCardCount} cards but your {userTier} tier limit is {tierLimit}. 
-                    Please reduce by {tierLimitExcess} card{tierLimitExcess > 1 ? 's' : ''} to continue.
-                  </p>
+            <motion.div
+              initial={{ y: 10, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+            >
+              <DialogSection variant="danger">
+                <div className="flex items-start gap-2 xs:gap-2.5">
+                  <ShieldAlert className="h-4 w-4 xs:h-4.5 xs:w-4.5 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+                  <div className="space-y-0.5">
+                    <p className="text-xs xs:text-[13px] font-semibold text-rose-700 dark:text-rose-300">
+                      Exceeds tier limit
+                    </p>
+                    <p className="text-[11px] xs:text-[12px] leading-relaxed text-rose-600/90 dark:text-rose-400/80">
+                      You have {finalCardCount} cards but your {userTier} tier limit is {tierLimit}. 
+                      Please reduce by {tierLimitExcess} card{tierLimitExcess > 1 ? 's' : ''} to continue.
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </div>
+              </DialogSection>
+            </motion.div>
           )}
 
           {/* Tier Limit Progress */}
-          <div className={cn(
-            "rounded-xl p-3",
-            "bg-neutral-50 dark:bg-white/[0.03]",
-            "border border-neutral-200/60 dark:border-white/[0.06]"
-          )}>
+          <motion.div 
+            className={cn(
+              "rounded-xl sm:rounded-2xl p-3 xs:p-4",
+              // Light
+              "bg-gradient-to-br from-[hsl(40,30%,96%)] to-[hsl(38,25%,94%)]",
+              "ring-1 ring-inset ring-[hsl(38,25%,85%)]",
+              // Dark
+              "dark:from-white/[0.03] dark:to-white/[0.02]",
+              "dark:ring-white/[0.08]"
+            )}
+            initial={{ y: 10, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.05 }}
+          >
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
-                <CreditCard className="h-3.5 w-3.5 text-neutral-500 dark:text-white/50" />
-                <span className="text-[12px] text-neutral-500 dark:text-white/50">
+                <CreditCard className="h-3 w-3 xs:h-3.5 xs:w-3.5 text-[hsl(35,25%,50%)] dark:text-white/50" />
+                <span className="text-[11px] xs:text-[12px] text-[hsl(35,25%,50%)] dark:text-white/50">
                   Tier limit ({userTier})
                 </span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 xs:gap-2">
                 <span className={cn(
-                  "text-[13px] font-bold font-mono",
-                  exceedsTierLimit ? "text-rose-600 dark:text-rose-400" : "text-neutral-900 dark:text-white"
+                  "text-xs xs:text-[13px] font-bold font-mono",
+                  exceedsTierLimit ? "text-rose-600 dark:text-rose-400" : "text-[hsl(35,35%,30%)] dark:text-white"
                 )}>
                   {finalCardCount} / {tierLimit}
                 </span>
                 {!exceedsTierLimit && (
-                  <Badge className="text-[9px] h-4 bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-0">
+                  <Badge className={cn(
+                    "text-[8px] xs:text-[9px] h-4 px-1.5 border-0",
+                    "bg-emerald-100 dark:bg-emerald-500/15",
+                    "text-emerald-700 dark:text-emerald-400"
+                  )}>
                     OK
                   </Badge>
                 )}
               </div>
             </div>
             {/* Progress bar */}
-            <div className="h-1.5 rounded-full bg-neutral-200 dark:bg-white/10 overflow-hidden">
-              <div 
+            <div className={cn(
+              "h-1.5 xs:h-2 rounded-full overflow-hidden",
+              "bg-[hsl(40,25%,90%)] dark:bg-white/10"
+            )}>
+              <motion.div 
                 className={cn(
-                  "h-full rounded-full transition-all duration-300",
+                  "h-full rounded-full",
                   exceedsTierLimit 
-                    ? "bg-rose-500" 
-                    : finalCardCount / tierLimit > 0.8 
-                      ? "bg-amber-500" 
-                      : "bg-emerald-500"
+                    ? "bg-gradient-to-r from-rose-500 to-rose-600" 
+                    : tierUsagePercent > 80 
+                      ? "bg-gradient-to-r from-amber-500 to-amber-600" 
+                      : "bg-gradient-to-r from-emerald-500 to-emerald-600"
                 )}
-                style={{ width: `${Math.min(100, (finalCardCount / tierLimit) * 100)}%` }}
+                initial={{ width: 0 }}
+                animate={{ width: `${tierUsagePercent}%` }}
+                transition={{ duration: 0.5, delay: 0.2 }}
               />
             </div>
-          </div>
+          </motion.div>
 
           {/* Stats Grid */}
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-2 xs:gap-2.5">
             <StatCard
               label="Total Parsed"
               value={stats.totalParsed || 0}
               icon={FileText}
+              delay={0.1}
             />
             <StatCard
               label="Final Count"
               value={finalCardCount}
-              icon={FileText}
+              icon={CheckCircle2}
               highlight
+              delay={0.15}
             />
             {(stats.duplicatesRemoved || 0) > 0 && (
               <StatCard
@@ -186,6 +239,7 @@ export function ImportPreviewDialog({
                 value={stats.duplicatesRemoved}
                 icon={Copy}
                 variant="warning"
+                delay={0.2}
               />
             )}
             {(stats.expiredRemoved || 0) > 0 && (
@@ -194,6 +248,7 @@ export function ImportPreviewDialog({
                 value={stats.expiredRemoved}
                 icon={Clock}
                 variant="warning"
+                delay={0.25}
               />
             )}
             {(stats.luhnFailedRemoved || 0) > 0 && (
@@ -202,57 +257,57 @@ export function ImportPreviewDialog({
                 value={stats.luhnFailedRemoved}
                 icon={ShieldAlert}
                 variant="warning"
+                delay={0.3}
               />
             )}
             {(stats.invalidFormatRemoved || 0) > 0 && (
               <StatCard
                 label="Invalid Format"
                 value={stats.invalidFormatRemoved}
-                icon={Trash2}
+                icon={FileWarning}
                 variant="warning"
+                delay={0.35}
               />
             )}
             {(stats.invalidRows || 0) > 0 && (
               <StatCard
                 label="Invalid Rows"
                 value={stats.invalidRows}
-                icon={Trash2}
+                icon={XCircle}
                 variant="error"
+                delay={0.4}
               />
             )}
           </div>
 
           {/* Truncation Warning */}
           {stats.truncated && (
-            <div className={cn(
-              "rounded-xl p-3",
-              "bg-amber-50 dark:bg-amber-500/[0.08]",
-              "border border-amber-200/80 dark:border-amber-500/20"
-            )}>
+            <DialogSection variant="warning">
               <div className="flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                <span className="text-[12px] font-medium text-amber-700 dark:text-amber-300">
+                <AlertTriangle className="h-3.5 w-3.5 xs:h-4 xs:w-4 text-amber-600 dark:text-amber-400" />
+                <span className="text-[11px] xs:text-[12px] font-medium text-amber-700 dark:text-amber-300">
                   File truncated to 10,000 cards ({stats.truncatedCount || 0} skipped)
                 </span>
               </div>
-            </div>
+            </DialogSection>
           )}
 
           {/* Sample Preview */}
           {sampleCards.length > 0 && (
-            <div className="space-y-2">
-              <Label className="text-[11px] font-medium uppercase tracking-wider text-neutral-400 dark:text-white/40">
+            <div className="space-y-1.5 xs:space-y-2">
+              <Label className="text-[10px] xs:text-[11px] font-medium uppercase tracking-wider text-[hsl(35,20%,55%)] dark:text-white/40">
                 Sample Preview (first 5)
               </Label>
               <div className={cn(
-                "rounded-xl p-3 space-y-1 max-h-28 overflow-y-auto",
-                "bg-neutral-50 dark:bg-white/[0.03]",
-                "border border-neutral-200/60 dark:border-white/[0.06]"
+                "rounded-lg xs:rounded-xl p-2.5 xs:p-3 space-y-1 max-h-24 xs:max-h-28 overflow-y-auto",
+                "bg-[hsl(42,35%,97%)] dark:bg-white/[0.03]",
+                "ring-1 ring-inset ring-[hsl(40,30%,88%)] dark:ring-white/[0.06]",
+                "scrollbar-thin scrollbar-thumb-[hsl(38,30%,80%)] dark:scrollbar-thumb-white/20"
               )}>
                 {sampleCards.map((card, idx) => (
                   <div
                     key={idx}
-                    className="font-mono text-[11px] text-neutral-500 dark:text-white/50 truncate"
+                    className="font-mono text-[10px] xs:text-[11px] text-[hsl(35,25%,45%)] dark:text-white/50 truncate"
                   >
                     {maskCard(card)}
                   </div>
@@ -264,17 +319,20 @@ export function ImportPreviewDialog({
           {/* Options */}
           {((stats.duplicatesRemoved || 0) > 0 || (stats.expiredRemoved || 0) > 0) && (
             <div className={cn(
-              "rounded-xl p-4 space-y-3",
-              "bg-neutral-50 dark:bg-white/[0.03]",
-              "border border-neutral-200/60 dark:border-white/[0.06]"
+              "rounded-xl sm:rounded-2xl p-3 xs:p-4 space-y-3",
+              "bg-[hsl(42,35%,97%)] dark:bg-white/[0.03]",
+              "ring-1 ring-inset ring-[hsl(40,30%,88%)] dark:ring-white/[0.06]"
             )}>
-              <Label className="text-[11px] font-medium uppercase tracking-wider text-neutral-400 dark:text-white/40">
+              <Label className="text-[10px] xs:text-[11px] font-medium uppercase tracking-wider text-[hsl(35,20%,55%)] dark:text-white/40">
                 Import Options
               </Label>
               
               {(stats.duplicatesRemoved || 0) > 0 && (
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="keep-duplicates" className="text-[13px] text-neutral-600 dark:text-white/70 cursor-pointer">
+                  <Label 
+                    htmlFor="keep-duplicates" 
+                    className="text-xs xs:text-[13px] text-[hsl(35,25%,40%)] dark:text-white/70 cursor-pointer"
+                  >
                     Keep duplicate cards ({stats.duplicatesRemoved})
                   </Label>
                   <Switch
@@ -287,7 +345,10 @@ export function ImportPreviewDialog({
               
               {(stats.expiredRemoved || 0) > 0 && (
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="keep-expired" className="text-[13px] text-neutral-600 dark:text-white/70 cursor-pointer">
+                  <Label 
+                    htmlFor="keep-expired" 
+                    className="text-xs xs:text-[13px] text-[hsl(35,25%,40%)] dark:text-white/70 cursor-pointer"
+                  >
                     Keep expired cards ({stats.expiredRemoved})
                   </Label>
                   <Switch
@@ -302,32 +363,42 @@ export function ImportPreviewDialog({
 
           {/* Credit Cost Estimate */}
           <div className={cn(
-            "rounded-xl p-3",
+            "rounded-xl sm:rounded-2xl p-3 xs:p-4",
             hasSufficientCredits
-              ? "bg-neutral-50 dark:bg-white/[0.03] border border-neutral-200/60 dark:border-white/[0.06]"
-              : "bg-amber-50 dark:bg-amber-500/[0.08] border border-amber-200/80 dark:border-amber-500/20"
+              ? [
+                  "bg-[hsl(42,35%,97%)] dark:bg-white/[0.03]",
+                  "ring-1 ring-inset ring-[hsl(40,30%,88%)] dark:ring-white/[0.06]"
+                ]
+              : [
+                  "bg-amber-50 dark:bg-amber-500/[0.08]",
+                  "ring-1 ring-inset ring-amber-200/80 dark:ring-amber-500/20"
+                ]
           )}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Coins className={cn(
-                  "h-4 w-4",
-                  hasSufficientCredits ? "text-neutral-500 dark:text-white/50" : "text-amber-600 dark:text-amber-400"
+                  "h-3.5 w-3.5 xs:h-4 xs:w-4",
+                  hasSufficientCredits ? "text-[hsl(35,25%,50%)] dark:text-white/50" : "text-amber-600 dark:text-amber-400"
                 )} />
                 <span className={cn(
-                  "text-[12px]",
-                  hasSufficientCredits ? "text-neutral-500 dark:text-white/50" : "text-amber-700 dark:text-amber-300"
+                  "text-[11px] xs:text-[12px]",
+                  hasSufficientCredits ? "text-[hsl(35,25%,50%)] dark:text-white/50" : "text-amber-700 dark:text-amber-300"
                 )}>
                   Est. max cost:
                 </span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 xs:gap-2">
                 <span className={cn(
-                  "text-[14px] font-bold font-mono",
-                  hasSufficientCredits ? "text-neutral-900 dark:text-white" : "text-amber-700 dark:text-amber-300"
+                  "text-sm xs:text-[14px] font-bold font-mono",
+                  hasSufficientCredits ? "text-[hsl(35,35%,30%)] dark:text-white" : "text-amber-700 dark:text-amber-300"
                 )}>
                   {estimatedCost} credits
                 </span>
-                <Badge className="text-[9px] h-4 bg-neutral-100 dark:bg-white/10 text-neutral-500 dark:text-white/50 border-0">
+                <Badge className={cn(
+                  "text-[8px] xs:text-[9px] h-4 px-1.5 border-0",
+                  "bg-[hsl(40,25%,90%)] dark:bg-white/10",
+                  "text-[hsl(35,25%,50%)] dark:text-white/50"
+                )}>
                   {effectiveRate}/card
                 </Badge>
               </div>
@@ -335,8 +406,8 @@ export function ImportPreviewDialog({
           </div>
 
           {!hasSufficientCredits && (
-            <div className="flex items-center justify-center gap-2 text-[11px] text-amber-600 dark:text-amber-400">
-              <AlertTriangle className="h-3.5 w-3.5" />
+            <div className="flex items-center justify-center gap-1.5 xs:gap-2 text-[10px] xs:text-[11px] text-amber-600 dark:text-amber-400">
+              <AlertTriangle className="h-3 w-3 xs:h-3.5 xs:w-3.5" />
               <span>
                 You have {balance} credits. May stop early if all cards are LIVE.
               </span>
@@ -349,11 +420,17 @@ export function ImportPreviewDialog({
             variant="outline" 
             onClick={handleCancel}
             className={cn(
-              "h-10 font-medium text-[14px]",
-              "border-neutral-200 text-neutral-700",
-              "hover:bg-neutral-100 hover:border-neutral-300",
-              "dark:border-white/10 dark:text-white/70",
-              "dark:hover:bg-white/[0.06] dark:hover:border-white/20"
+              "flex-1 sm:flex-none",
+              "h-9 xs:h-10 sm:h-11",
+              "text-[13px] xs:text-[14px] font-medium",
+              // Light mode
+              "bg-gradient-to-b from-[hsl(42,45%,97%)] to-[hsl(40,40%,93%)]",
+              "border-[hsl(42,40%,75%)] text-[hsl(35,35%,30%)]",
+              "hover:from-[hsl(42,50%,95%)] hover:to-[hsl(40,45%,90%)]",
+              // Dark mode
+              "dark:bg-transparent dark:from-transparent dark:to-transparent",
+              "dark:border-white/[0.1] dark:text-white/70",
+              "dark:hover:bg-white/[0.06] dark:hover:text-white"
             )}
           >
             Cancel
@@ -361,15 +438,31 @@ export function ImportPreviewDialog({
           <Button 
             onClick={handleConfirm}
             disabled={exceedsTierLimit}
-            className="h-10 font-medium text-[14px] min-w-[140px] gap-1.5"
+            className={cn(
+              "flex-1 sm:flex-none min-w-[130px] xs:min-w-[150px]",
+              "h-9 xs:h-10 sm:h-11",
+              "text-[13px] xs:text-[14px] font-medium gap-1 xs:gap-1.5",
+              exceedsTierLimit
+                ? "opacity-50 cursor-not-allowed"
+                : [
+                    // Light: Emerald seal
+                    "bg-gradient-to-b from-[hsl(155,55%,42%)] via-[hsl(155,50%,38%)] to-[hsl(155,45%,32%)]",
+                    "border border-[hsl(155,40%,28%)]/30 text-white",
+                    "shadow-[inset_0_1px_0_rgba(255,255,255,0.15),0_4px_16px_-2px_rgba(50,150,100,0.3)]",
+                    // Dark: Cyan aurora
+                    "dark:from-cyan-600 dark:via-cyan-600 dark:to-cyan-700",
+                    "dark:border-cyan-500/30",
+                    "dark:shadow-[0_0_30px_-6px_rgba(34,211,238,0.6)]"
+                  ]
+            )}
             title={exceedsTierLimit ? `Reduce cards to ${tierLimit} or fewer` : undefined}
           >
             {exceedsTierLimit ? (
-              `Exceeds Limit (${tierLimit})`
+              <span className="text-[12px] xs:text-[13px]">Exceeds Limit ({tierLimit})</span>
             ) : (
               <>
                 Import {finalCardCount} Cards
-                <ChevronRight className="h-4 w-4" />
+                <ChevronRight className="h-3.5 w-3.5 xs:h-4 xs:w-4" />
               </>
             )}
           </Button>
@@ -382,39 +475,55 @@ export function ImportPreviewDialog({
 /**
  * Stat card for displaying import statistics
  */
-function StatCard({ label, value, icon: Icon, variant = 'default', highlight = false }) {
+function StatCard({ label, value, icon: Icon, variant = 'default', highlight = false, delay = 0 }) {
   return (
-    <div className={cn(
-      "flex items-center gap-2.5 px-3 py-2.5 rounded-xl",
-      "border",
-      variant === 'warning' && "bg-amber-50 dark:bg-amber-500/[0.08] border-amber-200/60 dark:border-amber-500/15",
-      variant === 'error' && "bg-rose-50 dark:bg-rose-500/[0.08] border-rose-200/60 dark:border-rose-500/15",
-      variant === 'default' && "bg-neutral-50 dark:bg-white/[0.03] border-neutral-200/60 dark:border-white/[0.06]",
-      highlight && "ring-1 ring-primary/20 dark:ring-primary/25"
-    )}>
+    <motion.div 
+      className={cn(
+        "flex items-center gap-2 xs:gap-2.5 px-2.5 xs:px-3 py-2 xs:py-2.5 rounded-lg xs:rounded-xl",
+        "ring-1 ring-inset",
+        variant === 'warning' && [
+          "bg-amber-50 dark:bg-amber-500/[0.08]",
+          "ring-amber-200/60 dark:ring-amber-500/15"
+        ],
+        variant === 'error' && [
+          "bg-rose-50 dark:bg-rose-500/[0.08]",
+          "ring-rose-200/60 dark:ring-rose-500/15"
+        ],
+        variant === 'default' && [
+          "bg-[hsl(42,35%,97%)] dark:bg-white/[0.03]",
+          "ring-[hsl(40,30%,88%)] dark:ring-white/[0.06]"
+        ],
+        highlight && "ring-2 ring-emerald-300/60 dark:ring-cyan-500/30"
+      )}
+      initial={{ y: 10, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ delay }}
+    >
       <div className={cn(
-        "flex items-center justify-center w-7 h-7 rounded-lg shrink-0",
+        "flex items-center justify-center w-6 h-6 xs:w-7 xs:h-7 rounded-md xs:rounded-lg shrink-0",
         variant === 'warning' && "bg-amber-100 dark:bg-amber-500/15",
         variant === 'error' && "bg-rose-100 dark:bg-rose-500/15",
-        variant === 'default' && "bg-neutral-100 dark:bg-white/[0.06]"
+        variant === 'default' && "bg-[hsl(40,30%,92%)] dark:bg-white/[0.06]"
       )}>
         <Icon className={cn(
-          "h-3.5 w-3.5",
+          "h-3 w-3 xs:h-3.5 xs:w-3.5",
           variant === 'warning' && "text-amber-600 dark:text-amber-400",
           variant === 'error' && "text-rose-600 dark:text-rose-400",
-          variant === 'default' && "text-neutral-500 dark:text-white/50"
+          variant === 'default' && "text-[hsl(35,25%,50%)] dark:text-white/50"
         )} />
       </div>
       <div className="min-w-0">
-        <p className="text-[10px] uppercase tracking-wider text-neutral-400 dark:text-white/40 truncate">{label}</p>
+        <p className="text-[9px] xs:text-[10px] uppercase tracking-wider text-[hsl(35,20%,55%)] dark:text-white/40 truncate">
+          {label}
+        </p>
         <p className={cn(
-          "text-[14px] font-bold font-mono",
-          highlight ? "text-primary" : "text-neutral-900 dark:text-white"
+          "text-sm xs:text-[14px] font-bold font-mono",
+          highlight ? "text-emerald-600 dark:text-cyan-400" : "text-[hsl(35,35%,30%)] dark:text-white"
         )}>
           {value.toLocaleString()}
         </p>
       </div>
-    </div>
+    </motion.div>
   );
 }
 

@@ -27,6 +27,9 @@ export function LoginPage() {
   }, []);
 
   const handleLoginSuccess = (result) => {
+    // Always redirect to dashboard on successful login
+    localStorage.setItem('appActiveRoute', 'dashboard');
+    
     if (result.isNewUser) {
       success('Welcome! You received 25 starter credits.');
     } else {

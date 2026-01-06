@@ -138,7 +138,7 @@ const KeyCard = forwardRef(function KeyCard({ keyItem, index, onCopy, onRevoke, 
       exit={{ opacity: 0, y: -10 }}
       transition={{ delay: index * 0.03 }}
       className={cn(
-        "group p-4 rounded-xl transition-all duration-200",
+        "group p-2.5 sm:p-4 rounded-lg sm:rounded-xl transition-all duration-200",
         "bg-white dark:bg-white/[0.02]",
         "border border-[rgb(237,234,233)] dark:border-white/5",
         "hover:border-[rgb(255,64,23)]/20 dark:hover:border-white/10",
@@ -146,7 +146,7 @@ const KeyCard = forwardRef(function KeyCard({ keyItem, index, onCopy, onRevoke, 
         !isActive && "opacity-75"
       )}
     >
-      <div className="flex items-start gap-4">
+      <div className="flex items-start gap-2 sm:gap-4">
         {/* Type Icon */}
         <div className={cn(
           "h-10 w-10 rounded-xl flex items-center justify-center shrink-0",
@@ -387,45 +387,45 @@ export function KeysList({ refreshTrigger }) {
   return (
     <>
       <div className={cn(
-        "rounded-2xl overflow-hidden",
+        "rounded-xl sm:rounded-2xl overflow-hidden",
         "bg-white dark:bg-[rgba(30,41,59,0.5)]",
         "border border-[rgb(237,234,233)] dark:border-white/10",
         "dark:backdrop-blur-sm shadow-sm dark:shadow-none"
       )}>
-        {/* Header */}
-        <div className="px-6 py-5 border-b border-[rgb(237,234,233)] dark:border-white/10 bg-gradient-to-br from-[rgb(250,247,245)] to-transparent dark:from-white/[0.02] dark:to-transparent">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-primary/10 dark:bg-primary/20 flex items-center justify-center">
-                <Key className="h-5 w-5 text-primary" />
+        {/* Header - Compact on mobile */}
+        <div className="px-3 py-3 sm:px-6 sm:py-5 border-b border-[rgb(237,234,233)] dark:border-white/10 bg-gradient-to-br from-[rgb(250,247,245)] to-transparent dark:from-white/[0.02] dark:to-transparent">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl bg-primary/10 dark:bg-primary/20 flex items-center justify-center shrink-0">
+                <Key className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
               </div>
-              <div>
-                <h2 className="text-lg font-semibold text-[rgb(37,27,24)] dark:text-white flex items-center gap-2">
-                  Redeem Keys
+              <div className="min-w-0">
+                <h2 className="text-sm sm:text-lg font-semibold text-[rgb(37,27,24)] dark:text-white flex items-center gap-2">
+                  Keys
                   {total > 0 && (
-                    <Badge variant="secondary" className="text-xs">
+                    <Badge variant="secondary" className="text-[10px] sm:text-xs">
                       {total.toLocaleString()}
                     </Badge>
                   )}
                 </h2>
-                <p className="text-xs text-muted-foreground">View and manage generated keys</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground hidden xs:block">View and manage keys</p>
               </div>
             </div>
             <Button 
               variant="outline" 
-              size="sm" 
+              size="icon"
               onClick={fetchKeys} 
               disabled={isLoading}
-              className="rounded-xl"
+              className="h-8 w-8 sm:h-9 sm:w-auto sm:px-3 rounded-lg sm:rounded-xl shrink-0"
             >
-              <RefreshCw className={cn("h-4 w-4 mr-2", isLoading && "animate-spin")} />
-              Refresh
+              <RefreshCw className={cn("h-3.5 w-3.5 sm:h-4 sm:w-4", isLoading && "animate-spin")} />
+              <span className="hidden sm:inline ml-2">Refresh</span>
             </Button>
           </div>
         </div>
 
-        {/* Filter Chips */}
-        <div className="px-6 py-4 border-b border-[rgb(237,234,233)] dark:border-white/10">
+        {/* Filter Chips - Scrollable on mobile */}
+        <div className="px-3 py-3 sm:px-6 sm:py-4 border-b border-[rgb(237,234,233)] dark:border-white/10 overflow-x-auto">
           <div className="space-y-3">
             {/* Type Filters */}
             <div className="flex items-center gap-2">

@@ -69,9 +69,9 @@ export const StatPill = memo(function StatPill({
       disabled={!isClickable}
       data-active={active}
       className={cn(
-        "inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium transition-all duration-200",
+        "inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[11px] font-medium transition-all duration-200",
         // Larger padding on bigger screens
-        "sm:gap-1.5 sm:px-2.5 sm:py-1.5",
+        "sm:gap-1.5 sm:px-2.5 sm:py-1.5 sm:text-xs",
         "border border-transparent",
         // Light mode - vintage parchment styling
         "text-[hsl(25,30%,35%)] hover:bg-[hsl(38,30%,92%)]",
@@ -91,7 +91,7 @@ export const StatPill = memo(function StatPill({
     >
       {showDot && (
         <span className={cn(
-          "h-1.5 w-1.5 rounded-full shrink-0",
+          "h-1.5 w-1.5 sm:h-1.5 sm:w-1.5 rounded-full shrink-0",
           dotColors[color],
           // Glow effect for active dot in dark mode
           active && "dark:shadow-[0_0_6px_currentColor]"

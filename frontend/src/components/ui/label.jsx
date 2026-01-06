@@ -4,20 +4,25 @@ import { cva } from "class-variance-authority"
 import { cn } from "@/lib/utils.js"
 
 /**
- * Label Component - Liquid Aurora Design System
+ * Label Component - Dual Theme Design System
  * 
- * Light mode: Vintage Banking - Rich sepia ink
- * Dark mode: Liquid Aurora - Soft white with subtle cyan tint
+ * LIGHT MODE: Vintage Banking
+ * - Rich sepia ink with subtle embossed text shadow
+ * 
+ * DARK MODE: PREMIUM Liquid Aurora
+ * - Soft white with subtle aurora tint
  */
 
 const labelVariants = cva(
   cn(
     "text-sm font-medium leading-none",
     "peer-disabled:cursor-not-allowed peer-disabled:opacity-70",
-    // Light: Rich sepia ink
-    "text-[hsl(25,35%,25%)]",
-    // Dark: Aurora-tinted white
-    "dark:text-white/85"
+    // Light: Rich sepia ink with embossed effect
+    "text-[hsl(25,40%,28%)]",
+    "[text-shadow:0_1px_0_rgba(255,255,255,0.4)]",
+    // Dark: PREMIUM Aurora-tinted white (reset text-shadow)
+    "dark:text-white/90",
+    "dark:[text-shadow:none]"
   )
 )
 

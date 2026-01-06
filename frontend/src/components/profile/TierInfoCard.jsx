@@ -67,7 +67,7 @@ function BenefitItem({ icon: Icon, label, value, accent, delay = 0 }) {
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.4, delay, ease: [0.22, 1, 0.36, 1] }}
       className={cn(
-        "group flex items-center gap-3 p-3 rounded-xl",
+        "group flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg sm:rounded-xl",
         // Light: aged paper with subtle inset
         "bg-gradient-to-b from-[hsl(40,40%,97%)] to-[hsl(38,35%,95%)]",
         "border border-[hsl(30,25%,85%)]",
@@ -81,7 +81,7 @@ function BenefitItem({ icon: Icon, label, value, accent, delay = 0 }) {
       )}
     >
       <div className={cn(
-        "flex items-center justify-center w-9 h-9 rounded-lg",
+        "flex items-center justify-center w-7 h-7 sm:w-9 sm:h-9 rounded-md sm:rounded-lg shrink-0",
         // Light: copper coin style
         "bg-gradient-to-b from-[hsl(40,45%,98%)] to-[hsl(38,40%,95%)]",
         "border border-[hsl(30,25%,82%)]",
@@ -89,15 +89,15 @@ function BenefitItem({ icon: Icon, label, value, accent, delay = 0 }) {
         // Dark mode (reset gradient)
         "dark:bg-none dark:bg-white/[0.08] dark:border-white/[0.1] dark:shadow-none"
       )}>
-        <Icon className={cn("w-4 h-4", accent)} />
+        <Icon className={cn("w-3.5 h-3.5 sm:w-4 sm:h-4", accent)} />
       </div>
       
       <div className="flex-1 min-w-0">
-        <span className="text-xs text-[hsl(25,25%,45%)] dark:text-white/50">{label}</span>
+        <span className="text-[10px] sm:text-xs text-[hsl(25,25%,45%)] dark:text-white/50">{label}</span>
       </div>
       
       <span className={cn(
-        "text-sm font-semibold",
+        "text-xs sm:text-sm font-semibold",
         "text-[hsl(25,40%,25%)] dark:text-white",
         "[text-shadow:0_1px_0_rgba(255,255,255,0.5)] dark:[text-shadow:none]"
       )}>
@@ -196,13 +196,13 @@ export function TierInfoCard({ tier, className }) {
       />
       
       {/* Header Section */}
-      <div className="relative p-5 pb-4">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-4">
+      <div className="relative p-3 sm:p-5 pb-3 sm:pb-4">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex items-center gap-2 sm:gap-4">
             {/* Tier Icon - Large decorative wax seal style */}
             <motion.div 
               className={cn(
-                "relative flex items-center justify-center w-16 h-16 rounded-2xl",
+                "relative flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl shrink-0",
                 "bg-gradient-to-br",
                 config.bgGradient,
                 "border border-white/30 dark:border-white/10",
@@ -225,14 +225,14 @@ export function TierInfoCard({ tier, className }) {
                 transition={config.iconTransition}
                 className="relative"
               >
-                <TierIcon className={cn("w-8 h-8", config.color)} />
+                <TierIcon className={cn("w-6 h-6 sm:w-8 sm:h-8", config.color)} />
               </motion.div>
             </motion.div>
             
-            <div>
+            <div className="min-w-0">
               <motion.h3 
                 className={cn(
-                  "text-2xl font-bold font-serif tracking-tight",
+                  "text-lg sm:text-2xl font-bold font-serif tracking-tight truncate",
                   "text-[hsl(25,40%,20%)] dark:text-white",
                   "[text-shadow:0_1px_0_rgba(255,255,255,0.6),0_-1px_0_rgba(101,67,33,0.08)] dark:[text-shadow:none]"
                 )}
@@ -243,7 +243,7 @@ export function TierInfoCard({ tier, className }) {
                 {config.label}
               </motion.h3>
               <motion.p 
-                className="text-sm text-[hsl(25,25%,45%)] dark:text-white/50"
+                className="text-xs sm:text-sm text-[hsl(25,25%,45%)] dark:text-white/50"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.25 }}
@@ -258,10 +258,11 @@ export function TierInfoCard({ tier, className }) {
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.3 }}
+            className="shrink-0"
           >
             {tierName === 'free' ? (
               <span className={cn(
-                "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold",
+                "inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-semibold",
                 // Light: aged paper badge
                 "bg-gradient-to-b from-[hsl(40,40%,96%)] to-[hsl(38,35%,93%)]",
                 "text-[hsl(25,30%,40%)]",
@@ -270,12 +271,12 @@ export function TierInfoCard({ tier, className }) {
                 // Dark mode
                 "dark:bg-white/[0.06] dark:text-white/60 dark:border-white/[0.08] dark:shadow-none"
               )}>
-                <Sparkles className="w-3 h-3" />
+                <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                 Free
               </span>
             ) : isPermanent ? (
               <span className={cn(
-                "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold",
+                "inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-semibold",
                 // Light: patina green vintage
                 "bg-gradient-to-b from-[hsl(145,35%,94%)] to-[hsl(150,30%,90%)]",
                 "text-[hsl(145,50%,30%)]",
@@ -285,12 +286,12 @@ export function TierInfoCard({ tier, className }) {
                 "dark:from-emerald-500/15 dark:to-green-500/10",
                 "dark:text-emerald-400 dark:border-emerald-500/25 dark:shadow-none"
               )}>
-                <Infinity className="w-3.5 h-3.5" />
+                <Infinity className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5" />
                 Lifetime
               </span>
             ) : expirationInfo?.isCritical ? (
               <span className={cn(
-                "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold",
+                "inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-semibold",
                 // Light: burgundy wax seal red
                 "bg-gradient-to-b from-[hsl(0,40%,95%)] to-[hsl(355,35%,92%)]",
                 "text-[hsl(0,50%,40%)]",
@@ -299,12 +300,12 @@ export function TierInfoCard({ tier, className }) {
                 "dark:bg-red-500/15 dark:text-red-400 dark:border-red-500/25",
                 expirationInfo?.isExpired && "animate-pulse"
               )}>
-                {expirationInfo?.isExpired ? <AlertTriangle className="w-3 h-3" /> : <Timer className="w-3 h-3" />}
+                {expirationInfo?.isExpired ? <AlertTriangle className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> : <Timer className="w-2.5 h-2.5 sm:w-3 sm:h-3" />}
                 {expirationInfo.text}
               </span>
             ) : expirationInfo?.isWarning ? (
               <span className={cn(
-                "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold",
+                "inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-semibold",
                 // Light: aged amber/copper
                 "bg-gradient-to-b from-[hsl(35,50%,94%)] to-[hsl(30,45%,91%)]",
                 "text-[hsl(30,60%,35%)]",
@@ -312,12 +313,12 @@ export function TierInfoCard({ tier, className }) {
                 // Dark mode
                 "dark:bg-amber-500/15 dark:text-amber-400 dark:border-amber-500/25"
               )}>
-                <Clock className="w-3 h-3" />
+                <Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                 {expirationInfo.text}
               </span>
             ) : expirationInfo ? (
               <span className={cn(
-                "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold",
+                "inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-semibold",
                 // Light: aged paper
                 "bg-gradient-to-b from-[hsl(40,40%,96%)] to-[hsl(38,35%,93%)]",
                 "text-[hsl(25,30%,40%)]",
@@ -325,7 +326,7 @@ export function TierInfoCard({ tier, className }) {
                 // Dark mode
                 "dark:bg-white/[0.06] dark:text-white/60 dark:border-white/[0.08]"
               )}>
-                <Timer className="w-3 h-3" />
+                <Timer className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                 {expirationInfo.text}
               </span>
             ) : null}
@@ -340,7 +341,7 @@ export function TierInfoCard({ tier, className }) {
           animate={{ opacity: 1, height: 'auto' }}
           transition={{ duration: 0.3 }}
           className={cn(
-            "mx-5 mb-4 p-3.5 rounded-xl flex items-center gap-3",
+            "mx-3 sm:mx-5 mb-3 sm:mb-4 p-2.5 sm:p-3.5 rounded-lg sm:rounded-xl flex items-center gap-2 sm:gap-3",
             expirationInfo?.isExpired || expirationInfo?.isCritical 
               ? cn(
                   // Light: burgundy warning
@@ -359,14 +360,14 @@ export function TierInfoCard({ tier, className }) {
           )}
         >
           <AlertTriangle className={cn(
-            "w-4 h-4 flex-shrink-0",
+            "w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0",
             expirationInfo?.isExpired || expirationInfo?.isCritical 
               ? "text-[hsl(0,50%,42%)] dark:text-red-400" 
               : "text-[hsl(30,60%,38%)] dark:text-amber-400"
           )} />
           <div className="flex-1 min-w-0">
             <p className={cn(
-              "text-sm font-medium",
+              "text-xs sm:text-sm font-medium",
               expirationInfo?.isExpired || expirationInfo?.isCritical 
                 ? "text-[hsl(0,45%,35%)] dark:text-red-400" 
                 : "text-[hsl(30,50%,32%)] dark:text-amber-400"
@@ -380,7 +381,7 @@ export function TierInfoCard({ tier, className }) {
             variant="ghost" 
             size="sm" 
             className={cn(
-              "h-8 text-xs font-semibold gap-1",
+              "h-7 sm:h-8 text-[10px] sm:text-xs font-semibold gap-1 px-2 sm:px-3",
               expirationInfo?.isExpired || expirationInfo?.isCritical 
                 ? "text-[hsl(0,50%,42%)] hover:text-[hsl(0,55%,35%)] hover:bg-[hsl(0,40%,92%)] dark:text-red-400 dark:hover:bg-red-500/20" 
                 : "text-[hsl(30,60%,38%)] hover:text-[hsl(30,65%,32%)] hover:bg-[hsl(30,45%,92%)] dark:text-amber-400 dark:hover:bg-amber-500/20"
@@ -392,16 +393,16 @@ export function TierInfoCard({ tier, className }) {
       )}
       
       {/* Benefits Section */}
-      <div className="px-5 pb-2">
+      <div className="px-3 sm:px-5 pb-2">
         <p className={cn(
-          "text-[10px] font-bold uppercase tracking-widest mb-3",
+          "text-[9px] sm:text-[10px] font-bold uppercase tracking-widest mb-2 sm:mb-3",
           "text-[hsl(25,20%,50%)] dark:text-white/35",
           "[text-shadow:0_1px_0_rgba(255,255,255,0.5)] dark:[text-shadow:none]"
         )}>
           Your Benefits
         </p>
         
-        <div className="space-y-2">
+        <div className="space-y-1.5 sm:space-y-2">
           <BenefitItem
             icon={Percent}
             label="Credit Discount"
@@ -439,13 +440,13 @@ export function TierInfoCard({ tier, className }) {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.35 }}
-          className="p-5 pt-4"
+          className="p-3 sm:p-5 pt-3 sm:pt-4"
         >
           <Button 
             variant="outline" 
             size="default" 
             className={cn(
-              "w-full h-11 text-sm font-semibold gap-2 group",
+              "w-full h-10 sm:h-11 text-xs sm:text-sm font-semibold gap-1.5 sm:gap-2 group",
               // Light: copper foil button
               "bg-gradient-to-b from-[hsl(40,45%,97%)] to-[hsl(38,40%,94%)]",
               "border-[hsl(30,30%,75%)]",

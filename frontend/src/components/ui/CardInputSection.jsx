@@ -52,10 +52,10 @@ export function CardInputSection({
   const startButtonTitle = startButtonTitleProp ?? getDefaultStartButtonTitle();
 
   return (
-    <div className={cn("space-y-3", className)}>
+    <div className={cn("space-y-2 sm:space-y-3", className)}>
       {/* Card Input Container */}
       <div className={cn(
-        "rounded-xl overflow-hidden transition-all duration-200",
+        "rounded-lg sm:rounded-xl overflow-hidden transition-all duration-200",
         "bg-white border border-[rgb(230,225,223)] shadow-sm",
         "focus-within:border-[rgb(255,64,23)]/40 focus-within:ring-2 focus-within:ring-[rgb(255,64,23)]/10",
         "dark:bg-white/5 dark:border-white/10 dark:shadow-none",
@@ -63,8 +63,8 @@ export function CardInputSection({
       )}>
         <Textarea
           className={cn(
-            "font-mono text-xs min-h-[80px] resize-none border-0 rounded-none focus-visible:ring-0 focus-visible:ring-offset-0",
-            "bg-transparent",
+            "font-mono text-[10px] sm:text-xs min-h-[60px] sm:min-h-[80px] resize-none border-0 rounded-none focus-visible:ring-0 focus-visible:ring-offset-0",
+            "bg-transparent dark:bg-transparent p-2 sm:p-3",
             isLoading && "opacity-50"
           )}
           placeholder={placeholder}
@@ -75,42 +75,42 @@ export function CardInputSection({
         />
 
         {/* Footer with count and actions */}
-        <div className="flex items-center justify-between px-3 py-2 border-t border-[rgb(237,234,233)] dark:border-white/10 bg-[rgb(250,249,249)] dark:bg-white/5">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between px-2 py-1.5 sm:px-3 sm:py-2 border-t border-[rgb(237,234,233)] dark:border-white/10 bg-[rgb(250,249,249)] dark:bg-white/5">
+          <div className="flex items-center gap-1 sm:gap-2">
             <Badge
               variant={limitStatus.isError ? "destructive" : limitStatus.isWarning ? "warning" : "secondary"}
               className={cn(
-                "text-[10px] h-6",
+                "text-[9px] sm:text-[10px] h-5 sm:h-6 px-1.5 sm:px-2",
                 limitStatus.isError && "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20",
                 limitStatus.isWarning && "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
               )}
             >
-              {cardCount}/{limitStatus.limit} cards
-              {limitStatus.isWarning && <AlertTriangle className="w-3 h-3 ml-1" />}
+              {cardCount}/{limitStatus.limit}
+              {limitStatus.isWarning && <AlertTriangle className="w-2.5 h-2.5 sm:w-3 sm:h-3 ml-0.5 sm:ml-1" />}
             </Badge>
           </div>
 
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1 sm:gap-1.5">
             <ImportButton
               onImport={onImport}
               disabled={isLoading}
               variant="ghost"
               size="icon"
               showLabel={false}
-              className="h-8 w-8"
+              className="h-6 w-6 sm:h-8 sm:w-8"
             />
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
+              className="h-6 w-6 sm:h-8 sm:w-8"
               onClick={onClear}
               disabled={isLoading}
               title="Clear cards"
             >
-              <Trash2 className="h-3.5 w-3.5" />
+              <Trash2 className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
             </Button>
             {isLoading ? (
-              <Button variant="destructive" size="sm" className="h-8" onClick={onStop}>
+              <Button variant="destructive" size="sm" className="h-6 sm:h-8 px-2 sm:px-3 text-[10px] sm:text-xs" onClick={onStop}>
                 Stop
               </Button>
             ) : isStartDisabled && startButtonTitle ? (
@@ -119,10 +119,11 @@ export function CardInputSection({
                   <span tabIndex={0}>
                     <Button
                       size="sm"
-                      className="h-8 pointer-events-none"
+                      className="h-6 sm:h-8 px-2 sm:px-3 text-[10px] sm:text-xs pointer-events-none"
                       disabled
                     >
-                      {startButtonLabel}
+                      <span className="hidden xs:inline">{startButtonLabel}</span>
+                      <span className="xs:hidden">Start</span>
                     </Button>
                   </span>
                 </TooltipTrigger>
@@ -133,11 +134,12 @@ export function CardInputSection({
             ) : (
               <Button
                 size="sm"
-                className="h-8"
+                className="h-6 sm:h-8 px-2 sm:px-3 text-[10px] sm:text-xs"
                 onClick={onStart}
                 disabled={isStartDisabled}
               >
-                {startButtonLabel}
+                <span className="hidden xs:inline">{startButtonLabel}</span>
+                <span className="xs:hidden">Start</span>
               </Button>
             )}
           </div>

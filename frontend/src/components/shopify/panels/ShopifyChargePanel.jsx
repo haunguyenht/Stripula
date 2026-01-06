@@ -43,10 +43,7 @@ import { CreditSummary, BatchConfirmDialog, BATCH_CONFIRM_THRESHOLD, EffectiveRa
 import { useGatewayCreditRates } from '@/hooks/useGatewayCreditRates';
 import { cn } from '@/lib/utils';
 
-export function ShopifyChargePanel({
-  drawerOpen,
-  onDrawerOpenChange,
-}) {
+export function ShopifyChargePanel() {
   const [cards, setCards] = useLocalStorage('shopifyChargeCards', '');
   const [shopifyUrl, setShopifyUrl] = useLocalStorage('shopifyChargeUrl', '');
   const [proxyString, setProxyString] = useLocalStorage('shopifyChargeProxy', '');
@@ -601,21 +598,21 @@ export function ShopifyChargePanel({
   ], [cardStats]);
 
   const configContent = (
-    <div className="space-y-4 p-4">
+    <div className="space-y-3 sm:space-y-4 p-2 sm:p-4">
       {/* Header */}
-      <div className="flex items-center gap-2 pb-2">
-        <ShoppingBag className="h-5 w-5 text-green-600 dark:text-green-400" />
-        <div>
-          <h2 className="text-sm font-semibold text-[rgb(37,27,24)] dark:text-white">Shopify Charge</h2>
-          <p className="text-[11px] text-muted-foreground">Auto Shopify API validation</p>
+      <div className="flex items-center gap-1.5 sm:gap-2 pb-1 sm:pb-2">
+        <ShoppingBag className="h-4 w-4 sm:h-5 sm:w-5 text-green-600 dark:text-green-400 shrink-0" />
+        <div className="min-w-0">
+          <h2 className="text-xs sm:text-sm font-semibold text-[rgb(37,27,24)] dark:text-white truncate">Shopify Charge</h2>
+          <p className="text-[10px] sm:text-[11px] text-muted-foreground truncate">Auto Shopify API validation</p>
         </div>
       </div>
 
       {/* Shopify URL Input */}
-      <div className="space-y-2">
-        <Label htmlFor="shopify-url" className="text-xs font-medium flex items-center gap-1.5">
-          <Link className="h-3.5 w-3.5" />
-          Shopify Site URL
+      <div className="space-y-1.5 sm:space-y-2">
+        <Label htmlFor="shopify-url" className="text-[10px] sm:text-xs font-medium flex items-center gap-1 sm:gap-1.5">
+          <Link className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+          Shopify URL
         </Label>
         <Input
           id="shopify-url"
@@ -625,19 +622,19 @@ export function ShopifyChargePanel({
           onChange={(e) => setShopifyUrl(e.target.value)}
           disabled={isLoading}
           className={cn(
-            "font-mono text-xs h-9",
+            "font-mono text-[10px] sm:text-xs h-7 sm:h-9",
             !isValidShopifyUrl && shopifyUrl.trim() && "border-red-500/50"
           )}
         />
         {!isValidShopifyUrl && shopifyUrl.trim() && (
-          <p className="text-[10px] text-red-500">Enter a valid URL (https://...)</p>
+          <p className="text-[9px] sm:text-[10px] text-red-500">Enter a valid URL (https://...)</p>
         )}
       </div>
 
       {/* Proxy Input (Required) - Same as SKBased */}
-      <div className="space-y-2">
-        <Label htmlFor="proxy-input" className="text-xs font-medium flex items-center gap-1.5">
-          <Globe className="h-3.5 w-3.5" />
+      <div className="space-y-1.5 sm:space-y-2">
+        <Label htmlFor="proxy-input" className="text-[10px] sm:text-xs font-medium flex items-center gap-1 sm:gap-1.5">
+          <Globe className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
           Proxy <span className="text-red-500">*</span>
         </Label>
         <ProxyInput
@@ -647,12 +644,12 @@ export function ShopifyChargePanel({
           disabled={isLoading || isCheckingProxy}
           placeholder="host:port:user:pass"
           className={cn(
-            "h-9",
+            "h-7 sm:h-9",
             !hasValidProxy && proxyString.trim() && "border-red-500/50"
           )}
         />
         {!hasValidProxy && proxyString.trim() && (
-          <p className="text-[10px] text-red-500">Invalid proxy format. Use: host:port:user:pass</p>
+          <p className="text-[9px] sm:text-[10px] text-red-500">Invalid proxy format. Use: host:port:user:pass</p>
         )}
       </div>
 
@@ -897,8 +894,6 @@ export function ShopifyChargePanel({
       <TwoPanelLayout
         configPanel={configContent}
         resultsPanel={resultsContent}
-        drawerOpen={drawerOpen}
-        onDrawerOpenChange={onDrawerOpenChange}
       />
     </>
   );

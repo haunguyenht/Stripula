@@ -58,79 +58,79 @@ export function ResultsPanel({
   return (
     <div className={cn("flex flex-col h-full", className)}>
       <ResultsHeader>
-        <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-1.5 sm:gap-2">
           {/* Stats - wraps on mobile, scrollable on overflow */}
           <div className="flex-1 min-w-0 overflow-x-auto scrollbar-none order-1">
             <StatPillGroup
               stats={safeStats}
               activeFilter={activeFilter}
               onFilterChange={onFilterChange}
-              className="flex-wrap sm:flex-nowrap"
+              className="flex-nowrap gap-0.5 sm:gap-1"
             />
           </div>
 
           {/* Actions - moves to second row on very small screens */}
-          <div className="flex items-center gap-0.5 shrink-0 order-2">
+          <div className="flex items-center gap-0 sm:gap-0.5 shrink-0 order-2">
             {/* Custom header actions (e.g., ExportButton) */}
             {headerActions}
             {onRefresh && (
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7"
+                className="h-6 w-6 sm:h-7 sm:w-7"
                 onClick={onRefresh}
                 disabled={isLoading}
                 title="Refresh all"
               >
-                <RefreshCw className={cn("h-3.5 w-3.5", isLoading && "animate-spin")} />
+                <RefreshCw className={cn("h-3 w-3 sm:h-3.5 sm:w-3.5", isLoading && "animate-spin")} />
               </Button>
             )}
             {onCopyAllPK && (
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7"
+                className="h-6 w-6 sm:h-7 sm:w-7"
                 onClick={onCopyAllPK}
                 disabled={isLoading}
                 title="Copy all PK keys"
               >
-                <span className="text-[10px] font-semibold">PK</span>
+                <span className="text-[9px] sm:text-[10px] font-semibold">PK</span>
               </Button>
             )}
             {onCopyAllSK && (
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7"
+                className="h-6 w-6 sm:h-7 sm:w-7"
                 onClick={onCopyAllSK}
                 disabled={isLoading}
                 title="Copy all SK keys"
               >
-                <span className="text-[10px] font-semibold">SK</span>
+                <span className="text-[9px] sm:text-[10px] font-semibold">SK</span>
               </Button>
             )}
             {onCopyAll && (
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7"
+                className="h-6 w-6 sm:h-7 sm:w-7"
                 onClick={onCopyAll}
                 disabled={isLoading}
                 title="Copy all (filtered)"
               >
-                <Copy className="h-3.5 w-3.5" />
+                <Copy className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
               </Button>
             )}
             {onClear && (
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7"
+                className="h-6 w-6 sm:h-7 sm:w-7"
                 onClick={onClear}
                 disabled={isLoading}
                 title="Clear results"
               >
-                <Trash2 className="h-3.5 w-3.5" />
+                <Trash2 className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
               </Button>
             )}
           </div>

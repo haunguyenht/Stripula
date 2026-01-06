@@ -663,7 +663,7 @@ const UserRow = forwardRef(function UserRow({ user, index, currentUser, onEditTi
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.03 }}
       className={cn(
-        "group p-4 rounded-xl transition-all duration-200",
+        "group p-2.5 sm:p-4 rounded-lg sm:rounded-xl transition-all duration-200",
         "bg-white dark:bg-white/[0.02]",
         "border border-[rgb(237,234,233)] dark:border-white/5",
         "hover:border-[rgb(255,64,23)]/20 dark:hover:border-white/10",
@@ -675,49 +675,49 @@ const UserRow = forwardRef(function UserRow({ user, index, currentUser, onEditTi
         !isFlagged && expirationStatus === 'warning' && "border-amber-200 dark:border-amber-500/20 bg-amber-50/20 dark:bg-amber-500/[0.03]"
       )}
     >
-      <div className="flex items-center gap-4">
-        {/* Avatar */}
+      <div className="flex items-center gap-2 sm:gap-4">
+        {/* Avatar - Smaller on mobile */}
         <div className="shrink-0">
           {user.photoUrl || user.photo_url ? (
             <img 
               src={user.photoUrl || user.photo_url} 
               alt=""
-              className="h-12 w-12 rounded-xl object-cover border border-[rgb(237,234,233)] dark:border-white/10"
+              className="h-9 w-9 sm:h-12 sm:w-12 rounded-lg sm:rounded-xl object-cover border border-[rgb(237,234,233)] dark:border-white/10"
             />
           ) : (
-            <div className="h-12 w-12 rounded-xl bg-[rgb(250,247,245)] dark:bg-white/5 flex items-center justify-center border border-[rgb(237,234,233)] dark:border-white/10">
-              <User className="h-5 w-5 text-muted-foreground" />
+            <div className="h-9 w-9 sm:h-12 sm:w-12 rounded-lg sm:rounded-xl bg-[rgb(250,247,245)] dark:bg-white/5 flex items-center justify-center border border-[rgb(237,234,233)] dark:border-white/10">
+              <User className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
             </div>
           )}
         </div>
 
         {/* User Info */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <p className="font-semibold text-[rgb(37,27,24)] dark:text-white truncate">
+          <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
+            <p className="text-xs sm:text-sm font-semibold text-[rgb(37,27,24)] dark:text-white truncate max-w-[100px] sm:max-w-none">
               {user.firstName || user.first_name || 'Unknown'}
-              {user.lastName || user.last_name ? ` ${user.lastName || user.last_name}` : ''}
+              <span className="hidden sm:inline">{user.lastName || user.last_name ? ` ${user.lastName || user.last_name}` : ''}</span>
             </p>
             {isFlagged && (
-              <Badge variant="destructive" className="text-[10px] h-5">
-                <Flag className="h-3 w-3 mr-1" />
-                Flagged
+              <Badge variant="destructive" className="text-[8px] sm:text-[10px] h-4 sm:h-5 px-1 sm:px-1.5">
+                <Flag className="h-2.5 w-2.5 sm:h-3 sm:w-3 sm:mr-1" />
+                <span className="hidden sm:inline">Flagged</span>
               </Badge>
             )}
             {expirationStatus === 'expired' && !isFlagged && (
-              <Badge variant="outline" className="text-[10px] h-5 bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20">
-                <Timer className="h-3 w-3 mr-1" />
-                Expired
+              <Badge variant="outline" className="text-[8px] sm:text-[10px] h-4 sm:h-5 px-1 sm:px-1.5 bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20">
+                <Timer className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
               </Badge>
             )}
             {isTargetAdmin && (
-              <Badge variant="outline" className="text-[10px] h-5 bg-primary/10 text-primary border-primary/20">
-                Admin
+              <Badge variant="outline" className="text-[8px] sm:text-[10px] h-4 sm:h-5 px-1 sm:px-1.5 bg-primary/10 text-primary border-primary/20">
+                <span className="hidden sm:inline">Admin</span>
+                <Shield className="h-2.5 w-2.5 sm:hidden" />
               </Badge>
             )}
           </div>
           {user.username && (
-            <p className="text-xs text-muted-foreground">@{user.username}</p>
+            <p className="text-[10px] sm:text-xs text-muted-foreground truncate">@{user.username}</p>
           )}
         </div>
 
@@ -1026,62 +1026,62 @@ export function UsersList() {
   return (
     <>
       <div className={cn(
-        "rounded-2xl overflow-hidden",
+        "rounded-xl sm:rounded-2xl overflow-hidden",
         "bg-white dark:bg-[rgba(30,41,59,0.5)]",
         "border border-[rgb(237,234,233)] dark:border-white/10",
         "dark:backdrop-blur-sm shadow-sm dark:shadow-none"
       )}>
-        {/* Header */}
-        <div className="px-6 py-5 border-b border-[rgb(237,234,233)] dark:border-white/10 bg-gradient-to-br from-[rgb(250,247,245)] to-transparent dark:from-white/[0.02] dark:to-transparent">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-primary/10 dark:bg-primary/20 flex items-center justify-center">
-              <Users className="h-5 w-5 text-primary" />
+        {/* Header - Compact on mobile */}
+        <div className="px-3 py-3 sm:px-6 sm:py-5 border-b border-[rgb(237,234,233)] dark:border-white/10 bg-gradient-to-br from-[rgb(250,247,245)] to-transparent dark:from-white/[0.02] dark:to-transparent">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl bg-primary/10 dark:bg-primary/20 flex items-center justify-center shrink-0">
+                <Users className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
               </div>
-              <div>
-                <h2 className="text-lg font-semibold text-[rgb(37,27,24)] dark:text-white flex items-center gap-2">
-              Users
-              {total > 0 && (
-                    <Badge variant="secondary" className="text-xs">
+              <div className="min-w-0">
+                <h2 className="text-sm sm:text-lg font-semibold text-[rgb(37,27,24)] dark:text-white flex items-center gap-2">
+                  Users
+                  {total > 0 && (
+                    <Badge variant="secondary" className="text-[10px] sm:text-xs">
                       {total.toLocaleString()}
-                </Badge>
-              )}
+                    </Badge>
+                  )}
                 </h2>
-                <p className="text-xs text-muted-foreground">Manage user accounts and permissions</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground hidden xs:block">Manage user accounts</p>
               </div>
             </div>
             <Button 
               variant="outline" 
-              size="sm" 
+              size="icon"
               onClick={fetchUsers} 
               disabled={isLoading}
-              className="rounded-xl"
+              className="h-8 w-8 sm:h-9 sm:w-auto sm:px-3 rounded-lg sm:rounded-xl shrink-0"
             >
-              <RefreshCw className={cn("h-4 w-4 mr-2", isLoading && "animate-spin")} />
-              Refresh
+              <RefreshCw className={cn("h-3.5 w-3.5 sm:h-4 sm:w-4", isLoading && "animate-spin")} />
+              <span className="hidden sm:inline ml-2">Refresh</span>
             </Button>
           </div>
         </div>
 
-        {/* Filters */}
-        <div className="px-6 py-4 border-b border-[rgb(237,234,233)] dark:border-white/10">
-          <div className="flex flex-wrap gap-3">
-            <div className="flex-1 min-w-[200px]">
+        {/* Filters - Stack on mobile */}
+        <div className="px-3 py-3 sm:px-6 sm:py-4 border-b border-[rgb(237,234,233)] dark:border-white/10">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+            <div className="flex-1">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search by username..."
+                  placeholder="Search..."
                   value={search}
                   onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-                  className="pl-9 rounded-xl"
+                  className="pl-9 h-9 sm:h-10 rounded-lg sm:rounded-xl text-sm"
                 />
               </div>
             </div>
             
             <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-muted-foreground" />
+              <Filter className="h-4 w-4 text-muted-foreground hidden sm:block" />
               <Select value={tierFilter} onValueChange={(v) => { setTierFilter(v); setPage(1); }}>
-                <SelectTrigger className="w-32 rounded-xl">
+                <SelectTrigger className="w-full sm:w-32 h-9 sm:h-10 rounded-lg sm:rounded-xl text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -1093,11 +1093,11 @@ export function UsersList() {
                 </SelectContent>
               </Select>
             </div>
-            </div>
           </div>
+        </div>
 
         {/* Content */}
-        <div className="p-4">
+        <div className="p-2 sm:p-4">
           {isLoading ? (
             <div className="flex items-center justify-center py-16">
               <div className="text-center">
@@ -1140,28 +1140,28 @@ export function UsersList() {
 
           {/* Pagination */}
           {totalPages > 1 && (
-          <div className="px-6 py-4 border-t border-[rgb(237,234,233)] dark:border-white/10 flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                Page {page} of {totalPages}
+          <div className="px-3 py-3 sm:px-6 sm:py-4 border-t border-[rgb(237,234,233)] dark:border-white/10 flex items-center justify-between">
+              <p className="text-xs sm:text-sm text-muted-foreground">
+                {page}/{totalPages}
               </p>
-              <div className="flex gap-2">
+              <div className="flex gap-1 sm:gap-2">
                 <Button
                   variant="outline"
-                  size="sm"
+                  size="icon"
                   onClick={() => setPage(p => Math.max(1, p - 1))}
                   disabled={page === 1 || isLoading}
-                className="rounded-xl"
+                  className="h-7 w-7 sm:h-9 sm:w-9 rounded-lg sm:rounded-xl"
                 >
-                  <ChevronLeft className="h-4 w-4" />
+                  <ChevronLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 </Button>
                 <Button
                   variant="outline"
-                  size="sm"
+                  size="icon"
                   onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                   disabled={page === totalPages || isLoading}
-                className="rounded-xl"
+                  className="h-7 w-7 sm:h-9 sm:w-9 rounded-lg sm:rounded-xl"
                 >
-                  <ChevronRight className="h-4 w-4" />
+                  <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 </Button>
               </div>
             </div>

@@ -47,10 +47,7 @@ import { CreditSummary, BatchConfirmDialog, BATCH_CONFIRM_THRESHOLD, BatchConfig
 import { cn } from '@/lib/utils';
 import { toTitleCase } from '@/lib/utils/card-helpers';
 
-export function StripeChargePanel({
-  drawerOpen,
-  onDrawerOpenChange,
-}) {
+export function StripeChargePanel() {
   const [cards, setCards] = useLocalStorage('stripeChargeCards', '');
   const [concurrency, setConcurrency] = useLocalStorage('stripeChargeConcurrency', 1);
   const [sites, setSites] = useState([]);
@@ -624,13 +621,13 @@ export function StripeChargePanel({
   ], [cardStats]);
 
   const configContent = (
-    <div className="space-y-4 p-4">
+    <div className="space-y-3 sm:space-y-4 p-2 sm:p-4">
       {/* Header */}
-      <div className="flex items-center gap-2 pb-2">
-        <Zap className="h-5 w-5 text-[rgb(255,64,23)] dark:text-primary" />
-        <div>
-          <h2 className="text-sm font-semibold text-[rgb(37,27,24)] dark:text-white">Charge Validation</h2>
-          <p className="text-[11px] text-muted-foreground">Validate cards via charge</p>
+      <div className="flex items-center gap-1.5 sm:gap-2 pb-1 sm:pb-2">
+        <Zap className="h-4 w-4 sm:h-5 sm:w-5 text-[rgb(255,64,23)] dark:text-primary shrink-0" />
+        <div className="min-w-0">
+          <h2 className="text-xs sm:text-sm font-semibold text-[rgb(37,27,24)] dark:text-white truncate">Charge Validation</h2>
+          <p className="text-[10px] sm:text-[11px] text-muted-foreground truncate">Validate cards via charge</p>
         </div>
       </div>
 
@@ -758,8 +755,6 @@ export function StripeChargePanel({
       <TwoPanelLayout
         configPanel={configContent}
         resultsPanel={resultsContent}
-        drawerOpen={drawerOpen}
-        onDrawerOpenChange={onDrawerOpenChange}
       />
     </>
   );

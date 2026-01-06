@@ -2,14 +2,15 @@ import { motion } from 'motion/react';
 import { cn } from '@/lib/utils';
 
 /**
- * Skeleton Component - Liquid Aurora Design System
+ * Skeleton Component - Dual Theme Design System
  * 
- * Light Theme: Vintage Banking with warm copper shimmer
- * Dark Theme: Aurora shimmer with indigo→cyan sweep + liquid glass
+ * LIGHT MODE: Vintage Banking
+ * - Warm parchment background with copper shimmer sweep
+ * - Embossed inset effect
  * 
- * Features:
- * - Liquid glass background in dark mode
- * - Dual-layer aurora gradient shimmer animation
+ * DARK MODE: PREMIUM Liquid Aurora
+ * - Enhanced liquid glass background with aurora tint
+ * - Multi-layer aurora gradient shimmer (indigo → cyan → pink)
  * - Specular highlight edge
  */
 
@@ -19,19 +20,20 @@ export function Skeleton({ className, ...props }) {
     <div
       className={cn(
         'relative overflow-hidden rounded-lg',
-        // Light mode: Vintage parchment
-        'bg-[hsl(38,25%,91%)]',
-        // Dark mode: Liquid glass base
-        'dark:bg-white/[0.04]',
-        // Specular highlight in dark mode
-        'dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]',
+        // Light mode: Vintage parchment with embossed effect
+        'bg-gradient-to-b from-[hsl(38,28%,92%)] to-[hsl(38,25%,89%)]',
+        'shadow-[inset_0_1px_0_rgba(255,255,255,0.5),inset_0_-1px_0_rgba(101,67,33,0.05)]',
+        // Dark mode: PREMIUM Liquid glass base with aurora tint
+        'dark:bg-none dark:bg-[rgba(139,92,246,0.04)]',
+        // Enhanced specular highlight in dark mode
+        'dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.08),inset_0_-1px_0_rgba(139,92,246,0.05)]',
         className
       )}
       {...props}
     >
       {/* Light mode shimmer - warm copper sweep */}
       <motion.div
-        className="absolute inset-0 bg-gradient-to-r from-transparent via-[hsl(25,60%,75%)]/30 to-transparent dark:hidden"
+        className="absolute inset-0 bg-gradient-to-r from-transparent via-[hsl(25,60%,75%)]/35 to-transparent dark:hidden"
         animate={{ x: ['-100%', '100%'] }}
         transition={{
           duration: 1.5,
@@ -39,9 +41,9 @@ export function Skeleton({ className, ...props }) {
           ease: 'easeInOut',
         }}
       />
-      {/* Dark mode shimmer - Aurora indigo sweep */}
+      {/* Dark mode shimmer - PREMIUM Aurora indigo sweep */}
       <motion.div
-        className="absolute inset-0 hidden dark:block bg-gradient-to-r from-transparent via-[var(--aurora-indigo)]/20 to-transparent"
+        className="absolute inset-0 hidden dark:block bg-gradient-to-r from-transparent via-[hsl(250,90%,65%)]/25 to-transparent"
         animate={{ x: ['-100%', '100%'] }}
         transition={{
           duration: 2,
@@ -51,11 +53,22 @@ export function Skeleton({ className, ...props }) {
       />
       {/* Secondary aurora layer - cyan, offset for depth */}
       <motion.div
-        className="absolute inset-0 hidden dark:block bg-gradient-to-r from-transparent via-[var(--aurora-cyan)]/15 to-transparent"
+        className="absolute inset-0 hidden dark:block bg-gradient-to-r from-transparent via-[hsl(185,100%,55%)]/18 to-transparent"
         animate={{ x: ['-100%', '100%'] }}
         transition={{
           duration: 2,
           delay: 0.4,
+          repeat: Infinity,
+          ease: 'easeInOut',
+        }}
+      />
+      {/* Tertiary aurora layer - pink accent for premium feel */}
+      <motion.div
+        className="absolute inset-0 hidden dark:block bg-gradient-to-r from-transparent via-[hsl(330,90%,65%)]/10 to-transparent"
+        animate={{ x: ['-100%', '100%'] }}
+        transition={{
+          duration: 2,
+          delay: 0.8,
           repeat: Infinity,
           ease: 'easeInOut',
         }}
@@ -95,18 +108,21 @@ export function SkeletonAvatar({ size = 'md', className }) {
   );
 }
 
-// Card content skeleton - Liquid Aurora styling
+// Card content skeleton - PREMIUM Liquid Aurora styling
 export function SkeletonCard({ className }) {
   return (
     <div className={cn(
       'rounded-2xl p-4',
-      // Light: Vintage banking cream
-      'bg-[hsl(38,45%,98%)] border border-[hsl(30,25%,85%)]',
-      // Dark: Liquid glass
-      'dark:bg-white/[0.03] dark:border-white/[0.08]',
-      'dark:backdrop-blur-[40px] dark:backdrop-saturate-[180%]',
-      // Specular highlight
-      'dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]',
+      // Light: Vintage banking cream with embossed border
+      'bg-gradient-to-b from-[hsl(40,50%,98%)] to-[hsl(38,45%,96%)]',
+      'border border-[hsl(30,28%,82%)]',
+      'shadow-[inset_0_1px_0_rgba(255,255,255,0.6),0_2px_8px_rgba(101,67,33,0.08)]',
+      // Dark: PREMIUM Liquid glass with aurora edge
+      'dark:bg-none dark:bg-[rgba(15,18,25,0.8)]',
+      'dark:border-[rgba(139,92,246,0.12)]',
+      'dark:backdrop-blur-[60px] dark:backdrop-saturate-[200%]',
+      // Enhanced specular highlight + aurora glow
+      'dark:shadow-[0_0_0_1px_rgba(139,92,246,0.08),inset_0_1px_0_rgba(255,255,255,0.08),0_4px_20px_rgba(0,0,0,0.3)]',
       className
     )}>
       <div className="flex items-start gap-4">
@@ -121,7 +137,7 @@ export function SkeletonCard({ className }) {
   );
 }
 
-// Result card skeleton - Liquid Aurora styling matching ResultCard
+// Result card skeleton - PREMIUM Liquid Aurora styling matching ResultCard
 export function SkeletonResultCard({ className }) {
   return (
     <motion.div
@@ -129,13 +145,16 @@ export function SkeletonResultCard({ className }) {
       animate={{ opacity: 1, y: 0 }}
       className={cn(
         'relative rounded-2xl p-4',
-        // Light: Vintage banking cream
-        'bg-[hsl(38,45%,98%)] border border-[hsl(30,25%,85%)]',
-        // Dark: Liquid glass with aurora edge glow
-        'dark:bg-white/[0.03] dark:border-white/[0.08]',
-        'dark:backdrop-blur-[40px] dark:backdrop-saturate-[180%]',
-        // Specular highlight + subtle aurora glow
-        'dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_0_30px_-12px_rgba(139,92,246,0.15)]',
+        // Light: Vintage banking cream with embossed border
+        'bg-gradient-to-b from-[hsl(40,50%,98%)] to-[hsl(38,45%,96%)]',
+        'border border-[hsl(30,28%,82%)]',
+        'shadow-[inset_0_1px_0_rgba(255,255,255,0.6),0_2px_8px_rgba(101,67,33,0.08)]',
+        // Dark: PREMIUM Liquid glass with enhanced aurora edge glow
+        'dark:bg-none dark:bg-[rgba(15,18,25,0.8)]',
+        'dark:border-[rgba(139,92,246,0.12)]',
+        'dark:backdrop-blur-[60px] dark:backdrop-saturate-[200%]',
+        // Enhanced specular highlight + multi-layer aurora glow
+        'dark:shadow-[0_0_0_1px_rgba(139,92,246,0.1),0_0_40px_-12px_rgba(139,92,246,0.2),0_0_30px_-10px_rgba(34,211,238,0.12),inset_0_1px_0_rgba(255,255,255,0.08),0_8px_24px_rgba(0,0,0,0.35)]',
         className
       )}
     >

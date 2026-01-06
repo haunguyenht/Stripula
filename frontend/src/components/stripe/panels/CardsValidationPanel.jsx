@@ -89,8 +89,6 @@ export function CardsValidationPanel({
   abortRef,
   abortControllerRef,
   modeSwitcher,
-  drawerOpen,
-  onDrawerOpenChange,
 }) {
   const [copiedCard, setCopiedCard] = useState(null);
   const [filter, setFilter] = useState('all');
@@ -623,10 +621,10 @@ export function CardsValidationPanel({
   ], [cardStats]);
 
   const configContent = (
-    <div className="space-y-4 p-4">
+    <div className="space-y-3 sm:space-y-4">
       {/* Card Input with integrated action bar */}
       <div className={cn(
-        "rounded-lg overflow-hidden transition-all duration-200",
+        "rounded-md sm:rounded-lg overflow-hidden transition-all duration-200",
         // Light mode - visible container
         "bg-white border border-[rgb(230,225,223)] shadow-sm",
         // Dark mode
@@ -639,8 +637,9 @@ export function CardsValidationPanel({
           id="cards-input"
           name="cards-input"
           className={cn(
-            "font-mono text-xs min-h-[80px] resize-none border-0 rounded-none focus-visible:ring-0 focus-visible:ring-offset-0",
+            "font-mono text-[10px] sm:text-xs min-h-[60px] sm:min-h-[80px] resize-none border-0 rounded-none focus-visible:ring-0 focus-visible:ring-offset-0",
             "bg-transparent dark:bg-transparent",
+            "p-2 sm:p-3",
             isLoading && "opacity-50"
           )}
           placeholder="Enter cards (one per line)&#10;4111111111111111|01|2025|123"
@@ -651,42 +650,42 @@ export function CardsValidationPanel({
         />
 
         {/* Action bar below textarea */}
-        <div className="flex items-center justify-between px-3 py-2 border-t border-[rgb(230,225,223)] bg-[rgb(250,249,249)] dark:border-white/10 dark:bg-white/5">
+        <div className="flex items-center justify-between px-2 py-1.5 sm:px-3 sm:py-2 border-t border-[rgb(230,225,223)] bg-[rgb(250,249,249)] dark:border-white/10 dark:bg-white/5">
           {/* Card count badge with tier limit */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <Badge
               variant={limitStatus.isError ? "destructive" : limitStatus.isWarning ? "warning" : "secondary"}
               className={cn(
-                "text-[10px] h-6",
+                "text-[9px] sm:text-[10px] h-5 sm:h-6 px-1.5 sm:px-2",
                 limitStatus.isError && "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20",
                 limitStatus.isWarning && "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
               )}
             >
-              {cardCount}/{limitStatus.limit} cards
-              {limitStatus.isWarning && <AlertTriangle className="w-3 h-3 ml-1" />}
+              {cardCount}/{limitStatus.limit}
+              {limitStatus.isWarning && <AlertTriangle className="w-2.5 h-2.5 sm:w-3 sm:h-3 ml-0.5 sm:ml-1" />}
             </Badge>
           </div>
 
           {/* Action buttons */}
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1 sm:gap-1.5">
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
+              className="h-6 w-6 sm:h-8 sm:w-8"
               onClick={clearCards}
               disabled={isLoading || cardCount === 0}
               title="Clear cards"
             >
-              <Trash2 className="h-3.5 w-3.5" />
+              <Trash2 className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
             </Button>
             {isLoading ? (
-              <Button variant="destructive" size="sm" className="h-8" onClick={handleStop}>
+              <Button variant="destructive" size="sm" className="h-6 sm:h-8 text-[10px] sm:text-xs px-2 sm:px-3" onClick={handleStop}>
                 Stop
               </Button>
             ) : (
               <Button 
                 size="sm" 
-                className="h-8" 
+                className="h-6 sm:h-8 text-[10px] sm:text-xs px-2 sm:px-3" 
                 onClick={handleCheckCards} 
                 disabled={isCheckingProxy || !canCheck}
                 title={
@@ -699,8 +698,9 @@ export function CardsValidationPanel({
                         : undefined
                 }
               >
-                {isCheckingProxy && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-                Check Cards
+                {isCheckingProxy && <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin mr-1 sm:mr-2" />}
+                <span className="hidden xs:inline">Check Cards</span>
+                <span className="xs:hidden">Check</span>
               </Button>
             )}
           </div>
@@ -709,11 +709,10 @@ export function CardsValidationPanel({
 
       {/* Tier limit exceeded warning */}
       {limitStatus.isError && (
-        <Alert variant="destructive" className="text-xs py-2.5">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>
-            You have {cardCount} cards but your {userTier} tier limit is {limitStatus.limit}.
-            Please remove {limitStatus.excess} card{limitStatus.excess > 1 ? 's' : ''} to continue.
+        <Alert variant="destructive" className="text-[10px] sm:text-xs py-2 sm:py-2.5">
+          <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4" />
+          <AlertDescription className="text-[10px] sm:text-xs">
+            {cardCount} cards exceeds {userTier} limit ({limitStatus.limit}). Remove {limitStatus.excess}.
           </AlertDescription>
         </Alert>
       )}
@@ -725,18 +724,17 @@ export function CardsValidationPanel({
       </AnimatePresence>
 
       {/* Keys Section */}
-      <div className="space-y-3 pt-4 border-t border-[rgb(230,225,223)] dark:border-white/10">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Key className="h-4 w-4 text-muted-foreground" />
-            <Label className="text-xs font-medium">API Keys</Label>
+      <div className="space-y-2 sm:space-y-3 pt-3 sm:pt-4 border-t border-[rgb(230,225,223)] dark:border-white/10">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            <Key className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+            <Label className="text-[10px] sm:text-xs font-medium">API Keys</Label>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
             {/* Credit Cost Display - from database */}
-            <div className="flex items-center gap-1.5 text-[10px] font-medium text-muted-foreground">
-              <span className="text-emerald-600 dark:text-emerald-400">Approved {pricing?.approved ?? 5}</span>
-              <span>|</span>
-              <span className="text-blue-600 dark:text-blue-400">Live {pricing?.live ?? 3}</span>
+            <div className="hidden xs:flex items-center gap-1 sm:gap-1.5 text-[9px] sm:text-[10px] font-medium text-muted-foreground">
+              <span className="text-emerald-600 dark:text-emerald-400">✓{pricing?.approved ?? 5}</span>
+              <span className="text-blue-600 dark:text-blue-400">◐{pricing?.live ?? 3}</span>
             </div>
             <SpeedBadge gatewayId="charge" config={chargeSpeedConfig} disabled={isLoading} />
           </div>
@@ -758,16 +756,16 @@ export function CardsValidationPanel({
           }}
           disabled={isLoading || isCheckingProxy}
         >
-          <SelectTrigger className="h-8 text-xs">
+          <SelectTrigger className="h-7 sm:h-8 text-[10px] sm:text-xs">
             <SelectValue placeholder="Select key or manual input">
               {selectedKeyIndex >= 0 && keyResults[selectedKeyIndex] ? (
-                <span className="flex items-center gap-1.5 truncate">
-                  <Circle className="h-2.5 w-2.5 fill-emerald-500 text-emerald-500 shrink-0" />
-                  <span className="font-mono truncate">
-                    {keyResults[selectedKeyIndex].key?.slice(0, 12)}...{keyResults[selectedKeyIndex].key?.slice(-4)}
+                <span className="flex items-center gap-1 sm:gap-1.5 truncate">
+                  <Circle className="h-2 w-2 sm:h-2.5 sm:w-2.5 fill-emerald-500 text-emerald-500 shrink-0" />
+                  <span className="font-mono truncate text-[9px] sm:text-xs">
+                    {keyResults[selectedKeyIndex].key?.slice(0, 8)}...{keyResults[selectedKeyIndex].key?.slice(-4)}
                   </span>
                   {keyResults[selectedKeyIndex].accountEmail && keyResults[selectedKeyIndex].accountEmail !== 'N/A' && (
-                    <span className="text-muted-foreground truncate flex items-center gap-1">
+                    <span className="hidden sm:flex text-muted-foreground truncate items-center gap-1">
                       <Mail className="h-3 w-3 shrink-0" />
                       {keyResults[selectedKeyIndex].accountEmail}
                     </span>
@@ -778,23 +776,23 @@ export function CardsValidationPanel({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="manual">
-              <span className="flex items-center gap-1.5">
-                <Key className="h-3.5 w-3.5 text-muted-foreground" />
-                <span>Manual Input</span>
+              <span className="flex items-center gap-1 sm:gap-1.5">
+                <Key className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-muted-foreground" />
+                <span className="text-[10px] sm:text-xs">Manual Input</span>
               </span>
             </SelectItem>
             {liveKeys.map((key) => {
               const originalIdx = keyResults.indexOf(key);
-              const truncatedKey = key.key ? `${key.key.slice(0, 12)}...${key.key.slice(-4)}` : 'Unknown';
+              const truncatedKey = key.key ? `${key.key.slice(0, 8)}...${key.key.slice(-4)}` : 'Unknown';
               return (
                 <SelectItem key={originalIdx} value={String(originalIdx)}>
-                  <span className="flex items-center gap-1.5">
-                    <Circle className="h-2.5 w-2.5 fill-emerald-500 text-emerald-500 shrink-0" />
-                    <span className="font-mono">{truncatedKey}</span>
+                  <span className="flex items-center gap-1 sm:gap-1.5">
+                    <Circle className="h-2 w-2 sm:h-2.5 sm:w-2.5 fill-emerald-500 text-emerald-500 shrink-0" />
+                    <span className="font-mono text-[10px] sm:text-xs">{truncatedKey}</span>
                     {key.accountEmail && key.accountEmail !== 'N/A' && (
-                      <span className="text-muted-foreground flex items-center gap-1">
+                      <span className="hidden sm:flex text-muted-foreground items-center gap-1">
                         <Mail className="h-3 w-3 shrink-0" />
-                        {key.accountEmail}
+                        <span className="text-[10px] sm:text-xs">{key.accountEmail}</span>
                       </span>
                     )}
                   </span>
@@ -812,10 +810,10 @@ export function CardsValidationPanel({
             value={settings?.skKey || ''}
             onChange={(e) => handleSkKeyChange(e.target.value)}
             disabled={isLoading || !isManualInput || isFetchingPk}
-            className={cn("text-xs h-8", !isManualInput && "opacity-60")}
+            className={cn("text-[10px] sm:text-xs h-7 sm:h-8", !isManualInput && "opacity-60")}
           />
           {isFetchingPk && (
-            <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 animate-spin" />
+            <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 h-2.5 w-2.5 sm:h-3 sm:w-3 animate-spin" />
           )}
         </div>
 
@@ -825,17 +823,18 @@ export function CardsValidationPanel({
           value={settings?.proxy || ''}
           onChange={(e) => handleSettingChange('proxy', e.target.value)}
           disabled={isLoading}
+          className="h-7 sm:h-8 text-[10px] sm:text-xs"
         />
       </div>
 
       {/* Settings Section - Charge Amount & Currency */}
-      <div className="space-y-3 pt-4 border-t border-[rgb(230,225,223)] dark:border-white/10">
-        <Label className="text-xs font-medium flex items-center gap-1.5">
-          <span className="text-base">💰</span>
+      <div className="space-y-2 sm:space-y-3 pt-3 sm:pt-4 border-t border-[rgb(230,225,223)] dark:border-white/10">
+        <Label className="text-[10px] sm:text-xs font-medium flex items-center gap-1 sm:gap-1.5">
+          <span className="text-sm sm:text-base">💰</span>
           Charge Amount
         </Label>
 
-        <div className="flex gap-2">
+        <div className="flex gap-1.5 sm:gap-2">
           <Input
             id="charge-amount"
             name="charge-amount"
@@ -847,34 +846,34 @@ export function CardsValidationPanel({
             onChange={(e) => handleSettingChange('chargeAmount', e.target.value)}
             placeholder="1.00"
             disabled={isLoading}
-            className="h-9 text-xs font-mono flex-1"
+            className="h-7 sm:h-9 text-[10px] sm:text-xs font-mono flex-1"
           />
           <Select
             value={settings?.currency || 'usd'}
             onValueChange={(val) => handleSettingChange('currency', val)}
             disabled={isLoading}
           >
-            <SelectTrigger className="h-9 w-24 text-xs">
+            <SelectTrigger className="h-7 sm:h-9 w-16 sm:w-24 text-[10px] sm:text-xs">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="usd">USD $</SelectItem>
-              <SelectItem value="gbp">GBP £</SelectItem>
-              <SelectItem value="eur">EUR €</SelectItem>
-              <SelectItem value="cad">CAD $</SelectItem>
-              <SelectItem value="aud">AUD $</SelectItem>
-              <SelectItem value="jpy">JPY ¥</SelectItem>
-              <SelectItem value="chf">CHF</SelectItem>
-              <SelectItem value="sek">SEK</SelectItem>
-              <SelectItem value="nok">NOK</SelectItem>
-              <SelectItem value="dkk">DKK</SelectItem>
-              <SelectItem value="pln">PLN</SelectItem>
-              <SelectItem value="inr">INR ₹</SelectItem>
-              <SelectItem value="sgd">SGD $</SelectItem>
-              <SelectItem value="hkd">HKD $</SelectItem>
-              <SelectItem value="nzd">NZD $</SelectItem>
-              <SelectItem value="mxn">MXN $</SelectItem>
-              <SelectItem value="brl">BRL R$</SelectItem>
+              <SelectItem value="usd" className="text-[10px] sm:text-xs">USD $</SelectItem>
+              <SelectItem value="gbp" className="text-[10px] sm:text-xs">GBP £</SelectItem>
+              <SelectItem value="eur" className="text-[10px] sm:text-xs">EUR €</SelectItem>
+              <SelectItem value="cad" className="text-[10px] sm:text-xs">CAD $</SelectItem>
+              <SelectItem value="aud" className="text-[10px] sm:text-xs">AUD $</SelectItem>
+              <SelectItem value="jpy" className="text-[10px] sm:text-xs">JPY ¥</SelectItem>
+              <SelectItem value="chf" className="text-[10px] sm:text-xs">CHF</SelectItem>
+              <SelectItem value="sek" className="text-[10px] sm:text-xs">SEK</SelectItem>
+              <SelectItem value="nok" className="text-[10px] sm:text-xs">NOK</SelectItem>
+              <SelectItem value="dkk" className="text-[10px] sm:text-xs">DKK</SelectItem>
+              <SelectItem value="pln" className="text-[10px] sm:text-xs">PLN</SelectItem>
+              <SelectItem value="inr" className="text-[10px] sm:text-xs">INR ₹</SelectItem>
+              <SelectItem value="sgd" className="text-[10px] sm:text-xs">SGD $</SelectItem>
+              <SelectItem value="hkd" className="text-[10px] sm:text-xs">HKD $</SelectItem>
+              <SelectItem value="nzd" className="text-[10px] sm:text-xs">NZD $</SelectItem>
+              <SelectItem value="mxn" className="text-[10px] sm:text-xs">MXN $</SelectItem>
+              <SelectItem value="brl" className="text-[10px] sm:text-xs">BRL R$</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -886,16 +885,15 @@ export function CardsValidationPanel({
     <>
       <Celebration trigger={celebrationTrigger} />
       <TwoPanelLayout
-        modeSwitcher={modeSwitcher}
-        drawerOpen={drawerOpen}
-        onDrawerOpenChange={onDrawerOpenChange}
         configPanelWithoutSwitcher={configContent}
         configPanel={
           <div className="flex flex-col">
             {modeSwitcher && (
-              <div className="p-4 border-b border-[rgb(230,225,223)] dark:border-white/10 flex justify-center">{modeSwitcher}</div>
+              <div className="p-3 sm:p-4 border-b border-[rgb(230,225,223)] dark:border-white/10 flex justify-center">{modeSwitcher}</div>
             )}
-            {configContent}
+            <div className="p-3 sm:p-4">
+              {configContent}
+            </div>
           </div>
         }
         resultsPanel={

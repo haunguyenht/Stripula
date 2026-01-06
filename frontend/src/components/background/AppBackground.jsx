@@ -33,19 +33,22 @@ import { motion } from 'motion/react';
  * - Memoized particle generation
  */
 
-// Generate floating aurora particles with memoization (dark mode)
-const generateParticles = (count = 20) => {
+// Generate floating aurora particles with memoization (dark mode) - Enhanced for premium feel
+const generateParticles = (count = 24) => {
   return Array.from({ length: count }, (_, i) => ({
     id: i,
-    size: Math.random() * 3 + 1,
+    size: Math.random() * 4 + 1.5,
     x: Math.random() * 100,
     y: Math.random() * 100,
-    duration: Math.random() * 15 + 20,
-    delay: Math.random() * 10,
-    color: ['rgba(139, 92, 246, 0.4)', 'rgba(34, 211, 238, 0.3)', 'rgba(236, 72, 153, 0.35)'][
-      Math.floor(Math.random() * 3)
-    ],
-    blur: Math.random() * 2 + 1,
+    duration: Math.random() * 18 + 22,
+    delay: Math.random() * 12,
+    color: [
+      'rgba(139, 92, 246, 0.5)',  // Indigo - richer
+      'rgba(34, 211, 238, 0.4)',   // Cyan - richer
+      'rgba(236, 72, 153, 0.45)', // Pink - richer
+      'rgba(168, 85, 247, 0.45)', // Purple - new
+    ][Math.floor(Math.random() * 4)],
+    blur: Math.random() * 2.5 + 1.5,
   }));
 };
 
@@ -74,8 +77,8 @@ const AppBackground = memo(function AppBackground({ className }) {
       : false
   );
   
-  // Memoize particles/motes to prevent regeneration on re-renders
-  const particles = useMemo(() => generateParticles(16), []);
+  // Memoize particles/motes to prevent regeneration on re-renders - Enhanced counts
+  const particles = useMemo(() => generateParticles(24), []);
   const dustMotes = useMemo(() => generateDustMotes(12), []);
 
   useEffect(() => {
@@ -404,107 +407,127 @@ const AppBackground = memo(function AppBackground({ className }) {
         style={{ transform: 'translateZ(0)' }}
       />
 
-      {/* Layer 2: Aurora nebula layer - enhanced animated gradient blobs */}
+      {/* Layer 2: Aurora nebula layer - PREMIUM enhanced animated gradient blobs */}
       <div 
         className="absolute inset-0 overflow-hidden"
         style={{ transform: 'translateZ(0)' }}
       >
-        {/* Primary aurora blob - indigo/violet (top-left) */}
+        {/* Primary aurora blob - indigo/violet (top-left) - ENHANCED */}
         <motion.div
-          className="absolute -top-[25%] -left-[15%] w-[65%] h-[65%]"
+          className="absolute -top-[25%] -left-[15%] w-[70%] h-[70%]"
           style={{
-            background: 'radial-gradient(ellipse 100% 80% at center, rgba(139, 92, 246, 0.18) 0%, rgba(124, 58, 237, 0.08) 35%, transparent 65%)',
-            filter: 'blur(60px)',
+            background: 'radial-gradient(ellipse 100% 80% at center, rgba(139, 92, 246, 0.25) 0%, rgba(124, 58, 237, 0.12) 35%, transparent 65%)',
+            filter: 'blur(80px)',
           }}
           animate={prefersReducedMotion.current ? {} : {
-            x: [0, 60, 20, 0],
-            y: [0, 40, -20, 0],
-            scale: [1, 1.08, 1.12, 1],
-            rotate: [0, 5, -3, 0],
+            x: [0, 70, 25, 0],
+            y: [0, 50, -25, 0],
+            scale: [1, 1.1, 1.15, 1],
+            rotate: [0, 6, -4, 0],
           }}
           transition={{
-            duration: 25,
+            duration: 28,
             repeat: Infinity,
             ease: 'easeInOut',
           }}
         />
 
-        {/* Secondary aurora blob - cyan/teal (top-right) */}
+        {/* Secondary aurora blob - cyan/teal (top-right) - ENHANCED */}
         <motion.div
-          className="absolute -top-[15%] -right-[10%] w-[55%] h-[55%]"
+          className="absolute -top-[15%] -right-[10%] w-[60%] h-[60%]"
           style={{
-            background: 'radial-gradient(ellipse 90% 100% at center, rgba(34, 211, 238, 0.15) 0%, rgba(6, 182, 212, 0.06) 40%, transparent 65%)',
-            filter: 'blur(70px)',
+            background: 'radial-gradient(ellipse 90% 100% at center, rgba(34, 211, 238, 0.22) 0%, rgba(6, 182, 212, 0.1) 40%, transparent 65%)',
+            filter: 'blur(90px)',
           }}
           animate={prefersReducedMotion.current ? {} : {
-            x: [0, -50, -20, 0],
-            y: [0, 60, 30, 0],
-            scale: [1, 1.12, 1.05, 1],
-            rotate: [0, -8, 4, 0],
+            x: [0, -60, -25, 0],
+            y: [0, 70, 35, 0],
+            scale: [1, 1.15, 1.08, 1],
+            rotate: [0, -10, 5, 0],
           }}
           transition={{
-            duration: 28,
+            duration: 30,
             repeat: Infinity,
             ease: 'easeInOut',
             delay: 3,
           }}
         />
 
-        {/* Tertiary aurora blob - pink/rose (bottom) */}
+        {/* Tertiary aurora blob - pink/rose (bottom) - ENHANCED */}
         <motion.div
-          className="absolute -bottom-[20%] left-[15%] w-[50%] h-[50%]"
+          className="absolute -bottom-[20%] left-[15%] w-[55%] h-[55%]"
           style={{
-            background: 'radial-gradient(ellipse at center, rgba(236, 72, 153, 0.12) 0%, rgba(244, 114, 182, 0.05) 40%, transparent 65%)',
-            filter: 'blur(65px)',
+            background: 'radial-gradient(ellipse at center, rgba(236, 72, 153, 0.18) 0%, rgba(244, 114, 182, 0.08) 40%, transparent 65%)',
+            filter: 'blur(85px)',
           }}
           animate={prefersReducedMotion.current ? {} : {
-            x: [0, 70, 30, 0],
-            y: [0, -50, -20, 0],
-            scale: [1, 1.15, 1.08, 1],
-            rotate: [0, 6, -4, 0],
+            x: [0, 80, 35, 0],
+            y: [0, -60, -25, 0],
+            scale: [1, 1.18, 1.1, 1],
+            rotate: [0, 8, -5, 0],
           }}
           transition={{
-            duration: 24,
+            duration: 26,
             repeat: Infinity,
             ease: 'easeInOut',
             delay: 5,
           }}
         />
 
-        {/* Quaternary aurora blob - mixed indigo-cyan (center-right) */}
+        {/* Quaternary aurora blob - mixed indigo-cyan (center-right) - ENHANCED */}
         <motion.div
-          className="absolute top-[25%] right-[5%] w-[40%] h-[45%]"
+          className="absolute top-[25%] right-[5%] w-[45%] h-[50%]"
           style={{
-            background: 'radial-gradient(ellipse at center, rgba(99, 102, 241, 0.1) 0%, rgba(34, 211, 238, 0.06) 50%, transparent 70%)',
-            filter: 'blur(80px)',
+            background: 'radial-gradient(ellipse at center, rgba(99, 102, 241, 0.15) 0%, rgba(34, 211, 238, 0.1) 50%, transparent 70%)',
+            filter: 'blur(100px)',
           }}
           animate={prefersReducedMotion.current ? {} : {
-            x: [0, -40, 20, 0],
-            y: [0, 30, -40, 0],
-            opacity: [0.7, 1, 0.8, 0.7],
-            scale: [1, 1.1, 0.95, 1],
+            x: [0, -50, 25, 0],
+            y: [0, 40, -50, 0],
+            opacity: [0.75, 1, 0.85, 0.75],
+            scale: [1, 1.12, 0.95, 1],
           }}
           transition={{
-            duration: 32,
+            duration: 34,
             repeat: Infinity,
             ease: 'easeInOut',
             delay: 2,
           }}
         />
 
-        {/* Ambient center glow - subtle breathing */}
+        {/* NEW: Fifth aurora blob - purple accent (bottom-right) */}
         <motion.div
-          className="absolute top-[35%] left-[30%] w-[45%] h-[40%]"
+          className="absolute -bottom-[10%] -right-[10%] w-[45%] h-[45%]"
           style={{
-            background: 'radial-gradient(ellipse at center, rgba(139, 92, 246, 0.06) 0%, rgba(34, 211, 238, 0.04) 40%, transparent 70%)',
-            filter: 'blur(100px)',
+            background: 'radial-gradient(ellipse at center, rgba(168, 85, 247, 0.15) 0%, rgba(139, 92, 246, 0.06) 45%, transparent 70%)',
+            filter: 'blur(75px)',
           }}
           animate={prefersReducedMotion.current ? {} : {
-            opacity: [0.5, 0.8, 0.6, 0.5],
-            scale: [1, 1.05, 0.98, 1],
+            x: [0, -40, -15, 0],
+            y: [0, -35, 15, 0],
+            scale: [1, 1.1, 1.05, 1],
           }}
           transition={{
-            duration: 18,
+            duration: 22,
+            repeat: Infinity,
+            ease: 'easeInOut',
+            delay: 7,
+          }}
+        />
+
+        {/* Ambient center glow - subtle breathing - ENHANCED */}
+        <motion.div
+          className="absolute top-[30%] left-[25%] w-[50%] h-[45%]"
+          style={{
+            background: 'radial-gradient(ellipse at center, rgba(139, 92, 246, 0.1) 0%, rgba(34, 211, 238, 0.06) 40%, transparent 70%)',
+            filter: 'blur(120px)',
+          }}
+          animate={prefersReducedMotion.current ? {} : {
+            opacity: [0.6, 0.9, 0.7, 0.6],
+            scale: [1, 1.08, 0.96, 1],
+          }}
+          transition={{
+            duration: 20,
             repeat: Infinity,
             ease: 'easeInOut',
             delay: 1,
@@ -561,29 +584,29 @@ const AppBackground = memo(function AppBackground({ className }) {
         }}
       />
 
-      {/* Layer 5: Top specular gradient - enhanced aurora tint */}
+      {/* Layer 5: Top specular gradient - PREMIUM enhanced aurora tint */}
       <div 
-        className="absolute inset-x-0 top-0 h-[45%]"
+        className="absolute inset-x-0 top-0 h-[50%]"
         style={{
-          background: 'linear-gradient(180deg, rgba(139, 92, 246, 0.04) 0%, rgba(34, 211, 238, 0.02) 30%, transparent 100%)',
+          background: 'linear-gradient(180deg, rgba(139, 92, 246, 0.06) 0%, rgba(34, 211, 238, 0.03) 35%, transparent 100%)',
           transform: 'translateZ(0)',
         }}
       />
 
-      {/* Layer 6: Bottom aurora glow accent */}
+      {/* Layer 6: Bottom subtle depth - very subtle, no bright glow */}
       <div 
-        className="absolute inset-x-0 bottom-0 h-[30%]"
+        className="absolute inset-x-0 bottom-0 h-[25%]"
         style={{
-          background: 'linear-gradient(0deg, rgba(236, 72, 153, 0.03) 0%, transparent 100%)',
+          background: 'linear-gradient(0deg, rgba(0, 0, 0, 0.15) 0%, transparent 100%)',
           transform: 'translateZ(0)',
         }}
       />
 
-      {/* Layer 7: Vignette overlay - enhanced depth */}
+      {/* Layer 7: Vignette overlay - PREMIUM deeper depth */}
       <div 
         className="absolute inset-0"
         style={{ 
-          boxShadow: 'inset 0 0 250px 100px hsl(220 18% 4% / 0.55), inset 0 0 100px 40px hsl(220 18% 4% / 0.3)',
+          boxShadow: 'inset 0 0 300px 120px hsl(222 20% 4% / 0.6), inset 0 0 120px 50px hsl(222 20% 4% / 0.35)',
           transform: 'translateZ(0)',
           pointerEvents: 'none',
         }}

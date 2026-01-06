@@ -1,19 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
-import { Settings } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet';
 import { useBreakpoint } from '@/hooks/useMediaQuery';
-import {
-  PanelCard,
-  PanelCardBodyScroll,
-} from './panels/PanelCard';
+import { PanelCard } from './panels/PanelCard';
 
 /**
  * Custom hook for container width detection with hysteresis
@@ -78,115 +69,176 @@ function useContainerLayout(containerRef, isMobile) {
 
 /**
  * TwoPanelLayout Component
- * Responsive two-panel layout with config (left) and results (right)
  * 
- * SHADOW FIX: Outer container uses overflow-visible + padding for shadow space.
- * Scrolling happens INSIDE the panels via PanelCardBodyScroll / ScrollArea.
+ * REDESIGNED: Flattened single-page layout for mobile
+ * - Mobile: Config + Results stacked vertically, single scroll
+ * - Desktop: Side-by-side panels (unchanged)
+ * 
+ * No more button/drawer - everything visible at once!
  */
 export function TwoPanelLayout({ 
   configPanel,
   configPanelWithoutSwitcher,
-  modeSwitcher,
   resultsPanel,
   className,
-  drawerOpen: controlledDrawerOpen,
-  onDrawerOpenChange,
 }) {
-  const [internalDrawerOpen, setInternalDrawerOpen] = useState(false);
-  const drawerOpen = controlledDrawerOpen !== undefined ? controlledDrawerOpen : internalDrawerOpen;
-  const setDrawerOpen = onDrawerOpenChange || setInternalDrawerOpen;
-  
   const { isMobile } = useBreakpoint();
   const containerRef = useRef(null);
   const shouldUseMobileLayout = useContainerLayout(containerRef, isMobile);
+  
+  // Mobile: Collapsible config section state
+  const [configExpanded, setConfigExpanded] = useState(true);
 
-  return (
-    <>
-      {/* 
-        Main container:
-        - h-full + min-h-0 for flex child sizing
-        - NO overflow-auto/hidden here - let shadows show
-        - p-5 provides space for shadows to render
-      */}
-      <div 
-        ref={containerRef}
-        className={cn(
-          "h-full min-h-0 flex gap-5 p-5 relative z-0",
-          shouldUseMobileLayout 
-            ? "flex-col items-stretch" 
-            : "flex-row items-stretch",
-          className
-        )}
-      >
-        {/* Config Panel - Desktop only */}
-        {!shouldUseMobileLayout && (
-          <aside className="shrink-0 w-[320px] md:w-[360px] lg:w-[400px] self-start pb-6">
-            <PanelCard 
-              variant="elevated" 
-              animate={true}
-              hoverLift={true}
-              fitContent={true}
-            >
-              {configPanel}
-            </PanelCard>
-          </aside>
-        )}
-
-        {/* Mobile Config Button */}
-        {shouldUseMobileLayout && (
-          <div className="w-full flex justify-end mb-2 shrink-0">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setDrawerOpen(true)}
-              className="gap-2"
-            >
-              <Settings className="h-4 w-4" />
-              Config
-            </Button>
-          </div>
-        )}
-
-        {/* Results Panel */}
-        <main 
+  // MOBILE LAYOUT - Flattened single page
+  if (shouldUseMobileLayout) {
+    return (
+      <ScrollArea className="h-full">
+        <div 
+          ref={containerRef}
           className={cn(
-            "min-w-0 flex-1 pb-6",
-            // Hybrid height: grow with content, max at viewport, then scroll
-            "max-h-[calc(100vh-120px)] flex flex-col",
-            shouldUseMobileLayout && "w-full"
+            "flex flex-col gap-3 p-3 pb-6",
+            className
           )}
         >
-          <PanelCard 
-            variant="elevated"
-            animate={true}
-            hoverLift={true}
-            fitContent={true}
-            className="max-h-full"
+          {/* Config Section - Collapsible card */}
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
           >
-            {resultsPanel}
-          </PanelCard>
-        </main>
-      </div>
-
-      {/* Mobile Sheet */}
-      <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
-        <SheetContent side="right" className="w-[85%] max-w-[400px] p-0">
-          <SheetHeader className="p-4 pb-0">
-            <SheetTitle className="sr-only">Configuration</SheetTitle>
-            {modeSwitcher && (
-              <div className="flex justify-center">
-                {modeSwitcher}
-              </div>
-            )}
-          </SheetHeader>
-          <ScrollArea className="h-[calc(var(--app-dvh)-80px)]">
-            <div className="p-4">
-              {configPanelWithoutSwitcher || configPanel}
+            <div className={cn(
+              "rounded-xl overflow-hidden",
+              // Light: Vintage parchment
+              "bg-gradient-to-b from-[hsl(40,45%,98%)] to-[hsl(38,40%,96%)]",
+              "border border-[hsl(30,30%,85%)]",
+              "shadow-[0_2px_8px_-2px_rgba(101,67,33,0.08)]",
+              // Dark: Liquid glass
+              "dark:bg-none dark:bg-[rgba(15,18,25,0.85)]",
+              "dark:border-white/[0.08] dark:backdrop-blur-xl",
+              "dark:shadow-[0_4px_20px_-4px_rgba(0,0,0,0.4)]"
+            )}>
+              {/* Config Header - Clickable to toggle */}
+              <button
+                onClick={() => setConfigExpanded(!configExpanded)}
+                className={cn(
+                  "w-full flex items-center justify-between px-3 py-2.5",
+                  "transition-colors duration-200",
+                  // Light
+                  "hover:bg-[hsl(38,35%,94%)]",
+                  // Dark
+                  "dark:hover:bg-white/[0.03]"
+                )}
+              >
+                <div className="flex items-center gap-2">
+                  {/* Pulsing dot indicator */}
+                  <span className={cn(
+                    "w-2 h-2 rounded-full",
+                    "bg-gradient-to-br from-emerald-400 to-emerald-600",
+                    "shadow-[0_0_8px_rgba(52,211,153,0.5)]",
+                    "animate-pulse"
+                  )} />
+                  <span className={cn(
+                    "text-xs font-semibold uppercase tracking-wider",
+                    "text-[hsl(25,35%,35%)] dark:text-white/70"
+                  )}>
+                    Configuration
+                  </span>
+                </div>
+                <motion.div
+                  animate={{ rotate: configExpanded ? 180 : 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <ChevronDown className="w-4 h-4 text-[hsl(25,25%,50%)] dark:text-white/40" />
+                </motion.div>
+              </button>
+              
+              {/* Config Content - Animated collapse */}
+              <AnimatePresence initial={false}>
+                {configExpanded && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+                    className="overflow-hidden"
+                  >
+                    {/* Divider line */}
+                    <div className={cn(
+                      "mx-3 border-t",
+                      "border-[hsl(30,25%,88%)] dark:border-white/[0.06]"
+                    )} />
+                    
+                    {/* Config panel content */}
+                    <div className="dark:bg-transparent">
+                      {configPanelWithoutSwitcher || configPanel}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
-          </ScrollArea>
-        </SheetContent>
-      </Sheet>
-    </>
+          </motion.div>
+
+          {/* Results Section */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.1 }}
+            className="flex-1"
+          >
+            <PanelCard 
+              variant="elevated"
+              animate={false}
+              hoverLift={false}
+              fitContent={true}
+            >
+              {resultsPanel}
+            </PanelCard>
+          </motion.div>
+        </div>
+      </ScrollArea>
+    );
+  }
+
+  // DESKTOP LAYOUT - Side by side (unchanged)
+  return (
+    <div 
+      ref={containerRef}
+      className={cn(
+        "h-full min-h-0 flex gap-5 p-5 relative z-0",
+        "flex-row items-stretch",
+        className
+      )}
+    >
+      {/* Config Panel - Desktop */}
+      <aside className="shrink-0 w-[320px] md:w-[360px] lg:w-[400px] self-start pb-6">
+        <PanelCard 
+          variant="elevated" 
+          animate={true}
+          hoverLift={true}
+          fitContent={true}
+        >
+          {configPanel}
+        </PanelCard>
+      </aside>
+
+      {/* Results Panel - Desktop */}
+      <main 
+        className={cn(
+          "min-w-0 flex-1 pb-6",
+          "max-h-[calc(100vh-120px)] flex flex-col"
+        )}
+      >
+        <PanelCard 
+          variant="elevated"
+          animate={true}
+          hoverLift={true}
+          fitContent={true}
+          className="max-h-full"
+        >
+          {resultsPanel}
+        </PanelCard>
+      </main>
+    </div>
   );
 }
 

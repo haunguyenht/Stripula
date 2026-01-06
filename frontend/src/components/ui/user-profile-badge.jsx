@@ -109,6 +109,8 @@ export function UserProfileBadge({
   const isAdmin = displayUser?.isAdmin || false;
 
   const handleLogout = async () => {
+    // Reset route to dashboard for next login
+    localStorage.setItem('appActiveRoute', 'dashboard');
     if (onLogoutClick) {
       onLogoutClick();
     } else if (isAuthenticated) {

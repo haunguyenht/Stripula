@@ -116,6 +116,7 @@ export function useMediaQuerySimple(query) {
  * Tailwind breakpoint hooks
  */
 export function useBreakpoint() {
+    const isXs = useMediaQuerySimple('(min-width: 480px)');
     const isSm = useMediaQuerySimple('(min-width: 640px)');
     const isMd = useMediaQuerySimple('(min-width: 768px)');
     const isLg = useMediaQuerySimple('(min-width: 1024px)');
@@ -123,10 +124,12 @@ export function useBreakpoint() {
     const is2xl = useMediaQuerySimple('(min-width: 1536px)');
 
     return {
+        isVerySmall: !isXs,        // < 480px (very small phones)
         isMobile: !isMd,           // < 768px
         isTablet: isMd && !isLg,   // 768px - 1023px
         isDesktop: isLg,           // >= 1024px
         isLargeDesktop: isXl,      // >= 1280px
+        isXs,
         isSm,
         isMd,
         isLg,

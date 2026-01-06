@@ -167,25 +167,50 @@ export function ProfilePage() {
 
   return (
     <div className="h-full flex flex-col">
-      {/* Fixed Header Section */}
+      {/* Combined Header + Tabs - Ultra compact on mobile/tablet */}
       <motion.div 
-        className="flex-shrink-0 px-4 pt-4 pb-2 max-w-xl mx-auto w-full"
-        initial={{ opacity: 0, y: -20 }}
+        className="flex-shrink-0 px-3 md:px-4 pt-2 md:pt-4 pb-1 md:pb-2 max-w-xl mx-auto w-full"
+        initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+        transition={{ duration: 0.4 }}
       >
-        <ProfileHeader profile={profile} tier={tier} />
-      </motion.div>
+        {/* Desktop: Show full header (768px+) */}
+        <div className="hidden md:block">
+          <ProfileHeader profile={profile} tier={tier} />
+        </div>
+        
+        {/* Mobile/Tablet: Inline compact header (<768px) */}
+        <div className="flex md:hidden items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            {/* Mini Avatar */}
+            <div className="relative">
+              <div className={cn(
+                "w-8 h-8 rounded-lg overflow-hidden",
+                "bg-gradient-to-br from-[hsl(40,40%,96%)] to-[hsl(35,35%,94%)]",
+                "dark:bg-none dark:bg-zinc-800",
+                "border border-[hsl(38,45%,92%)] dark:border-white/10"
+              )}>
+                {profile?.photoUrl ? (
+                  <img src={profile.photoUrl} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <User className="w-4 h-4 text-[hsl(25,25%,55%)] dark:text-zinc-500" />
+                  </div>
+                )}
+              </div>
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-[hsl(25,35%,25%)] dark:text-white leading-tight">
+                {profile?.firstName || 'User'}
+              </p>
+              <p className="text-[9px] text-muted-foreground capitalize">{tier?.name || 'Free'}</p>
+            </div>
+          </div>
+        </div>
 
-      {/* Tab Navigation - Premium Segmented Control with vintage styling */}
-      <motion.div 
-        className="flex-shrink-0 px-4 py-4 max-w-xl mx-auto w-full"
-        initial={{ opacity: 0, y: 15 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.1 }}
-      >
+        {/* Tab Navigation - Icons only on mobile/tablet */}
         <div className={cn(
-          "p-1.5 rounded-2xl",
+          "p-0.5 md:p-1.5 rounded-lg md:rounded-2xl",
           // Light: Vintage Banking aged paper with inset shadow
           "bg-gradient-to-b from-[hsl(40,38%,94%)] to-[hsl(38,35%,91%)]",
           "shadow-[inset_0_1px_3px_hsl(25,30%,35%,0.06),0_1px_0_rgba(255,255,255,0.6)]",
@@ -194,7 +219,7 @@ export function ProfilePage() {
           "dark:bg-none dark:bg-white/[0.03] dark:border-white/[0.06] dark:shadow-none",
           "dark:backdrop-blur-xl"
         )}>
-          <div className="grid grid-cols-4 gap-1">
+          <div className="grid grid-cols-4 gap-0.5">
             {PROFILE_TABS.map((tab, index) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
@@ -204,7 +229,8 @@ export function ProfilePage() {
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={cn(
-                    "relative flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl",
+                    "relative flex items-center justify-center py-1.5 md:py-3 px-1 md:px-2 rounded-md md:rounded-xl",
+                    "md:flex-col md:gap-1.5",
                     "transition-colors duration-200",
                     "focus:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(25,60%,50%)]/50 dark:focus-visible:ring-amber-500/50",
                     isActive 
@@ -212,21 +238,19 @@ export function ProfilePage() {
                       : "text-[hsl(25,20%,50%)] dark:text-white/40 hover:text-[hsl(25,30%,35%)] dark:hover:text-white/60"
                   )}
                   whileTap={{ scale: 0.97 }}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.15 + index * 0.04 }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.1 + index * 0.03 }}
                 >
-                  {/* Active indicator background - vintage embossed effect */}
+                  {/* Active indicator background */}
                   {isActive && (
                     <motion.div
                       layoutId="activeProfileTab"
                       className={cn(
-                        "absolute inset-0 rounded-xl",
-                        // Light: cream parchment active with embossed effect
+                        "absolute inset-0 rounded-md md:rounded-xl",
                         "bg-gradient-to-b from-[hsl(44,45%,99%)] to-[hsl(42,40%,96%)]",
                         "shadow-[0_1px_3px_hsl(25,30%,35%,0.08),inset_0_1px_0_rgba(255,255,255,0.7)]",
                         "border border-[hsl(30,25%,82%)]",
-                        // Dark mode (bg-none resets light gradient)
                         "dark:bg-none dark:bg-white/[0.06] dark:shadow-black/20 dark:border-white/[0.1]"
                       )}
                       transition={{ type: "spring", stiffness: 500, damping: 35 }}
@@ -234,10 +258,11 @@ export function ProfilePage() {
                   )}
                   
                   <Icon className={cn(
-                    "relative z-10 w-5 h-5 transition-transform duration-200",
+                    "relative z-10 w-4 h-4 md:w-5 md:h-5 transition-transform duration-200",
                     isActive && "scale-110"
                   )} />
-                  <span className="relative z-10 text-[10px] font-bold uppercase tracking-wide">
+                  {/* Label - hidden on mobile/tablet */}
+                  <span className="hidden md:block relative z-10 text-[10px] font-bold uppercase tracking-wide">
                     {tab.label}
                   </span>
                 </motion.button>
@@ -249,7 +274,7 @@ export function ProfilePage() {
 
       {/* Scrollable Tab Content */}
       <ScrollArea className="flex-1 min-h-0">
-        <div className="max-w-xl mx-auto px-4 pb-8">
+        <div className="max-w-xl mx-auto px-3 md:px-4 pb-6 md:pb-8">
           <AnimatePresence mode="wait">
             {/* Overview Tab */}
             {activeTab === 'overview' && (
@@ -277,7 +302,7 @@ export function ProfilePage() {
                 transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
                 className="space-y-4 pt-1"
               >
-                <TransactionHistory maxHeight="calc(100vh - 280px)" />
+                <TransactionHistory />
               </motion.div>
             )}
 
@@ -326,10 +351,10 @@ export function ProfilePage() {
                   {/* Gradient accent - copper for light, aurora for dark */}
                   <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[hsl(25,75%,45%)] via-[hsl(30,65%,50%)] to-[hsl(38,60%,55%)] dark:from-amber-500 dark:via-orange-500 dark:to-rose-500" />
                   
-                  <div className="relative p-5">
-                    <div className="flex items-center gap-3 mb-5">
+                    <div className="relative p-3 sm:p-5">
+                    <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-5">
                       <div className={cn(
-                        "flex items-center justify-center w-11 h-11 rounded-xl",
+                        "flex items-center justify-center w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl",
                         // Light: copper coin accent with embossed effect
                         "bg-gradient-to-b from-[hsl(28,48%,90%)] to-[hsl(25,45%,85%)]",
                         "shadow-[0_2px_6px_hsl(25,30%,35%,0.1),inset_0_1px_0_rgba(255,255,255,0.5),inset_0_-1px_0_rgba(101,67,33,0.1)]",
@@ -338,27 +363,27 @@ export function ProfilePage() {
                         "dark:bg-none dark:bg-gradient-to-b dark:from-amber-500/15 dark:to-orange-500/10",
                         "dark:border-amber-400/20 dark:shadow-none"
                       )}>
-                        <Gauge className="w-5 h-5 text-[hsl(25,75%,45%)] dark:text-amber-400" />
+                        <Gauge className="w-4 h-4 sm:w-5 sm:h-5 text-[hsl(25,75%,45%)] dark:text-amber-400" />
                       </div>
                       <div>
                         <h3 className={cn(
-                          "text-base font-bold font-serif text-[hsl(25,35%,18%)] dark:text-white",
+                          "text-sm sm:text-base font-bold font-serif text-[hsl(25,35%,18%)] dark:text-white",
                           "[text-shadow:0_1px_0_rgba(255,255,255,0.6)] dark:[text-shadow:none]"
                         )}>
                           Processing Speed
                         </h3>
-                        <p className="text-xs text-[hsl(25,20%,45%)] dark:text-white/50">
+                        <p className="text-[10px] sm:text-xs text-[hsl(25,20%,45%)] dark:text-white/50">
                           Compare speeds by tier
                         </p>
                       </div>
                     </div>
                     
                     <Tabs defaultValue="auth" className="w-full">
-                      <TabsList className="grid w-full grid-cols-2 h-11 mb-4 rounded-xl bg-[hsl(38,35%,93%)] dark:bg-white/[0.04]">
+                      <TabsList className="grid w-full grid-cols-2 h-9 sm:h-11 mb-3 sm:mb-4 rounded-lg sm:rounded-xl bg-[hsl(38,35%,93%)] dark:bg-white/[0.04]">
                         <TabsTrigger 
                           value="auth" 
                           className={cn(
-                            "text-sm font-semibold rounded-lg",
+                            "text-xs sm:text-sm font-semibold rounded-md sm:rounded-lg",
                             "data-[state=active]:bg-[hsl(42,40%,98%)] dark:data-[state=active]:bg-white/[0.08]",
                             "data-[state=active]:shadow-sm"
                           )}
@@ -368,7 +393,7 @@ export function ProfilePage() {
                         <TabsTrigger 
                           value="charge" 
                           className={cn(
-                            "text-sm font-semibold rounded-lg",
+                            "text-xs sm:text-sm font-semibold rounded-md sm:rounded-lg",
                             "data-[state=active]:bg-[hsl(42,40%,98%)] dark:data-[state=active]:bg-white/[0.08]",
                             "data-[state=active]:shadow-sm"
                           )}
@@ -406,7 +431,7 @@ export function ProfilePage() {
 
           {/* Help Card - Sticky at bottom of all tabs */}
           <motion.div
-            className="pt-6"
+            className="pt-4 sm:pt-6"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4 }}

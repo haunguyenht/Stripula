@@ -6,14 +6,20 @@ import { prefersReducedMotion } from '@/lib/motion';
 import { useRef, useCallback } from 'react';
 
 /**
- * ThemeToggle - Icon Morphing toggle with Circular Reveal page transition
+ * ThemeToggle - Dual Theme Design System
+ * 
+ * LIGHT MODE: Vintage Banking
+ * - Warm copper hover effect
+ * - Moon icon in sepia tone
+ * 
+ * DARK MODE: PREMIUM Liquid Aurora
+ * - Aurora glow hover effect
+ * - Animated sun icon with golden glow
  * 
  * Features:
  * - Sun/Moon icons morph into each other with rotation animation
  * - Circular reveal effect expands from button to change page theme
  * - Respects prefers-reduced-motion
- * 
- * Inspired by: shadcn/ui, Vercel, Linear, Josh Comeau
  */
 export function ThemeToggle({ className }) {
   const { theme, toggleTheme } = useTheme();
@@ -70,19 +76,16 @@ export function ThemeToggle({ className }) {
       ref={buttonRef}
       onClick={handleToggle}
       className={cn(
-        // Base button styling
-        "relative flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer",
-        "transition-colors duration-200",
-        // Light mode: Vintage Banking - warm parchment hover
-        "bg-transparent hover:bg-[hsl(38,40%,92%)]",
-        // Dark mode: OPUX glass styling
-        "dark:hover:bg-white/10",
-        // Focus ring
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(25,70%,50%)]/20 focus-visible:ring-offset-2",
+        // Base button styling - Clean, no background
+        "relative flex items-center justify-center w-7 h-7 cursor-pointer",
+        "transition-all duration-300",
+        // Focus ring only
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(25,70%,50%)]/30 focus-visible:ring-offset-2",
+        "dark:focus-visible:ring-[hsl(250,90%,65%)]/30",
         className
       )}
-      whileHover={{ scale: 1.05 }}
-      whileTap={{ scale: 0.95 }}
+      whileHover={{ scale: 1.15 }}
+      whileTap={{ scale: 0.85 }}
       aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
     >
       {/* Sun icon - visible in dark mode (to switch to light) */}
@@ -100,7 +103,7 @@ export function ThemeToggle({ className }) {
             : { duration: 0.3, ease: [0.16, 1, 0.3, 1] }
         }
       >
-        <Sun className="w-4 h-4 text-yellow-400" />
+        <Sun className="w-5 h-5 text-amber-400 drop-shadow-[0_0_10px_rgba(251,191,36,0.7)]" />
       </motion.div>
 
       {/* Moon icon - visible in light mode (to switch to dark) */}
@@ -118,7 +121,7 @@ export function ThemeToggle({ className }) {
             : { duration: 0.3, ease: [0.16, 1, 0.3, 1] }
         }
       >
-        <Moon className="w-4 h-4 text-[hsl(25,50%,35%)] dark:text-slate-400" />
+        <Moon className="w-5 h-5 text-[hsl(25,45%,35%)]" />
       </motion.div>
     </motion.button>
   );

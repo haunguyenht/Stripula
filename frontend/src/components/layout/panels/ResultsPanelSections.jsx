@@ -13,7 +13,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 export function ResultsHeader({ children, className }) {
   return (
     <CardHeader className={cn(
-      "shrink-0 px-4 py-3 border-b border-border/40",
+      "shrink-0 px-2.5 py-2 sm:px-4 sm:py-3 border-b border-border/40",
       "dark:border-white/10",
       className
     )}>
@@ -31,7 +31,7 @@ export function ResultsHeader({ children, className }) {
 export function ResultsContent({ children, className }) {
   return (
     <ScrollArea className="flex-1 min-h-0">
-      <CardContent className={cn("p-4", className)}>
+      <CardContent className={cn("p-2.5 sm:p-4", className)}>
         {children}
       </CardContent>
     </ScrollArea>
@@ -48,7 +48,7 @@ export function ResultsContent({ children, className }) {
 export function ResultsFooter({ children, className }) {
   return (
     <div className={cn(
-      "shrink-0 px-4 py-3 border-t border-border/40",
+      "shrink-0 px-2.5 py-2 sm:px-4 sm:py-3 border-t border-border/40",
       "dark:border-white/10",
       className
     )}>

@@ -4,118 +4,93 @@ import { motion } from "motion/react";
 import { cn } from "@/lib/utils";
 
 /**
- * ResultCard Component - Premium Redesign
+ * ResultCard Component - Compact Premium Redesign
  * 
- * A luxurious result card with:
- * - Premium frosted glass morphism
- * - Status-based ambient glow effects
- * - Layered shadows for depth
- * - Refined typography with clear hierarchy
+ * ═══════════════════════════════════════════════════════════════════
+ * LIGHT THEME: Vintage Banking - Cream paper with copper accents
+ * DARK THEME: Obsidian Nebula - Deep glass with colored status glow
+ * ═══════════════════════════════════════════════════════════════════
+ * 
+ * Features:
+ * - Compact responsive layout
+ * - Status-based colored left accent bar
+ * - Subtle glass effect in dark mode (no white tints)
  * - Smooth micro-animations
- * - Zone-based layout structure
- * 
- * @param {string} status - Status: live, approved, dead, declined, error, 3ds, or undefined
- * @param {boolean} isSelected - Whether the card is selected
- * @param {boolean} isLoading - Whether the card is in loading state
- * @param {function} onClick - Click handler (makes card interactive)
- * @param {boolean} animate - Whether to use motion animations (default: true)
  */
 
-// Premium status configuration with transparent glass morphism
-// Light Theme: Vintage Banking / Cream Paper + Copper Foil
-// Dark Theme: Liquid Aurora Design System
+// Status configuration - NO WHITE TINTS in dark mode
 const STATUS_CONFIG = {
   live: {
-    // Light mode - vintage emerald ink on aged paper
-    lightBg: 'bg-[hsl(38,35%,97%)]',
-    lightBorder: 'border-[hsl(145,35%,65%)]',
-    lightAccent: 'before:bg-gradient-to-b before:from-[hsl(145,45%,42%)] before:to-[hsl(155,40%,35%)]',
-    lightShadow: 'shadow-[0_2px_12px_rgba(34,120,80,0.08),0_1px_3px_rgba(139,90,43,0.04)]',
-    lightHoverShadow: 'hover:shadow-[0_4px_20px_rgba(34,120,80,0.12),0_2px_6px_rgba(139,90,43,0.06)]',
-    // Dark mode - transparent glass with emerald accent glow
-    darkBg: 'dark:bg-emerald-500/[0.03]',
-    darkBorder: 'dark:border-emerald-400/20',
+    // Light mode - vintage emerald
+    lightBg: 'bg-[hsl(42,35%,97%)]',
+    lightBorder: 'border-[hsl(150,30%,70%)]',
+    lightAccent: 'before:bg-gradient-to-b before:from-emerald-500 before:to-emerald-600',
+    lightShadow: 'shadow-[0_1px_8px_rgba(34,120,80,0.06)]',
+    // Dark mode - deep emerald glass, NO white
+    darkBg: 'dark:bg-emerald-950/40',
+    darkBorder: 'dark:border-emerald-500/25',
     darkAccent: 'dark:before:bg-gradient-to-b dark:before:from-emerald-400 dark:before:to-emerald-500',
-    darkGlow: 'dark:shadow-[0_0_40px_-10px_rgba(52,211,153,0.25),0_8px_32px_rgba(0,0,0,0.4),inset_0_0.5px_0_rgba(255,255,255,0.1)]',
-    darkHoverGlow: 'dark:hover:shadow-[0_0_60px_-10px_rgba(52,211,153,0.35),0_12px_48px_rgba(0,0,0,0.5),inset_0_0.5px_0_rgba(255,255,255,0.15)]',
+    darkShadow: 'dark:shadow-[0_0_24px_-8px_rgba(52,211,153,0.3),0_4px_16px_rgba(0,0,0,0.4)]',
   },
   approved: {
-    // Light mode - antique green seal on parchment
-    lightBg: 'bg-[hsl(40,38%,97%)]',
-    lightBorder: 'border-[hsl(150,30%,60%)]',
-    lightAccent: 'before:bg-gradient-to-b before:from-[hsl(145,45%,42%)] before:to-[hsl(155,40%,35%)]',
-    lightShadow: 'shadow-[0_2px_12px_rgba(34,120,80,0.08),0_1px_3px_rgba(139,90,43,0.04)]',
-    lightHoverShadow: 'hover:shadow-[0_4px_20px_rgba(34,120,80,0.12),0_2px_6px_rgba(139,90,43,0.06)]',
-    darkBg: 'dark:bg-emerald-500/[0.03]',
-    darkBorder: 'dark:border-emerald-400/20',
+    lightBg: 'bg-[hsl(42,35%,97%)]',
+    lightBorder: 'border-[hsl(150,30%,70%)]',
+    lightAccent: 'before:bg-gradient-to-b before:from-emerald-500 before:to-emerald-600',
+    lightShadow: 'shadow-[0_1px_8px_rgba(34,120,80,0.06)]',
+    darkBg: 'dark:bg-emerald-950/40',
+    darkBorder: 'dark:border-emerald-500/25',
     darkAccent: 'dark:before:bg-gradient-to-b dark:before:from-emerald-400 dark:before:to-emerald-500',
-    darkGlow: 'dark:shadow-[0_0_40px_-10px_rgba(52,211,153,0.25),0_8px_32px_rgba(0,0,0,0.4),inset_0_0.5px_0_rgba(255,255,255,0.1)]',
-    darkHoverGlow: 'dark:hover:shadow-[0_0_60px_-10px_rgba(52,211,153,0.35),0_12px_48px_rgba(0,0,0,0.5),inset_0_0.5px_0_rgba(255,255,255,0.15)]',
+    darkShadow: 'dark:shadow-[0_0_24px_-8px_rgba(52,211,153,0.3),0_4px_16px_rgba(0,0,0,0.4)]',
   },
   '3ds': {
-    // Light mode - copper/bronze warning tint
-    lightBg: 'bg-[hsl(38,40%,97%)]',
-    lightBorder: 'border-[hsl(25,55%,60%)]',
-    lightAccent: 'before:bg-gradient-to-b before:from-[hsl(25,70%,48%)] before:to-[hsl(20,65%,40%)]',
-    lightShadow: 'shadow-[0_2px_12px_rgba(180,100,50,0.1),0_1px_3px_rgba(139,90,43,0.04)]',
-    lightHoverShadow: 'hover:shadow-[0_4px_20px_rgba(180,100,50,0.15),0_2px_6px_rgba(139,90,43,0.06)]',
-    darkBg: 'dark:bg-orange-500/[0.03]',
-    darkBorder: 'dark:border-orange-400/20',
+    lightBg: 'bg-[hsl(40,38%,97%)]',
+    lightBorder: 'border-[hsl(30,50%,70%)]',
+    lightAccent: 'before:bg-gradient-to-b before:from-orange-500 before:to-orange-600',
+    lightShadow: 'shadow-[0_1px_8px_rgba(180,100,50,0.06)]',
+    darkBg: 'dark:bg-orange-950/40',
+    darkBorder: 'dark:border-orange-500/25',
     darkAccent: 'dark:before:bg-gradient-to-b dark:before:from-orange-400 dark:before:to-orange-500',
-    darkGlow: 'dark:shadow-[0_0_40px_-10px_rgba(251,146,60,0.25),0_8px_32px_rgba(0,0,0,0.4),inset_0_0.5px_0_rgba(255,255,255,0.1)]',
-    darkHoverGlow: 'dark:hover:shadow-[0_0_60px_-10px_rgba(251,146,60,0.35),0_12px_48px_rgba(0,0,0,0.5),inset_0_0.5px_0_rgba(255,255,255,0.15)]',
+    darkShadow: 'dark:shadow-[0_0_24px_-8px_rgba(251,146,60,0.3),0_4px_16px_rgba(0,0,0,0.4)]',
   },
   dead: {
-    // Light mode - faded burgundy ink on aged paper
-    lightBg: 'bg-[hsl(38,25%,96%)]',
-    lightBorder: 'border-[hsl(0,25%,72%)]',
-    lightAccent: 'before:bg-gradient-to-b before:from-[hsl(355,40%,50%)] before:to-[hsl(350,35%,42%)]',
-    lightShadow: 'shadow-[0_1px_8px_rgba(139,90,43,0.04)]',
-    lightHoverShadow: 'hover:shadow-[0_2px_12px_rgba(139,90,43,0.06)]',
-    darkBg: 'dark:bg-rose-500/[0.02]',
-    darkBorder: 'dark:border-rose-400/15',
+    lightBg: 'bg-[hsl(40,25%,96%)]',
+    lightBorder: 'border-[hsl(355,25%,75%)]',
+    lightAccent: 'before:bg-gradient-to-b before:from-rose-500 before:to-rose-600',
+    lightShadow: 'shadow-[0_1px_6px_rgba(139,90,43,0.04)]',
+    darkBg: 'dark:bg-rose-950/30',
+    darkBorder: 'dark:border-rose-500/20',
     darkAccent: 'dark:before:bg-gradient-to-b dark:before:from-rose-400 dark:before:to-rose-500',
-    darkGlow: 'dark:shadow-[0_0_30px_-10px_rgba(251,113,133,0.15),0_8px_32px_rgba(0,0,0,0.4),inset_0_0.5px_0_rgba(255,255,255,0.08)]',
-    darkHoverGlow: 'dark:hover:shadow-[0_0_40px_-10px_rgba(251,113,133,0.2),0_10px_40px_rgba(0,0,0,0.45),inset_0_0.5px_0_rgba(255,255,255,0.1)]',
+    darkShadow: 'dark:shadow-[0_0_20px_-8px_rgba(251,113,133,0.2),0_4px_16px_rgba(0,0,0,0.35)]',
   },
   declined: {
-    // Light mode - muted burgundy seal
-    lightBg: 'bg-[hsl(38,25%,96%)]',
-    lightBorder: 'border-[hsl(355,25%,70%)]',
-    lightAccent: 'before:bg-gradient-to-b before:from-[hsl(355,40%,50%)] before:to-[hsl(350,35%,42%)]',
-    lightShadow: 'shadow-[0_1px_8px_rgba(139,90,43,0.04)]',
-    lightHoverShadow: 'hover:shadow-[0_2px_12px_rgba(139,90,43,0.06)]',
-    darkBg: 'dark:bg-rose-500/[0.02]',
-    darkBorder: 'dark:border-rose-400/15',
+    lightBg: 'bg-[hsl(40,25%,96%)]',
+    lightBorder: 'border-[hsl(355,25%,75%)]',
+    lightAccent: 'before:bg-gradient-to-b before:from-rose-500 before:to-rose-600',
+    lightShadow: 'shadow-[0_1px_6px_rgba(139,90,43,0.04)]',
+    darkBg: 'dark:bg-rose-950/30',
+    darkBorder: 'dark:border-rose-500/20',
     darkAccent: 'dark:before:bg-gradient-to-b dark:before:from-rose-400 dark:before:to-rose-500',
-    darkGlow: 'dark:shadow-[0_0_30px_-10px_rgba(251,113,133,0.15),0_8px_32px_rgba(0,0,0,0.4),inset_0_0.5px_0_rgba(255,255,255,0.08)]',
-    darkHoverGlow: 'dark:hover:shadow-[0_0_40px_-10px_rgba(251,113,133,0.2),0_10px_40px_rgba(0,0,0,0.45),inset_0_0.5px_0_rgba(255,255,255,0.1)]',
+    darkShadow: 'dark:shadow-[0_0_20px_-8px_rgba(251,113,133,0.2),0_4px_16px_rgba(0,0,0,0.35)]',
   },
   error: {
-    // Light mode - aged amber/ochre warning
-    lightBg: 'bg-[hsl(40,35%,96%)]',
-    lightBorder: 'border-[hsl(35,45%,65%)]',
-    lightAccent: 'before:bg-gradient-to-b before:from-[hsl(38,60%,48%)] before:to-[hsl(30,55%,40%)]',
-    lightShadow: 'shadow-[0_1px_8px_rgba(180,120,50,0.06)]',
-    lightHoverShadow: 'hover:shadow-[0_2px_12px_rgba(180,120,50,0.1)]',
-    darkBg: 'dark:bg-amber-500/[0.02]',
-    darkBorder: 'dark:border-amber-400/15',
+    lightBg: 'bg-[hsl(42,32%,96%)]',
+    lightBorder: 'border-[hsl(40,40%,72%)]',
+    lightAccent: 'before:bg-gradient-to-b before:from-amber-500 before:to-amber-600',
+    lightShadow: 'shadow-[0_1px_6px_rgba(180,120,50,0.04)]',
+    darkBg: 'dark:bg-amber-950/30',
+    darkBorder: 'dark:border-amber-500/20',
     darkAccent: 'dark:before:bg-gradient-to-b dark:before:from-amber-400 dark:before:to-amber-500',
-    darkGlow: 'dark:shadow-[0_0_30px_-10px_rgba(251,191,36,0.15),0_8px_32px_rgba(0,0,0,0.4),inset_0_0.5px_0_rgba(255,255,255,0.08)]',
-    darkHoverGlow: 'dark:hover:shadow-[0_0_40px_-10px_rgba(251,191,36,0.2),0_10px_40px_rgba(0,0,0,0.45),inset_0_0.5px_0_rgba(255,255,255,0.1)]',
+    darkShadow: 'dark:shadow-[0_0_20px_-8px_rgba(251,191,36,0.2),0_4px_16px_rgba(0,0,0,0.35)]',
   },
   none: {
-    // Light mode - clean vintage parchment
-    lightBg: 'bg-[hsl(40,35%,97%)]',
-    lightBorder: 'border-[hsl(30,25%,82%)]',
-    lightAccent: 'before:bg-gradient-to-b before:from-[hsl(30,20%,65%)] before:to-[hsl(25,18%,55%)]',
-    lightShadow: 'shadow-[0_1px_6px_rgba(139,90,43,0.04)]',
-    lightHoverShadow: 'hover:shadow-[0_2px_12px_rgba(139,90,43,0.08)]',
-    darkBg: 'dark:bg-white/[0.02]',
-    darkBorder: 'dark:border-white/[0.08]',
+    lightBg: 'bg-[hsl(42,30%,97%)]',
+    lightBorder: 'border-[hsl(35,20%,82%)]',
+    lightAccent: 'before:bg-gradient-to-b before:from-neutral-400 before:to-neutral-500',
+    lightShadow: 'shadow-[0_1px_4px_rgba(139,90,43,0.03)]',
+    darkBg: 'dark:bg-neutral-900/50',
+    darkBorder: 'dark:border-neutral-700/40',
     darkAccent: 'dark:before:bg-gradient-to-b dark:before:from-neutral-500 dark:before:to-neutral-600',
-    darkGlow: 'dark:shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_0.5px_0_rgba(255,255,255,0.08)]',
-    darkHoverGlow: 'dark:hover:shadow-[0_12px_48px_rgba(0,0,0,0.5),inset_0_0.5px_0_rgba(255,255,255,0.12)]',
+    darkShadow: 'dark:shadow-[0_4px_16px_rgba(0,0,0,0.35)]',
   },
 };
 
@@ -153,13 +128,14 @@ const ResultCardBase = forwardRef(
         ref={!animate ? ref : undefined}
         onClick={onClick}
         className={cn(
-          // Base structure
+          // Base structure - COMPACT
           "group relative overflow-hidden",
-          "rounded-2xl",
+          "rounded-xl sm:rounded-2xl",
           
-          // Premium left accent bar
-          "before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1",
-          "before:rounded-l-2xl before:z-20",
+          // Left accent bar - thinner
+          "before:absolute before:left-0 before:top-0 before:bottom-0",
+          "before:w-[3px] sm:before:w-1",
+          "before:rounded-l-xl sm:before:rounded-l-2xl before:z-20",
           config.lightAccent,
           config.darkAccent,
           
@@ -168,46 +144,33 @@ const ResultCardBase = forwardRef(
           config.lightBorder,
           config.darkBorder,
           
-          // Light mode backgrounds (reset gradient in dark mode)
+          // Light mode
           config.lightBg,
-          "dark:from-transparent dark:via-transparent dark:to-transparent",
           config.lightShadow,
           
-          // Dark mode - transparent frosted glass
+          // Dark mode - deep colored glass, NO white tints
           config.darkBg,
-          "dark:backdrop-blur-2xl dark:backdrop-saturate-[1.5]",
-          config.darkGlow,
+          "dark:backdrop-blur-xl dark:backdrop-saturate-150",
+          config.darkShadow,
           
-          // Transition for all states
-          "transition-all duration-300 ease-out",
+          // Transition
+          "transition-all duration-200 ease-out",
           
           // Hover states
           isInteractive && [
             "cursor-pointer",
-            config.lightHoverShadow,
-            config.darkHoverGlow,
-            "hover:translate-y-[-2px]",
-            "dark:hover:bg-white/[0.04]",
-            "dark:hover:border-white/[0.12]",
+            "hover:translate-y-[-1px]",
+            "hover:shadow-[0_2px_12px_rgba(139,90,43,0.08)]",
+            "dark:hover:shadow-[0_0_32px_-8px_rgba(139,92,246,0.2),0_6px_20px_rgba(0,0,0,0.45)]",
+            "dark:hover:border-opacity-40",
           ],
           
-          // Selected state - Premium copper foil selection glow
+          // Selected state
           isSelected && [
-            // Light mode - copper foil selection with vintage feel
             "ring-2 ring-[hsl(25,70%,50%)]/50 border-[hsl(25,65%,55%)]",
-            "shadow-[0_4px_20px_-4px_rgba(180,100,50,0.25),0_0_0_1px_rgba(180,100,50,0.15)]",
-            "bg-[hsl(40,40%,96%)]",
-            // Dark mode - electric cyan/gold selection aura
-            "dark:ring-[#00d4ff]/50 dark:border-[#00d4ff]/60",
-            "dark:shadow-[0_0_40px_-8px_rgba(0,212,255,0.5),0_0_80px_-12px_rgba(0,212,255,0.3),0_12px_40px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.15)]",
-            "dark:bg-[#00d4ff]/[0.06]",
-            // Shared - lift and scale
-            "translate-y-[-3px] scale-[1.01]",
-            // Pulsing border animation for selected state
-            "after:absolute after:inset-0 after:rounded-2xl after:pointer-events-none",
-            "after:shadow-[inset_0_0_0_2px_rgba(180,100,50,0.2)]",
-            "dark:after:shadow-[inset_0_0_0_2px_rgba(0,212,255,0.25)]",
-            "after:animate-[pulse_2s_ease-in-out_infinite]",
+            "dark:ring-violet-500/50 dark:border-violet-500/50",
+            "dark:shadow-[0_0_32px_-6px_rgba(139,92,246,0.4),0_8px_24px_rgba(0,0,0,0.5)]",
+            "translate-y-[-2px]",
           ],
           
           // Loading state
@@ -217,58 +180,6 @@ const ResultCardBase = forwardRef(
         )}
         {...props}
       >
-        {/* Glass highlight edge - top */}
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 dark:opacity-100 pointer-events-none rounded-t-2xl" />
-        
-        {/* Selection indicator badge - top right corner */}
-        {isSelected && (
-          <div className="absolute -top-1 -right-1 z-30 flex items-center justify-center">
-            <div className={cn(
-              "w-6 h-6 rounded-full flex items-center justify-center",
-              // Light mode - copper foil badge
-              "bg-gradient-to-br from-[hsl(25,70%,50%)] to-[hsl(20,65%,42%)] shadow-[0_2px_8px_rgba(180,100,50,0.4)]",
-              // Dark mode - electric cyan badge
-              "dark:from-[#00d4ff] dark:to-[#00a8cc] dark:shadow-[0_0_16px_rgba(0,212,255,0.6)]",
-              // Subtle pulse animation
-              "animate-[bounce_1s_ease-in-out]"
-            )}>
-              <svg 
-                className="w-3.5 h-3.5 text-white dark:text-slate-900" 
-                fill="none" 
-                viewBox="0 0 24 24" 
-                stroke="currentColor" 
-                strokeWidth={3}
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-          </div>
-        )}
-        
-        {/* Tile pattern overlay for dark mode - matches body background */}
-        <div className="absolute inset-0 opacity-0 dark:opacity-100 pointer-events-none rounded-2xl overflow-hidden">
-          <div 
-            className="absolute inset-0"
-            style={{
-              backgroundImage: 'url(/bg-tile.webp)',
-              backgroundSize: '200px 200px',
-              backgroundRepeat: 'repeat',
-              opacity: 0.04,
-              mixBlendMode: 'overlay',
-            }}
-          />
-        </div>
-        
-        {/* Top gradient sheen for glass effect */}
-        <div className="absolute inset-0 opacity-0 dark:opacity-100 pointer-events-none rounded-2xl overflow-hidden">
-          <div 
-            className="absolute inset-0"
-            style={{
-              background: 'linear-gradient(180deg, rgba(255,255,255,0.06) 0%, transparent 40%)',
-            }}
-          />
-        </div>
-        
         {/* Content */}
         <div className="relative z-10">
           {children}
@@ -282,13 +193,13 @@ const ResultCardBase = forwardRef(
         <motion.div
           ref={ref}
           layout
-          initial={{ opacity: 0, y: 8, scale: 0.98 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: -6, scale: 0.98 }}
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -4 }}
           transition={{ 
-            duration: 0.25, 
+            duration: 0.2, 
             ease: [0.25, 0.1, 0.25, 1],
-            layout: { duration: 0.2 }
+            layout: { duration: 0.15 }
           }}
         >
           {cardContent}
@@ -301,7 +212,7 @@ const ResultCardBase = forwardRef(
 );
 ResultCardBase.displayName = "ResultCard";
 
-// Custom comparison function for ResultCard memoization
+// Memoization comparison
 function areResultCardPropsEqual(prevProps, nextProps) {
   return (
     prevProps.status === nextProps.status &&
@@ -315,22 +226,19 @@ function areResultCardPropsEqual(prevProps, nextProps) {
   );
 }
 
-// Memoized ResultCard component
 const ResultCard = memo(ResultCardBase, areResultCardPropsEqual);
 
 /**
- * ResultCardContent Component
- * 
- * Content wrapper with premium padding and typography.
+ * ResultCardContent - COMPACT padding
  */
 const ResultCardContent = memo(forwardRef(
   ({ className, ...props }, ref) => (
     <div 
       ref={ref} 
       className={cn(
-        "px-4 py-3.5",
-        // Premium typography
-        "text-neutral-800 dark:text-white/90",
+        // Compact padding - smaller on mobile
+        "px-3 py-2.5 sm:px-4 sm:py-3",
+        "text-neutral-800 dark:text-neutral-100",
         className
       )} 
       {...props} 
@@ -340,16 +248,15 @@ const ResultCardContent = memo(forwardRef(
 ResultCardContent.displayName = "ResultCardContent";
 
 /**
- * ResultCardHeader Component
- * 
- * Zone 1: Header with status, card number, and actions.
+ * ResultCardHeader - Compact layout
  */
 const ResultCardHeader = memo(forwardRef(
   ({ className, ...props }, ref) => (
     <div 
       ref={ref} 
       className={cn(
-        "flex flex-wrap items-center justify-between gap-2 sm:gap-3",
+        "flex flex-wrap items-center justify-between",
+        "gap-1.5 sm:gap-2",
         className
       )} 
       {...props} 
@@ -359,15 +266,13 @@ const ResultCardHeader = memo(forwardRef(
 ResultCardHeader.displayName = "ResultCardHeader";
 
 /**
- * ResultCardRow Component
- * 
- * A flex row within ResultCard for consistent spacing.
+ * ResultCardRow - Compact row
  */
 const ResultCardRow = memo(forwardRef(
   ({ className, ...props }, ref) => (
     <div 
       ref={ref} 
-      className={cn("flex items-center gap-2", className)} 
+      className={cn("flex items-center gap-1.5 sm:gap-2", className)} 
       {...props} 
     />
   )
@@ -375,17 +280,16 @@ const ResultCardRow = memo(forwardRef(
 ResultCardRow.displayName = "ResultCardRow";
 
 /**
- * ResultCardDataZone Component
- * 
- * Zone 2: Rich data display (BIN info, metadata).
+ * ResultCardDataZone - Compact data zone
  */
 const ResultCardDataZone = memo(forwardRef(
   ({ className, ...props }, ref) => (
     <div 
       ref={ref} 
       className={cn(
-        "flex flex-wrap items-center gap-2 mt-3",
-        "pt-3 border-t border-neutral-100/80 dark:border-white/5",
+        "flex flex-wrap items-center gap-1.5 sm:gap-2",
+        "mt-2 sm:mt-2.5 pt-2 sm:pt-2.5",
+        "border-t border-neutral-200/60 dark:border-neutral-700/30",
         className
       )} 
       {...props} 
@@ -395,16 +299,15 @@ const ResultCardDataZone = memo(forwardRef(
 ResultCardDataZone.displayName = "ResultCardDataZone";
 
 /**
- * ResultCardResponseZone Component
- * 
- * Zone 3: Response message and metadata.
+ * ResultCardResponseZone - Compact response zone
  */
 const ResultCardResponseZone = memo(forwardRef(
   ({ className, ...props }, ref) => (
     <div 
       ref={ref} 
       className={cn(
-        "flex flex-wrap items-center justify-between gap-2 mt-2.5",
+        "flex flex-wrap items-center justify-between",
+        "gap-1.5 sm:gap-2 mt-1.5 sm:mt-2",
         className
       )} 
       {...props} 
@@ -414,17 +317,16 @@ const ResultCardResponseZone = memo(forwardRef(
 ResultCardResponseZone.displayName = "ResultCardResponseZone";
 
 /**
- * ResultCardSecurityZone Component
- * 
- * Zone 4: Security checks and risk indicators.
+ * ResultCardSecurityZone - Compact security zone
  */
 const ResultCardSecurityZone = memo(forwardRef(
   ({ className, ...props }, ref) => (
     <div 
       ref={ref} 
       className={cn(
-        "flex flex-wrap items-center gap-2.5 mt-3",
-        "pt-3 border-t border-neutral-100/80 dark:border-white/5",
+        "flex flex-wrap items-center gap-1.5 sm:gap-2",
+        "mt-2 sm:mt-2.5 pt-2 sm:pt-2.5",
+        "border-t border-neutral-200/60 dark:border-neutral-700/30",
         className
       )} 
       {...props} 
@@ -434,16 +336,15 @@ const ResultCardSecurityZone = memo(forwardRef(
 ResultCardSecurityZone.displayName = "ResultCardSecurityZone";
 
 /**
- * ResultCardActions Component
- * 
- * Container for action buttons, positioned at top-right.
+ * ResultCardActions - Compact actions
  */
 const ResultCardActions = memo(forwardRef(
   ({ className, alwaysVisible = false, ...props }, ref) => (
     <div 
       ref={ref} 
       className={cn(
-        "absolute top-3 right-3 flex items-center gap-1",
+        "absolute top-2 right-2 sm:top-2.5 sm:right-2.5",
+        "flex items-center gap-0.5 sm:gap-1",
         "transition-opacity duration-200",
         !alwaysVisible && "opacity-0 group-hover:opacity-100",
         className
@@ -455,9 +356,7 @@ const ResultCardActions = memo(forwardRef(
 ResultCardActions.displayName = "ResultCardActions";
 
 /**
- * ResultCardLoadingOverlay Component
- * 
- * Overlay for loading/refreshing state.
+ * ResultCardLoadingOverlay
  */
 const ResultCardLoadingOverlay = memo(forwardRef(
   ({ className, children, ...props }, ref) => (
@@ -465,9 +364,9 @@ const ResultCardLoadingOverlay = memo(forwardRef(
       ref={ref} 
       className={cn(
         "absolute inset-0 flex items-center justify-center",
-        "bg-[hsl(40,35%,97%)]/80 dark:bg-black/50",
+        "bg-neutral-100/80 dark:bg-neutral-900/70",
         "backdrop-blur-sm",
-        "rounded-2xl z-20",
+        "rounded-xl sm:rounded-2xl z-20",
         className
       )} 
       {...props}
@@ -479,9 +378,7 @@ const ResultCardLoadingOverlay = memo(forwardRef(
 ResultCardLoadingOverlay.displayName = "ResultCardLoadingOverlay";
 
 /**
- * ResultCardStatus Component
- * 
- * A refined status indicator badge with premium styling.
+ * ResultCardStatus - COMPACT status badge
  */
 const ResultCardStatus = memo(forwardRef(
   ({ className, status, children, ...props }, ref) => {
@@ -489,18 +386,23 @@ const ResultCardStatus = memo(forwardRef(
     
     const getStatusStyles = () => {
       if (statusLower === 'approved' || statusLower === 'charged' || statusLower === 'live' || statusLower.startsWith('live')) {
-        return "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400 border-emerald-500/20 dark:border-emerald-500/25";
+        // Emerald - success
+        return "bg-emerald-500/15 text-emerald-600 border-emerald-500/30 dark:bg-emerald-950/60 dark:text-emerald-400 dark:border-emerald-500/40";
       }
       if (statusLower === '3ds' || statusLower === 'live 3ds') {
-        return "bg-orange-500/10 text-orange-600 dark:bg-orange-500/15 dark:text-orange-400 border-orange-500/20 dark:border-orange-500/25";
+        // Orange - warning
+        return "bg-orange-500/15 text-orange-600 border-orange-500/30 dark:bg-orange-950/60 dark:text-orange-400 dark:border-orange-500/40";
       }
       if (statusLower === 'declined' || statusLower === 'dead' || statusLower === 'die') {
-        return "bg-rose-500/10 text-rose-600 dark:bg-rose-500/15 dark:text-rose-400 border-rose-500/20 dark:border-rose-500/25";
+        // Rose - declined (darker in dark mode)
+        return "bg-rose-500/15 text-rose-600 border-rose-500/30 dark:bg-rose-950/70 dark:text-rose-300 dark:border-rose-500/30";
       }
       if (statusLower === 'error' || statusLower === 'retry' || statusLower === 'captcha') {
-        return "bg-amber-500/10 text-amber-600 dark:bg-amber-500/15 dark:text-amber-400 border-amber-500/20 dark:border-amber-500/25";
+        // Amber - error
+        return "bg-amber-500/15 text-amber-600 border-amber-500/30 dark:bg-amber-950/60 dark:text-amber-400 dark:border-amber-500/40";
       }
-      return "bg-neutral-100 text-neutral-600 dark:bg-white/10 dark:text-white/60 border-neutral-200/50 dark:border-white/10";
+      // Default - neutral
+      return "bg-neutral-200/60 text-neutral-600 border-neutral-300/50 dark:bg-neutral-800/50 dark:text-neutral-400 dark:border-neutral-600/40";
     };
 
     return (
@@ -508,8 +410,11 @@ const ResultCardStatus = memo(forwardRef(
         ref={ref}
         className={cn(
           "inline-flex items-center justify-center",
-          "px-2.5 py-1 rounded-lg",
-          "text-[10px] font-semibold uppercase tracking-wider",
+          // Compact sizing
+          "px-2 py-0.5 sm:px-2.5 sm:py-1",
+          "rounded-md sm:rounded-lg",
+          // Smaller text
+          "text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider",
           "border",
           getStatusStyles(),
           className
@@ -524,17 +429,15 @@ const ResultCardStatus = memo(forwardRef(
 ResultCardStatus.displayName = "ResultCardStatus";
 
 /**
- * ResultCardLabel Component
- * 
- * A light-weight label for card info.
+ * ResultCardLabel - Compact label
  */
 const ResultCardLabel = memo(forwardRef(
   ({ className, ...props }, ref) => (
     <span
       ref={ref}
       className={cn(
-        "text-[11px] font-medium tracking-wide",
-        "text-neutral-500 dark:text-white/50",
+        "text-[10px] sm:text-[11px] font-medium tracking-wide",
+        "text-neutral-500 dark:text-neutral-500",
         className
       )}
       {...props}
@@ -544,18 +447,16 @@ const ResultCardLabel = memo(forwardRef(
 ResultCardLabel.displayName = "ResultCardLabel";
 
 /**
- * ResultCardValue Component
- * 
- * A mono-spaced value display with premium styling.
+ * ResultCardValue - Compact value
  */
 const ResultCardValue = memo(forwardRef(
   ({ className, mono = true, ...props }, ref) => (
     <span
       ref={ref}
       className={cn(
-        "text-[11px]",
+        "text-[10px] sm:text-[11px]",
         mono && "font-mono tabular-nums tracking-tight",
-        "text-neutral-600 dark:text-white/70",
+        "text-neutral-700 dark:text-neutral-300",
         className
       )}
       {...props}
@@ -565,9 +466,7 @@ const ResultCardValue = memo(forwardRef(
 ResultCardValue.displayName = "ResultCardValue";
 
 /**
- * ResultCardMessage Component
- * 
- * Status message with appropriate coloring and premium typography.
+ * ResultCardMessage - Status message
  */
 const ResultCardMessage = memo(forwardRef(
   ({ className, status, ...props }, ref) => {
@@ -586,14 +485,14 @@ const ResultCardMessage = memo(forwardRef(
       if (statusLower === 'error' || statusLower === 'retry' || statusLower === 'captcha') {
         return "text-amber-600 dark:text-amber-400";
       }
-      return "text-neutral-500 dark:text-white/60";
+      return "text-neutral-500 dark:text-neutral-400";
     };
 
     return (
       <p
         ref={ref}
         className={cn(
-          "text-[11px] font-medium leading-relaxed",
+          "text-[10px] sm:text-[11px] font-medium leading-relaxed",
           getMessageStyles(),
           className
         )}
@@ -605,17 +504,15 @@ const ResultCardMessage = memo(forwardRef(
 ResultCardMessage.displayName = "ResultCardMessage";
 
 /**
- * ResultCardPill Component
- * 
- * A premium pill/tag for displaying metadata.
+ * ResultCardPill - Compact pill
  */
 const ResultCardPill = memo(forwardRef(
   ({ className, variant = 'default', ...props }, ref) => {
     const variantStyles = {
-      default: "bg-neutral-100/80 text-neutral-600 dark:bg-white/5 dark:text-white/60",
-      success: "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400",
-      warning: "bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400",
-      danger: "bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-400",
+      default: "bg-neutral-200/50 text-neutral-600 dark:bg-neutral-800/60 dark:text-neutral-400",
+      success: "bg-emerald-100/60 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400",
+      warning: "bg-amber-100/60 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400",
+      danger: "bg-rose-100/60 text-rose-600 dark:bg-rose-900/40 dark:text-rose-400",
     };
 
     return (
@@ -623,8 +520,9 @@ const ResultCardPill = memo(forwardRef(
         ref={ref}
         className={cn(
           "inline-flex items-center",
-          "px-2 py-0.5 rounded-md",
-          "text-[10px] font-medium",
+          "px-1.5 py-0.5 sm:px-2",
+          "rounded-md",
+          "text-[9px] sm:text-[10px] font-medium",
           variantStyles[variant] || variantStyles.default,
           className
         )}
@@ -636,18 +534,16 @@ const ResultCardPill = memo(forwardRef(
 ResultCardPill.displayName = "ResultCardPill";
 
 /**
- * ResultCardDuration Component
- * 
- * Elegant duration display with icon.
+ * ResultCardDuration - Compact duration
  */
 const ResultCardDuration = memo(forwardRef(
   ({ className, children, ...props }, ref) => (
     <span
       ref={ref}
       className={cn(
-        "inline-flex items-center gap-1",
-        "text-[10px] font-medium tabular-nums",
-        "text-neutral-400 dark:text-white/40",
+        "inline-flex items-center gap-0.5 sm:gap-1",
+        "text-[9px] sm:text-[10px] font-medium tabular-nums",
+        "text-neutral-400 dark:text-neutral-500",
         className
       )}
       {...props}

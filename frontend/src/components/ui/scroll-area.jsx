@@ -3,10 +3,13 @@ import * as ScrollAreaPrimitive from "@radix-ui/react-scroll-area"
 import { cn } from "@/lib/utils.js"
 
 /**
- * ScrollArea Component - Liquid Aurora Design System
+ * ScrollArea Component - Dual Theme Design System
  * 
- * Light mode: Vintage Banking - Copper-tinted scrollbar
- * Dark mode: Liquid glass scrollbar with aurora glow on hover
+ * LIGHT MODE: Vintage Banking
+ * - Copper-tinted scrollbar with embossed effect
+ * 
+ * DARK MODE: PREMIUM Liquid Aurora
+ * - Liquid glass scrollbar with enhanced aurora glow on hover
  */
 
 const ScrollArea = React.forwardRef(({ className, children, ...props }, ref) => (
@@ -42,11 +45,12 @@ const ScrollBar = React.forwardRef(
       <ScrollAreaPrimitive.ScrollAreaThumb 
         className={cn(
           "relative flex-1 rounded-full transition-all duration-300",
-          // Light: Copper-tinted scrollbar
-          "bg-[hsl(25,35%,60%)]/30 hover:bg-[hsl(25,35%,50%)]/50",
-          // Dark: Liquid glass scrollbar with aurora glow
-          "dark:bg-white/[0.15] dark:hover:bg-white/[0.25]",
-          "dark:hover:shadow-[0_0_8px_rgba(139,92,246,0.4)]"
+          // Light: Copper-tinted scrollbar with subtle embossed effect
+          "bg-[hsl(25,40%,58%)]/35 hover:bg-[hsl(25,45%,50%)]/55",
+          "shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]",
+          // Dark: PREMIUM Liquid glass scrollbar with enhanced aurora glow
+          "dark:bg-white/[0.18] dark:hover:bg-white/[0.28]",
+          "dark:hover:shadow-[0_0_12px_rgba(139,92,246,0.5),0_0_6px_rgba(34,211,238,0.3)]"
         )} 
       />
     </ScrollAreaPrimitive.ScrollAreaScrollbar>

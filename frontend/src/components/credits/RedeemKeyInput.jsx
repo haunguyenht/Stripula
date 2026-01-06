@@ -191,13 +191,13 @@ export function RedeemKeyInput({ onSuccess, className }) {
       <div className="absolute top-3 left-3 w-5 h-5 border-l-2 border-t-2 border-[hsl(25,60%,55%)]/40 rounded-tl-sm dark:hidden" />
       <div className="absolute top-3 right-3 w-5 h-5 border-r-2 border-t-2 border-[hsl(25,60%,55%)]/40 rounded-tr-sm dark:hidden" />
       
-      <div className="relative p-5 z-10">
+      <div className="relative p-3 sm:p-5 z-10">
         {/* Header */}
-        <div className="flex items-center gap-3 mb-4">
+        <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
           {/* Icon with holographic rotating glow */}
           <motion.div 
             className={cn(
-              "relative flex items-center justify-center w-11 h-11 rounded-xl",
+              "relative flex items-center justify-center w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl shrink-0",
               // Light: copper/bronze gradient wax seal
               "bg-gradient-to-br from-[hsl(30,60%,88%)] via-[hsl(25,50%,82%)] to-[hsl(35,55%,78%)]",
               "border border-[hsl(30,40%,70%)]/60",
@@ -223,23 +223,23 @@ export function RedeemKeyInput({ onSuccess, className }) {
               transition={{ duration: 6, repeat: Infinity, ease: 'linear' }}
             />
             <Key className={cn(
-              "w-5 h-5 relative z-10",
+              "w-4 h-4 sm:w-5 sm:h-5 relative z-10",
               "text-[hsl(25,55%,40%)]",
               "dark:text-emerald-300 dark:drop-shadow-[0_0_8px_rgba(52,211,153,0.6)]"
             )} />
           </motion.div>
           
-          <div>
+          <div className="min-w-0">
             <h3 className={cn(
-              "text-base font-semibold flex items-center gap-2",
+              "text-sm sm:text-base font-semibold flex items-center gap-1.5 sm:gap-2",
               "text-[hsl(25,40%,25%)] [text-shadow:0_1px_0_rgba(255,255,255,0.5)]",
               "dark:text-white dark:[text-shadow:none]"
             )}>
               Redeem Key
-              <ShieldCheck className="w-4 h-4 text-emerald-500 dark:text-emerald-400 dark:drop-shadow-[0_0_4px_rgba(52,211,153,0.5)]" />
+              <ShieldCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-500 dark:text-emerald-400 dark:drop-shadow-[0_0_4px_rgba(52,211,153,0.5)]" />
             </h3>
             <p className={cn(
-              "text-sm",
+              "text-xs sm:text-sm",
               "text-[hsl(25,20%,50%)]",
               "dark:text-white/50"
             )}>
@@ -249,7 +249,7 @@ export function RedeemKeyInput({ onSuccess, className }) {
         </div>
 
         {/* Input and Button */}
-        <div className="flex gap-3">
+        <div className="flex gap-2 sm:gap-3">
           <div className="flex-1 relative">
             {/* Scanning line animation */}
             <ScanLine isActive={isTyping} />
@@ -263,7 +263,7 @@ export function RedeemKeyInput({ onSuccess, className }) {
               disabled={isLoading}
               maxLength={19}
               className={cn(
-                "h-12 font-mono text-base tracking-[0.15em] uppercase text-center",
+                "h-10 sm:h-12 font-mono text-sm sm:text-base tracking-[0.1em] sm:tracking-[0.15em] uppercase text-center",
                 // Light mode
                 "bg-gradient-to-b from-[hsl(38,35%,96%)] to-[hsl(35,30%,93%)]",
                 "border-[hsl(30,30%,75%)]",
@@ -315,7 +315,7 @@ export function RedeemKeyInput({ onSuccess, className }) {
             onClick={handleRedeem}
             disabled={isLoading || !isCodeComplete}
             className={cn(
-              "h-12 px-6 font-semibold rounded-xl",
+              "h-10 sm:h-12 px-3 sm:px-6 font-semibold rounded-lg sm:rounded-xl shrink-0",
               "text-white",
               // Light mode: copper coin button
               "bg-gradient-to-b from-[hsl(25,65%,50%)] via-[hsl(30,70%,48%)] to-[hsl(25,60%,42%)]",
@@ -332,20 +332,20 @@ export function RedeemKeyInput({ onSuccess, className }) {
             )}
           >
             {isLoading ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
+              <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
             ) : recentSuccess ? (
               <motion.span
                 initial={{ scale: 0.5 }}
                 animate={{ scale: 1 }}
-                className="flex items-center gap-2"
+                className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm"
               >
-                <Sparkles className="w-4 h-4" />
-                Success!
+                <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">Success!</span>
               </motion.span>
             ) : (
-              <span className="flex items-center gap-2">
-                <Unlock className="w-4 h-4" />
-                Redeem
+              <span className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm">
+                <Unlock className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">Redeem</span>
               </span>
             )}
           </Button>
@@ -353,13 +353,13 @@ export function RedeemKeyInput({ onSuccess, className }) {
 
         {/* Help text */}
         <div className={cn(
-          "flex items-center justify-center gap-2 mt-3",
-          "text-xs",
+          "flex items-center justify-center gap-1.5 sm:gap-2 mt-2 sm:mt-3",
+          "text-[10px] sm:text-xs",
           "text-[hsl(25,20%,50%)]",
           "dark:text-white/40"
         )}>
-          <Zap className="w-3 h-3" />
-          <span>Keys are 16 characters in XXXX-XXXX-XXXX-XXXX format</span>
+          <Zap className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0" />
+          <span className="text-center">Keys are 16 characters in XXXX-XXXX-XXXX-XXXX format</span>
         </div>
       </div>
     </motion.div>

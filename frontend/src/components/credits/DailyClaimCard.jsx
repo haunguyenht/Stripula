@@ -16,7 +16,7 @@ function TimeSegment({ value, label }) {
     <div className="flex flex-col items-center">
       <motion.div 
         className={cn(
-          "relative flex items-center justify-center w-12 h-12 rounded-xl",
+          "relative flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl",
           // Light: Copper embossed numeral plate
           "bg-gradient-to-b from-[hsl(38,35%,94%)] to-[hsl(35,30%,90%)]",
           "border border-[hsl(30,25%,78%)]",
@@ -34,7 +34,7 @@ function TimeSegment({ value, label }) {
         transition={{ type: "spring", stiffness: 300, damping: 20 }}
       >
         <span className={cn(
-          "text-xl font-bold tabular-nums",
+          "text-base sm:text-xl font-bold tabular-nums",
           // Light: Copper foil numerals
           "text-transparent bg-clip-text bg-gradient-to-b from-[hsl(25,70%,50%)] via-[hsl(35,80%,55%)] to-[hsl(25,65%,42%)]",
           "[text-shadow:0_1px_0_rgba(255,255,255,0.5)]",
@@ -46,7 +46,7 @@ function TimeSegment({ value, label }) {
         </span>
       </motion.div>
       <span className={cn(
-        "text-[9px] font-semibold uppercase tracking-[0.15em] mt-1.5",
+        "text-[8px] sm:text-[9px] font-semibold uppercase tracking-[0.15em] mt-1 sm:mt-1.5",
         "text-[hsl(25,25%,50%)]",
         "dark:text-white/40"
       )}>
@@ -64,7 +64,7 @@ function ProgressRing({ progress, tierColor }) {
   const offset = circumference - (progress / 100) * circumference;
   
   return (
-    <div className="relative w-24 h-24">
+    <div className="relative w-16 h-16 sm:w-24 sm:h-24">
       {/* Ambient aurora glow - dark mode only */}
       <motion.div 
         className={cn(
@@ -123,7 +123,7 @@ function ProgressRing({ progress, tierColor }) {
           transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
         >
           <Clock className={cn(
-            "w-6 h-6",
+            "w-4 h-4 sm:w-6 sm:h-6",
             "text-[hsl(25,30%,55%)]",
             "dark:text-violet-300 dark:drop-shadow-[0_0_8px_rgba(139,92,246,0.5)]"
           )} />
@@ -399,14 +399,14 @@ export function DailyClaimCard({ className, onClaim }) {
         )}
       </AnimatePresence>
 
-      <div className="relative p-5 z-10">
+      <div className="relative p-3 sm:p-5 z-10">
         {/* Header */}
-        <div className="flex items-start justify-between mb-5">
-          <div className="flex items-center gap-3">
+        <div className="flex items-start justify-between mb-3 sm:mb-5 gap-2">
+          <div className="flex items-center gap-2 sm:gap-3">
             {/* Icon with holographic effect */}
             <motion.div 
               className={cn(
-                "relative flex items-center justify-center w-12 h-12 rounded-xl",
+                "relative flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl shrink-0",
                 // Light: wax seal effect
                 "bg-gradient-to-br",
                 tierConfig.bgGradient,
@@ -432,15 +432,15 @@ export function DailyClaimCard({ className, onClaim }) {
                 transition={{ duration: 6, repeat: Infinity, ease: 'linear' }}
               />
               <TierIcon className={cn(
-                "w-6 h-6 relative z-10",
+                "w-5 h-5 sm:w-6 sm:h-6 relative z-10",
                 tierConfig.color,
                 "dark:drop-shadow-[0_0_8px_rgba(139,92,246,0.5)]"
               )} />
             </motion.div>
             
-            <div>
+            <div className="min-w-0">
               <h3 className={cn(
-                "text-base font-semibold flex items-center gap-2",
+                "text-sm sm:text-base font-semibold flex items-center gap-1.5 sm:gap-2",
                 "text-[hsl(25,40%,25%)] [text-shadow:0_1px_0_rgba(255,255,255,0.5)]",
                 "dark:text-white dark:[text-shadow:none]"
               )}>
@@ -452,19 +452,19 @@ export function DailyClaimCard({ className, onClaim }) {
                     transition={{ type: "spring", stiffness: 300 }}
                   >
                     <Sparkles className={cn(
-                      "w-4 h-4 text-amber-500 fill-amber-500",
+                      "w-3 h-3 sm:w-4 sm:h-4 text-amber-500 fill-amber-500",
                       "dark:text-violet-300 dark:fill-violet-300 dark:drop-shadow-[0_0_6px_rgba(139,92,246,0.8)]"
                     )} />
                   </motion.span>
                 )}
               </h3>
               <p className={cn(
-                "text-sm flex items-center gap-1.5",
+                "text-xs sm:text-sm flex items-center gap-1 sm:gap-1.5 flex-wrap",
                 "text-[hsl(25,20%,50%)]",
                 "dark:text-white/50"
               )}>
                 <span className={cn(
-                  "px-1.5 py-0.5 rounded text-xs font-medium",
+                  "px-1 sm:px-1.5 py-0.5 rounded text-[10px] sm:text-xs font-medium",
                   "bg-[hsl(30,30%,90%)] text-[hsl(25,40%,40%)]",
                   "dark:bg-white/[0.08] dark:text-white/70"
                 )}>
@@ -481,7 +481,7 @@ export function DailyClaimCard({ className, onClaim }) {
           {/* Status badge */}
           <motion.span 
             className={cn(
-              "px-3 py-1.5 text-xs font-semibold rounded-full",
+              "px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-semibold rounded-full shrink-0",
               canClaim 
                 ? [
                     // Light
@@ -501,8 +501,8 @@ export function DailyClaimCard({ className, onClaim }) {
             transition={{ duration: 2, repeat: Infinity }}
           >
             {canClaim ? (
-              <span className="flex items-center gap-1">
-                <Star className="w-3 h-3" />
+              <span className="flex items-center gap-0.5 sm:gap-1">
+                <Star className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                 Ready!
               </span>
             ) : 'Claimed'}
@@ -533,7 +533,7 @@ export function DailyClaimCard({ className, onClaim }) {
               onClick={handleClaim}
               disabled={isClaiming}
               className={cn(
-                "w-full h-14 text-base font-semibold rounded-xl",
+                "w-full h-11 sm:h-14 text-sm sm:text-base font-semibold rounded-lg sm:rounded-xl",
                 "text-white transition-all duration-200",
                 "hover:scale-[1.02] active:scale-[0.98]",
                 // Light mode
@@ -576,7 +576,7 @@ export function DailyClaimCard({ className, onClaim }) {
           <div className="space-y-4">
             {/* Countdown display */}
             <div className={cn(
-              "flex items-center justify-center gap-6 py-5 px-4 rounded-xl",
+              "flex items-center justify-center gap-3 sm:gap-6 py-3 sm:py-5 px-2 sm:px-4 rounded-lg sm:rounded-xl",
               // Light
               "bg-gradient-to-b from-[hsl(38,35%,94%)] to-[hsl(35,30%,91%)]",
               "border border-[hsl(30,25%,80%)]",
@@ -590,16 +590,16 @@ export function DailyClaimCard({ className, onClaim }) {
               <ProgressRing progress={progress} tierColor={tierColor.light} />
 
               {/* Time segments */}
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5 sm:gap-3">
                 <TimeSegment value={time.hours} label="hrs" />
                 <span className={cn(
-                  "text-2xl font-light -mt-6",
+                  "text-xl sm:text-2xl font-light -mt-5 sm:-mt-6",
                   "text-[hsl(30,20%,70%)]",
                   "dark:text-violet-400/50"
                 )}>:</span>
                 <TimeSegment value={time.minutes} label="min" />
                 <span className={cn(
-                  "text-2xl font-light -mt-6",
+                  "text-xl sm:text-2xl font-light -mt-5 sm:-mt-6",
                   "text-[hsl(30,20%,70%)]",
                   "dark:text-violet-400/50"
                 )}>:</span>
@@ -608,11 +608,11 @@ export function DailyClaimCard({ className, onClaim }) {
             </div>
             
             <p className={cn(
-              "text-center text-xs flex items-center justify-center gap-1.5",
+              "text-center text-[10px] sm:text-xs flex items-center justify-center gap-1 sm:gap-1.5",
               "text-[hsl(25,20%,50%)]",
               "dark:text-white/40"
             )}>
-              <Clock className="w-3 h-3" />
+              <Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
               Resets at midnight UTC
             </p>
           </div>

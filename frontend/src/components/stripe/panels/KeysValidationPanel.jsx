@@ -42,8 +42,6 @@ export function KeysValidationPanel({
   setCurrentItem,
   abortRef,
   modeSwitcher,
-  drawerOpen,
-  onDrawerOpenChange,
 }) {
   const [copiedKey, setCopiedKey] = useState(null);
   const [filter, setFilter] = useState('all');
@@ -351,15 +349,15 @@ export function KeysValidationPanel({
   }, []);
 
   const configContent = (
-    <div className="space-y-4 p-4">
+    <div className="space-y-2 sm:space-y-4 p-2 sm:p-4">
       {/* Input with integrated action bar */}
       <div className="rounded-lg border border-[rgb(230,225,223)] dark:border-white/10 bg-white dark:bg-white/5 shadow-sm dark:shadow-none overflow-hidden transition-all duration-200 focus-within:border-primary/30 focus-within:ring-2 focus-within:ring-primary/10 dark:focus-within:border-white/20 dark:focus-within:ring-primary/20">
         <Textarea
           id="sk-keys-input"
           name="sk-keys-input"
           className={cn(
-            "font-mono text-xs min-h-[100px] resize-none border-0 rounded-none focus-visible:ring-0 focus-visible:ring-offset-0",
-            "dark:bg-transparent",
+            "font-mono text-[10px] sm:text-xs min-h-[60px] sm:min-h-[100px] resize-none border-0 rounded-none focus-visible:ring-0 focus-visible:ring-offset-0",
+            "dark:bg-transparent p-2 sm:p-3",
             isLoading && "opacity-50"
           )}
           placeholder="Enter SK keys (one per line)&#10;sk_live_xxxxx"
@@ -369,41 +367,42 @@ export function KeysValidationPanel({
         />
         
         {/* Action bar below textarea */}
-        <div className="flex items-center justify-between px-3 py-2 border-t border-[rgb(230,225,223)] dark:border-white/10 bg-[rgb(250,249,249)] dark:bg-white/5">
+        <div className="flex items-center justify-between px-2 py-1.5 sm:px-3 sm:py-2 border-t border-[rgb(230,225,223)] dark:border-white/10 bg-[rgb(250,249,249)] dark:bg-white/5">
           {/* Key count badge */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             {keyCount > 0 && (
-              <Badge variant="secondary" className="text-[10px] h-6">
-                {keyCount} keys
+              <Badge variant="secondary" className="text-[9px] sm:text-[10px] h-5 sm:h-6 px-1.5 sm:px-2">
+                {keyCount}
               </Badge>
             )}
           </div>
           
           {/* Action buttons */}
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1 sm:gap-1.5">
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
+              className="h-6 w-6 sm:h-8 sm:w-8"
               onClick={clearKeys}
               disabled={isLoading}
               title="Clear keys"
             >
-              <Trash2 className="h-3.5 w-3.5" />
+              <Trash2 className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
             </Button>
             {isLoading ? (
-              <Button variant="destructive" size="sm" className="h-8" onClick={handleStop}>
+              <Button variant="destructive" size="sm" className="h-6 sm:h-8 px-2 sm:px-3 text-[10px] sm:text-xs" onClick={handleStop}>
                 Stop
               </Button>
             ) : (
               <Button 
                 size="sm" 
-                className="h-8" 
+                className="h-6 sm:h-8 px-2 sm:px-3 text-[10px] sm:text-xs" 
                 onClick={handleCheckKeys}
                 disabled={!hasValidKeys}
                 title={!hasValidKeys ? 'Enter at least one SK key (sk_...)' : undefined}
               >
-                Check Keys
+                <span className="hidden xs:inline">Check Keys</span>
+                <span className="xs:hidden">Check</span>
               </Button>
             )}
           </div>
@@ -420,14 +419,11 @@ export function KeysValidationPanel({
 
   return (
     <TwoPanelLayout
-      modeSwitcher={modeSwitcher}
-      drawerOpen={drawerOpen}
-      onDrawerOpenChange={onDrawerOpenChange}
       configPanelWithoutSwitcher={configContent}
       configPanel={
         <div className="flex flex-col">
           {modeSwitcher && (
-          <div className="p-4 border-b border-[rgb(230,225,223)] dark:border-white/10 flex justify-center">
+          <div className="p-2 sm:p-4 border-b border-[rgb(230,225,223)] dark:border-white/10 flex justify-center">
               {modeSwitcher}
             </div>
           )}

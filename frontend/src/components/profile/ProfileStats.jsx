@@ -17,7 +17,7 @@ function formatDate(dateString) {
 /**
  * Circular progress indicator for hit rate - vintage gauge style
  */
-function CircularProgress({ value, max = 100, size = 80, strokeWidth = 6 }) {
+function CircularProgress({ value, max = 100, size = 70, strokeWidth = 5 }) {
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const percentage = Math.min((value / max) * 100, 100);
@@ -63,7 +63,7 @@ function CircularProgress({ value, max = 100, size = 80, strokeWidth = 6 }) {
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <motion.span 
           className={cn(
-            "text-lg font-bold tabular-nums",
+            "text-base sm:text-lg font-bold tabular-nums",
             "text-[hsl(25,40%,22%)] dark:text-white",
             "[text-shadow:0_1px_0_rgba(255,255,255,0.5)] dark:[text-shadow:none]"
           )}
@@ -89,7 +89,7 @@ function StatTile({ icon: Icon, label, value, accent, gradient, delay = 0, featu
       transition={{ duration: 0.5, delay, ease: [0.22, 1, 0.36, 1] }}
       className={cn(
         "relative group overflow-hidden",
-        featured ? "p-5 rounded-2xl" : "p-4 rounded-xl",
+        featured ? "p-3 sm:p-5 rounded-xl sm:rounded-2xl" : "p-2.5 sm:p-4 rounded-lg sm:rounded-xl",
         // Light mode - aged paper with certificate border
         "bg-gradient-to-b from-[hsl(42,50%,98%)] via-[hsl(40,45%,97%)] to-[hsl(38,40%,95%)]",
         "border border-[hsl(30,25%,80%)]",
@@ -127,7 +127,7 @@ function StatTile({ icon: Icon, label, value, accent, gradient, delay = 0, featu
       <div className="relative">
         {/* Icon - copper coin style */}
         <div className={cn(
-          "inline-flex items-center justify-center w-10 h-10 rounded-xl mb-3",
+          "inline-flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl mb-2 sm:mb-3",
           // Light: copper coin accent
           "bg-gradient-to-b from-[hsl(40,45%,96%)] to-[hsl(38,40%,93%)]",
           "border border-[hsl(30,25%,80%)]",
@@ -135,13 +135,13 @@ function StatTile({ icon: Icon, label, value, accent, gradient, delay = 0, featu
           // Dark mode (reset gradient)
           "dark:bg-none dark:bg-white/[0.08] dark:border-white/[0.1] dark:shadow-none"
         )}>
-          <Icon className={cn("w-5 h-5", accent || "text-[hsl(25,40%,45%)] dark:text-white/70")} />
+          <Icon className={cn("w-4 h-4 sm:w-5 sm:h-5", accent || "text-[hsl(25,40%,45%)] dark:text-white/70")} />
         </div>
         
         {/* Value - embossed letterpress */}
         <p className={cn(
           "font-bold mb-0.5 truncate",
-          featured ? "text-xl" : "text-lg",
+          featured ? "text-base sm:text-xl" : "text-sm sm:text-lg",
           "text-[hsl(25,40%,22%)] dark:text-white",
           "[text-shadow:0_1px_0_rgba(255,255,255,0.5)] dark:[text-shadow:none]"
         )}>
@@ -150,7 +150,7 @@ function StatTile({ icon: Icon, label, value, accent, gradient, delay = 0, featu
         
         {/* Label */}
         <span className={cn(
-          "text-[10px] font-semibold uppercase tracking-widest",
+          "text-[8px] sm:text-[10px] font-semibold uppercase tracking-widest",
           "text-[hsl(25,20%,50%)] dark:text-white/40"
         )}>
           {label}
@@ -218,17 +218,19 @@ export function ProfileStats({ profile, className }) {
         {/* Ambient glow */}
         <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full blur-[60px] opacity-15 dark:opacity-30 bg-gradient-to-br from-[hsl(150,45%,45%)] to-[hsl(145,50%,35%)] dark:from-emerald-400 dark:to-green-500" />
         
-        <div className="relative p-5">
-          <div className="flex items-center gap-6">
+        <div className="relative p-3 sm:p-5">
+          <div className="flex items-center gap-3 sm:gap-6">
             {/* Circular progress */}
-            <CircularProgress value={hitRate} />
+            <div className="shrink-0">
+              <CircularProgress value={hitRate} />
+            </div>
             
             {/* Stats breakdown */}
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-2">
-                <Target className="w-4 h-4 text-[hsl(150,45%,35%)] dark:text-emerald-400" />
+              <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
+                <Target className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[hsl(150,45%,35%)] dark:text-emerald-400" />
                 <h3 className={cn(
-                  "text-base font-semibold font-serif",
+                  "text-sm sm:text-base font-semibold font-serif",
                   "text-[hsl(25,40%,22%)] dark:text-white",
                   "[text-shadow:0_1px_0_rgba(255,255,255,0.5)] dark:[text-shadow:none]"
                 )}>
@@ -236,28 +238,28 @@ export function ProfileStats({ profile, className }) {
                 </h3>
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-2 sm:gap-4">
                 <div>
                   <p className={cn(
-                    "text-2xl font-bold tabular-nums",
+                    "text-lg sm:text-2xl font-bold tabular-nums",
                     "text-[hsl(25,40%,22%)] dark:text-white",
                     "[text-shadow:0_1px_0_rgba(255,255,255,0.4)] dark:[text-shadow:none]"
                   )}>
                     {totalHits.toLocaleString()}
                   </p>
-                  <span className="text-[10px] font-medium uppercase tracking-wider text-[hsl(150,40%,38%)] dark:text-emerald-400/60">
+                  <span className="text-[8px] sm:text-[10px] font-medium uppercase tracking-wider text-[hsl(150,40%,38%)] dark:text-emerald-400/60">
                     Total Hits
                   </span>
                 </div>
                 <div>
                   <p className={cn(
-                    "text-2xl font-bold tabular-nums",
+                    "text-lg sm:text-2xl font-bold tabular-nums",
                     "text-[hsl(25,40%,22%)] dark:text-white",
                     "[text-shadow:0_1px_0_rgba(255,255,255,0.4)] dark:[text-shadow:none]"
                   )}>
                     {totalCards.toLocaleString()}
                   </p>
-                  <span className="text-[10px] font-medium uppercase tracking-wider text-[hsl(25,20%,50%)] dark:text-white/40">
+                  <span className="text-[8px] sm:text-[10px] font-medium uppercase tracking-wider text-[hsl(25,20%,50%)] dark:text-white/40">
                     Cards Checked
                   </span>
                 </div>
@@ -268,7 +270,7 @@ export function ProfileStats({ profile, className }) {
       </motion.div>
       
       {/* Stats Grid - Asymmetric 2-column */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-2 sm:gap-3">
         <StatTile
           icon={Calendar}
           label="Member Since"

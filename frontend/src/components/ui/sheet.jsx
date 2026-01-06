@@ -29,10 +29,10 @@ const SheetOverlay = React.forwardRef(({ className, ...props }, ref) => (
       "fixed inset-0 z-50",
       // Light mode: Vintage sepia overlay
       "bg-[hsl(25,30%,20%)]/40",
-      // Dark mode: Deep cosmic with aurora tint
-      "dark:bg-[hsl(220,18%,5%)]/80",
-      // Backdrop blur
-      "backdrop-blur-sm dark:backdrop-blur-xl",
+      // Dark mode: PREMIUM Deep cosmic with enhanced aurora tint
+      "dark:bg-[hsl(222,20%,4%)]/85",
+      // Backdrop blur - PREMIUM enhanced
+      "backdrop-blur-sm dark:backdrop-blur-2xl",
       // Animations
       "data-[state=open]:animate-in data-[state=closed]:animate-out",
       "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
@@ -79,11 +79,11 @@ const sheetVariants = cva(
           // Light mode: Vintage Banking
           "bg-gradient-to-b from-[hsl(40,50%,97%)] to-[hsl(38,45%,95%)] border-t border-[hsl(30,35%,75%)]/50",
           "shadow-[0_-8px_32px_rgba(101,67,33,0.12)]",
-          // Dark mode: Liquid Aurora glass (bg-none resets gradient)
-          "dark:bg-none dark:bg-[rgba(15,18,25,0.95)]",
-          "dark:backdrop-blur-[60px] dark:backdrop-saturate-[180%]",
-          "dark:border-t dark:border-[hsl(0_0%_100%/0.08)]",
-          "dark:shadow-[0_0_0_1px_rgba(139,92,246,0.06),0_-8px_48px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.08)]",
+          // Dark mode: PREMIUM Liquid Aurora glass (bg-none resets gradient)
+          "dark:bg-none dark:bg-[rgba(12,14,22,0.96)]",
+          "dark:backdrop-blur-[100px] dark:backdrop-saturate-[220%]",
+          "dark:border-t dark:border-[hsl(0_0%_100%/0.1)]",
+          "dark:shadow-[0_0_0_1px_rgba(139,92,246,0.1),0_-12px_64px_rgba(0,0,0,0.55),0_0_50px_-15px_rgba(139,92,246,0.15),inset_0_1px_0_rgba(255,255,255,0.1)]",
           // Animations
           "data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom"
         ),
@@ -109,11 +109,11 @@ const sheetVariants = cva(
           // Light mode: Vintage Banking
           "bg-gradient-to-l from-[hsl(40,50%,97%)] to-[hsl(38,45%,95%)] border-l border-[hsl(30,35%,75%)]/50",
           "shadow-[-8px_0_32px_rgba(101,67,33,0.12)]",
-          // Dark mode: Liquid Aurora glass (bg-none resets gradient)
-          "dark:bg-none dark:bg-[rgba(15,18,25,0.95)]",
-          "dark:backdrop-blur-[60px] dark:backdrop-saturate-[180%]",
-          "dark:border-l dark:border-[hsl(0_0%_100%/0.08)]",
-          "dark:shadow-[0_0_0_1px_rgba(139,92,246,0.06),-8px_0_48px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.08)]",
+          // Dark mode: PREMIUM Liquid Aurora glass (bg-none resets gradient)
+          "dark:bg-none dark:bg-[rgba(12,14,22,0.96)]",
+          "dark:backdrop-blur-[100px] dark:backdrop-saturate-[220%]",
+          "dark:border-l dark:border-[hsl(0_0%_100%/0.1)]",
+          "dark:shadow-[0_0_0_1px_rgba(139,92,246,0.1),-12px_0_64px_rgba(0,0,0,0.55),0_0_50px_-15px_rgba(139,92,246,0.15),inset_0_1px_0_rgba(255,255,255,0.1)]",
           // Animations
           "data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right"
         ),
@@ -134,16 +134,16 @@ const SheetContent = React.forwardRef(
         className={cn(sheetVariants({ side }), className)}
         {...props}
       >
-        {/* Aurora gradient overlay for dark mode */}
+        {/* PREMIUM Aurora gradient overlay for dark mode */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none hidden dark:block">
-          <div className="absolute inset-0 bg-gradient-to-b from-white/[0.04] via-transparent to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-br from-[hsl(250,90%,65%)]/[0.03] via-transparent to-[hsl(185,100%,60%)]/[0.02]" />
+          <div className="absolute inset-0 bg-gradient-to-b from-white/[0.06] via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-br from-[hsl(252,95%,68%)]/[0.05] via-transparent to-[hsl(185,100%,62%)]/[0.03]" />
         </div>
         
-        {/* Handle bar for bottom sheet with aurora tint */}
+        {/* Handle bar for bottom sheet with enhanced aurora tint */}
         {side === "bottom" && (
           <div className="absolute top-2 left-1/2 -translate-x-1/2">
-            <div className="w-10 h-1 rounded-full bg-neutral-300 dark:bg-white/20 dark:shadow-[0_0_8px_rgba(139,92,246,0.2)]" />
+            <div className="w-10 h-1 rounded-full bg-neutral-300 dark:bg-white/25 dark:shadow-[0_0_12px_rgba(139,92,246,0.3)]" />
           </div>
         )}
         

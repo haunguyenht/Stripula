@@ -31,9 +31,10 @@ const badgeVariants = cva(
           "shadow-[0_2px_6px_rgba(166,100,50,0.3),inset_0_1px_0_rgba(255,200,150,0.35)]",
           "[text-shadow:0_1px_0_rgba(100,50,20,0.3)]",
           "hover:opacity-95 hover:shadow-[0_3px_8px_rgba(166,100,50,0.4)]",
-          // Dark mode: Liquid Aurora glass with indigo accent (bg-none resets gradient)
-          "dark:bg-none dark:bg-[rgba(15,18,25,0.8)] dark:border-[0.5px] dark:border-[hsl(var(--aurora-indigo))]/30",
-          "dark:text-[hsl(var(--aurora-indigo))] dark:hover:border-[hsl(var(--aurora-indigo))]/50",
+          // Dark mode: PREMIUM Liquid Aurora glass with indigo accent
+          "dark:bg-none dark:bg-[rgba(12,14,22,0.85)] dark:border dark:border-[hsl(var(--aurora-indigo))]/40",
+          "dark:text-[hsl(var(--aurora-indigo))] dark:hover:border-[hsl(var(--aurora-indigo))]/60",
+          "dark:shadow-[0_0_20px_-5px_rgba(139,92,246,0.25),inset_0_1px_0_rgba(255,255,255,0.06)]",
           "dark:[text-shadow:none]",
         ].join(" "),
         secondary: [
@@ -81,9 +82,9 @@ const badgeVariants = cva(
           "text-[hsl(145,55%,28%)]",
           "shadow-[inset_0_1px_0_rgba(255,255,255,0.6),0_1px_3px_rgba(45,100,70,0.12)]",
           "[text-shadow:0_1px_0_rgba(255,255,255,0.4)]",
-          // Dark mode: Liquid Aurora glass with emerald glow (bg-none resets gradient)
-          "dark:bg-none dark:bg-[rgba(15,18,25,0.8)] dark:border-[0.5px] dark:border-emerald-500/30",
-          "dark:text-emerald-400 dark:shadow-[0_0_12px_rgba(16,185,129,0.2)]",
+          // Dark mode: PREMIUM Liquid Aurora glass with emerald glow
+          "dark:bg-none dark:bg-[rgba(12,14,22,0.85)] dark:border dark:border-emerald-500/40",
+          "dark:text-emerald-400 dark:shadow-[0_0_20px_rgba(16,185,129,0.3),inset_0_1px_0_rgba(255,255,255,0.05)]",
           "dark:[text-shadow:none]",
         ].join(" "),
         warning: [
@@ -93,13 +94,13 @@ const badgeVariants = cva(
           "text-[hsl(35,65%,30%)]",
           "shadow-[inset_0_1px_0_rgba(255,255,255,0.6),0_1px_3px_rgba(140,100,40,0.12)]",
           "[text-shadow:0_1px_0_rgba(255,255,255,0.4)]",
-          // Dark mode: Liquid Aurora glass with amber glow (bg-none resets gradient)
-          "dark:bg-none dark:bg-[rgba(15,18,25,0.8)] dark:border-[0.5px] dark:border-amber-500/30",
-          "dark:text-amber-400 dark:shadow-[0_0_10px_rgba(251,191,36,0.2)]",
+          // Dark mode: PREMIUM Liquid Aurora glass with amber glow
+          "dark:bg-none dark:bg-[rgba(12,14,22,0.85)] dark:border dark:border-amber-500/40",
+          "dark:text-amber-400 dark:shadow-[0_0_18px_rgba(251,191,36,0.3),inset_0_1px_0_rgba(255,255,255,0.05)]",
           "dark:[text-shadow:none]",
         ].join(" "),
         
-        // ✅ APPROVED/CHARGED - Vintage green wax seal (light) / Emerald neon (dark)
+        // ✅ APPROVED/CHARGED - Vintage green wax seal (light) / PREMIUM Emerald neon (dark)
         approved: [
           // Light mode: Antique green wax seal with embossed stamp effect
           "relative overflow-hidden",
@@ -109,16 +110,16 @@ const badgeVariants = cva(
           "shadow-[0_3px_10px_rgba(45,100,70,0.35),0_1px_2px_rgba(30,80,50,0.25),inset_0_1px_0_rgba(200,255,200,0.25)]",
           "[text-shadow:0_1px_0_rgba(30,60,40,0.35)]",
           "hover:shadow-[0_4px_14px_rgba(45,100,70,0.45)]",
-          // Dark mode: Neon emerald with aurora cyan glow pulse
-          "dark:bg-gradient-to-r dark:from-emerald-500/90 dark:to-emerald-400/85",
-          "dark:border-emerald-400/50 dark:text-white",
-          "dark:shadow-[0_0_20px_rgba(16,185,129,0.5),0_0_40px_rgba(34,211,238,0.2),0_0_60px_rgba(16,185,129,0.15),inset_0_1px_0_rgba(255,255,255,0.15)]",
-          "dark:hover:shadow-[0_0_28px_rgba(52,211,153,0.6),0_0_50px_rgba(34,211,238,0.3),0_0_75px_rgba(16,185,129,0.2)]",
+          // Dark mode: PREMIUM Neon emerald with enhanced aurora glow
+          "dark:bg-gradient-to-r dark:from-emerald-500/95 dark:to-emerald-400/90",
+          "dark:border-emerald-400/60 dark:text-white",
+          "dark:shadow-[0_0_28px_rgba(16,185,129,0.6),0_0_56px_rgba(34,211,238,0.3),0_0_84px_rgba(16,185,129,0.2),inset_0_1px_0_rgba(255,255,255,0.2)]",
+          "dark:hover:shadow-[0_0_38px_rgba(52,211,153,0.75),0_0_76px_rgba(34,211,238,0.4),0_0_110px_rgba(16,185,129,0.25)]",
           "dark:[text-shadow:none]",
           "animate-neon-pulse-emerald",
         ].join(" "),
         
-        // 🔵 LIVE - Polished copper coin (light) / Electric cyan (dark)
+        // 🔵 LIVE - Polished copper coin (light) / PREMIUM Electric cyan (dark)
         live: [
           // Light mode: Polished copper with premium metallic shine
           "relative overflow-hidden",
@@ -128,11 +129,11 @@ const badgeVariants = cva(
           "shadow-[0_3px_10px_rgba(166,100,50,0.4),0_1px_2px_rgba(139,69,19,0.3),inset_0_1px_0_rgba(255,210,170,0.4)]",
           "[text-shadow:0_1px_0_rgba(100,50,20,0.35)]",
           "hover:shadow-[0_4px_14px_rgba(166,100,50,0.5)]",
-          // Dark mode: Electric cyan neon with indigo aurora pulse
-          "dark:bg-gradient-to-r dark:from-cyan-400/95 dark:to-cyan-500/90",
-          "dark:border-cyan-300/60 dark:text-white",
-          "dark:shadow-[0_0_24px_rgba(34,211,238,0.55),0_0_48px_rgba(139,92,246,0.25),0_0_72px_rgba(34,211,238,0.15),inset_0_1px_0_rgba(255,255,255,0.18)]",
-          "dark:hover:shadow-[0_0_32px_rgba(34,211,238,0.7),0_0_64px_rgba(139,92,246,0.4),0_0_96px_rgba(34,211,238,0.25)]",
+          // Dark mode: PREMIUM Electric cyan neon with enhanced aurora
+          "dark:bg-gradient-to-r dark:from-cyan-400 dark:to-cyan-500/95",
+          "dark:border-cyan-300/70 dark:text-white",
+          "dark:shadow-[0_0_32px_rgba(34,211,238,0.65),0_0_64px_rgba(139,92,246,0.35),0_0_96px_rgba(34,211,238,0.2),inset_0_1px_0_rgba(255,255,255,0.22)]",
+          "dark:hover:shadow-[0_0_42px_rgba(34,211,238,0.8),0_0_84px_rgba(139,92,246,0.5),0_0_126px_rgba(34,211,238,0.3)]",
           "dark:[text-shadow:none]",
           "animate-neon-pulse-cyan dark:animate-aurora-shimmer",
         ].join(" "),
@@ -184,7 +185,7 @@ const badgeVariants = cva(
           "dark:[text-shadow:none]",
         ].join(" "),
         
-        // 🔶 CORAL/LIVE 3DS - Bronze medallion (light) / Orange neon (dark)
+        // 🔶 CORAL/LIVE 3DS - Bronze medallion (light) / PREMIUM Orange neon (dark)
         coral: [
           // Light mode: Bronze medallion with radiant shine
           "relative overflow-hidden",
@@ -194,11 +195,11 @@ const badgeVariants = cva(
           "shadow-[0_3px_10px_rgba(180,110,40,0.35),0_1px_2px_rgba(140,80,30,0.25),inset_0_1px_0_rgba(255,220,180,0.35)]",
           "[text-shadow:0_1px_0_rgba(100,60,20,0.35)]",
           "hover:shadow-[0_4px_14px_rgba(180,110,40,0.45)]",
-          // Dark mode: Orange neon with pink aurora pulse
-          "dark:bg-gradient-to-r dark:from-orange-500/90 dark:to-amber-500/85",
-          "dark:border-orange-400/55 dark:text-white",
-          "dark:shadow-[0_0_22px_rgba(251,146,60,0.5),0_0_44px_rgba(236,72,153,0.2),0_0_66px_rgba(249,115,22,0.12),inset_0_1px_0_rgba(255,255,255,0.15)]",
-          "dark:hover:shadow-[0_0_32px_rgba(251,146,60,0.65),0_0_60px_rgba(236,72,153,0.35),0_0_88px_rgba(249,115,22,0.22)]",
+          // Dark mode: PREMIUM Orange neon with enhanced pink aurora
+          "dark:bg-gradient-to-r dark:from-orange-500/95 dark:to-amber-500/90",
+          "dark:border-orange-400/65 dark:text-white",
+          "dark:shadow-[0_0_30px_rgba(251,146,60,0.6),0_0_60px_rgba(236,72,153,0.3),0_0_90px_rgba(249,115,22,0.18),inset_0_1px_0_rgba(255,255,255,0.2)]",
+          "dark:hover:shadow-[0_0_42px_rgba(251,146,60,0.75),0_0_84px_rgba(236,72,153,0.45),0_0_126px_rgba(249,115,22,0.28)]",
           "dark:[text-shadow:none]",
           "animate-neon-pulse-orange",
         ].join(" "),

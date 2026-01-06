@@ -3,10 +3,13 @@ import * as SeparatorPrimitive from "@radix-ui/react-separator"
 import { cn } from "@/lib/utils"
 
 /**
- * Separator Component - Liquid Aurora Design System
+ * Separator Component - Dual Theme Design System
  * 
- * Light mode: Vintage Banking - Copper-tinted sepia border
- * Dark mode: Liquid glass with optional aurora gradient
+ * LIGHT MODE: Vintage Banking
+ * - Copper-tinted sepia border with subtle embossed effect
+ * 
+ * DARK MODE: PREMIUM Liquid Aurora
+ * - Liquid glass with optional aurora gradient variants
  */
 
 const Separator = React.forwardRef(
@@ -17,17 +20,18 @@ const Separator = React.forwardRef(
       orientation={orientation}
       className={cn(
         "shrink-0",
-        // Light: Copper-tinted sepia border
-        "bg-[hsl(30,25%,82%)]",
+        // Light: Copper-tinted sepia border with subtle embossed effect
+        "bg-gradient-to-r from-[hsl(30,28%,84%)] via-[hsl(30,25%,80%)] to-[hsl(30,28%,84%)]",
+        "shadow-[0_1px_0_rgba(255,255,255,0.4)]",
         // Dark: Base glass border
-        variant === "default" && "dark:bg-white/[0.08]",
-        // Dark: Aurora gradient variant
+        variant === "default" && "dark:bg-none dark:bg-white/[0.1]",
+        // Dark: PREMIUM Aurora gradient variant
         variant === "aurora" && orientation === "horizontal" && 
-          "dark:bg-gradient-to-r dark:from-transparent dark:via-[var(--aurora-indigo)]/30 dark:to-transparent",
+          "dark:bg-none dark:bg-gradient-to-r dark:from-transparent dark:via-[hsl(250,90%,65%)]/35 dark:to-transparent",
         variant === "aurora" && orientation === "vertical" && 
-          "dark:bg-gradient-to-b dark:from-transparent dark:via-[var(--aurora-cyan)]/30 dark:to-transparent",
-        // Dark: Glow variant with specular
-        variant === "glow" && "dark:bg-white/[0.12] dark:shadow-[0_0_8px_rgba(139,92,246,0.2)]",
+          "dark:bg-none dark:bg-gradient-to-b dark:from-transparent dark:via-[hsl(185,100%,55%)]/35 dark:to-transparent",
+        // Dark: PREMIUM Glow variant with aurora specular
+        variant === "glow" && "dark:bg-none dark:bg-white/[0.15] dark:shadow-[0_0_12px_rgba(139,92,246,0.3),0_0_6px_rgba(34,211,238,0.2)]",
         orientation === "horizontal" ? "h-[1px] w-full" : "h-full w-[1px]",
         className
       )}

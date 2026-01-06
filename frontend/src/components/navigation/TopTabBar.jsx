@@ -69,8 +69,13 @@ export function TopTabBar({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
       className={cn(
-        "relative z-40 flex items-center justify-between gap-4",
-        "mx-4 mt-3 px-3 py-2",
+        "relative z-40 flex items-center justify-between",
+        // Mobile-first spacing - very compact on small screens
+        "gap-1 xs:gap-2 md:gap-4",
+        "mx-1 xs:mx-2 md:mx-4",
+        "mt-1.5 xs:mt-2 md:mt-3",
+        "px-1 xs:px-2 md:px-3",
+        "py-1 xs:py-1.5 md:py-2",
         // ═══════════════════════════════════════════════════════════
         // FULLY TRANSPARENT - No visible navbar background
         // ═══════════════════════════════════════════════════════════
@@ -145,11 +150,11 @@ function MobileNavigation({
     <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
       <SheetTrigger asChild>
         <NavPillButton delay={0.05}>
-          <ActiveIcon className="h-4 w-4 text-primary dark:text-cyan-400" />
-          <span className="truncate max-w-[120px] sm:max-w-none">
+          <ActiveIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary dark:text-cyan-400" />
+          <span className="truncate max-w-[80px] xs:max-w-[120px] sm:max-w-none text-xs sm:text-sm">
             {activeNavInfo.child?.label || activeNavInfo.parent?.label}
           </span>
-          <ChevronDown className="h-3.5 w-3.5 text-muted-foreground dark:text-white/40" />
+          <ChevronDown className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-muted-foreground dark:text-white/40" />
         </NavPillButton>
       </SheetTrigger>
       <SheetContent 
@@ -162,13 +167,13 @@ function MobileNavigation({
           "dark:shadow-[0_20px_60px_-10px_rgba(139,92,246,0.2)]"
         )}
       >
-        <SheetHeader className="pb-4 border-b dark:border-[rgba(139,92,246,0.15)]">
-          <SheetTitle className="text-lg flex items-center gap-2 dark:text-white">
-            <Sparkles className="h-4 w-4 text-cyan-400" />
+        <SheetHeader className="pb-3 sm:pb-4 border-b dark:border-[rgba(139,92,246,0.15)]">
+          <SheetTitle className="text-base sm:text-lg flex items-center gap-2 dark:text-white">
+            <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-cyan-400" />
             Navigation
           </SheetTitle>
         </SheetHeader>
-        <nav className="py-4 space-y-1">
+        <nav className="py-3 sm:py-4 space-y-1">
           {navItems.map((item, index) => (
             <MobileNavItem
               key={item.id}

@@ -479,61 +479,61 @@ export function AdminGatewayManagement() {
 
   return (
     <>
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* Header Section */}
-        <div className="rounded-2xl border border-[rgb(237,234,233)] dark:border-white/10 bg-white dark:bg-[rgba(30,41,59,0.5)] dark:backdrop-blur-sm overflow-hidden shadow-sm dark:shadow-none">
-          {/* Gradient Header */}
-          <div className="relative px-6 py-5 bg-gradient-to-br from-[rgb(255,64,23)]/5 via-[rgb(255,64,23)]/3 to-transparent dark:from-primary/10 dark:via-primary/5 dark:to-transparent border-b border-[rgb(237,234,233)] dark:border-white/10">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="h-12 w-12 rounded-xl bg-primary/10 dark:bg-primary/20 flex items-center justify-center">
-                  <Server className="h-6 w-6 text-primary" />
+        <div className="rounded-xl sm:rounded-2xl border border-[rgb(237,234,233)] dark:border-white/10 bg-white dark:bg-[rgba(30,41,59,0.5)] dark:backdrop-blur-sm overflow-hidden shadow-sm dark:shadow-none">
+          {/* Gradient Header - Compact on mobile */}
+          <div className="relative px-3 py-3 sm:px-6 sm:py-5 bg-gradient-to-br from-[rgb(255,64,23)]/5 via-[rgb(255,64,23)]/3 to-transparent dark:from-primary/10 dark:via-primary/5 dark:to-transparent border-b border-[rgb(237,234,233)] dark:border-white/10">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+                <div className="h-9 w-9 sm:h-12 sm:w-12 rounded-lg sm:rounded-xl bg-primary/10 dark:bg-primary/20 flex items-center justify-center shrink-0">
+                  <Server className="h-4 w-4 sm:h-6 sm:w-6 text-primary" />
                 </div>
-                <div>
-                  <h1 className="text-xl font-bold text-foreground">Gateway Management</h1>
-                  <p className="text-sm text-muted-foreground mt-0.5">
-                    Control availability, health metrics, and configurations
+                <div className="min-w-0">
+                  <h1 className="text-sm sm:text-xl font-bold text-foreground">Gateways</h1>
+                  <p className="text-[10px] sm:text-sm text-muted-foreground mt-0.5 truncate hidden xs:block">
+                    Availability & health
                   </p>
                 </div>
               </div>
               <Button 
                 variant="outline" 
-                size="sm" 
+                size="icon"
                 onClick={fetchGateways}
                 disabled={isLoading}
-                className="h-9 px-4 rounded-xl"
+                className="h-8 w-8 sm:h-9 sm:w-auto sm:px-4 rounded-lg sm:rounded-xl shrink-0"
               >
                 {isLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin sm:mr-2" />
                 ) : (
-                  <RefreshCw className="h-4 w-4 mr-2" />
+                  <RefreshCw className="h-3.5 w-3.5 sm:h-4 sm:w-4 sm:mr-2" />
                 )}
-                Refresh
+                <span className="hidden sm:inline">Refresh</span>
               </Button>
             </div>
           </div>
 
-          {/* Summary Stats */}
-          <div className="p-4">
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          {/* Summary Stats - Compact on mobile */}
+          <div className="p-2 sm:p-4">
+            <div className="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
               {/* Online */}
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
-                className="gateway-status-card gateway-status-online"
+                className="gateway-status-card gateway-status-online p-2 sm:p-4"
               >
-                <div className="absolute top-2 right-2">
+                <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2">
                   <div className="status-dot status-dot-online status-dot-pulse" />
                 </div>
-                <div className="flex items-center gap-2 mb-2">
-                  <CheckCircle2 className="h-4 w-4 status-text" />
-                  <span className="text-xs font-medium status-text uppercase tracking-wide">Online</span>
+                <div className="flex items-center gap-1 sm:gap-2 mb-1 sm:mb-2">
+                  <CheckCircle2 className="h-3 w-3 sm:h-4 sm:w-4 status-text" />
+                  <span className="text-[9px] sm:text-xs font-medium status-text uppercase tracking-wide">Online</span>
                 </div>
-                <div className="text-3xl font-bold status-text">
+                <div className="text-xl sm:text-3xl font-bold status-text">
                   {onlineCount}
                 </div>
-                <div className="text-[11px] text-muted-foreground mt-1">
+                <div className="text-[9px] sm:text-[11px] text-muted-foreground mt-0.5 sm:mt-1 hidden sm:block">
                   of {gateways.length} gateways
                 </div>
               </motion.div>
@@ -543,16 +543,17 @@ export function AdminGatewayManagement() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.15 }}
-                className="gateway-status-card gateway-status-maintenance"
+                className="gateway-status-card gateway-status-maintenance p-2 sm:p-4"
               >
-                <div className="flex items-center gap-2 mb-2">
-                  <Wrench className="h-4 w-4 status-text" />
-                  <span className="text-xs font-medium status-text uppercase tracking-wide">Maintenance</span>
+                <div className="flex items-center gap-1 sm:gap-2 mb-1 sm:mb-2">
+                  <Wrench className="h-3 w-3 sm:h-4 sm:w-4 status-text" />
+                  <span className="text-[9px] sm:text-xs font-medium status-text uppercase tracking-wide hidden xs:inline">Maint.</span>
+                  <span className="text-[9px] sm:text-xs font-medium status-text uppercase tracking-wide xs:hidden">M</span>
                 </div>
-                <div className="text-3xl font-bold status-text">
+                <div className="text-xl sm:text-3xl font-bold status-text">
                   {maintenanceCount}
                 </div>
-                <div className="text-[11px] text-muted-foreground mt-1">
+                <div className="text-[9px] sm:text-[11px] text-muted-foreground mt-0.5 sm:mt-1 hidden sm:block">
                   temporarily paused
                 </div>
               </motion.div>
@@ -562,16 +563,16 @@ export function AdminGatewayManagement() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
-                className="gateway-status-card gateway-status-disabled"
+                className="gateway-status-card gateway-status-disabled p-2 sm:p-4"
               >
-                <div className="flex items-center gap-2 mb-2">
-                  <XCircle className="h-4 w-4 status-text" />
-                  <span className="text-xs font-medium status-text uppercase tracking-wide">Disabled</span>
+                <div className="flex items-center gap-1 sm:gap-2 mb-1 sm:mb-2">
+                  <XCircle className="h-3 w-3 sm:h-4 sm:w-4 status-text" />
+                  <span className="text-[9px] sm:text-xs font-medium status-text uppercase tracking-wide">Off</span>
                 </div>
-                <div className="text-3xl font-bold status-text">
+                <div className="text-xl sm:text-3xl font-bold status-text">
                   {disabledCount}
                 </div>
-                <div className="text-[11px] text-muted-foreground mt-1">
+                <div className="text-[9px] sm:text-[11px] text-muted-foreground mt-0.5 sm:mt-1 hidden sm:block">
                   turned off
                 </div>
               </motion.div>
@@ -582,19 +583,19 @@ export function AdminGatewayManagement() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.25 }}
                 className={cn(
-                  "gateway-status-card",
+                  "gateway-status-card p-2 sm:p-4 hidden sm:block",
                   degradedCount > 0 ? "gateway-status-degraded" : "surface-subtle border border-border/50"
                 )}
               >
-                <div className="flex items-center gap-2 mb-2">
-                  <AlertCircle className={cn("h-4 w-4", degradedCount > 0 ? "status-text" : "text-muted-foreground")} />
+                <div className="flex items-center gap-1 sm:gap-2 mb-1 sm:mb-2">
+                  <AlertCircle className={cn("h-3 w-3 sm:h-4 sm:w-4", degradedCount > 0 ? "status-text" : "text-muted-foreground")} />
                   <span className={cn(
-                    "text-xs font-medium uppercase tracking-wide",
+                    "text-[9px] sm:text-xs font-medium uppercase tracking-wide",
                     degradedCount > 0 ? "status-text" : "text-muted-foreground"
                   )}>Degraded</span>
                 </div>
                 <div className={cn(
-                  "text-3xl font-bold",
+                  "text-xl sm:text-3xl font-bold",
                   degradedCount > 0 ? "status-text" : "text-muted-foreground"
                 )}>
                   {degradedCount}

@@ -46,7 +46,7 @@ export function MobileNavItem({ item, activeRoute, onNavigate, isGroupActive, in
         disabled={isDisabled}
         whileTap={{ scale: 0.98 }}
         className={cn(
-          "w-full flex items-center gap-4 px-4 py-3.5 text-left transition-all duration-300",
+          "w-full flex items-center gap-3 sm:gap-4 px-3 sm:px-4 py-2.5 sm:py-3.5 text-left transition-all duration-300",
           // Light mode
           isGroupActive 
             ? "bg-accent text-accent-foreground" 
@@ -67,7 +67,7 @@ export function MobileNavItem({ item, activeRoute, onNavigate, isGroupActive, in
       >
         {/* Icon with aurora styling */}
         <div className={cn(
-          "flex h-10 w-10 items-center justify-center rounded-xl shrink-0 transition-all duration-300",
+          "flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg sm:rounded-xl shrink-0 transition-all duration-300",
           // Light mode
           isGroupActive ? "bg-primary text-primary-foreground" : "bg-muted",
           // Dark mode: Aurora icon container
@@ -82,12 +82,12 @@ export function MobileNavItem({ item, activeRoute, onNavigate, isGroupActive, in
                 "dark:group-hover:bg-white/[0.12]"
               ]
         )}>
-          <Icon className="h-5 w-5" />
+          <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
         </div>
         
         {/* Label */}
         <span className={cn(
-          "flex-1 font-medium text-base",
+          "flex-1 font-medium text-sm sm:text-base",
           isGroupActive 
             ? "dark:text-transparent dark:bg-gradient-to-r dark:from-cyan-400 dark:to-violet-400 dark:bg-clip-text"
             : "dark:text-white/90"
@@ -99,7 +99,7 @@ export function MobileNavItem({ item, activeRoute, onNavigate, isGroupActive, in
           <Badge 
             variant="outline" 
             className={cn(
-              "text-[10px] px-2 py-0.5 opacity-70",
+              "text-[9px] sm:text-[10px] px-1.5 sm:px-2 py-0.5 opacity-70",
               "dark:border-white/20 dark:text-white/50"
             )}
           >
@@ -114,7 +114,7 @@ export function MobileNavItem({ item, activeRoute, onNavigate, isGroupActive, in
             transition={{ duration: 0.2 }}
             className="text-muted-foreground dark:text-white/40"
           >
-            <ChevronDown className="h-5 w-5" />
+            <ChevronDown className="h-4 w-4 sm:h-5 sm:w-5" />
           </motion.div>
         )}
         
@@ -125,7 +125,7 @@ export function MobileNavItem({ item, activeRoute, onNavigate, isGroupActive, in
             animate={{ scale: 1 }}
             className="dark:text-cyan-400 dark:drop-shadow-[0_0_4px_rgba(34,211,238,0.6)]"
           >
-            <Check className="h-5 w-5 text-primary" />
+            <Check className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
           </motion.div>
         )}
       </motion.button>
@@ -144,7 +144,7 @@ export function MobileNavItem({ item, activeRoute, onNavigate, isGroupActive, in
               "dark:bg-gradient-to-b dark:from-white/[0.02] dark:to-transparent"
             )}
           >
-            <div className="py-2 px-2">
+            <div className="py-1.5 sm:py-2 px-1.5 sm:px-2">
               {item.children.map((child, childIndex) => {
                 const ChildIcon = child.icon;
                 const isChildActive = activeRoute === child.id;
@@ -159,7 +159,7 @@ export function MobileNavItem({ item, activeRoute, onNavigate, isGroupActive, in
                     onClick={() => !isChildDisabled && onNavigate(child.id)}
                     disabled={isChildDisabled}
                     className={cn(
-                      "w-full flex items-center gap-3 pl-14 pr-4 py-3 text-left transition-all duration-200 rounded-xl",
+                      "w-full flex items-center gap-2.5 sm:gap-3 pl-10 sm:pl-14 pr-3 sm:pr-4 py-2.5 sm:py-3 text-left transition-all duration-200 rounded-lg sm:rounded-xl",
                       // Light mode
                       isChildActive 
                         ? "bg-primary/10 text-primary" 
@@ -176,18 +176,18 @@ export function MobileNavItem({ item, activeRoute, onNavigate, isGroupActive, in
                   >
                     {/* Child icon */}
                     <div className={cn(
-                      "flex h-8 w-8 items-center justify-center rounded-lg shrink-0 transition-all",
+                      "flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-md sm:rounded-lg shrink-0 transition-all",
                       isChildActive 
                         ? "dark:bg-gradient-to-br dark:from-cyan-500/30 dark:to-violet-500/30 dark:text-cyan-400"
                         : "dark:bg-white/[0.06] dark:text-white/60"
                     )}>
-                      <ChildIcon className="h-4 w-4" />
+                      <ChildIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     </div>
                     
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5 sm:gap-2">
                         <span className={cn(
-                          "font-medium text-sm",
+                          "font-medium text-xs sm:text-sm",
                           isChildActive && "dark:text-transparent dark:bg-gradient-to-r dark:from-cyan-400 dark:to-violet-400 dark:bg-clip-text"
                         )}>
                           {child.label}
@@ -195,14 +195,14 @@ export function MobileNavItem({ item, activeRoute, onNavigate, isGroupActive, in
                         {child.comingSoon && (
                           <Badge 
                             variant="outline" 
-                            className="text-[9px] px-1 py-0 opacity-70 dark:border-white/20"
+                            className="text-[8px] sm:text-[9px] px-1 py-0 opacity-70 dark:border-white/20"
                           >
                             Soon
                           </Badge>
                         )}
                       </div>
                       {child.desc && (
-                        <p className="text-xs text-muted-foreground dark:text-white/40 truncate mt-0.5">
+                        <p className="text-[10px] sm:text-xs text-muted-foreground dark:text-white/40 truncate mt-0.5">
                           {child.desc}
                         </p>
                       )}
@@ -214,7 +214,7 @@ export function MobileNavItem({ item, activeRoute, onNavigate, isGroupActive, in
                         animate={{ scale: 1, rotate: 0 }}
                         transition={{ type: 'spring', stiffness: 400, damping: 15 }}
                       >
-                        <Check className="h-4 w-4 shrink-0 dark:text-cyan-400 dark:drop-shadow-[0_0_4px_rgba(34,211,238,0.6)]" />
+                        <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0 dark:text-cyan-400 dark:drop-shadow-[0_0_4px_rgba(34,211,238,0.6)]" />
                       </motion.div>
                     )}
                   </motion.button>

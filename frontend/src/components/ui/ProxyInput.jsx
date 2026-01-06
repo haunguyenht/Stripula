@@ -147,11 +147,11 @@ export const ProxyInput = forwardRef(function ProxyInput({
     }), [checkProxy, checkStripeAccess, isChecking, proxyStatus]);
 
     const getStatusIcon = () => {
-        if (isChecking) return <Loader2 size={12} className="animate-spin text-primary dark:text-white" />;
-        if (proxyStatus === 'valid') return <CheckCircle2 size={12} className="text-emerald-500 dark:text-emerald-400" />;
-        if (proxyStatus === 'static') return <AlertTriangle size={12} className="text-amber-500 dark:text-amber-400" />;
-        if (proxyStatus === 'invalid') return <AlertTriangle size={12} className="text-white" />;
-        return <Wifi size={12} className="text-muted-foreground dark:text-white/70" />;
+        if (isChecking) return <Loader2 className="h-2.5 w-2.5 sm:h-3 sm:w-3 animate-spin text-primary dark:text-white" />;
+        if (proxyStatus === 'valid') return <CheckCircle2 className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-emerald-500 dark:text-emerald-400" />;
+        if (proxyStatus === 'static') return <AlertTriangle className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-amber-500 dark:text-amber-400" />;
+        if (proxyStatus === 'invalid') return <AlertTriangle className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-white" />;
+        return <Wifi className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-muted-foreground dark:text-white/70" />;
     };
 
     const getInputVariantClass = () => {
@@ -183,7 +183,7 @@ export const ProxyInput = forwardRef(function ProxyInput({
                 disabled={disabled || isChecking}
                 placeholder={placeholder}
                 className={cn(
-                    "h-8 pr-16 font-mono text-xs",
+                    "h-7 sm:h-8 pr-12 sm:pr-16 font-mono text-[10px] sm:text-xs",
                     getInputVariantClass(),
                     className
                 )}
@@ -194,7 +194,7 @@ export const ProxyInput = forwardRef(function ProxyInput({
                 size="sm"
                 onClick={() => checkProxy(true)}
                 disabled={disabled || isChecking || !value?.trim()}
-                className="absolute right-1 h-6 px-2 text-[10px]"
+                className="absolute right-0.5 sm:right-1 h-5 sm:h-6 px-1.5 sm:px-2 text-[9px] sm:text-[10px]"
                 title="Check proxy"
             >
                 {getStatusIcon()}
