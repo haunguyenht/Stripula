@@ -10,6 +10,7 @@ import {
   Key,
   MapPin,
   SquareStack,
+  LayoutDashboard,
 } from 'lucide-react';
 
 /**
@@ -23,6 +24,11 @@ export const defaultUser = null;
  * Each item can have children for dropdown menus
  */
 export const navItems = [
+  { 
+    id: 'dashboard', 
+    label: 'Dashboard', 
+    icon: LayoutDashboard,
+  },
   { 
     id: 'stripe', 
     label: 'Stripe', 
@@ -77,7 +83,7 @@ export const navItems = [
   },
   { 
     id: 'other-gate', 
-    label: 'Other Gate', 
+    label: 'Others', 
     icon: Layers,
     children: [
       { id: 'other-sk-key-check', label: 'SK Key Check', icon: Key, desc: 'Check SK keys validity' },

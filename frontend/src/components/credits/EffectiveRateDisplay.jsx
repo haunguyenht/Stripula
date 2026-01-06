@@ -22,7 +22,8 @@ function getGatewaySubType(gatewayId) {
   if (gatewayId.startsWith('skbased-auth-')) return 'auth';
   // SK-based charge gateways show both APPROVED and LIVE
   if (gatewayId.startsWith('sk-') || gatewayId.startsWith('skbased-')) return 'skbased';
-  if (gatewayId.startsWith('shopify-')) return 'shopify';
+  // Shopify gateways (including auto-shopify)
+  if (gatewayId.startsWith('shopify-') || gatewayId.startsWith('auto-shopify-')) return 'shopify';
   return null;
 }
 
@@ -45,6 +46,7 @@ function getPricingDisplayConfig(subType) {
     case 'auth':
       return { showApproved: true, showLive: false, approvedLabel: 'Appr' };
     case 'shopify':
+      // Shopify only has APPROVED status (no LIVE distinction)
       return { showApproved: true, showLive: false, approvedLabel: 'Appr' };
     default:
       // If no gatewayId provided, show approved only (safer default)

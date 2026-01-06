@@ -61,7 +61,8 @@ export class RedeemKeyService {
      * @param {number|string} options.value - Credit amount or tier name
      * @param {number} options.quantity - Number of keys to generate (1-1000)
      * @param {number} options.maxUses - Max uses per key (default 1)
-     * @param {Date|string} options.expiresAt - Optional expiration date
+     * @param {Date|string} options.expiresAt - Optional expiration date for the key itself
+     * @param {number} options.durationDays - Optional duration in days for tier keys (null = permanent)
      * @param {string} options.note - Optional admin note
      * @param {string} options.createdBy - Admin user ID who created the keys
      * @returns {Promise<Object>} Result with generated keys
@@ -71,7 +72,7 @@ export class RedeemKeyService {
             throw new Error('Database not configured');
         }
 
-        const { type, value, quantity, maxUses = 1, expiresAt = null, note = null, createdBy } = options;
+        const { type, value, quantity, maxUses = 1, expiresAt = null, durationDays = null, note = null, createdBy } = options;
 
         // Validate type
         if (!type || !Object.values(KEY_TYPES).includes(type)) {
@@ -114,6 +115,18 @@ export class RedeemKeyService {
             }
         }
 
+        // Validate durationDays for tier keys
+        let tierDuration = null;
+        if (type === KEY_TYPES.TIER && durationDays !== null && durationDays !== undefined) {
+            tierDuration = parseInt(durationDays, 10);
+            if (isNaN(tierDuration) || tierDuration < 1) {
+                throw new Error('Duration must be at least 1 day');
+            }
+            if (tierDuration > 365) {
+                throw new Error('Duration cannot exceed 365 days');
+            }
+        }
+
         // Generate unique keys
         const keysToInsert = [];
         const generatedCodes = new Set();
@@ -133,6 +146,7 @@ export class RedeemKeyService {
                 max_uses: uses,
                 current_uses: 0,
                 expires_at: expirationDate ? expirationDate.toISOString() : null,
+                duration_days: tierDuration,
                 revoked_at: null,
                 note: note || null,
                 created_by: createdBy || null
@@ -163,6 +177,7 @@ export class RedeemKeyService {
                 value: k.value,
                 maxUses: k.max_uses,
                 expiresAt: k.expires_at,
+                durationDays: k.duration_days,
                 createdAt: k.created_at
             }))
         };
@@ -266,10 +281,10 @@ export class RedeemKeyService {
             };
         }
 
-        // Get user data
+        // Get user data (include tier_expires_at for extension logic)
         const { data: user, error: userError } = await supabase
             .from('users')
-            .select('id, credit_balance, tier')
+            .select('id, credit_balance, tier, tier_expires_at')
             .eq('id', userId)
             .single();
 
@@ -398,18 +413,42 @@ export class RedeemKeyService {
             };
         }
 
-        // Check if user already has this tier or higher
         const tierOrder = ['free', 'bronze', 'silver', 'gold', 'diamond'];
         const currentTierIndex = tierOrder.indexOf(user.tier || 'free');
         const newTierIndex = tierOrder.indexOf(newTier);
-
-        if (newTierIndex <= currentTierIndex) {
+        
+        // Check if user currently has a permanent tier (no expiration)
+        const userHasPermanentTier = user.tier !== 'free' && !user.tier_expires_at;
+        
+        // Determine action type based on tier comparison
+        let actionType = 'upgrade'; // upgrade, extend, or downgrade
+        
+        if (newTierIndex < currentTierIndex) {
+            // Downgrade not allowed via keys
             return {
                 success: false,
                 error: 'TIER_NOT_UPGRADE',
-                message: `You already have ${user.tier} tier or higher`
+                message: `Cannot downgrade from ${user.tier} to ${newTier}`
             };
+        } else if (newTierIndex === currentTierIndex) {
+            // Same tier - check if extension is possible
+            if (userHasPermanentTier) {
+                // User already has permanent tier - no value added from any key
+                return {
+                    success: false,
+                    error: 'TIER_ALREADY_PERMANENT',
+                    message: `You already have permanent ${user.tier} tier`
+                };
+            }
+            if (!key.duration_days || key.duration_days <= 0) {
+                // Permanent key for same tier with timed subscription - upgrade to permanent
+                actionType = 'upgrade_to_permanent';
+            } else {
+                // Same tier with duration - extend the subscription
+                actionType = 'extend';
+            }
         }
+        // else: upgrade
 
         // Update key usage with optimistic locking
         const { data: updatedKey, error: keyUpdateError } = await supabase
@@ -428,13 +467,37 @@ export class RedeemKeyService {
             };
         }
 
+        // Calculate tier expiration based on duration_days and action type
+        let tierExpiresAt = null;
+        
+        if (key.duration_days && key.duration_days > 0) {
+            if (actionType === 'extend' && user.tier_expires_at) {
+                // Extend from current expiration date
+                const currentExpires = new Date(user.tier_expires_at);
+                const now = new Date();
+                // If already expired, extend from now; otherwise extend from current expiration
+                const baseDate = currentExpires > now ? currentExpires : now;
+                baseDate.setDate(baseDate.getDate() + key.duration_days);
+                tierExpiresAt = baseDate.toISOString();
+            } else {
+                // New subscription or upgrade - start from now
+                const expiresAt = new Date();
+                expiresAt.setDate(expiresAt.getDate() + key.duration_days);
+                tierExpiresAt = expiresAt.toISOString();
+            }
+        }
+        // If no duration_days, tier is permanent (tierExpiresAt stays null)
+
         // Update user tier
+        const updateData = {
+            tier: newTier,
+            tier_expires_at: tierExpiresAt,
+            updated_at: new Date().toISOString()
+        };
+
         const { error: tierError } = await supabase
             .from('users')
-            .update({
-                tier: newTier,
-                updated_at: new Date().toISOString()
-            })
+            .update(updateData)
             .eq('id', user.id);
 
         if (tierError) {
@@ -458,11 +521,27 @@ export class RedeemKeyService {
         if (redemptionError) {
         }
 
+        // Build result message based on action type
+        let message = '';
+        if (actionType === 'extend') {
+            message = `Extended ${newTier} tier by ${key.duration_days} days`;
+        } else if (actionType === 'upgrade_to_permanent') {
+            message = `Upgraded ${newTier} tier to permanent`;
+        } else {
+            message = key.duration_days 
+                ? `Upgraded to ${newTier} for ${key.duration_days} days`
+                : `Upgraded to ${newTier} (permanent)`;
+        }
+
         return {
             success: true,
             type: KEY_TYPES.TIER,
+            actionType,
             newTier: newTier,
-            previousTier: user.tier || 'free'
+            previousTier: user.tier || 'free',
+            durationDays: key.duration_days || null,
+            expiresAt: tierExpiresAt,
+            message
         };
     }
 
@@ -552,6 +631,7 @@ export class RedeemKeyService {
             maxUses: k.max_uses,
             currentUses: k.current_uses,
             expiresAt: k.expires_at,
+            durationDays: k.duration_days,
             revokedAt: k.revoked_at,
             note: k.note,
             createdBy: k.created_by,
@@ -659,6 +739,7 @@ export class RedeemKeyService {
             maxUses: key.max_uses,
             currentUses: key.current_uses,
             expiresAt: key.expires_at,
+            durationDays: key.duration_days,
             revokedAt: key.revoked_at,
             note: key.note,
             createdBy: key.created_by,

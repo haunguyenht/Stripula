@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, forwardRef } from 'react';
-import { ChevronDown, CreditCard } from 'lucide-react';
+import { ChevronDown, CreditCard, Sparkles } from 'lucide-react';
+import { motion } from 'motion/react';
 import { cn } from '@/lib/utils';
 import {
   Sheet,
@@ -31,12 +32,11 @@ import {
 } from './components';
 
 /**
- * TopTabBar - Modern navigation with modular components
+ * TopTabBar - Floating Transparent Navigation
  * 
- * Orchestrates the three main sections:
- * - Left: UserPill (avatar + tier)
- * - Center: Navigation (desktop dropdown or mobile sheet)
- * - Right: ActionsPill (credits + theme + profile)
+ * Seamless navigation that blends with the page background.
+ * Only the center tab pills are visible as floating glass elements.
+ * Left/right sections are minimal and transparent.
  */
 export function TopTabBar({ 
   activeRoute, 
@@ -64,23 +64,28 @@ export function TopTabBar({
   };
   
   return (
-    <header className={cn(
-      "relative z-40 flex items-center justify-between gap-3",
-      // Consistent sizing for both themes
-      "mx-4 mt-3 px-4 py-2 rounded-xl",
-      // Light mode: Subtle frosted glass with warm tint
-      "bg-gradient-to-b from-white/80 to-[rgb(252,250,249)]/70",
-      "backdrop-blur-md",
-      "border border-[rgb(237,234,233)]/60",
-      "shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.03)]",
-      // Dark mode: transparent styling but same dimensions
-      "dark:bg-transparent dark:bg-none dark:shadow-none dark:border-transparent dark:backdrop-blur-none",
-      className
-    )}>
-      {/* Left: Credits & Theme Toggle */}
+    <motion.header 
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+      className={cn(
+        "relative z-40 flex items-center justify-between gap-4",
+        "mx-4 mt-3 px-3 py-2",
+        // ═══════════════════════════════════════════════════════════
+        // FULLY TRANSPARENT - No visible navbar background
+        // ═══════════════════════════════════════════════════════════
+        "bg-transparent",
+        // Light mode: subtle separator at bottom only
+        "border-b border-transparent",
+        // Dark mode: completely invisible, blends with page
+        "dark:bg-transparent dark:border-transparent",
+        className
+      )}
+    >
+      {/* Left: Credits Display - Floating Pill */}
       <ActionsPill user={user} onNavigate={handleNavigate} />
 
-      {/* Center: Navigation */}
+      {/* Center: Navigation Tabs - The Only Visible Element */}
       <div ref={navContainerRef} className="flex-1 min-w-0 flex justify-center">
         {shouldUseMobileNav ? (
           <MobileNavigation
@@ -100,24 +105,25 @@ export function TopTabBar({
         )}
       </div>
 
-      {/* Right: User Profile */}
+      {/* Right: User Profile - Minimal */}
       <UserPill user={user} onNavigate={handleNavigate} />
-    </header>
+    </motion.header>
   );
 }
 
 /**
- * DesktopNavigation - Desktop dropdown navigation
+ * DesktopNavigation - Floating glass navigation pills
  */
 const DesktopNavigation = forwardRef(({ activeRoute, onNavigate }, ref) => (
   <NavPillNav ref={ref}>
-    {navItems.map((item) => (
+    {navItems.map((item, index) => (
       <NavDropdown
         key={item.id}
         item={item}
         activeRoute={activeRoute}
         onNavigate={onNavigate}
         isActive={isGroupActive(item, activeRoute)}
+        index={index}
       />
     ))}
   </NavPillNav>
@@ -136,33 +142,45 @@ function MobileNavigation({
   onNavigate 
 }) {
   return (
-          <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-            <SheetTrigger asChild>
+    <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+      <SheetTrigger asChild>
         <NavPillButton delay={0.05}>
-                <ActiveIcon className="h-4 w-4 text-primary" />
-                <span className="hidden sm:inline">
-                  {activeNavInfo.child?.label || activeNavInfo.parent?.label}
-                </span>
-                <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+          <ActiveIcon className="h-4 w-4 text-primary dark:text-cyan-400" />
+          <span className="truncate max-w-[120px] sm:max-w-none">
+            {activeNavInfo.child?.label || activeNavInfo.parent?.label}
+          </span>
+          <ChevronDown className="h-3.5 w-3.5 text-muted-foreground dark:text-white/40" />
         </NavPillButton>
-            </SheetTrigger>
-            <SheetContent side="top" className="h-screen overflow-y-auto">
-              <SheetHeader className="pb-4 border-b">
-                <SheetTitle className="text-lg">Navigation</SheetTitle>
-              </SheetHeader>
-              <nav className="py-4 space-y-1">
-                {navItems.map((item) => (
-                  <MobileNavItem
-                    key={item.id}
-                    item={item}
-                    activeRoute={activeRoute}
+      </SheetTrigger>
+      <SheetContent 
+        side="top" 
+        className={cn(
+          "h-screen overflow-y-auto",
+          // Dark mode: Deep obsidian sheet
+          "dark:bg-gradient-to-b dark:from-[rgba(8,10,18,0.99)] dark:via-[rgba(12,14,24,0.98)] dark:to-[rgba(8,10,18,0.99)]",
+          "dark:border-b dark:border-[rgba(139,92,246,0.2)]",
+          "dark:shadow-[0_20px_60px_-10px_rgba(139,92,246,0.2)]"
+        )}
+      >
+        <SheetHeader className="pb-4 border-b dark:border-[rgba(139,92,246,0.15)]">
+          <SheetTitle className="text-lg flex items-center gap-2 dark:text-white">
+            <Sparkles className="h-4 w-4 text-cyan-400" />
+            Navigation
+          </SheetTitle>
+        </SheetHeader>
+        <nav className="py-4 space-y-1">
+          {navItems.map((item, index) => (
+            <MobileNavItem
+              key={item.id}
+              item={item}
+              activeRoute={activeRoute}
               onNavigate={onNavigate}
               isGroupActive={isGroupActive(item, activeRoute)}
-                  />
-                ))}
-              </nav>
-            </SheetContent>
-          </Sheet>
+              index={index}
+            />
+          ))}
+        </nav>
+      </SheetContent>
+    </Sheet>
   );
 }
-

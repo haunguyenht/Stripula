@@ -8,7 +8,9 @@ export class ShopifyResult {
     static STATUS = {
         APPROVED: 'APPROVED',
         DECLINED: 'DECLINED',
-        ERROR: 'ERROR'
+        ERROR: 'ERROR',
+        CAPTCHA: 'CAPTCHA',
+        SITE_DEAD: 'SITE_DEAD'
     };
 
     constructor({
@@ -24,7 +26,8 @@ export class ShopifyResult {
         declineCode = null,
         rawResponse = null,
         duration = null,
-        binData = null
+        binData = null,
+        shouldStopBatch = false
     }) {
         this.status = status;
         this.message = message;
@@ -39,6 +42,7 @@ export class ShopifyResult {
         this.rawResponse = rawResponse;
         this.duration = duration;
         this.binData = binData;
+        this.shouldStopBatch = shouldStopBatch;
         
         // Format message using GatewayMessageFormatter
         const formatted = GatewayMessageFormatter.formatResponse({
@@ -65,6 +69,14 @@ export class ShopifyResult {
         return this.status === ShopifyResult.STATUS.ERROR;
     }
 
+    isCaptcha() {
+        return this.status === ShopifyResult.STATUS.CAPTCHA;
+    }
+
+    isSiteDead() {
+        return this.status === ShopifyResult.STATUS.SITE_DEAD;
+    }
+
     toJSON() {
         const json = {
             status: this.status,
@@ -83,6 +95,7 @@ export class ShopifyResult {
         if (this.price) json.price = this.price;
         if (this.supportedBrands?.length > 0) json.supportedBrands = this.supportedBrands;
         if (this.binData) json.binData = this.binData;
+        if (this.shouldStopBatch) json.shouldStopBatch = this.shouldStopBatch;
         return json;
     }
 
@@ -110,6 +123,86 @@ export class ShopifyResult {
             message,
             success: false,
             ...options
+        });
+    }
+
+    static captcha(message, options = {}) {
+        return new ShopifyResult({
+            status: ShopifyResult.STATUS.CAPTCHA,
+            message: message || 'CAPTCHA required - IP blocked',
+            success: false,
+            ...options
+        });
+    }
+
+    static siteDead(message, options = {}) {
+        return new ShopifyResult({
+            status: ShopifyResult.STATUS.SITE_DEAD,
+            message: message || 'Site is dead - please change site',
+            success: false,
+            ...options
+        });
+    }
+
+    /**
+     * Parse Auto Shopify API response into ShopifyResult
+     * API Response format:
+     * - Charge: { "Response": "Order completed 💎", "CC": "...", "Price": "1.59", "Gate": "Shopify Payments", "Site": "..." }
+     * - Declined: { "Response": "CARD_DECLINED", "CC": "...", "Price": "1.59", "Gate": "Shopify Payments", "Site": "..." }
+     * - Captcha: { "Response": "CAPTCHA_REQUIRED", ... }
+     * - Site Dead: { "Response": "SITE DEAD 05", ... }
+     */
+    static fromAutoApiResponse(apiResult, options = {}) {
+        const responseText = apiResult.responseText || '';
+        const isApproved = apiResult.isApproved || false;
+
+        // Check for CAPTCHA
+        if (apiResult.isCaptcha) {
+            return ShopifyResult.captcha(responseText, {
+                ...options,
+                gateway: apiResult.gateway,
+                price: apiResult.price,
+                shouldStopBatch: apiResult.shouldStopBatch || false
+            });
+        }
+
+        // Check for Site Dead
+        if (apiResult.isSiteDead) {
+            return ShopifyResult.siteDead(responseText, {
+                ...options,
+                gateway: apiResult.gateway,
+                price: apiResult.price,
+                shouldStopBatch: true
+            });
+        }
+
+        if (isApproved) {
+            return ShopifyResult.approved(responseText || 'Order completed', {
+                ...options,
+                gateway: apiResult.gateway,
+                price: apiResult.price,
+                supportedBrands: ['visa', 'mastercard', 'amex', 'discover']
+            });
+        }
+
+        // Parse decline code from response text
+        const parsed = GatewayMessageFormatter.parseDeclineFromText(responseText);
+        
+        if (parsed.code !== 'unknown') {
+            return ShopifyResult.declined(parsed.message, {
+                ...options,
+                declineCode: parsed.code,
+                gateway: apiResult.gateway,
+                price: apiResult.price
+            });
+        }
+
+        // Generic decline
+        return ShopifyResult.declined(responseText || 'Card declined', {
+            ...options,
+            declineCode: 'generic_decline',
+            gateway: apiResult.gateway,
+            price: apiResult.price
         });
     }
 

@@ -1,4 +1,3 @@
-import * as React from "react";
 import { memo, forwardRef, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { 
@@ -75,8 +74,23 @@ const BrandIcon = memo(function BrandIcon({ scheme, className }) {
 });
 
 /**
+ * Convert country code to flag emoji
+ * @param {string} countryCode - Two-letter country code (e.g., 'US', 'GB')
+ * @returns {string} Flag emoji or empty string
+ */
+function countryCodeToEmoji(countryCode) {
+  if (!countryCode || countryCode.length !== 2) return '';
+  const code = countryCode.toUpperCase();
+  const offset = 0x1F1E6 - 65; // 'A' = 65, regional indicator A = 0x1F1E6
+  return String.fromCodePoint(
+    code.charCodeAt(0) + offset,
+    code.charCodeAt(1) + offset
+  );
+}
+
+/**
  * BINDataDisplay Component
- * Unified display for BIN information (brand, type, category, country, bank)
+ * Unified display for BIN information (brand, type, category, country, bank, funding)
  */
 const BINDataDisplay = memo(forwardRef(function BINDataDisplay({ 
   binData, 
@@ -87,6 +101,7 @@ const BINDataDisplay = memo(forwardRef(function BINDataDisplay({
   countryFlag,
   countryEmoji,
   bank,
+  funding,
   className,
   ...props 
 }, ref) {
@@ -94,7 +109,17 @@ const BINDataDisplay = memo(forwardRef(function BINDataDisplay({
   const effectiveBrand = binData?.scheme || brand;
   const effectiveType = binData?.type || type;
   const effectiveCategory = binData?.category || category;
-  const effectiveCountry = binData?.countryEmoji || binData?.countryCode || countryEmoji || countryFlag || country;
+  const effectiveFunding = binData?.funding || funding;
+  
+  // Get country code from various sources
+  const effectiveCountryCode = binData?.countryCode || country;
+  
+  // Get emoji from various sources, or generate from country code as fallback
+  let effectiveCountry = binData?.countryEmoji || countryEmoji || countryFlag;
+  if (!effectiveCountry && effectiveCountryCode) {
+    effectiveCountry = countryCodeToEmoji(effectiveCountryCode);
+  }
+  
   const effectiveCountryName = binData?.country || country;
   const effectiveBank = binData?.bank || bank;
 
@@ -103,7 +128,22 @@ const BINDataDisplay = memo(forwardRef(function BINDataDisplay({
     return str.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
   };
 
-  const hasData = effectiveBrand || effectiveType || effectiveCategory || effectiveCountry || effectiveBank;
+  // Get funding type styling
+  const getFundingStyle = (fundingType) => {
+    const f = fundingType?.toLowerCase();
+    if (f === 'prepaid') {
+      return "bg-violet-100/80 text-violet-600 dark:bg-violet-500/15 dark:text-violet-400";
+    }
+    if (f === 'debit') {
+      return "bg-blue-100/80 text-blue-600 dark:bg-blue-500/15 dark:text-blue-400";
+    }
+    if (f === 'credit') {
+      return "bg-emerald-100/80 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400";
+    }
+    return "bg-neutral-100/80 text-neutral-600 dark:bg-white/5 dark:text-white/60";
+  };
+
+  const hasData = effectiveBrand || effectiveType || effectiveCategory || effectiveFunding || effectiveCountry || effectiveBank;
   
   if (!hasData) return null;
 
@@ -136,6 +176,18 @@ const BINDataDisplay = memo(forwardRef(function BINDataDisplay({
         </span>
       )}
       
+      {/* Funding type pill (prepaid/debit/credit) */}
+      {effectiveFunding && (
+        <span className={cn(
+          "inline-flex items-center",
+          "px-2 py-0.5 rounded-md",
+          "text-[10px] font-medium",
+          getFundingStyle(effectiveFunding)
+        )}>
+          {toTitleCase(effectiveFunding)}
+        </span>
+      )}
+      
       {/* Category pill */}
       {effectiveCategory && (
         <span className={cn(
@@ -153,7 +205,7 @@ const BINDataDisplay = memo(forwardRef(function BINDataDisplay({
       {effectiveCountry && (
         <span 
           className="text-sm leading-none"
-          title={effectiveCountryName || effectiveCountry}
+          title={effectiveCountryName || effectiveCountryCode}
         >
           {effectiveCountry}
         </span>
@@ -271,11 +323,15 @@ const DurationDisplay = memo(function DurationDisplay({
   className,
   showIcon = true 
 }) {
-  if (!duration) return null;
+  if (!duration && duration !== 0) return null;
 
-  const seconds = typeof duration === 'number' 
-    ? (duration / 1000).toFixed(1) 
-    : duration;
+  // Support both milliseconds (number > 100) and seconds (number or string)
+  let seconds;
+  if (typeof duration === 'number') {
+    seconds = duration > 100 ? (duration / 1000).toFixed(1) : duration.toFixed(1);
+  } else {
+    seconds = duration;
+  }
 
   return (
     <span className={cn(
@@ -286,6 +342,112 @@ const DurationDisplay = memo(function DurationDisplay({
     )}>
       {showIcon && <Clock className="h-3 w-3" />}
       {seconds}s
+    </span>
+  );
+});
+
+/**
+ * ThreeDSIndicator Component
+ * Displays 3D Secure status badge
+ */
+const ThreeDSIndicator = memo(function ThreeDSIndicator({
+  threeDs,
+  className
+}) {
+  if (!threeDs || threeDs === 'unknown' || threeDs === 'none') return null;
+
+  const isPassed = ['passed', 'authenticated', 'success', 'yes'].includes(threeDs.toLowerCase());
+  const isFailed = ['failed', 'rejected', 'no'].includes(threeDs.toLowerCase());
+  const isRequired = ['required', 'pending'].includes(threeDs.toLowerCase());
+
+  return (
+    <span className={cn(
+      "inline-flex items-center gap-1.5",
+      "text-[10px] font-medium",
+      isPassed && "text-emerald-600 dark:text-emerald-400",
+      isFailed && "text-rose-500 dark:text-rose-400",
+      isRequired && "text-amber-600 dark:text-amber-400",
+      !isPassed && !isFailed && !isRequired && "text-neutral-500 dark:text-white/50",
+      className
+    )}>
+      {isPassed ? (
+        <ShieldCheck className="h-3.5 w-3.5" />
+      ) : isFailed ? (
+        <ShieldX className="h-3.5 w-3.5" />
+      ) : (
+        <ShieldAlert className="h-3.5 w-3.5" />
+      )}
+      <span>3DS: {threeDs}</span>
+    </span>
+  );
+});
+
+/**
+ * AmountDisplay Component
+ * Displays charge amount with currency
+ */
+const AmountDisplay = memo(function AmountDisplay({
+  amount,
+  currency = 'USD',
+  className
+}) {
+  if (!amount && amount !== 0) return null;
+
+  // Currency symbols
+  const currencySymbols = {
+    USD: '$',
+    EUR: '€',
+    GBP: '£',
+    AUD: 'A$',
+    CAD: 'C$',
+    SGD: 'S$',
+    INR: '₹',
+    BRL: 'R$',
+    CHF: 'CHF ',
+    MYR: 'RM',
+    JPY: '¥',
+  };
+
+  // Convert cents to dollars if amount > 100 (likely in cents)
+  const displayAmount = amount > 100 ? (amount / 100).toFixed(2) : amount.toFixed(2);
+  const symbol = currencySymbols[currency?.toUpperCase()] || currency?.toUpperCase() + ' ';
+
+  return (
+    <span className={cn(
+      "inline-flex items-center gap-1",
+      "px-2 py-0.5 rounded-md",
+      "text-[10px] font-semibold tabular-nums",
+      "bg-emerald-100/80 text-emerald-700",
+      "dark:bg-emerald-500/15 dark:text-emerald-400",
+      className
+    )}>
+      {symbol}{displayAmount}
+    </span>
+  );
+});
+
+/**
+ * CreditsBadge Component
+ * Displays credits deducted for a card validation
+ */
+const CreditsBadge = memo(function CreditsBadge({
+  credits,
+  className
+}) {
+  if (!credits && credits !== 0) return null;
+
+  return (
+    <span className={cn(
+      "inline-flex items-center gap-1",
+      "px-1.5 py-0.5 rounded-md",
+      "text-[9px] font-medium tabular-nums",
+      "bg-amber-100/80 text-amber-700",
+      "dark:bg-amber-500/15 dark:text-amber-400",
+      className
+    )}
+    title={`${credits} credit${credits !== 1 ? 's' : ''} deducted`}
+    >
+      -{credits}💰
     </span>
   );
 });
@@ -361,7 +523,8 @@ const CardNumber = memo(function CardNumber({
     <span className={cn(
       "font-mono text-[11px] tracking-tight",
       "text-neutral-600 dark:text-white/70",
-      truncate && "truncate",
+      // Only truncate on larger screens, wrap on mobile
+      truncate && "sm:truncate break-all sm:break-normal",
       className
     )}>
       {card}
@@ -370,16 +533,63 @@ const CardNumber = memo(function CardNumber({
 });
 
 /**
+ * Gateway ID to friendly label mapping
+ */
+const GATEWAY_LABELS = {
+  // Auth gateways
+  'auth-1': 'Auth 1',
+  'auth-2': 'Auth 2',
+  'auth-3': 'Auth 3',
+  // Charge gateways
+  'charge-1': 'Charge 1',
+  'charge-2': 'Charge 2',
+  'charge-3': 'Charge 3',
+  // SK-Based gateways
+  'skbased-auth-1': 'SK Auth 1',
+  'skbased-auth': 'SK Auth',
+  'skbased-1': 'SK Charge 1',
+  'skbased-charge-1': 'SK Charge',
+  'sk-based-charge': 'SK Charge',
+  'skbased': 'SK Based',
+  // Auto Shopify
+  'auto-shopify-1': 'Auto Shopify',
+  // Braintree gateways
+  'braintree-auth-1': 'BT Auth 1',
+  'braintree-auth-2': 'BT Auth 2',
+  'braintree-auth-3': 'BT Auth 3',
+  'braintree-charge-1': 'BT Charge 1',
+  'braintree-charge-2': 'BT Charge 2',
+  'braintree-charge-3': 'BT Charge 3',
+  // PayPal gateways
+  'paypal-charge-1': 'PayPal 1',
+  'paypal-charge-2': 'PayPal 2',
+  'paypal-charge-3': 'PayPal 3',
+  // Other gateways
+  'charge-avs-1': 'AVS Charge 1',
+  'square-charge-1': 'Square 1',
+};
+
+/**
+ * Get friendly label for gateway ID
+ */
+const getGatewayLabel = (gatewayId) => {
+  if (!gatewayId) return null;
+  return GATEWAY_LABELS[gatewayId] || gatewayId;
+};
+
+/**
  * GatewayBadge Component
- * Subtle gateway/site indicator
+ * Subtle gateway/site indicator with friendly labels
  */
 const GatewayBadge = memo(function GatewayBadge({ 
   gateway, 
   site,
   className 
 }) {
-  const label = gateway || site;
-  if (!label) return null;
+  const rawLabel = gateway || site;
+  if (!rawLabel) return null;
+  
+  const label = getGatewayLabel(rawLabel);
 
   return (
     <span className={cn(
@@ -408,8 +618,12 @@ export {
   BINDataDisplay,
   SecurityIndicators,
   DurationDisplay,
+  ThreeDSIndicator,
+  AmountDisplay,
+  CreditsBadge,
   CopyButton,
   CardNumber,
   GatewayBadge,
+  getGatewayLabel,
   toTitleCase,
 };

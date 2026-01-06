@@ -37,9 +37,6 @@ export const DECLINE_CLASSIFICATION = {
     // Insufficient Funds (Requirement 9.6)
     'insufficient_funds': { status: 'LIVE', message: 'Insufficient Funds (CVV Valid)' },
     
-    // Fraudulent (Requirement 9.7) - Card exists but flagged
-    'fraudulent': { status: 'LIVE', message: 'Fraudulent Card (CVV Valid)' },
-    
     // CVC Issues (Requirements 9.12-9.13) - Card number is valid
     'incorrect_cvc': { status: 'LIVE', message: 'CCN (Incorrect CVC)' },
     'invalid_cvc': { status: 'LIVE', message: 'CCN (Invalid CVC)' },
@@ -90,6 +87,7 @@ export const DECLINE_CLASSIFICATION = {
     // Additional common decline codes
     'restricted_card': { status: 'DECLINED', message: 'Restricted Card' },
     'security_violation': { status: 'DECLINED', message: 'Security Violation' },
+    'fraudulent': { status: 'DECLINED', message: 'Fraudulent Card' },
     'invalid_expiry_month': { status: 'DECLINED', message: 'Invalid Expiry Month' },
     'invalid_expiry_year': { status: 'DECLINED', message: 'Invalid Expiry Year' },
     'invalid_expiry': { status: 'DECLINED', message: 'Invalid Expiry' },

@@ -13,7 +13,7 @@ import { prefersReducedMotion } from '@/lib/motion';
  * @param {boolean} showAurora - Show aurora wave effects
  */
 const FloatingParticles = memo(function FloatingParticles({
-  count = 30,
+  count = 12, // Reduced from 30 for better performance
   showAurora = true,
   className,
 }) {
@@ -152,29 +152,21 @@ const FloatingParticles = memo(function FloatingParticles({
         />
       ))}
 
-      {/* Larger glow orbs for depth */}
+      {/* Larger glow orbs for depth - using opacity instead of blur for performance */}
       <div
-        className="absolute top-[20%] left-[15%] w-32 h-32 rounded-full animate-orb-1"
+        className="absolute top-[20%] left-[15%] w-48 h-48 rounded-full animate-orb-1 opacity-20"
         style={{
-          background: 'radial-gradient(circle, rgba(100, 150, 255, 0.15) 0%, transparent 70%)',
-          filter: 'blur(30px)',
+          background: 'radial-gradient(circle, rgba(100, 150, 255, 0.6) 0%, transparent 60%)',
           transform: 'translateZ(0)',
+          willChange: 'transform',
         }}
       />
       <div
-        className="absolute bottom-[30%] right-[20%] w-40 h-40 rounded-full animate-orb-2"
+        className="absolute bottom-[30%] right-[20%] w-56 h-56 rounded-full animate-orb-2 opacity-15"
         style={{
-          background: 'radial-gradient(circle, rgba(150, 100, 200, 0.12) 0%, transparent 70%)',
-          filter: 'blur(40px)',
+          background: 'radial-gradient(circle, rgba(150, 100, 200, 0.5) 0%, transparent 60%)',
           transform: 'translateZ(0)',
-        }}
-      />
-      <div
-        className="absolute top-[60%] left-[60%] w-24 h-24 rounded-full animate-orb-3"
-        style={{
-          background: 'radial-gradient(circle, rgba(80, 180, 180, 0.1) 0%, transparent 70%)',
-          filter: 'blur(25px)',
-          transform: 'translateZ(0)',
+          willChange: 'transform',
         }}
       />
     </div>

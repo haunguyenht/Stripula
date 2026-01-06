@@ -34,6 +34,7 @@ export function KeysValidationPanel({
   setKeyResults,
   keyStats,
   setKeyStats,
+  setKeyStatsImmediate,
   selectedKeyIndex,
   onKeySelect,
   isLoading,
@@ -59,11 +60,21 @@ export function KeysValidationPanel({
   }, [skKeys]);
 
   const clearResults = useCallback(() => {
+    // useBoundedResults.setResults([]) already uses immediate write internally
     setKeyResults([]);
-    setKeyStats({ live: 0, livePlus: 0, liveZero: 0, liveNeg: 0, dead: 0, error: 0, total: 0 });
+    // Use immediate setter for stats to bypass debounce
+    if (setKeyStatsImmediate) {
+      setKeyStatsImmediate({ live: 0, livePlus: 0, liveZero: 0, liveNeg: 0, dead: 0, error: 0, total: 0 });
+    } else {
+      setKeyStats({ live: 0, livePlus: 0, liveZero: 0, liveNeg: 0, dead: 0, error: 0, total: 0 });
+    }
     onKeySelect(-1);
     setPage(1);
-  }, [setKeyResults, setKeyStats, onKeySelect]);
+  }, [setKeyResults, setKeyStats, setKeyStatsImmediate, onKeySelect]);
+
+  const clearKeys = useCallback(() => {
+    setSkKeys('');
+  }, [setSkKeys]);
 
   const handleCheckKeys = async () => {
     const keyLines = skKeys.split('\n').filter(l => l.trim() && l.trim().startsWith('sk_'));
@@ -152,21 +163,21 @@ export function KeysValidationPanel({
     setTimeout(() => setCopiedKey(null), 2000);
   }, []);
 
-  const handleCopyAllSK = useCallback(() => {
-    const allSK = keyResults.filter(r => r.fullKey).map(r => r.fullKey).join('\n');
+  const handleCopyAllSK = useCallback((resultsToUse) => {
+    const allSK = resultsToUse.filter(r => r.fullKey).map(r => r.fullKey).join('\n');
     if (allSK) {
       navigator.clipboard.writeText(allSK);
-      success(`Copied ${keyResults.filter(r => r.fullKey).length} SK keys`);
+      success(`Copied ${resultsToUse.filter(r => r.fullKey).length} SK keys`);
     }
-  }, [keyResults, success]);
+  }, [success]);
 
-  const handleCopyAllPK = useCallback(() => {
-    const allPK = keyResults.filter(r => r.pkKey).map(r => r.pkKey).join('\n');
+  const handleCopyAllPK = useCallback((resultsToUse) => {
+    const allPK = resultsToUse.filter(r => r.pkKey).map(r => r.pkKey).join('\n');
     if (allPK) {
       navigator.clipboard.writeText(allPK);
-      success(`Copied ${keyResults.filter(r => r.pkKey).length} PK keys`);
+      success(`Copied ${resultsToUse.filter(r => r.pkKey).length} PK keys`);
     }
-  }, [keyResults, success]);
+  }, [success]);
 
   const handleDeleteKey = useCallback((index) => {
     const deletedResult = keyResults[index];
@@ -374,9 +385,9 @@ export function KeysValidationPanel({
               variant="ghost"
               size="icon"
               className="h-8 w-8"
-              onClick={clearResults}
+              onClick={clearKeys}
               disabled={isLoading}
-              title="Clear all"
+              title="Clear keys"
             >
               <Trash2 className="h-3.5 w-3.5" />
             </Button>
@@ -430,20 +441,23 @@ export function KeysValidationPanel({
           onFilterChange={handleFilterChange}
           // Virtual list props for large result sets
           items={paginatedResults}
-          renderItem={(result, idx) => (
-            <KeyResultCard
-              key={`${result.fullKey}-${idx}`}
-              result={result}
-              index={idx}
-              isSelected={selectedKeyIndex === idx}
-              isCopied={copiedKey === idx}
-              isRefreshing={refreshingKeys.has(idx)}
-              onSelect={() => onKeySelect(idx)}
-              onCopy={() => handleCopyKey(result.fullKey, idx)}
-              onDelete={() => handleDeleteKey(idx)}
-              onRefresh={() => handleRefreshKey(idx)}
-            />
-          )}
+          renderItem={(result, idx) => {
+            const originalIndex = keyResults.findIndex(r => r.fullKey === result.fullKey);
+            return (
+              <KeyResultCard
+                key={`${result.fullKey}-${idx}`}
+                result={result}
+                index={originalIndex}
+                isSelected={selectedKeyIndex === originalIndex}
+                isCopied={copiedKey === originalIndex}
+                isRefreshing={refreshingKeys.has(originalIndex)}
+                onSelect={() => onKeySelect(originalIndex)}
+                onCopy={() => handleCopyKey(result.fullKey, originalIndex)}
+                onDelete={() => handleDeleteKey(originalIndex)}
+                onRefresh={() => handleRefreshKey(originalIndex)}
+              />
+            );
+          }}
           getItemKey={(result, idx) => `${result.fullKey}-${idx}`}
           estimateItemSize={140}
           // Pagination props
@@ -452,28 +466,31 @@ export function KeysValidationPanel({
           onPageChange={setPage}
           onClear={clearResults}
           onRefresh={keyResults.length > 0 ? handleRefreshAll : undefined}
-          onCopyAllSK={keyResults.length > 0 ? handleCopyAllSK : undefined}
-          onCopyAllPK={keyResults.length > 0 ? handleCopyAllPK : undefined}
+          onCopyAllSK={filteredResults.length > 0 ? () => handleCopyAllSK(filteredResults) : undefined}
+          onCopyAllPK={filteredResults.length > 0 ? () => handleCopyAllPK(filteredResults) : undefined}
           isLoading={isLoading}
           isEmpty={paginatedResults.length === 0}
           emptyState={<KeysEmptyState />}
         >
           {/* Fallback for non-virtualized rendering (small lists) */}
-          {paginatedResults.map((result, idx) => (
-            <ResultItem key={`${result.fullKey}-${idx}`} id={`${result.fullKey}-${idx}`}>
-              <KeyResultCard
-                result={result}
-                index={idx}
-                isSelected={selectedKeyIndex === idx}
-                isCopied={copiedKey === idx}
-                isRefreshing={refreshingKeys.has(idx)}
-                onSelect={() => onKeySelect(idx)}
-                onCopy={() => handleCopyKey(result.fullKey, idx)}
-                onDelete={() => handleDeleteKey(idx)}
-                onRefresh={() => handleRefreshKey(idx)}
-              />
-            </ResultItem>
-          ))}
+          {paginatedResults.map((result, idx) => {
+            const originalIndex = keyResults.findIndex(r => r.fullKey === result.fullKey);
+            return (
+              <ResultItem key={`${result.fullKey}-${idx}`} id={`${result.fullKey}-${idx}`}>
+                <KeyResultCard
+                  result={result}
+                  index={originalIndex}
+                  isSelected={selectedKeyIndex === originalIndex}
+                  isCopied={copiedKey === originalIndex}
+                  isRefreshing={refreshingKeys.has(originalIndex)}
+                  onSelect={() => onKeySelect(originalIndex)}
+                  onCopy={() => handleCopyKey(result.fullKey, originalIndex)}
+                  onDelete={() => handleDeleteKey(originalIndex)}
+                  onRefresh={() => handleRefreshKey(originalIndex)}
+                />
+              </ResultItem>
+            );
+          })}
         </ResultsPanel>
       }
     />
@@ -486,10 +503,10 @@ export function KeysValidationPanel({
  */
 const KeyResultCard = React.memo(function KeyResultCard({ result, isSelected, isCopied, isRefreshing, onSelect, onCopy, onDelete, onRefresh }) {
   const [pkCopied, setPkCopied] = useState(false);
+  const [isSelecting, setIsSelecting] = useState(false);
   const { warning, success } = useToast();
 
-  const handleCopyPk = useCallback((e) => {
-    e.stopPropagation();
+  const handleCopyPk = useCallback(() => {
     if (result.pkKey) {
       navigator.clipboard.writeText(result.pkKey);
       setPkCopied(true);
@@ -497,8 +514,7 @@ const KeyResultCard = React.memo(function KeyResultCard({ result, isSelected, is
     }
   }, [result.pkKey]);
 
-  const handleCopySk = useCallback((e) => {
-    e.stopPropagation();
+  const handleCopySk = useCallback(() => {
     onCopy();
   }, [onCopy]);
 
@@ -507,15 +523,22 @@ const KeyResultCard = React.memo(function KeyResultCard({ result, isSelected, is
   const skKey = result.fullKey || result.key;
 
   // Handle click - prevent selection for dead keys, show toast for live keys
+  // Debounce to prevent multiple rapid clicks
   const handleClick = useCallback(() => {
     if (isDead) {
       warning('Dead keys cannot be used for card validation');
       return;
     }
+    if (isSelecting || isSelected) return; // Prevent multiple clicks or re-selecting same key
+    
+    setIsSelecting(true);
     onSelect();
     const accountName = result.accountName && result.accountName !== 'N/A' ? result.accountName : 'Unknown';
     success(`Key selected • ${accountName}`);
-  }, [isDead, onSelect, warning, success, result.accountName]);
+    
+    // Reset after short delay to allow re-selection if needed
+    setTimeout(() => setIsSelecting(false), 500);
+  }, [isDead, isSelecting, isSelected, onSelect, warning, success, result.accountName]);
 
   const availableBalance = ((result.availableBalance || 0) / 100).toFixed(2);
   const pendingBalance = ((result.pendingBalance || 0) / 100).toFixed(2);
@@ -561,18 +584,20 @@ const KeyResultCard = React.memo(function KeyResultCard({ result, isSelected, is
                 ? result.accountName 
                 : 'Unknown'}
             </span>
-          </div>
 
-          {/* Balance display */}
-          <div className="flex items-center gap-2 shrink-0">
-            <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+            {/* Balance display - next to name */}
+            <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 shrink-0">
               {symbol}{availableBalance}
             </span>
             {parseFloat(pendingBalance) > 0 && (
-              <span className="text-[11px] font-medium text-amber-600 dark:text-amber-400">
+              <span className="text-[11px] font-medium text-amber-600 dark:text-amber-400 shrink-0">
                 +{symbol}{pendingBalance}
               </span>
             )}
+          </div>
+
+          {/* Duration display */}
+          <div className="flex items-center gap-2 shrink-0">
             <DurationDisplay duration={result.duration} showIcon={false} />
           </div>
         </ResultCardHeader>

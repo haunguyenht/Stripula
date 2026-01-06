@@ -48,29 +48,45 @@ export default defineConfig(({ mode }) => ({
     // Manual chunk splitting for optimal caching
     rollupOptions: {
       output: {
-        manualChunks: {
+        manualChunks: (id) => {
           // Core React runtime
-          'react-vendor': ['react', 'react-dom'],
+          if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/')) {
+            return 'react-vendor';
+          }
           // Radix UI components
-          'radix-vendor': [
-            '@radix-ui/react-dialog',
-            '@radix-ui/react-dropdown-menu',
-            '@radix-ui/react-select',
-            '@radix-ui/react-tabs',
-            '@radix-ui/react-tooltip',
-            '@radix-ui/react-scroll-area',
-            '@radix-ui/react-slider',
-            '@radix-ui/react-switch',
-            '@radix-ui/react-separator',
-            '@radix-ui/react-label',
-            '@radix-ui/react-slot',
-          ],
+          if (id.includes('node_modules/@radix-ui/')) {
+            return 'radix-vendor';
+          }
           // Animation library
-          'motion-vendor': ['motion'],
+          if (id.includes('node_modules/motion/')) {
+            return 'motion-vendor';
+          }
           // Icons (large)
-          'icons-vendor': ['lucide-react'],
+          if (id.includes('node_modules/lucide-react/')) {
+            return 'icons-vendor';
+          }
           // Virtualization
-          'virtual-vendor': ['@tanstack/react-virtual'],
+          if (id.includes('node_modules/@tanstack/react-virtual/')) {
+            return 'virtual-vendor';
+          }
+          // Axios and HTTP utilities
+          if (id.includes('node_modules/axios/')) {
+            return 'http-vendor';
+          }
+          // Form utilities (clsx, tailwind-merge, class-variance-authority)
+          if (id.includes('node_modules/clsx/') || 
+              id.includes('node_modules/tailwind-merge/') || 
+              id.includes('node_modules/class-variance-authority/')) {
+            return 'utils-vendor';
+          }
+          // Sonner toasts
+          if (id.includes('node_modules/sonner/')) {
+            return 'toast-vendor';
+          }
+          // Credit card icons
+          if (id.includes('node_modules/react-svg-credit-card-payment-icons/')) {
+            return 'card-icons-vendor';
+          }
         },
       },
     },

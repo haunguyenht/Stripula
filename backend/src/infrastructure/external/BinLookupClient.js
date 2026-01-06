@@ -18,7 +18,7 @@ function countryCodeToEmoji(countryCode) {
 
 /**
  * BIN Lookup Client
- * Caches results to avoid repeated API calls
+ * Caches results and uses fallback APIs for better coverage
  */
 export class BinLookupClient {
     constructor() {
@@ -26,7 +26,7 @@ export class BinLookupClient {
     }
 
     /**
-     * Lookup BIN data from system-api.pro
+     * Lookup BIN data - tries primary API first, then fallback
      * @param {string} cardNumber - Full card number or first 6-8 digits
      * @returns {Promise<Object>}
      */
@@ -39,6 +39,27 @@ export class BinLookupClient {
             return this.cache.get(bin);
         }
         
+        // Try primary API first
+        let binData = await this._lookupPrimary(bin);
+        
+        // If primary fails, try fallback
+        if (!binData || binData.error) {
+            binData = await this._lookupFallback(bin);
+        }
+        
+        // Cache successful results
+        if (binData && !binData.error) {
+            this.cache.set(bin, binData);
+        }
+        
+        return binData;
+    }
+
+    /**
+     * Primary BIN lookup - system-api.pro
+     * @private
+     */
+    async _lookupPrimary(bin) {
         try {
             const response = await axios.get(`https://system-api.pro/bin/${bin}`, {
                 headers: {
@@ -52,7 +73,7 @@ export class BinLookupClient {
                 const countryCode = response.data.country?.code || null;
                 const countryEmoji = countryCodeToEmoji(countryCode);
                 
-                const binData = {
+                return {
                     bin,
                     scheme: response.data.card?.brand || null,
                     type: response.data.card?.type || null,
@@ -66,14 +87,53 @@ export class BinLookupClient {
                     cardLength: null,
                     luhn: null
                 };
-                
-                this.cache.set(bin, binData);
-                return binData;
             }
             
-            return { bin, error: 'No data' };
+            return { bin, error: 'No data from primary' };
         } catch (error) {
-            return { bin, error: error.message };
+            return { bin, error: `Primary: ${error.message}` };
+        }
+    }
+
+    /**
+     * Fallback BIN lookup - noxter.dev
+     * @private
+     */
+    async _lookupFallback(bin) {
+        try {
+            const response = await axios.get(`https://noxter.dev/gate/bin?bin=${bin}`, {
+                headers: {
+                    'accept': 'application/json',
+                    'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                },
+                timeout: 5000
+            });
+            
+            // Handle noxter.dev response format
+            const data = response.data;
+            if (data && (data.brand || data.scheme || data.type)) {
+                const countryCode = data.country_code || data.countryCode || null;
+                const countryEmoji = countryCodeToEmoji(countryCode);
+                
+                return {
+                    bin,
+                    scheme: data.brand || data.scheme || null,
+                    type: data.type || null,
+                    category: data.category || data.level || null,
+                    country: data.country || data.country_name || null,
+                    countryCode,
+                    countryEmoji,
+                    bank: data.bank || data.issuer || null,
+                    bankPhone: null,
+                    bankUrl: null,
+                    cardLength: null,
+                    luhn: null
+                };
+            }
+            
+            return { bin, error: 'No data from fallback' };
+        } catch (error) {
+            return { bin, error: `Fallback: ${error.message}` };
         }
     }
 

@@ -11,6 +11,7 @@ import { classifyFailure } from '../utils/failureClassifier.js';
  * 
  * Requirements: 3.1, 3.2, 3.3, 3.4 - Uses SpeedManager for tier-based speed limits
  * Requirements: 3.1, 3.2, 3.3 (Proxy) - Per-gateway proxy configuration
+ * Requirements: 8.1, 8.2 - Statistics tracking integration
  */
 export class StripeChargeService extends EventEmitter {
     constructor(options = {}) {
@@ -19,6 +20,8 @@ export class StripeChargeService extends EventEmitter {
         this.concurrency = options.concurrency || DEFAULTS.CONCURRENCY;
         this.speedManager = options.speedManager || null;
         this.gatewayManager = options.gatewayManager || null;
+        // Dashboard Service for statistics tracking (Requirements: 8.1, 8.2)
+        this.dashboardService = options.dashboardService || null;
         this.debug = options.debug !== false;
         this.validator = new ChargeGatewayValidator({
             site: this.site,
@@ -148,9 +151,11 @@ export class StripeChargeService extends EventEmitter {
      * 
      * Requirements: 3.1, 3.2, 3.3, 3.4 - Tier-based speed enforcement
      * Requirements: 3.1, 3.2, 3.3 (Proxy) - Per-gateway proxy configuration
+     * Requirements: 8.1, 8.2 - Statistics tracking integration
      * 
      * @param {string[]} cards - Array of card strings
      * @param {Object} options - Processing options
+     * @param {string} options.userId - User ID for statistics tracking
      * @returns {Promise<Object>}
      */
     async processBatch(cards, options = {}) {
@@ -159,7 +164,8 @@ export class StripeChargeService extends EventEmitter {
             delayBetweenCards = 3000,
             onProgress = null,
             onResult = null,
-            tier = 'free'
+            tier = 'free',
+            userId = null
         } = options;
 
         // Get the gateway ID for the current site
@@ -282,6 +288,16 @@ export class StripeChargeService extends EventEmitter {
                 const duration = ((Date.now() - startTime) / 1000).toFixed(1);
                 const liveCount = stats.approved;
 
+                // Increment user statistics (Requirements: 8.1, 8.2)
+                // cardsCount = total cards validated, hitsCount = approved cards (APPROVED/LIVE)
+                if (userId && this.dashboardService) {
+                    try {
+                        await this.dashboardService.incrementUserStats(userId, total, liveCount);
+                    } catch (err) {
+                        console.error('[StripeChargeService] Failed to increment user stats:', err.message);
+                    }
+                }
+
                 this.emit('complete', { results, stats, duration: parseFloat(duration) });
                 this.emit('batchComplete', {
                     results,
@@ -301,6 +317,15 @@ export class StripeChargeService extends EventEmitter {
                 if (error.message === 'Execution cancelled' || error.message === 'Aborted') {
                     const duration = ((Date.now() - startTime) / 1000).toFixed(1);
                     const liveCount = stats.approved;
+
+                    // Increment user statistics for processed cards before abort (Requirements: 8.1, 8.2)
+                    if (userId && this.dashboardService && processed > 0) {
+                        try {
+                            await this.dashboardService.incrementUserStats(userId, processed, liveCount);
+                        } catch (err) {
+                            console.error('[StripeChargeService] Failed to increment user stats (aborted):', err.message);
+                        }
+                    }
 
                     this.emit('complete', { results, stats, duration: parseFloat(duration), aborted: true });
                     this.emit('batchComplete', {

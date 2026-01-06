@@ -1,47 +1,28 @@
-import { motion, AnimatePresence } from 'motion/react';
-import { useState, useEffect, useMemo } from 'react';
-import {
-  StarFilledIcon,
-  CountdownTimerIcon,
-  RocketIcon,
-} from '@radix-ui/react-icons';
+import { motion } from 'motion/react';
+import { useState, useEffect } from 'react';
+import { Sparkles, Clock, Zap, CreditCard, Shield, Award } from 'lucide-react';
 import { TelegramLoginButton } from '@/components/auth/TelegramLoginButton';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
-import { CursorSpotlight, FloatingParticles } from '@/components/effects';
-import { useTiltEffect } from '@/hooks/useTiltEffect';
 import { useToast } from '@/hooks/useToast';
+import { useTheme } from '@/hooks/useTheme';
 import { cn } from '@/lib/utils';
-import { prefersReducedMotion } from '@/lib/motion';
 
 /**
- * LoginPage Component - Cinematic Redesign
+ * LoginPage - Luxury Fintech Terminal Aesthetic
  * 
- * Immersive two-panel card layout with:
- * - Light mode: Animated gradient mesh with morphing orbs
- * - Dark mode: Aurora waves with floating particles
- * - 3D card tilt effect following cursor
- * - Staggered entrance animations
- * - Character-by-character text reveal
+ * Dark: Premium black card with gold accents, embossed textures, holographic shimmer
+ * Light: Cream Paper with Copper Foil - Vintage Banking Elegance
  * 
- * Requirements: 1.1
+ * Typography: Cormorant Garamond (serif luxury) + DM Sans (clean modern)
  */
 export function LoginPage() {
   const { success, error } = useToast();
+  const { theme } = useTheme();
   const [isLoaded, setIsLoaded] = useState(false);
-  const reducedMotion = prefersReducedMotion();
-
-  // 3D tilt effect for the card
-  const { ref: cardRef, style: tiltStyle, glareStyle, handlers: tiltHandlers } = useTiltEffect({
-    maxTilt: 8,
-    scale: 1.01,
-    perspective: 1200,
-    glare: true,
-    glareOpacity: 0.1,
-  });
+  const isDark = theme === 'dark';
 
   useEffect(() => {
-    // Trigger entrance animations after mount
-    const timer = setTimeout(() => setIsLoaded(true), 100);
+    const timer = setTimeout(() => setIsLoaded(true), 150);
     return () => clearTimeout(timer);
   }, []);
 
@@ -57,593 +38,583 @@ export function LoginPage() {
     error(errorMsg || 'Login failed. Please try again.');
   };
 
-  // Animation variants
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-        delayChildren: 0.2,
-      },
-    },
-  };
-
-  const cardVariants = {
-    hidden: { 
-      opacity: 0, 
-      y: 40, 
-      scale: 0.95,
-      filter: 'blur(10px)',
-    },
-    visible: { 
-      opacity: 1, 
-      y: 0, 
-      scale: 1,
-      filter: 'blur(0px)',
-      transition: {
-        duration: 0.8,
-        ease: [0.16, 1, 0.3, 1],
-      },
-    },
-  };
-
-  const panelVariants = {
-    hidden: { opacity: 0, x: -20 },
-    visible: { 
-      opacity: 1, 
-      x: 0,
-      transition: {
-        duration: 0.6,
-        ease: [0.16, 1, 0.3, 1],
-      },
-    },
-  };
-
-  const rightPanelVariants = {
-    hidden: { opacity: 0, x: 20 },
-    visible: { 
-      opacity: 1, 
-      x: 0,
-      transition: {
-        duration: 0.6,
-        ease: [0.16, 1, 0.3, 1],
-      },
-    },
-  };
-
   return (
-    <div className="min-h-screen w-full flex items-center justify-center p-6 sm:p-8 lg:p-12 relative overflow-hidden">
-      {/* Light mode: Simple solid background matching app */}
-      <div className="fixed inset-0 -z-20 bg-background dark:hidden" />
+    <div className={cn(
+      "min-h-screen w-full flex items-center justify-center p-6 relative overflow-hidden",
+      "selection:bg-amber-500/30"
+    )}>
+      {/* === BACKGROUNDS === */}
+      {isDark ? <DarkBackground /> : <LightBackground />}
       
-      {/* Dark mode: Immersive effects */}
-      <div className="fixed inset-0 -z-20 hidden dark:block bg-opux-tile" />
-      <FloatingParticles count={35} showAurora={true} />
-      <CursorSpotlight 
-        color="rgba(255, 100, 50, 0.08)"
-        darkColor="rgba(100, 150, 255, 0.1)"
-        size={700}
-        opacity={0.2}
-        breathe={true}
-      />
-      
-      {/* Dark mode vignette overlay */}
-      <div className="fixed inset-0 pointer-events-none hidden dark:block bg-opux-vignette z-10" />
-
-      {/* Theme Toggle - Fixed Top Right */}
+      {/* Theme Toggle - Floating pill */}
       <motion.div 
-        className="fixed top-4 right-4 z-50"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5, duration: 0.4 }}
+        className={cn(
+          "fixed top-6 right-6 z-50",
+        )}
+        initial={{ opacity: 0, x: 20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: 0.8, duration: 0.5 }}
       >
         <ThemeToggle />
       </motion.div>
 
-      {/* Main Card Container */}
+      {/* === MAIN CARD === */}
       <motion.div
-        className="relative z-20 w-full max-w-4xl"
-        variants={containerVariants}
-        initial="hidden"
-        animate={isLoaded ? "visible" : "hidden"}
+        className="relative z-20 w-full max-w-[440px]"
+        initial={{ opacity: 0, y: 40, rotateX: 10 }}
+        animate={isLoaded ? { opacity: 1, y: 0, rotateX: 0 } : {}}
+        transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+        style={{ perspective: '1200px' }}
       >
-        {/* Card with 3D tilt effect */}
-        <motion.div
-          ref={cardRef}
-          variants={cardVariants}
-          className={cn(
-            "relative rounded-[28px] overflow-hidden group",
-            // Light mode styling - enhanced with warm shadows
-            "bg-white",
-            "border border-[rgb(237,234,233)]",
-            "shadow-[0_10px_40px_rgba(0,0,0,0.08),0_4px_12px_rgba(0,0,0,0.04)]",
-            // Dark mode styling
-            "dark:bg-[#0d1320]/85 dark:backdrop-blur-2xl",
-            "dark:border-white/[0.12]",
-            "dark:shadow-[0_0_80px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.05)]",
-            // Hover effects - enhanced for light mode
-            "transition-all duration-500 ease-out",
-            "hover:shadow-[0_20px_60px_rgba(0,0,0,0.12),0_8px_24px_rgba(255,100,50,0.08)]",
-            "hover:border-[rgb(255,200,180)]",
-            "dark:hover:shadow-[0_0_100px_rgba(0,0,0,0.6),0_0_40px_rgba(100,150,255,0.1)]",
-            "dark:hover:border-white/[0.18]"
-          )}
-          style={tiltStyle}
-          {...tiltHandlers}
-        >
-          {/* Glare effect overlay */}
-          <div style={glareStyle} className="z-10" />
-          
-          {/* Animated gradient border on hover (light mode) */}
-          <motion.div 
-            className="absolute inset-0 rounded-[28px] opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none dark:hidden"
-            style={{
-              background: 'linear-gradient(135deg, rgba(255,150,100,0.1) 0%, transparent 50%, rgba(200,150,255,0.08) 100%)',
-            }}
-          />
-          
-          {/* Animated border glow on hover (dark mode) */}
-          <div className="absolute inset-0 rounded-[28px] opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none hidden dark:block
-                          bg-gradient-to-br from-blue-500/10 via-transparent to-purple-500/10" />
-
-          {/* Two Panel Layout */}
-          <div className="flex flex-col lg:flex-row relative z-10">
-            
-            {/* Left Panel - Visual Showcase */}
-            <motion.div
-              className="relative flex-1 flex flex-col items-center justify-center p-8 lg:p-12
-                         min-h-[320px] lg:min-h-[540px]
-                         overflow-hidden
-                         bg-[rgb(250,249,249)] dark:bg-transparent"
-              variants={panelVariants}
-            >
-              {/* Light mode: Subtle animated gradient orbs */}
-              <div className="absolute inset-0 dark:hidden overflow-hidden">
-                <motion.div 
-                  className={cn(
-                    "absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full",
-                    !reducedMotion && "animate-orb-1"
-                  )}
-                  style={{
-                    background: 'radial-gradient(circle, rgba(255,150,100,0.15) 0%, transparent 70%)',
-                    filter: 'blur(40px)',
-                  }}
-                />
-                <motion.div 
-                  className={cn(
-                    "absolute -bottom-[15%] -right-[10%] w-[45%] h-[45%] rounded-full",
-                    !reducedMotion && "animate-orb-2"
-                  )}
-                  style={{
-                    background: 'radial-gradient(circle, rgba(180,150,255,0.12) 0%, transparent 70%)',
-                    filter: 'blur(35px)',
-                  }}
-                />
-                <motion.div 
-                  className={cn(
-                    "absolute top-[40%] left-[30%] w-[30%] h-[30%] rounded-full",
-                    !reducedMotion && "animate-orb-3"
-                  )}
-                  style={{
-                    background: 'radial-gradient(circle, rgba(255,200,150,0.1) 0%, transparent 70%)',
-                    filter: 'blur(30px)',
-                  }}
-                />
-              </div>
-              
-              {/* Dark mode: Enhanced glow effect */}
-              <div className="absolute inset-0 hidden dark:flex items-center justify-center overflow-hidden">
-                <motion.div 
-                  className="w-[400px] h-[400px] rounded-full"
-                  style={{
-                    background: 'radial-gradient(circle, rgba(100, 150, 255, 0.15) 0%, rgba(150, 100, 200, 0.08) 40%, transparent 70%)',
-                  }}
-                  animate={reducedMotion ? {} : {
-                    scale: [1, 1.1, 1],
-                    opacity: [0.5, 0.7, 0.5],
-                  }}
-                  transition={{
-                    duration: 4,
-                    repeat: Infinity,
-                    ease: 'easeInOut',
-                  }}
-                />
-              </div>
-
-              {/* Content Container */}
-              <div className="relative w-full max-w-[240px] lg:max-w-[280px]">
-                {/* Visual Element */}
-                <motion.div
-                  className="relative aspect-square"
-                  initial={{ scale: 0.8, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ delay: 0.4, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-                >
-                  {/* Light mode: Animated Gradient Card with enhanced effects */}
-                  <motion.div 
-                    className="dark:hidden relative w-full h-full rounded-3xl overflow-hidden
-                               border-t-[10px] border-b-[10px] border-white
-                               ring-1 ring-black/5"
-                    animate={reducedMotion ? {} : { 
-                      y: [0, -12, 0],
-                      rotateY: [0, 3, 0, -3, 0],
-                      rotateX: [0, -2, 0, 2, 0],
-                    }}
-                    transition={{ 
-                      y: {
-                        duration: 4,
-                        repeat: Infinity,
-                        ease: 'easeInOut'
-                      },
-                      rotateY: {
-                        duration: 8,
-                        repeat: Infinity,
-                        ease: 'easeInOut'
-                      },
-                      rotateX: {
-                        duration: 6,
-                        repeat: Infinity,
-                        ease: 'easeInOut'
-                      }
-                    }}
-                    style={{
-                      boxShadow: '0 25px 50px rgba(0,0,0,0.12), 0 10px 25px rgba(0,0,0,0.08), 0 0 0 1px rgba(255,255,255,0.5) inset',
-                      transformStyle: 'preserve-3d',
-                    }}
-                    whileHover={reducedMotion ? {} : {
-                      scale: 1.05,
-                      rotateY: 5,
-                      rotateX: -5,
-                      boxShadow: '0 35px 70px rgba(0,0,0,0.15), 0 15px 35px rgba(0,0,0,0.1), 0 0 0 1px rgba(255,255,255,0.6) inset',
-                    }}
-                  >
-                    {/* Animated gradient background */}
-                    <div 
-                      className={cn(
-                        "absolute inset-0",
-                        !reducedMotion && "animate-gradient-flow"
-                      )}
-                      style={{
-                        background: 'linear-gradient(180deg, #ff6b3d 0%, #f97316 12%, #ec4899 30%, #a855f7 50%, #3b82f6 70%, #06b6d4 85%, #10b981 100%)',
-                        backgroundSize: '100% 600%',
-                      }} 
-                    />
-                    
-                    {/* Animated shine overlay */}
-                    <motion.div 
-                      className="absolute inset-0"
-                      style={{
-                        background: 'linear-gradient(135deg, rgba(255,255,255,0.4) 0%, transparent 50%, rgba(255,255,255,0.1) 100%)',
-                      }}
-                      animate={reducedMotion ? {} : {
-                        opacity: [0.4, 0.7, 0.4],
-                      }}
-                      transition={{
-                        duration: 3,
-                        repeat: Infinity,
-                        ease: 'easeInOut',
-                      }}
-                    />
-                    
-                    {/* Shine sweep effect */}
-                    <motion.div 
-                      className="absolute inset-0 opacity-30"
-                      style={{
-                        background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.8) 50%, transparent 100%)',
-                        transform: 'translateX(-100%)',
-                      }}
-                      animate={reducedMotion ? {} : {
-                        transform: ['translateX(-100%)', 'translateX(100%)'],
-                      }}
-                      transition={{
-                        duration: 3,
-                        repeat: Infinity,
-                        repeatDelay: 2,
-                        ease: 'easeInOut',
-                      }}
-                    />
-                    
-                    {/* Subtle pattern overlay */}
-                    <div 
-                      className="absolute inset-0 opacity-10"
-                      style={{
-                        backgroundImage: 'var(--noise-pattern-subtle)',
-                        backgroundSize: '128px 128px',
-                        mixBlendMode: 'overlay',
-                      }}
-                    />
-                  </motion.div>
-                  
-                  {/* Dark mode: GIF with enhanced effects */}
-                  <motion.div 
-                    className="hidden dark:block relative w-full h-full"
-                    style={{
-                      maskImage: 'radial-gradient(circle, white 40%, transparent 70%)',
-                      WebkitMaskImage: 'radial-gradient(circle, white 40%, transparent 70%)'
-                    }}
-                    animate={reducedMotion ? {} : {
-                      scale: [1, 1.02, 1],
-                    }}
-                    transition={{
-                      duration: 4,
-                      repeat: Infinity,
-                      ease: 'easeInOut',
-                    }}
-                  >
-                    <img
-                      src="/spinning-diamond.gif"
-                      alt="Spinning Diamond"
-                      loading="lazy"
-                      className="w-full h-full object-contain mix-blend-plus-lighter"
-                    />
-                    
-                    {/* Particle trail effect around diamond */}
-                    <div className="absolute inset-0 pointer-events-none">
-                      {[...Array(6)].map((_, i) => (
-                        <motion.div
-                          key={i}
-                          className="absolute w-1.5 h-1.5 rounded-full bg-blue-400/60"
-                          style={{
-                            left: '50%',
-                            top: '50%',
-                          }}
-                          animate={reducedMotion ? {} : {
-                            x: [0, Math.cos((i / 6) * Math.PI * 2) * 60, 0],
-                            y: [0, Math.sin((i / 6) * Math.PI * 2) * 60, 0],
-                            opacity: [0.2, 0.8, 0.2],
-                            scale: [0.5, 1.2, 0.5],
-                          }}
-                          transition={{
-                            duration: 3,
-                            repeat: Infinity,
-                            delay: i * 0.3,
-                            ease: 'easeInOut',
-                          }}
-                        />
-                      ))}
-                    </div>
-                  </motion.div>
-                </motion.div>
-
-                {/* Brand text with character animation */}
-                <motion.div
-                  className="mt-6 text-center"
-                  initial={{ opacity: 0, y: 15 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.6, duration: 0.5 }}
-                >
-                  <h1 className="text-xl lg:text-2xl font-bold text-gray-800 dark:text-white tracking-tight">
-                    <AnimatedText text="Stripula" delay={0.7} />
-                  </h1>
-                  <motion.p 
-                    className="mt-1.5 text-sm text-gray-500 dark:text-white/60"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 1.2, duration: 0.4 }}
-                  >
-                    Fast & reliable card validation
-                  </motion.p>
-                </motion.div>
-              </div>
-            </motion.div>
-
-            {/* Divider with animation */}
-            <motion.div 
-              className="hidden lg:block w-px relative"
-              initial={{ scaleY: 0 }}
-              animate={{ scaleY: 1 }}
-              transition={{ delay: 0.5, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-              style={{ transformOrigin: 'center' }}
-            >
-              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-gray-200 to-transparent dark:via-white/10" />
-            </motion.div>
-            <motion.div 
-              className="lg:hidden h-px mx-10 relative"
-              initial={{ scaleX: 0 }}
-              animate={{ scaleX: 1 }}
-              transition={{ delay: 0.5, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-              style={{ transformOrigin: 'center' }}
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-gray-200 to-transparent dark:via-white/10" />
-            </motion.div>
-
-            {/* Right Panel - Login */}
-            <motion.div
-              className="relative flex-1 flex items-center justify-center p-8 lg:p-12
-                         min-h-[340px] lg:min-h-[540px]"
-              variants={rightPanelVariants}
-            >
-              <div className="w-full max-w-[300px] space-y-6">
-                {/* Header with animated text */}
-                <motion.div
-                  className="text-center space-y-2"
-                  initial={{ opacity: 0, y: 15 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4, duration: 0.5 }}
-                >
-                  <h2 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">
-                    <AnimatedText text="Welcome" delay={0.5} />
-                  </h2>
-                  <motion.p 
-                    className="text-sm text-gray-500 dark:text-white/60"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 1, duration: 0.4 }}
-                  >
-                    Sign in with Telegram to continue
-                  </motion.p>
-                </motion.div>
-
-                {/* Telegram Login Button */}
-                <motion.div
-                  className="flex justify-center py-4"
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.6, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                >
-                  <TelegramLoginButton
-                    buttonSize="large"
-                    cornerRadius={12}
-                    onSuccess={handleLoginSuccess}
-                    onError={handleLoginError}
-                  />
-                </motion.div>
-
-                {/* Divider with expand animation */}
-                <motion.div
-                  className="flex items-center gap-3"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.7, duration: 0.4 }}
-                >
-                  <motion.div 
-                    className="flex-1 h-px bg-gray-200 dark:bg-white/10"
-                    initial={{ scaleX: 0 }}
-                    animate={{ scaleX: 1 }}
-                    transition={{ delay: 0.8, duration: 0.5 }}
-                    style={{ transformOrigin: 'right' }}
-                  />
-                  <span className="text-[10px] font-medium text-gray-400 dark:text-white/40 uppercase tracking-wider">
-                    New here?
-                  </span>
-                  <motion.div 
-                    className="flex-1 h-px bg-gray-200 dark:bg-white/10"
-                    initial={{ scaleX: 0 }}
-                    animate={{ scaleX: 1 }}
-                    transition={{ delay: 0.8, duration: 0.5 }}
-                    style={{ transformOrigin: 'left' }}
-                  />
-                </motion.div>
-
-                {/* Benefits with staggered animation */}
-                <motion.div
-                  className="space-y-3"
-                  initial="hidden"
-                  animate="visible"
-                  variants={{
-                    hidden: {},
-                    visible: {
-                      transition: {
-                        staggerChildren: 0.1,
-                        delayChildren: 0.9,
-                      },
-                    },
-                  }}
-                >
-                  <BenefitItem 
-                    icon={StarFilledIcon} 
-                    text="25 free credits on signup" 
-                    iconColor="text-amber-500"
-                    iconBg="bg-amber-100 dark:bg-amber-500/15"
-                    delay={0}
-                  />
-                  <BenefitItem 
-                    icon={CountdownTimerIcon} 
-                    text="10 daily credits (free tier)" 
-                    iconColor="text-sky-500"
-                    iconBg="bg-sky-100 dark:bg-sky-500/15"
-                    delay={0.1}
-                  />
-                  <BenefitItem 
-                    icon={RocketIcon} 
-                    text="Pay only for LIVE cards" 
-                    iconColor="text-emerald-500"
-                    iconBg="bg-emerald-100 dark:bg-emerald-500/15"
-                    delay={0.2}
-                  />
-                </motion.div>
-
-                {/* Footer */}
-                <motion.p
-                  className="text-center text-[11px] text-gray-400 dark:text-white/40 pt-2"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 1.3, duration: 0.4 }}
-                >
-                  Dev by Howard
-                </motion.p>
-              </div>
-            </motion.div>
-          </div>
-        </motion.div>
+        {isDark ? (
+          <DarkCard onSuccess={handleLoginSuccess} onError={handleLoginError} />
+        ) : (
+          <LightCard onSuccess={handleLoginSuccess} onError={handleLoginError} />
+        )}
       </motion.div>
+
+      {/* Footer */}
+      <motion.footer 
+        className={cn(
+          "fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-3",
+          isDark ? "text-amber-500/30" : "text-[hsl(25,35%,40%)]/40"
+        )}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1.2, duration: 0.5 }}
+      >
+        <div className="w-12 h-px bg-current" />
+        <span className="text-[10px] tracking-[0.35em] uppercase" style={{ fontFamily: 'var(--font-mono)' }}>
+          Est. 2024
+        </span>
+        <div className="w-12 h-px bg-current" />
+      </motion.footer>
     </div>
   );
 }
 
 /**
- * AnimatedText - Character-by-character text reveal animation
+ * Dark Mode: Premium Black Card with Gold Embossing
  */
-function AnimatedText({ text, delay = 0, className }) {
-  const reducedMotion = prefersReducedMotion();
-  
-  const characters = useMemo(() => text.split(''), [text]);
-
-  if (reducedMotion) {
-    return <span className={className}>{text}</span>;
-  }
-
+function DarkCard({ onSuccess, onError }) {
   return (
-    <span className={cn("inline-block", className)}>
-      {characters.map((char, index) => (
-        <motion.span
-          key={index}
-          className="inline-block"
-          initial={{ opacity: 0, y: 20, rotateX: -90 }}
-          animate={{ opacity: 1, y: 0, rotateX: 0 }}
-          transition={{
-            delay: delay + index * 0.05,
-            duration: 0.4,
-            ease: [0.16, 1, 0.3, 1],
+    <div className="relative group">
+      {/* Ambient glow */}
+      <div className="absolute -inset-8 bg-gradient-to-b from-amber-500/10 via-transparent to-amber-500/5 rounded-[40px] blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+      
+      {/* Card shadow layers */}
+      <div className="absolute inset-0 rounded-3xl bg-black/40 translate-y-4 blur-xl" />
+      <div className="absolute inset-0 rounded-3xl bg-amber-900/10 translate-y-2 blur-md" />
+      
+      {/* Main card */}
+      <div className={cn(
+        "relative rounded-3xl overflow-hidden",
+        "bg-gradient-to-br from-zinc-900 via-neutral-900 to-zinc-950",
+        "border border-amber-500/10",
+        "shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
+      )}>
+        {/* Holographic shimmer stripe */}
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-amber-400/60 to-transparent" 
+          style={{ 
+            animation: 'shimmer 3s ease-in-out infinite',
           }}
-          style={{ transformOrigin: 'bottom' }}
-        >
-          {char === ' ' ? '\u00A0' : char}
-        </motion.span>
-      ))}
-    </span>
+        />
+
+        {/* Noise texture overlay */}
+        <div 
+          className="absolute inset-0 opacity-[0.03] pointer-events-none mix-blend-overlay"
+          style={{ backgroundImage: 'var(--noise-pattern)' }}
+        />
+
+        {/* Embossed pattern - subtle diagonal lines */}
+        <div 
+          className="absolute inset-0 opacity-[0.02] pointer-events-none"
+          style={{
+            backgroundImage: 'repeating-linear-gradient(135deg, transparent, transparent 10px, rgba(255,255,255,0.03) 10px, rgba(255,255,255,0.03) 11px)',
+          }}
+        />
+
+        <div className="relative p-8 pt-10">
+          {/* Top decorative line */}
+          <motion.div 
+            className="flex items-center gap-4 mb-10"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3, duration: 0.5 }}
+          >
+            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-amber-500/30 to-transparent" />
+            <CreditCard className="w-5 h-5 text-amber-500/50" strokeWidth={1} />
+            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-amber-500/30 to-transparent" />
+          </motion.div>
+
+          {/* Brand */}
+          <motion.div 
+            className="text-center mb-10"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4, duration: 0.5 }}
+          >
+            <h1 
+              className="text-4xl font-serif tracking-tight text-transparent bg-clip-text bg-gradient-to-b from-amber-200 via-amber-400 to-amber-600"
+              style={{ fontFamily: 'Playfair Display, serif' }}
+            >
+              Stripula
+            </h1>
+            <div className="flex items-center justify-center gap-3 mt-3">
+              <div className="w-12 h-px bg-gradient-to-r from-transparent to-amber-500/30" />
+              <p className="text-[10px] tracking-[0.25em] uppercase text-amber-500/40 font-mono">
+                Premium Validation
+              </p>
+              <div className="w-12 h-px bg-gradient-to-l from-transparent to-amber-500/30" />
+            </div>
+          </motion.div>
+
+          {/* Login area */}
+          <motion.div
+            className="mb-8"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.5, duration: 0.5 }}
+          >
+            <div className={cn(
+              "relative p-5 rounded-2xl",
+              "bg-black/40 backdrop-blur-sm",
+              "border border-amber-500/10",
+              "shadow-[inset_0_2px_4px_rgba(0,0,0,0.3)]"
+            )}>
+              {/* Corner accents */}
+              <div className="absolute top-2 left-2 w-3 h-3 border-l border-t border-amber-500/20 rounded-tl" />
+              <div className="absolute top-2 right-2 w-3 h-3 border-r border-t border-amber-500/20 rounded-tr" />
+              <div className="absolute bottom-2 left-2 w-3 h-3 border-l border-b border-amber-500/20 rounded-bl" />
+              <div className="absolute bottom-2 right-2 w-3 h-3 border-r border-b border-amber-500/20 rounded-br" />
+
+              <p className="text-[9px] text-amber-500/50 tracking-[0.2em] uppercase text-center mb-4 font-mono">
+                Secure Access
+              </p>
+              <div className="flex justify-center">
+                <TelegramLoginButton
+                  buttonSize="large"
+                  cornerRadius={12}
+                  onSuccess={onSuccess}
+                  onError={onError}
+                />
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Benefits row */}
+          <motion.div
+            className="grid grid-cols-3 gap-3"
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6, duration: 0.4 }}
+          >
+            <FeaturePill icon={Sparkles} value="25" label="Free" />
+            <FeaturePill icon={Clock} value="10" label="Daily" />
+            <FeaturePill icon={Zap} value="0" label="Dead Fee" />
+          </motion.div>
+        </div>
+
+        {/* Bottom bar */}
+        <div className="px-8 py-4 bg-black/30 border-t border-amber-500/5">
+          <div className="flex items-center justify-between text-[9px] text-amber-500/30 font-mono tracking-wider">
+            <span>MEMBER ACCESS</span>
+            <div className="flex gap-1">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="w-1 h-1 rounded-full bg-amber-500/30" />
+              ))}
+            </div>
+            <span>ENCRYPTED</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FeaturePill({ icon: Icon, value, label }) {
+  return (
+    <div className={cn(
+      "relative text-center py-3 px-2 rounded-xl",
+      "bg-gradient-to-b from-amber-500/5 to-transparent",
+      "border border-amber-500/10",
+      "group/pill hover:border-amber-500/20 transition-colors duration-300"
+    )}>
+      <Icon className="w-4 h-4 mx-auto mb-1.5 text-amber-500/50 group-hover/pill:text-amber-500/70 transition-colors" />
+      <div className="text-lg font-light text-amber-100/90" style={{ fontFamily: 'Playfair Display, serif' }}>
+        {value}
+      </div>
+      <div className="text-[8px] uppercase tracking-widest text-amber-500/40 font-mono">{label}</div>
+    </div>
   );
 }
 
 /**
- * BenefitItem - Animated benefit item with hover effects
+ * Light Mode: Cream Paper with Copper Foil - Vintage Banking Elegance
+ * 
+ * Design inspired by:
+ * - 1920s bank certificates and stock bonds
+ * - Art deco architectural details
+ * - Copper foil hot stamping on luxury stationery
+ * - Vintage typewriter and ledger aesthetics
  */
-function BenefitItem({ icon: Icon, text, iconColor, iconBg, delay = 0 }) {
-  const reducedMotion = prefersReducedMotion();
-  
-  const itemVariants = {
-    hidden: { opacity: 0, x: -20 },
-    visible: { 
-      opacity: 1, 
-      x: 0,
-      transition: {
-        duration: 0.5,
-        ease: [0.16, 1, 0.3, 1],
-      },
-    },
-  };
-
+function LightCard({ onSuccess, onError }) {
   return (
-    <motion.div 
-      className="flex items-center gap-3 group cursor-default"
-      variants={itemVariants}
-    >
-      <motion.div 
-        className={cn(
-          "flex items-center justify-center w-8 h-8 rounded-xl transition-transform duration-200",
-          iconBg,
-          !reducedMotion && "group-hover:scale-110"
-        )}
-        whileHover={reducedMotion ? {} : { scale: 1.1, rotate: 5 }}
-        whileTap={reducedMotion ? {} : { scale: 0.95 }}
+    <div className="relative group">
+      {/* Layered paper shadow - mimics stacked documents */}
+      <div className="absolute inset-x-2 bottom-0 h-full rounded-2xl bg-[hsl(35,30%,88%)] translate-y-2 -z-10" />
+      <div className="absolute inset-x-1 bottom-0 h-full rounded-2xl bg-[hsl(38,35%,90%)] translate-y-1 -z-10" />
+      
+      {/* Main card shadow */}
+      <div className="absolute inset-0 rounded-2xl bg-[hsl(25,40%,35%)]/10 translate-y-4 blur-xl -z-20" />
+      
+      {/* Main card */}
+      <div className={cn(
+        "relative rounded-2xl overflow-hidden",
+        "bg-gradient-to-b from-[hsl(40,50%,97%)] via-[hsl(38,45%,95%)] to-[hsl(35,40%,93%)]",
+        "border border-[hsl(30,35%,75%)]/50",
+        "shadow-[0_1px_0_rgba(255,255,255,0.8)_inset,0_8px_32px_rgba(101,67,33,0.12)]"
+      )}>
+        {/* === TOP COPPER FOIL BAND === */}
+        <div className="relative h-3 overflow-hidden">
+          {/* Base copper gradient */}
+          <div className="absolute inset-0 bg-gradient-to-r from-[hsl(25,60%,35%)] via-[hsl(30,70%,50%)] to-[hsl(25,60%,35%)]" />
+          {/* Foil shine effect */}
+          <div 
+            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent"
+            style={{ 
+              animation: 'shimmer 4s ease-in-out infinite',
+              backgroundSize: '200% 100%'
+            }}
+          />
+          {/* Embossed line pattern */}
+          <div 
+            className="absolute inset-0 opacity-20"
+            style={{
+              backgroundImage: 'repeating-linear-gradient(90deg, transparent, transparent 8px, rgba(0,0,0,0.3) 8px, rgba(0,0,0,0.3) 9px)',
+            }}
+          />
+        </div>
+
+        {/* === PAPER TEXTURE LAYERS === */}
+        {/* Subtle grain texture */}
+        <div 
+          className="absolute inset-0 opacity-40 pointer-events-none mix-blend-multiply"
+          style={{ backgroundImage: 'var(--paper-grain)' }}
+        />
+        
+        {/* Guilloche security pattern (like bank notes) */}
+        <div 
+          className="absolute inset-0 opacity-30 pointer-events-none"
+          style={{ backgroundImage: 'var(--guilloche-pattern)' }}
+        />
+        
+        {/* Watermark circles */}
+        <div 
+          className="absolute inset-0 pointer-events-none"
+          style={{ backgroundImage: 'var(--watermark-pattern)', backgroundSize: '200px 200px' }}
+        />
+
+        {/* Aged paper edge effect */}
+        <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-transparent via-transparent to-[hsl(30,30%,85%)]/20" />
+
+        <div className="relative px-10 pt-8 pb-10">
+          {/* === DECORATIVE HEADER CARTOUCHE === */}
+          <motion.div 
+            className="flex items-center justify-center gap-4 mb-8"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.3, duration: 0.5 }}
+          >
+            {/* Left ornamental line */}
+            <div className="flex-1 flex items-center gap-2">
+              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-[hsl(25,50%,55%)]/40 to-[hsl(25,50%,55%)]/60" />
+              <div className="w-1.5 h-1.5 rotate-45 border border-[hsl(25,50%,55%)]/40" />
+            </div>
+            
+            {/* Central seal/medallion */}
+            <div className="relative">
+              {/* Outer ring */}
+              <div className="w-14 h-14 rounded-full border-2 border-[hsl(25,50%,55%)]/30 flex items-center justify-center">
+                {/* Inner ring with pattern */}
+                <div className="w-11 h-11 rounded-full border border-[hsl(25,50%,55%)]/20 flex items-center justify-center bg-gradient-to-br from-[hsl(40,45%,95%)] to-[hsl(35,40%,92%)]">
+                  <Shield className="w-5 h-5 text-[hsl(25,60%,45%)]" strokeWidth={1.5} />
+                </div>
+              </div>
+              {/* Decorative dots around seal */}
+              {[...Array(8)].map((_, i) => (
+                <div 
+                  key={i}
+                  className="absolute w-1 h-1 rounded-full bg-[hsl(25,50%,55%)]/25"
+                  style={{
+                    top: '50%',
+                    left: '50%',
+                    transform: `rotate(${i * 45}deg) translateY(-32px) translateX(-50%)`
+                  }}
+                />
+              ))}
+            </div>
+            
+            {/* Right ornamental line */}
+            <div className="flex-1 flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rotate-45 border border-[hsl(25,50%,55%)]/40" />
+              <div className="flex-1 h-px bg-gradient-to-l from-transparent via-[hsl(25,50%,55%)]/40 to-[hsl(25,50%,55%)]/60" />
+            </div>
+          </motion.div>
+
+          {/* === BRAND TYPOGRAPHY === */}
+          <motion.div 
+            className="text-center mb-10"
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4, duration: 0.5 }}
+          >
+            {/* Main title with copper foil effect */}
+            <h1 
+              className="text-5xl font-semibold tracking-wide text-transparent bg-clip-text"
+              style={{ 
+                fontFamily: 'var(--font-heading)',
+                backgroundImage: 'linear-gradient(180deg, hsl(25,55%,40%) 0%, hsl(30,70%,50%) 50%, hsl(25,55%,38%) 100%)',
+                textShadow: '0 1px 0 rgba(255,255,255,0.3)'
+              }}
+            >
+              Stripula
+            </h1>
+            
+            {/* Subtitle with vintage typography */}
+            <div className="flex items-center justify-center gap-4 mt-4">
+              <div className="w-8 h-px bg-[hsl(25,40%,60%)]/30" />
+              <p 
+                className="text-[11px] tracking-[0.25em] uppercase text-[hsl(25,30%,45%)]"
+                style={{ fontFamily: 'var(--font-mono)' }}
+              >
+                Card Validation Bureau
+              </p>
+              <div className="w-8 h-px bg-[hsl(25,40%,60%)]/30" />
+            </div>
+          </motion.div>
+
+          {/* === LOGIN SECTION === */}
+          <motion.div
+            className="mb-10"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5, duration: 0.5 }}
+          >
+            {/* Decorative frame around login */}
+            <div className={cn(
+              "relative p-6 rounded-xl",
+              "bg-gradient-to-b from-[hsl(42,50%,98%)] to-[hsl(40,45%,96%)]",
+              "border border-[hsl(30,40%,78%)]",
+              "shadow-[inset_0_1px_0_rgba(255,255,255,0.8),inset_0_-1px_2px_rgba(101,67,33,0.05)]"
+            )}>
+              {/* Art deco corner decorations */}
+              <div className="absolute top-0 left-0 w-6 h-6">
+                <div className="absolute top-1.5 left-1.5 w-3 h-px bg-[hsl(25,50%,55%)]/40" />
+                <div className="absolute top-1.5 left-1.5 w-px h-3 bg-[hsl(25,50%,55%)]/40" />
+              </div>
+              <div className="absolute top-0 right-0 w-6 h-6">
+                <div className="absolute top-1.5 right-1.5 w-3 h-px bg-[hsl(25,50%,55%)]/40" />
+                <div className="absolute top-1.5 right-1.5 w-px h-3 bg-[hsl(25,50%,55%)]/40" />
+              </div>
+              <div className="absolute bottom-0 left-0 w-6 h-6">
+                <div className="absolute bottom-1.5 left-1.5 w-3 h-px bg-[hsl(25,50%,55%)]/40" />
+                <div className="absolute bottom-1.5 left-1.5 w-px h-3 bg-[hsl(25,50%,55%)]/40" />
+              </div>
+              <div className="absolute bottom-0 right-0 w-6 h-6">
+                <div className="absolute bottom-1.5 right-1.5 w-3 h-px bg-[hsl(25,50%,55%)]/40" />
+                <div className="absolute bottom-1.5 right-1.5 w-px h-3 bg-[hsl(25,50%,55%)]/40" />
+              </div>
+
+              {/* Stamp-style label */}
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                <div className="relative px-4 py-1.5 bg-[hsl(38,45%,95%)] border border-[hsl(30,40%,78%)] rounded-full shadow-sm">
+                  <span 
+                    className="text-[9px] uppercase tracking-[0.2em] text-[hsl(25,50%,45%)] font-medium"
+                    style={{ fontFamily: 'var(--font-mono)' }}
+                  >
+                    Secure Access
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex justify-center pt-3">
+                <TelegramLoginButton
+                  buttonSize="large"
+                  cornerRadius={10}
+                  onSuccess={onSuccess}
+                  onError={onError}
+                />
+              </div>
+            </div>
+          </motion.div>
+
+          {/* === BENEFITS SECTION === */}
+          <motion.div
+            className="grid grid-cols-3 gap-4"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6, duration: 0.4 }}
+          >
+            <VintageBadge icon={Sparkles} value="25" label="Credits Free" />
+            <VintageBadge icon={Clock} value="10" label="Daily Claim" />
+            <VintageBadge icon={Award} value="∞" label="Free Declines" />
+          </motion.div>
+        </div>
+
+        {/* === BOTTOM CERTIFICATE RIBBON === */}
+        <div className="relative px-8 py-4 bg-gradient-to-b from-[hsl(35,35%,90%)] to-[hsl(32,30%,88%)] border-t border-[hsl(30,30%,80%)]">
+          {/* Decorative pattern */}
+          <div 
+            className="absolute inset-0 opacity-10"
+            style={{
+              backgroundImage: 'repeating-linear-gradient(90deg, transparent, transparent 4px, hsl(25,40%,50%) 4px, hsl(25,40%,50%) 5px)',
+            }}
+          />
+          
+          <div className="relative flex items-center justify-center gap-3">
+            <div className="w-2 h-2 rotate-45 border border-[hsl(25,40%,55%)]/30 bg-[hsl(38,45%,93%)]" />
+            <p 
+              className="text-[10px] text-[hsl(25,30%,45%)] tracking-[0.2em] uppercase"
+              style={{ fontFamily: 'var(--font-mono)' }}
+            >
+              Only Pay for Live Cards
+            </p>
+            <div className="w-2 h-2 rotate-45 border border-[hsl(25,40%,55%)]/30 bg-[hsl(38,45%,93%)]" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * VintageBadge - Art deco styled benefit badges
+ */
+function VintageBadge({ icon: Icon, value, label }) {
+  return (
+    <div className="text-center group">
+      {/* Icon container with vintage frame */}
+      <div className={cn(
+        "relative inline-flex items-center justify-center w-12 h-12 rounded-lg mb-3",
+        "bg-gradient-to-b from-[hsl(40,50%,97%)] to-[hsl(38,45%,94%)]",
+        "border border-[hsl(30,35%,78%)]",
+        "shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_2px_4px_rgba(101,67,33,0.08)]",
+        "group-hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_4px_12px_rgba(166,100,50,0.15)]",
+        "transition-shadow duration-300"
+      )}>
+        {/* Inner decorative border */}
+        <div className="absolute inset-1 rounded-md border border-[hsl(25,40%,70%)]/20" />
+        <Icon className="w-5 h-5 text-[hsl(25,60%,45%)] relative z-10" strokeWidth={1.5} />
+      </div>
+      
+      {/* Value with vintage typography */}
+      <div 
+        className="text-2xl font-semibold text-[hsl(25,40%,30%)]"
+        style={{ fontFamily: 'var(--font-heading)' }}
       >
-        <Icon className={cn("w-4 h-4", iconColor)} />
-      </motion.div>
-      <span className="text-[13px] text-gray-600 dark:text-white/70 group-hover:text-gray-800 dark:group-hover:text-white/90 transition-colors duration-200">
-        {text}
-      </span>
-    </motion.div>
+        {value}
+      </div>
+      
+      {/* Label */}
+      <div 
+        className="text-[9px] text-[hsl(25,20%,50%)] uppercase tracking-[0.15em] mt-1"
+        style={{ fontFamily: 'var(--font-mono)' }}
+      >
+        {label}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Dark Background - Deep black with subtle golden dust
+ */
+function DarkBackground() {
+  return (
+    <>
+      {/* Base gradient */}
+      <div 
+        className="fixed inset-0 -z-20"
+        style={{
+          background: 'radial-gradient(ellipse at 50% 0%, #1a1814 0%, #0d0c0a 40%, #000 100%)',
+        }}
+      />
+      
+      {/* Golden dust particles - CSS only */}
+      <div 
+        className="fixed inset-0 -z-15 opacity-40"
+        style={{
+          backgroundImage: `
+            radial-gradient(1px 1px at 20% 30%, rgba(251,191,36,0.3) 0%, transparent 100%),
+            radial-gradient(1px 1px at 80% 20%, rgba(251,191,36,0.2) 0%, transparent 100%),
+            radial-gradient(1px 1px at 40% 70%, rgba(251,191,36,0.25) 0%, transparent 100%),
+            radial-gradient(1px 1px at 70% 60%, rgba(251,191,36,0.15) 0%, transparent 100%),
+            radial-gradient(1px 1px at 10% 80%, rgba(251,191,36,0.2) 0%, transparent 100%),
+            radial-gradient(1px 1px at 90% 90%, rgba(251,191,36,0.25) 0%, transparent 100%)
+          `,
+        }}
+      />
+
+      {/* Subtle vignette */}
+      <div 
+        className="fixed inset-0 -z-10 pointer-events-none"
+        style={{
+          background: 'radial-gradient(ellipse at center, transparent 0%, rgba(0,0,0,0.4) 100%)',
+        }}
+      />
+    </>
+  );
+}
+
+/**
+ * Light Background - Vintage Cream Paper with warm undertones
+ */
+function LightBackground() {
+  return (
+    <>
+      {/* Base cream gradient - aged paper effect */}
+      <div 
+        className="fixed inset-0 -z-20"
+        style={{
+          background: 'linear-gradient(180deg, hsl(40,50%,96%) 0%, hsl(38,45%,94%) 50%, hsl(35,40%,91%) 100%)',
+        }}
+      />
+      
+      {/* Warm radial gradients - like sun-bleached areas */}
+      <div 
+        className="fixed inset-0 -z-15"
+        style={{
+          background: 'radial-gradient(ellipse at 20% 10%, hsla(35,70%,80%,0.15) 0%, transparent 50%)',
+        }}
+      />
+      <div 
+        className="fixed inset-0 -z-15"
+        style={{
+          background: 'radial-gradient(ellipse at 80% 90%, hsla(25,60%,75%,0.12) 0%, transparent 50%)',
+        }}
+      />
+
+      {/* Paper grain texture */}
+      <div 
+        className="fixed inset-0 -z-10 opacity-60"
+        style={{ backgroundImage: 'var(--paper-grain)' }}
+      />
+      
+      {/* Subtle guilloche pattern overlay */}
+      <div 
+        className="fixed inset-0 -z-10 opacity-15"
+        style={{ backgroundImage: 'var(--guilloche-pattern)' }}
+      />
+
+      {/* Vignette - darker edges like aged paper */}
+      <div 
+        className="fixed inset-0 -z-5 pointer-events-none"
+        style={{
+          background: 'radial-gradient(ellipse at center, transparent 40%, hsla(30,30%,60%,0.08) 100%)',
+        }}
+      />
+    </>
   );
 }
 

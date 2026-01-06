@@ -4,7 +4,7 @@
 Stripe card validation tool: React + Vite frontend, Node.js + Express backend.
 Fully migrated to **shadcn/ui** with Tailwind CSS and **motion** for animations.
 
-**Design System**: Dual-theme with OrangeAI (light) and OPUX glass (dark) aesthetics.
+**Design System**: Dual-theme with Vintage Banking (light) and Liquid Aurora (dark) aesthetics.
 
 ## Architecture
 
@@ -99,19 +99,99 @@ AuthValidator → WooCommerceClient (registration + nonces)
 
 ## Design System
 
-### Light Mode (OrangeAI)
-- Background: Pure white `#ffffff`
-- Primary: Vibrant orange `rgb(255, 64, 23)`
-- Cards: White with warm borders `rgb(237, 234, 233)`
-- Shadows: Soft `0 10px 30px rgba(0,0,0,0.1)`
-- Border radius: 20px for cards, 10-12px for buttons
+### Light Mode (Vintage Banking / Cream Paper + Copper Foil)
+- **Background**: Cream parchment gradient `hsl(40,50%,97%)` → `hsl(35,40%,93%)`
+- **Primary**: Copper foil `hsl(25,65%,50%)` with metallic gradients
+- **Text**: Sepia ink `hsl(25,40%,25%)` with embossed shadows
+- **Cards**: Double-rule certificate borders with inset shadows
+- **Borders**: Engraved double-line `border-2` + `shadow-[inset_0_0_0_3px,inset_0_0_0_4px]`
+- **Icons**: Wax seal styling with copper coin shadows
+- **Badges**: Treasury seal effects with gradient backgrounds
+- **Accents**: Corner ornaments (L-shaped borders on cards/dialogs)
+- **Texture**: Paper grain SVG noise overlay at 3-4% opacity
 
-### Dark Mode (OPUX Glass)
-- Background: Teal-dark with tile pattern `hsl(201 44% 14%)`
-- Primary: Terracotta accent `hsl(3 26% 55%)`
-- Cards: Glass morphism with blur and noise texture
-- Shadows: Deep with inner glow
-- Decorative: Grainy texture + wireframe landscape layers
+#### Key Light Mode Patterns
+```css
+/* Embossed text shadow */
+[text-shadow:0_1px_0_rgba(255,255,255,0.5),0_-1px_0_rgba(101,67,33,0.15)]
+
+/* Certificate double-rule border */
+border-2 border-[hsl(30,35%,75%)]
+shadow-[inset_0_0_0_3px_hsl(38,45%,96%),inset_0_0_0_4px_hsl(30,30%,80%)]
+
+/* Wax seal icon container */
+shadow-[inset_0_1px_0_rgba(255,255,255,0.4),inset_0_-1px_0_rgba(101,67,33,0.1),0_2px_6px_rgba(101,67,33,0.15)]
+
+/* Copper foil gradient */
+bg-gradient-to-b from-[hsl(25,65%,50%)] via-[hsl(30,70%,48%)] to-[hsl(25,60%,42%)]
+
+/* Paper grain texture */
+url("data:image/svg+xml,...feTurbulence type='fractalNoise' baseFrequency='0.85'...")
+```
+
+### Dark Mode (Liquid Aurora Glass)
+- **Background**: Deep cosmic blue `hsl(220 18% 7%)` with tile pattern
+- **Primary**: Electric indigo `hsl(250 90% 65%)` with aurora accents
+- **Aurora Palette**: Indigo (#8b5cf6), Cyan (#22d3ee), Pink (#ec4899)
+- **Cards**: Liquid glass morphism with `backdrop-blur-[40-60px]` + `backdrop-saturate-[180-200%]`
+- **Borders**: Aurora-tinted `rgba(139,92,246,0.15-0.25)` glass edges
+- **Shadows**: Multi-layered aurora glow with indigo/cyan/pink accents
+- **Specular**: Top edge highlight `inset_0_1px_0_rgba(255,255,255,0.08-0.12)`
+- **Accents**: Prismatic aurora gradients (indigo → cyan → pink)
+- **Decorative**: Animated aurora blobs + floating particles + grainy texture
+
+#### Key Dark Mode Patterns
+```css
+/* Liquid glass base (use dark:bg-none before bg color to reset gradients) */
+dark:bg-none dark:bg-[rgba(15,18,25,0.92)]
+dark:backdrop-blur-[40px] dark:backdrop-saturate-[180%]
+dark:border-[rgba(139,92,246,0.2)]
+
+/* Aurora multi-glow shadow */
+dark:shadow-[0_16px_48px_rgba(0,0,0,0.5),0_0_60px_-20px_rgba(139,92,246,0.15),0_0_40px_-15px_rgba(34,211,238,0.1),inset_0_1px_0_rgba(255,255,255,0.08)]
+
+/* Prismatic aurora accent bar */
+dark:from-[#8b5cf6] dark:via-[#22d3ee] dark:to-[#ec4899]
+
+/* Specular edge highlight */
+bg-gradient-to-r from-transparent via-white/[0.12] to-transparent
+```
+
+#### Premium Liquid Aurora CSS Classes (dark mode only)
+- `.prismatic-card` - Animated color-shifting prismatic border
+- `.cosmic-card` - Star-field effect with aurora nebulae
+- `.depth-card` - Multi-layer 3D depth with aurora ambient on hover
+- `.frosted-panel` - Ultra-premium 80px blur frosted glass
+- `.holo-badge` - Holographic shimmer with rainbow aurora colors
+- `.aurora-reveal` - Radial aurora gradient that expands on hover
+- `.aurora-trace` - Animated border that traces around the element
+- `.glow-button` - Interactive aurora glow behind buttons on hover
+- `.glass-shimmer` - Auto-shimmer overlay animation
+- `.specular-sweep` - Light sweep animation on hover
+- `.neon-breathe-{emerald|cyan|pink|amber}` - Animated breathing neon glow
+
+#### Aurora Utility Classes
+```css
+/* Glow effects */
+.aurora-glow-indigo   /* Indigo glow shadow */
+.aurora-glow-cyan     /* Cyan glow shadow */
+.aurora-glow-pink     /* Pink glow shadow */
+.aurora-glow-multi    /* Multi-color aurora glow */
+
+/* Neon status indicators */
+.neon-glow-emerald    /* Emerald neon for success */
+.neon-glow-rose       /* Rose neon for error */
+.neon-glow-amber      /* Amber neon for warning */
+
+/* Text effects */
+.text-aurora-holographic  /* Animated holographic text */
+.text-aurora-gradient     /* Static aurora gradient text */
+
+/* Interactive */
+.aurora-underline     /* Hover-reveal aurora underline */
+.aurora-ring          /* Hover-reveal gradient ring */
+.aurora-dot           /* Glowing aurora indicator */
+```
 
 ## UI Components (shadcn/ui)
 - **Core**: Button, Input, Textarea, Label, Badge, Card, Separator
@@ -197,6 +277,9 @@ AuthValidator → WooCommerceClient (registration + nonces)
 - Use extensionless imports (e.g., `import { Button } from '@/components/ui/button'`)
 - Follow DI pattern in backend
 - Use View Transitions API for page-level transitions
+- Add `dark:[text-shadow:none]` when adding light mode text shadows
+- Use `hsl()` values in the warm 25-40 hue range for vintage feel
+- Use `bg-gradient-to-b` with from/via/to for metallic copper effects
 
 ### DO NOT
 - Create custom CSS classes - use Tailwind utilities
@@ -206,6 +289,7 @@ AuthValidator → WooCommerceClient (registration + nonces)
 - Bypass service layer in controllers
 - Use `.js` extension in imports - use extensionless
 - Add inline styles - use Tailwind classes
+- Forget to preserve dark mode styles when enhancing light mode
 
 ## Backend Agent Rules
 
@@ -1683,3 +1767,928 @@ const controller = new MyController({
 - Expose bot token in frontend
 - Send notifications for DECLINED/ERROR cards
 - Skip error handling on sendMessage calls
+
+## Tier Duration Management System
+
+### Overview
+Comprehensive tier duration management for subscription-based user tiers. Supports both permanent and time-limited tier subscriptions with automatic expiration detection, user-facing countdown displays, admin management, and key redemption integration.
+
+### Architecture
+```
+UserService (tier duration methods)
+├── checkAndResetExpiredTier(userId) - Check and auto-downgrade expired tiers
+├── setTierWithDuration(userId, tier, durationDays) - Set tier with optional duration
+├── extendTierDuration(userId, additionalDays) - Extend existing tier
+├── getExpiredTierUsers() - Find all expired tier users
+└── resetAllExpiredTiers() - Batch reset for cron jobs
+
+AdminService (admin tier management)
+├── updateUserTier(userId, tier, durationDays) - Admin tier update with duration
+└── extendUserTier(userId, additionalDays) - Admin tier extension
+
+RedeemKeyService (key redemption)
+├── generateKeys({ durationDays }) - Generate tier keys with duration
+└── _redeemTierKey() - Handle tier key redemption with extension logic
+```
+
+### Key Files
+- `backend/src/services/UserService.js` - Core tier duration methods
+- `backend/src/services/AdminService.js` - Admin tier management
+- `backend/src/services/RedeemKeyService.js` - Key generation/redemption with duration
+- `backend/src/controllers/AdminController.js` - Admin API endpoints
+- `frontend/src/components/ui/TierExpirationCountdown.jsx` - Countdown display component
+- `frontend/src/components/profile/TierInfoCard.jsx` - Tier info with expiration display
+- `frontend/src/hooks/useTierExpirationWarning.js` - Expiration warning hook
+- `frontend/src/components/admin/UsersList.jsx` - Admin user list with tier management
+
+### Database Schema
+```sql
+-- Users table tier duration fields
+ALTER TABLE users ADD COLUMN tier_expires_at TIMESTAMPTZ DEFAULT NULL;
+
+-- Redeem keys table duration field
+ALTER TABLE redeem_keys ADD COLUMN duration_days INTEGER DEFAULT NULL;
+
+-- Index for efficient expired tier queries
+CREATE INDEX idx_users_tier_expires ON users(tier, tier_expires_at) 
+WHERE tier != 'free' AND tier_expires_at IS NOT NULL;
+```
+
+### Tier Duration Rules
+- `tier_expires_at = NULL` for non-free tier → Permanent subscription
+- `tier_expires_at = timestamp` → Time-limited subscription
+- `tier = 'free'` → Always has `tier_expires_at = NULL`
+- Duration range: 1-365 days (0 or null = permanent)
+
+### Urgency Classification (Frontend)
+```javascript
+// calculateTimeRemaining() returns urgency levels:
+// - 'expired': timestamp is in the past
+// - 'critical': expiring within 24 hours
+// - 'warning': expiring within 1-3 days
+// - 'notice': expiring within 4-7 days
+// - 'normal': expiring in more than 7 days
+```
+
+### Display Formatting Rules
+```javascript
+// formatExpirationDate() returns display text:
+// - More than 30 days: "Expires {formatted date}"
+// - 8-30 days: "Expires in X days" (normal styling)
+// - 2-7 days: "Expires in X days" (warning styling)
+// - Tomorrow: "Expires tomorrow" (urgent styling)
+// - Today: "Expires today" (critical styling)
+// - Less than 24 hours: "Xh Xm remaining" (critical styling)
+// - Expired: "Expired" (error styling)
+```
+
+### API Endpoints
+
+**GET /api/auth/me** - Returns `tierExpiresAt` in user response
+
+**PUT /api/admin/users/:id/tier**
+```javascript
+// Request
+{ tier: "gold", durationDays: 30 }  // null/0 for permanent
+
+// Response
+{
+  status: "OK",
+  user: {
+    previousTier: "silver",
+    newTier: "gold",
+    tierExpiresAt: "2025-01-28T00:00:00.000Z",
+    durationDays: 30
+  }
+}
+```
+
+**POST /api/admin/users/:id/tier/extend**
+```javascript
+// Request
+{ additionalDays: 15 }
+
+// Response
+{
+  status: "OK",
+  user: {
+    tier: "gold",
+    previousExpiresAt: "2025-01-28T00:00:00.000Z",
+    newExpiresAt: "2025-02-12T00:00:00.000Z",
+    daysAdded: 15
+  }
+}
+```
+
+### Extension Logic
+- Active subscription: Add days to current `tier_expires_at`
+- Expired subscription: Calculate from today
+- Permanent tier: Convert to timed (calculate from today)
+- Free tier: Reject with error
+
+### Key Redemption with Duration
+```javascript
+// Generate tier key with duration
+await redeemKeyService.generateKeys({
+  type: 'tier',
+  value: 'gold',
+  quantity: 5,
+  durationDays: 30  // null for permanent
+});
+
+// Redemption behavior:
+// - Different tier: Upgrade to new tier with duration
+// - Same tier (active): Extend by adding duration to current expiration
+// - Same tier (expired): Set new expiration from today
+```
+
+### Frontend Components
+
+**TierExpirationCountdown**
+```jsx
+import { TierExpirationCountdown, calculateTimeRemaining } from '@/components/ui/TierExpirationCountdown';
+
+// Variants: 'badge' | 'full' | 'compact' | 'inline'
+<TierExpirationCountdown 
+  expiresAt={user.tierExpiresAt}
+  tier={user.tier}
+  variant="badge"
+  onExpired={() => refreshUser()}
+/>
+```
+
+**TierInfoCard**
+```jsx
+import { TierInfoCard, formatExpirationDate } from '@/components/profile/TierInfoCard';
+
+<TierInfoCard tier={{
+  name: user.tier,
+  multiplier: 0.7,
+  dailyClaim: 30,
+  expiresAt: user.tierExpiresAt  // null for permanent
+}} />
+```
+
+**useTierExpirationWarning Hook**
+```jsx
+import { useTierExpirationWarning } from '@/hooks/useTierExpirationWarning';
+
+function MyComponent() {
+  const { isExpired, isExpiringSoon, daysRemaining } = useTierExpirationWarning();
+  // Shows toast warnings once per session
+  // Triggers user data refresh on expiration
+}
+```
+
+### Admin Panel Integration
+```jsx
+// UsersList.jsx - Tier management in admin panel
+// - Duration input (1-365 days) with "Permanent" toggle
+// - Extend button for paid tiers
+// - Shows current expiration status
+// - Highlights expiring soon users
+```
+
+### Tier Duration DO
+- Check tier expiration on every authenticated request via `checkAndResetExpiredTier()`
+- Log tier expirations to `audit_logs` table
+- Show "Permanent" badge for tiers with null `tier_expires_at`
+- Show countdown/warning for expiring tiers
+- Use session-based deduplication for warning toasts
+- Validate duration is 1-365 days (or null/0 for permanent)
+- Handle extension logic correctly (add to current vs calculate from today)
+
+### Tier Duration DO NOT
+- Allow duration > 365 days
+- Allow extending free tier
+- Show multiple warning toasts per session
+- Set `tier_expires_at` for free tier (always null)
+- Skip audit logging for tier expirations
+- Forget to refresh user data when tier expires during session
+
+
+## Dashboard Leaderboard System
+
+### Overview
+Real-time dashboard homepage for authenticated users featuring personal/global statistics, leaderboard, online user tracking, gateway status overview, and Telegram notifications for gateway health issues. Uses SSE for live updates.
+
+### Architecture
+```
+DashboardService (central stats management)
+├── Stats Cache: 30-second TTL for global stats
+├── SSE Clients: Set<Response> for real-time broadcasts
+├── Personal Stats: Per-user cards checked & hits
+├── Global Stats: Platform-wide aggregates
+└── Leaderboard: Top 5 users by hits
+
+OnlineUserTracker (middleware)
+├── Updates last_active_at on authenticated requests
+├── 5-minute threshold for online status
+└── Efficient batch updates
+
+DashboardController (REST API)
+├── GET /api/dashboard/stats - Personal + global stats
+├── GET /api/dashboard/stats/stream - SSE endpoint
+├── GET /api/dashboard/leaderboard - Top 5 users
+└── GET /api/dashboard/online-users - Paginated list
+```
+
+### Key Files
+- `backend/src/services/DashboardService.js` - Stats aggregation, caching, SSE broadcasting
+- `backend/src/controllers/DashboardController.js` - REST API endpoints
+- `backend/src/middleware/OnlineUserTracker.js` - Activity tracking middleware
+- `backend/src/services/TelegramBotService.js` - Gateway health notifications (extended)
+- `frontend/src/pages/DashboardPage.jsx` - Main dashboard page
+- `frontend/src/hooks/useDashboardStats.js` - Personal/global stats with SSE
+- `frontend/src/hooks/useLeaderboard.js` - Leaderboard data hook
+- `frontend/src/hooks/useOnlineUsers.js` - Paginated online users hook
+- `frontend/src/lib/services/dashboardSSE.js` - SSE connection manager
+- `frontend/src/components/dashboard/PersonalStatsCard.jsx` - User's stats display
+- `frontend/src/components/dashboard/GlobalStatsCard.jsx` - Platform stats display
+- `frontend/src/components/dashboard/LeaderboardCard.jsx` - Top users display
+- `frontend/src/components/dashboard/OnlineUsersCard.jsx` - Online users list
+- `frontend/src/components/dashboard/GatewayOverview.jsx` - Gateway status grouped by type
+
+### Database Schema
+```sql
+-- User statistics columns (added to users table)
+ALTER TABLE users ADD COLUMN total_cards_checked INTEGER DEFAULT 0;
+ALTER TABLE users ADD COLUMN total_hits INTEGER DEFAULT 0;
+ALTER TABLE users ADD COLUMN last_active_at TIMESTAMPTZ DEFAULT NOW();
+
+-- Indexes for efficient queries
+CREATE INDEX idx_users_last_active ON users(last_active_at DESC);
+CREATE INDEX idx_users_total_hits ON users(total_hits DESC);
+
+-- Platform stats cache table (single row)
+CREATE TABLE platform_stats (
+  id INTEGER PRIMARY KEY DEFAULT 1,
+  total_members INTEGER DEFAULT 0,
+  total_cards_checked BIGINT DEFAULT 0,
+  total_hits BIGINT DEFAULT 0,
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  CONSTRAINT single_row CHECK (id = 1)
+);
+```
+
+### Statistics Tracking Integration
+Validation services call `dashboardService.incrementUserStats()` after each batch:
+
+```javascript
+// In validation service (e.g., StripeAuthService, ShopifyChargeService)
+async processBatch(cards, options = {}) {
+    // ... validation logic ...
+    
+    // After batch completes, increment stats
+    if (this.dashboardService && userId) {
+        const hitsCount = results.filter(r => 
+            r.status === 'APPROVED' || r.status === 'LIVE'
+        ).length;
+        
+        await this.dashboardService.incrementUserStats(
+            userId,
+            results.length,  // cardsCount
+            hitsCount        // hitsCount (APPROVED + LIVE only)
+        );
+    }
+}
+```
+
+### SSE Real-Time Updates
+```javascript
+// Frontend connection via dashboardSSE service
+import { dashboardSSE } from '@/lib/services/dashboardSSE';
+
+// Connect and subscribe to updates
+dashboardSSE.connect(token);
+dashboardSSE.subscribe('statsUpdate', (data) => {
+    // Update personal/global stats
+});
+dashboardSSE.subscribe('leaderboardUpdate', (data) => {
+    // Update leaderboard
+});
+
+// SSE Event Types
+interface StatsUpdateEvent {
+  type: 'statsUpdate';
+  personal?: { totalCards: number; totalHits: number };
+  global?: { totalMembers: number; onlineCount: number; totalCards: number; totalHits: number };
+  timestamp: string;
+}
+```
+
+### Gateway Health Notifications
+```javascript
+// TelegramBotService.notifyGatewayHealth()
+// Triggered when gateway health changes to offline/degraded or recovers
+
+await telegramBotService.notifyGatewayHealth({
+    gatewayId: 'auth-1',
+    gatewayLabel: 'Auth Gateway 1',
+    previousStatus: 'online',
+    newStatus: 'offline',
+    isRecovery: false,
+    timestamp: new Date().toISOString()
+});
+
+// Message format:
+// 🔴 Gateway OFFLINE
+// Gateway: Auth Gateway 1 (auth-1)
+// Status: online → offline
+// Time: 1/1/2026, 10:30:00 AM UTC
+```
+
+### API Endpoints
+
+**GET /api/dashboard/stats**
+```javascript
+// Response
+{
+  status: 'OK',
+  personal: { totalCards: 150, totalHits: 23 },
+  global: { totalMembers: 500, onlineCount: 42, totalCards: 50000, totalHits: 3200 },
+  timestamp: '2026-01-01T10:30:00.000Z'
+}
+```
+
+**GET /api/dashboard/leaderboard**
+```javascript
+// Response
+{
+  status: 'OK',
+  leaderboard: [
+    { rank: 1, userId: 'uuid', username: 'user1', firstName: 'John', tier: 'gold', totalHits: 500 },
+    { rank: 2, userId: 'uuid', username: 'user2', firstName: 'Jane', tier: 'silver', totalHits: 350 }
+  ],
+  timestamp: '2026-01-01T10:30:00.000Z'
+}
+```
+
+**GET /api/dashboard/online-users?page=1&limit=10**
+```javascript
+// Response
+{
+  status: 'OK',
+  users: [
+    { userId: 'uuid', username: 'user1', firstName: 'John', tier: 'gold', lastActiveAt: '...' }
+  ],
+  pagination: { page: 1, limit: 10, total: 42, totalPages: 5 },
+  timestamp: '2026-01-01T10:30:00.000Z'
+}
+```
+
+### Frontend Usage
+
+**DashboardPage**
+```jsx
+import { useDashboardStats } from '@/hooks/useDashboardStats';
+import { useLeaderboard } from '@/hooks/useLeaderboard';
+import { useOnlineUsers } from '@/hooks/useOnlineUsers';
+import { useGatewayStatus } from '@/hooks/useGatewayStatus';
+
+function DashboardPage() {
+    const { personalStats, globalStats, isConnected } = useDashboardStats();
+    const { leaderboard, isLoading: leaderboardLoading } = useLeaderboard();
+    const { users: onlineUsers, pagination, setPage } = useOnlineUsers();
+    const { gateways } = useGatewayStatus();
+
+    return (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <PersonalStatsCard stats={personalStats} />
+            <GlobalStatsCard stats={globalStats} />
+            <GatewayOverview gateways={gateways} />
+            <LeaderboardCard users={leaderboard} />
+            <OnlineUsersCard 
+                users={onlineUsers} 
+                pagination={pagination}
+                onPageChange={setPage}
+            />
+        </div>
+    );
+}
+```
+
+### Online User Threshold
+- Users are considered "online" if `last_active_at` is within 5 minutes
+- Activity is tracked via `OnlineUserTracker` middleware on all authenticated requests
+- Middleware updates `last_active_at` efficiently (debounced per request)
+
+### Dashboard DO
+- Use `useDashboardStats` hook for personal/global stats with SSE
+- Use `useLeaderboard` hook for top 5 users
+- Use `useOnlineUsers` hook for paginated online users
+- Call `dashboardService.incrementUserStats()` after validation batches
+- Include gateway health notifications via `TelegramBotService`
+- Group gateways by `parentType` and `subType` in `GatewayOverview`
+- Use 30-second cache TTL for global stats
+
+### Dashboard DO NOT
+- Hardcode stats data in frontend components
+- Skip stats increment after validation batches
+- Forget to clean up SSE connections on unmount
+- Block validation flow waiting for stats update
+- Count DECLINED/ERROR cards as hits (only APPROVED/LIVE)
+
+
+## Maintenance Mode & Error Pages System
+
+### Overview
+System-wide maintenance mode with error handling pages (404, 403, 500), security protection middleware, and automated error reporting to Telegram. Administrators can toggle maintenance mode via admin panel or Telegram bot commands.
+
+### Architecture
+```
+Backend Middleware Stack (order matters):
+1. SecurityMiddleware (first) - Blocks security threats
+2. MaintenanceMiddleware - Blocks non-admin users during maintenance
+3. Routes - Normal request handling
+4. GlobalErrorHandler (last) - Catches unhandled errors
+
+MaintenanceService (state management)
+├── State: { enabled, reason, estimatedEndTime, enabledAt, enabledBy }
+├── SSE Clients: Set<Response> for real-time broadcasts
+├── Persistence: system_settings table
+└── Telegram integration for notifications
+
+ErrorReporterService (error reporting)
+├── Rate limiting: max 10 per minute per error type
+├── Telegram notifications with error details
+├── Unique error reference IDs
+└── Database logging to error_logs table
+```
+
+### Key Files
+- `backend/src/services/MaintenanceService.js` - Maintenance state management
+- `backend/src/services/ErrorReporterService.js` - Error reporting with rate limiting
+- `backend/src/middleware/SecurityMiddleware.js` - Security threat detection
+- `backend/src/middleware/MaintenanceMiddleware.js` - Maintenance mode enforcement
+- `backend/src/middleware/GlobalErrorHandler.js` - Global error catching
+- `backend/src/controllers/SystemController.js` - Maintenance API endpoints
+- `frontend/src/pages/MaintenancePage.jsx` - Maintenance mode display
+- `frontend/src/pages/NotFoundPage.jsx` - 404 error page
+- `frontend/src/pages/ForbiddenPage.jsx` - 403 error page
+- `frontend/src/pages/ErrorPage.jsx` - 500 error page with reference ID
+- `frontend/src/components/ui/GlobalErrorBoundary.jsx` - React error boundary
+- `frontend/src/components/admin/MaintenanceControls.jsx` - Admin panel controls
+- `frontend/src/hooks/useMaintenanceStatus.js` - SSE-based status hook
+- `frontend/src/lib/services/maintenanceSSE.js` - SSE connection manager
+
+
+### Database Schema
+```sql
+-- System settings table (maintenance state persistence)
+CREATE TABLE system_settings (
+    key VARCHAR(50) PRIMARY KEY,
+    value JSONB NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_by UUID REFERENCES users(id)
+);
+
+-- Security logs table (blocked requests)
+CREATE TABLE security_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    ip_address VARCHAR(45) NOT NULL,
+    path TEXT NOT NULL,
+    attack_type VARCHAR(50) NOT NULL,
+    user_agent TEXT,
+    blocked_at TIMESTAMPTZ DEFAULT NOW(),
+    request_headers JSONB
+);
+
+-- Error logs table (reported errors)
+CREATE TABLE error_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    error_id VARCHAR(20) NOT NULL UNIQUE,
+    message TEXT NOT NULL,
+    stack TEXT,
+    path TEXT,
+    user_id UUID REFERENCES users(id),
+    ip_address VARCHAR(45),
+    reported_to_telegram BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+
+### Security Middleware Patterns
+```javascript
+// Blocked patterns (path traversal, XSS)
+const BLOCKED_PATTERNS = [
+    /\.\.\//,           // Path traversal
+    /\.\.\\/, 
+    /%2e%2e/i,          // URL encoded
+    /<script/i,         // XSS
+    /javascript:/i,
+    /on\w+\s*=/i,       // Event handlers
+];
+
+// Blocked file extensions
+const BLOCKED_EXTENSIONS = [
+    '.env', '.git', '.sql', '.log', '.bak', '.config',
+    '.htaccess', '.htpasswd', '.ini', '.sh', '.bash'
+];
+
+// SQL injection patterns
+const SQL_PATTERNS = [
+    /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|UNION|ALTER)\b)/i,
+    /('|"|;|--)/,
+    /(\bOR\b|\bAND\b)\s+\d+\s*=\s*\d+/i
+];
+```
+
+
+### API Endpoints
+
+**Maintenance Status (Public)**
+```javascript
+GET /api/system/maintenance/status
+// Response
+{
+  status: 'OK',
+  maintenance: {
+    enabled: true,
+    reason: 'Scheduled maintenance',
+    estimatedEndTime: '2026-01-05T14:00:00.000Z',
+    enabledAt: '2026-01-05T12:00:00.000Z'
+  }
+}
+
+GET /api/system/maintenance/stream  // SSE endpoint
+// Events: { type: 'status', enabled, reason, estimatedEndTime }
+```
+
+**Maintenance Control (Admin)**
+```javascript
+POST /api/admin/maintenance/enable
+// Body: { reason?: string, estimatedEndTime?: ISO string }
+// Response: { status: 'OK', message: 'Maintenance mode enabled' }
+
+POST /api/admin/maintenance/disable
+// Response: { status: 'OK', message: 'Maintenance mode disabled' }
+```
+
+**Error Reporting**
+```javascript
+POST /api/errors/report
+// Body: { message, stack?, componentStack?, url, userAgent, timestamp }
+// Response: { status: 'OK', errorId: 'ERR-ABC123XY' }
+```
+
+
+### Telegram Bot Commands
+```
+/maintenance_on [reason]  - Enable maintenance mode with optional reason
+/maintenance_off          - Disable maintenance mode
+/maintenance_status       - Check current maintenance state
+```
+
+Only admin users (validated via `_isAdminUser()`) can execute these commands.
+
+### Frontend Integration
+
+**AppLayout Maintenance Check**
+```jsx
+import { useMaintenanceStatus } from '@/hooks/useMaintenanceStatus';
+
+function AppLayout() {
+    const { isMaintenanceMode, reason, estimatedEndTime } = useMaintenanceStatus();
+    const isAdmin = user?.isAdmin;
+
+    // Show maintenance page for non-admin users during maintenance
+    if (isMaintenanceMode && !isAdmin) {
+        return <MaintenancePage reason={reason} estimatedEndTime={estimatedEndTime} />;
+    }
+
+    return <NormalLayout />;
+}
+```
+
+**GlobalErrorBoundary**
+```jsx
+// Wraps entire app in AppLayout
+<GlobalErrorBoundary>
+    <ValidationProvider>
+        <AppLayoutInner />
+    </ValidationProvider>
+</GlobalErrorBoundary>
+
+// Reports errors to backend and displays ErrorPage with reference ID
+```
+
+
+### Admin Panel Controls
+```jsx
+import { MaintenanceControls } from '@/components/admin/MaintenanceControls';
+
+// Features:
+// - Toggle switch for enable/disable
+// - Reason input field (optional)
+// - Estimated end time picker (optional)
+// - Real-time status via SSE
+// - Confirmation dialogs before changes
+```
+
+### Error Page Components
+
+**MaintenancePage** - Shows during maintenance mode
+- Displays maintenance reason if provided
+- Shows estimated end time countdown
+- Auto-refreshes every 30 seconds
+- Redirects when maintenance ends
+
+**NotFoundPage (404)** - Unknown routes
+- Generic "Page Not Found" message
+- Navigation to dashboard
+- Does NOT expose file paths
+
+**ForbiddenPage (403)** - Access denied
+- Generic "Access Denied" message
+- Does NOT reveal what resource was requested
+- Navigation to dashboard
+
+**ErrorPage (500)** - Unhandled errors
+- Generic "Something went wrong" message
+- Shows unique error reference ID
+- Retry and navigation options
+
+
+### Middleware Order in server.js
+```javascript
+// 1. Security Middleware - FIRST (blocks threats before any processing)
+app.use(securityMiddleware.protect());
+
+// 2. Maintenance Middleware - After auth, before routes
+app.use('/api', (req, res, next) => {
+    // Skip for auth/health routes
+    const skipPaths = ['/auth/telegram/callback', '/system/maintenance/status', '/health'];
+    if (skipPaths.some(p => req.path.startsWith(p))) return next();
+    return maintenanceMiddleware.checkAPI()(req, res, next);
+});
+
+// 3. Routes...
+
+// 4. 404 Handler - After all routes
+app.use((req, res) => {
+    if (req.path.startsWith('/api/')) {
+        return res.status(404).json({ status: 'ERROR', error: { code: 404, message: 'Not found' }});
+    }
+    // Return HTML 404 page
+});
+
+// 5. Global Error Handler - LAST
+app.use(globalErrorHandler.handle());
+```
+
+
+### Maintenance Mode DO
+- Check `useMaintenanceStatus` hook in AppLayout for maintenance state
+- Allow admin bypass during maintenance mode
+- Persist maintenance state to database (survives server restarts)
+- Broadcast status changes via SSE to all connected clients
+- Show confirmation dialogs before enabling/disabling
+- Include reason and estimated end time when enabling
+- Log maintenance state changes to audit log
+
+### Maintenance Mode DO NOT
+- Block auth/health/maintenance-status routes during maintenance
+- Expose internal error details in error pages
+- Skip admin validation for Telegram commands
+- Forget to initialize MaintenanceService on server startup
+
+### Security Middleware DO
+- Apply as FIRST middleware after basic Express setup
+- Log blocked requests to security_logs table
+- Return generic 403 without revealing security rules
+- Check path traversal, SQL injection, XSS, sensitive files
+
+### Security Middleware DO NOT
+- Reveal specific security rules in error responses
+- Skip logging for blocked requests
+- Allow partial path traversal patterns
+
+### Error Handling DO
+- Generate unique error reference IDs (format: ERR-XXXXXXXX)
+- Rate limit Telegram notifications (max 10/min per error type)
+- Report errors to backend from GlobalErrorBoundary
+- Show error reference ID to users for support
+
+### Error Handling DO NOT
+- Expose stack traces in production error responses
+- Skip rate limiting for error notifications
+- Block user flow waiting for error report
+
+
+## Gateway Health Manual Control System
+
+### Overview
+Manual gateway health status control via Telegram bot inline buttons. Replaces automatic health status detection with admin-controlled status changes. Administrators receive alert notifications with action buttons when gateway metrics exceed thresholds and can decide when to change gateway health status.
+
+### Architecture
+```
+HealthMetrics (alert detection only)
+├── ALERT_THRESHOLDS: { CONSECUTIVE_FAILURES: 15, SUCCESS_RATE_PERCENT: 30, ROLLING_WINDOW_SIZE: 50, RECOVERY_CONSECUTIVE: 5 }
+├── shouldTriggerAlert() - Check if alert thresholds exceeded
+├── shouldTriggerRecovery() - Check if recovery threshold met (5 consecutive successes)
+└── consecutiveSuccesses tracking for recovery detection
+
+GatewayManagerService (manual control)
+├── alertState: Map<gateway_id, { inAlert, lastAlertAt }>
+├── alertCooldown: 5 minutes between alerts
+├── setManualHealthStatus(gatewayId, status, options) - Manual status change
+├── _checkAndSendAlert(gatewayId, metrics) - Send Telegram alert if thresholds exceeded
+├── _checkAndSendRecovery(gatewayId, metrics) - Send recovery notification
+└── clearAlertState(gatewayId) - Clear alert state after admin action
+
+TelegramBotService (inline buttons)
+├── sendHealthAlert({ gatewayId, gatewayLabel, currentStatus, metrics, reason }) - Alert with buttons
+├── sendRecoveryNotification({ gatewayId, gatewayLabel, currentStatus }) - Recovery info
+├── editMessageText(chatId, messageId, text, options) - Edit message after button click
+└── answerCallbackQuery(callbackQueryId, text) - Acknowledge button click
+
+TelegramWebhookController (button callbacks)
+├── POST /api/telegram/webhook - Handle Telegram updates
+├── _handleCallbackQuery(callbackQuery) - Route button clicks
+├── _handleSetHealth(callbackId, gatewayId, status, from, message) - Handle status change
+├── _handleDismissAlert(callbackId, gatewayId, from, message) - Handle dismiss
+└── _isAdminUser(telegramId) - Validate admin authorization
+```
+
+### Key Files
+- `backend/src/domain/HealthMetrics.js` - Alert threshold detection (no auto status changes)
+- `backend/src/services/GatewayManagerService.js` - Manual control, alert state tracking
+- `backend/src/services/TelegramBotService.js` - Inline keyboard alerts
+- `backend/src/controllers/TelegramWebhookController.js` - Webhook handler for button clicks
+- `backend/src/controllers/GatewayController.js` - Manual health status API endpoints
+- `frontend/src/components/admin/HealthConfigPanel.jsx` - Admin panel health controls
+
+### Alert Thresholds (Notification Only)
+```javascript
+// Alerts are sent when thresholds exceeded, but NO automatic status change
+const ALERT_THRESHOLDS = {
+    CONSECUTIVE_FAILURES: 15,      // Alert at 15+ consecutive failures
+    SUCCESS_RATE_PERCENT: 30,      // Alert at <30% success rate
+    ROLLING_WINDOW_SIZE: 50,       // Track last 50 requests for rate
+    RECOVERY_CONSECUTIVE: 5        // Recovery notification after 5 consecutive successes
+};
+```
+
+### Telegram Alert Message Format
+```
+⚠️ Gateway Health Alert
+━━━━━━━━━━━━━━━━━━━━━━━
+
+🔗 Gateway: Auth Gateway 1 (auth-1)
+📊 Current Status: 🟢 ONLINE
+
+📈 Metrics (last 50 requests):
+• Success Rate: 25%
+• Consecutive Failures: 18
+• Last Error: rate_limit
+
+⏰ Time: Jan 05, 10:30 UTC
+
+[🔴 Mark Offline] [🟡 Mark Degraded]
+[✅ Dismiss]
+```
+
+### Telegram Callback Data Format
+```javascript
+// Inline button callback_data (JSON stringified, max 64 bytes)
+{
+    action: 'set_health' | 'dismiss_alert',
+    gateway_id: string,
+    status?: 'online' | 'degraded' | 'offline'
+}
+```
+
+### API Endpoints
+
+**POST /api/admin/gateways/:id/health-status** (Manual status change)
+```javascript
+// Request body
+{ status: 'offline', reason: 'Manual maintenance' }
+
+// Response
+{
+    status: 'OK',
+    message: 'Gateway health status updated to offline',
+    gatewayId: 'auth-1',
+    oldHealth: 'online',
+    newHealth: 'offline',
+    timestamp: '2026-01-05T10:30:00.000Z'
+}
+```
+
+**POST /api/admin/gateways/:id/reset-metrics** (Reset metrics without status change)
+```javascript
+// Response
+{
+    status: 'OK',
+    message: 'Health metrics reset successfully',
+    gatewayId: 'auth-1',
+    healthStatus: 'offline',  // Status unchanged
+    metrics: { consecutiveFailures: 0, successRate: 0, ... },
+    timestamp: '2026-01-05T10:30:00.000Z'
+}
+```
+
+**POST /api/telegram/webhook** (Telegram callback handler)
+```javascript
+// Telegram sends callback_query when button clicked
+// Always returns 200 OK to prevent retries
+{ ok: true }
+```
+
+### Telegram Webhook Setup
+
+The webhook allows Telegram to send button click events to your server. This is required for the inline button functionality to work.
+
+**Prerequisites:**
+- Your server must be accessible via HTTPS (Telegram requires SSL)
+- The webhook URL must be publicly accessible (not localhost)
+- Supported ports: 443, 80, 88, or 8443
+
+**Step 1: Set the webhook URL**
+After deployment, run this command (replace placeholders):
+```bash
+curl -X POST "https://api.telegram.org/bot<YOUR_BOT_TOKEN>/setWebhook?url=<YOUR_SERVER_URL>/api/telegram/webhook"
+```
+
+**Example:**
+```bash
+curl -X POST "https://api.telegram.org/bot123456789:ABCdefGHIjklMNOpqrsTUVwxyz/setWebhook?url=https://yourdomain.com/api/telegram/webhook"
+```
+
+**Step 2: Verify webhook is set**
+```bash
+curl "https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getWebhookInfo"
+```
+
+**For local development (using ngrok):**
+```bash
+# Start ngrok tunnel
+ngrok http 3000
+
+# Use the ngrok HTTPS URL for webhook
+curl -X POST "https://api.telegram.org/bot<TOKEN>/setWebhook?url=https://abc123.ngrok.io/api/telegram/webhook"
+```
+
+**To remove webhook:**
+```bash
+curl "https://api.telegram.org/bot<YOUR_BOT_TOKEN>/deleteWebhook"
+```
+
+**Environment Variables Required:**
+```bash
+TELEGRAM_BOT_TOKEN=your-bot-token      # Same token used for SSO
+TELEGRAM_ADMIN_CHAT_ID=your-chat-id    # Admin chat for notifications
+```
+
+### Alert Flow
+1. Gateway records failure via `recordFailure()`
+2. `_checkAndSendAlert()` checks if thresholds exceeded
+3. If alert conditions met AND cooldown passed (5 min), send Telegram alert
+4. Alert includes inline buttons: "Mark Offline", "Mark Degraded", "Dismiss"
+5. Admin clicks button → webhook receives callback
+6. `TelegramWebhookController` validates admin and processes action
+7. Status updated via `setManualHealthStatus()` → SSE broadcast → audit log
+
+### Recovery Flow
+1. Gateway records success via `recordSuccess()`
+2. `_checkAndSendRecovery()` checks if gateway is in alert state
+3. If 5 consecutive successes, send recovery notification
+4. Clear alert state (no buttons needed - informational only)
+
+### Integration with Services
+```javascript
+// Services call recordSuccess/recordFailure which triggers alert checks
+// NO automatic status changes - only alerts sent
+
+// In validation service
+if (this.gatewayManager) {
+    if (result.isApproved() || result.isDeclined()) {
+        // Records success, may trigger recovery notification
+        this.gatewayManager.recordSuccess(gatewayId, latencyMs);
+    } else if (result.status === 'ERROR') {
+        // Records failure, may trigger alert notification
+        this.gatewayManager.recordFailure(gatewayId, result.message);
+    }
+}
+```
+
+### Gateway Health Manual Control DO
+- Use `setManualHealthStatus()` for all health status changes
+- Check admin authorization before processing Telegram callbacks
+- Enforce 5-minute cooldown between alerts for same gateway
+- Clear alert state when admin takes action (status change or dismiss)
+- Always return 200 OK to Telegram webhook (prevents retries)
+- Log all manual status changes to audit log
+- Broadcast status changes via SSE
+
+### Gateway Health Manual Control DO NOT
+- Automatically change health status based on metrics
+- Send alerts more frequently than 5-minute cooldown
+- Allow non-admin users to change status via Telegram
+- Skip SSE broadcast after status change
+- Forget to clear alert state after admin action
+- Block webhook response waiting for status update
+

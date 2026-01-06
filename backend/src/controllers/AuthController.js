@@ -125,6 +125,9 @@ export class AuthController {
         let creditExhausted = false;
         const gatewayId = req.creditInfo?.gatewayId || siteId || 'auth';
         const userId = req.user?.id;
+        let approvedCount = 0;
+        let liveCount = 0;
+        let processedCards = 0;
 
         try {
             const result = await this.authService.processBatch(
@@ -132,12 +135,18 @@ export class AuthController {
                 {
                     concurrency: Math.min(concurrency, 5),
                     tier, // Pass tier for speed limiting (Requirement 3.1)
+                    userId, // Pass userId for statistics tracking (Requirements 8.1, 8.2)
                     onProgress: (progress) => !streamClosed && sendEvent('progress', progress),
                     onResult: async (result) => {
                         if (streamClosed || creditExhausted) return;
 
+                        processedCards++;
+
                         // For LIVE cards (APPROVED in auth), deduct credits in real-time
                         if (result.status === 'APPROVED' && userId && this.creditManagerService) {
+                            // Auth validation: APPROVED = LIVE card
+                            liveCount++;
+                            
                             const deductResult = await this.creditManagerService.deductSingleCardCredit(
                                 userId,
                                 gatewayId,
@@ -183,12 +192,35 @@ export class AuthController {
                 }
             );
 
-            const liveCount = result.stats?.approved || 0;
+            // Determine stop reason (null for normal completion per DB constraint)
+            const wasUserStopped = result.aborted === true;
+            const wasStopped = creditExhausted || wasUserStopped;
+            let stopReason = null; // null = completed normally
+            if (creditExhausted) stopReason = 'credit_exhausted';
+            else if (wasUserStopped) stopReason = 'user_cancelled';
+
+            // Record batch transaction to history (only when credits were deducted)
+            if (userId && this.creditManagerService && totalCreditsDeducted > 0) {
+                try {
+                    await this.creditManagerService.recordBatchTransaction(userId, gatewayId, {
+                        totalCreditsDeducted,
+                        approvedCount,
+                        liveCount,
+                        totalCards: cardArray.length,
+                        processedCards,
+                        currentBalance,
+                        wasStopped,
+                        stopReason
+                    });
+                } catch (err) {
+                    console.error('[AuthController] Failed to record batch transaction:', err.message);
+                }
+            }
 
             // Release operation lock
-            if (req.user?.id && this.creditManagerService) {
+            if (userId && this.creditManagerService) {
                 try {
-                    await this.creditManagerService.releaseOperationLockByUser(req.user.id, creditExhausted ? 'credit_exhausted' : 'completed');
+                    await this.creditManagerService.releaseOperationLockByUser(userId, stopReason);
                 } catch (err) {
                     // Lock release error
                 }
@@ -203,10 +235,26 @@ export class AuthController {
                 });
             }
         } catch (error) {
-            // Release lock on error
-            if (req.user?.id && this.creditManagerService) {
+            // Record transaction on error if any credits were deducted
+            if (userId && this.creditManagerService && totalCreditsDeducted > 0) {
                 try {
-                    await this.creditManagerService.releaseOperationLockByUser(req.user.id, 'failed');
+                    await this.creditManagerService.recordBatchTransaction(userId, gatewayId, {
+                        totalCreditsDeducted,
+                        approvedCount,
+                        liveCount,
+                        totalCards: cardArray.length,
+                        processedCards,
+                        currentBalance,
+                        wasStopped: true,
+                        stopReason: 'error'
+                    });
+                } catch {}
+            }
+            
+            // Release lock on error
+            if (userId && this.creditManagerService) {
+                try {
+                    await this.creditManagerService.releaseOperationLockByUser(userId, 'failed');
                 } catch (err) {
                     // Lock release error
                 }

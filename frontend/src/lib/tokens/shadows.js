@@ -1,47 +1,50 @@
 /**
  * Shadow Token Definitions
  * 
- * Minimal shadow system for light mode
- * OPUX glass shadow system for dark mode
+ * Light mode: Vintage Banking - warm copper/sepia tinted shadows
+ * Dark mode: OPUX glass shadow system
  */
 
-// Minimal shadows - subtle and refined (light mode)
+// Vintage Banking shadows - warm sepia-tinted (light mode)
 export const shadows = {
-  // Subtle shadows for light surfaces
+  // Subtle shadows for light surfaces - sepia tinted
   subtle: {
-    sm: '0 1px 2px rgba(0,0,0,0.03)',
-    DEFAULT: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03)',
-    md: '0 2px 4px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03)',
+    sm: '0 1px 2px hsla(25,35%,18%,0.04)',
+    DEFAULT: '0 1px 3px hsla(25,35%,18%,0.05), 0 1px 2px hsla(25,35%,18%,0.04)',
+    md: '0 2px 4px hsla(25,35%,18%,0.05), 0 1px 2px hsla(25,35%,18%,0.04)',
   },
 
-  // Elevated shadows for cards and panels
+  // Elevated shadows for cards and panels - copper warmth
   elevated: {
-    sm: '0 2px 6px rgba(0,0,0,0.04)',
-    DEFAULT: '0 4px 12px rgba(0,0,0,0.05), 0 2px 4px rgba(0,0,0,0.03)',
-    lg: '0 8px 24px rgba(0,0,0,0.06), 0 4px 8px rgba(0,0,0,0.03)',
+    sm: '0 2px 6px hsla(25,50%,30%,0.06)',
+    DEFAULT: '0 4px 12px hsla(25,50%,30%,0.08), 0 2px 4px hsla(25,35%,18%,0.04)',
+    lg: '0 8px 24px hsla(25,50%,30%,0.10), 0 4px 8px hsla(25,35%,18%,0.05)',
   },
 
-  // Hover state shadows
+  // Hover state shadows - copper accent
   hover: {
-    DEFAULT: '0 4px 16px rgba(0,0,0,0.06)',
-    lg: '0 8px 24px rgba(0,0,0,0.08)',
+    DEFAULT: '0 4px 16px hsla(25,75%,45%,0.12)',
+    lg: '0 8px 24px hsla(25,75%,45%,0.15)',
   },
 
-  // Primary accent shadow
-  primaryAccent: '0 0 0 3px hsl(var(--primary) / 0.1)',
+  // Primary accent shadow - copper foil glow
+  primaryAccent: '0 0 0 3px hsla(25,75%,45%,0.15)',
 
-  // Card shadow - minimal
-  card: '0 1px 3px rgba(0,0,0,0.04)',
-  cardHover: '0 4px 12px rgba(0,0,0,0.06)',
+  // Card shadow - vintage parchment depth
+  card: '0 1px 3px hsla(25,35%,18%,0.05), 0 1px 2px hsla(25,50%,30%,0.03)',
+  cardHover: '0 4px 12px hsla(25,75%,45%,0.10), 0 2px 4px hsla(25,35%,18%,0.05)',
 
-  // Popover shadow
-  popover: '0 4px 16px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04)',
+  // Popover shadow - deeper sepia
+  popover: '0 4px 16px hsla(25,35%,18%,0.12), 0 2px 4px hsla(25,50%,30%,0.06)',
+
+  // Inset shadow for engraved effect
+  inset: 'inset 0 1px 2px hsla(25,35%,18%,0.06)',
 
   // No shadow
   none: 'none',
 };
 
-// OPUX glass shadows (dark mode)
+// OPUX glass shadows (dark mode) - unchanged
 export const glassShadows = {
   // Standard glass shadow
   glass: 'inset 0 1px 0 hsl(0 0% 100% / 0.05), 0 4px 24px hsl(0 0% 0% / 0.3)',
@@ -54,16 +57,21 @@ export const glassShadows = {
   glassSubtle: 'inset 0 1px 0 hsl(0 0% 100% / 0.03), 0 2px 12px hsl(0 0% 0% / 0.2)',
 };
 
-// Status shadows for badges/indicators
+// Status shadows - vintage banking palette
 export const statusShadows = {
-  success: '0 0 8px hsl(142 71% 45% / 0.15)',
-  warning: '0 0 8px hsl(38 92% 50% / 0.15)',
-  error: '0 0 8px hsl(0 62% 30% / 0.15)',
+  // Antique green for success
+  success: '0 0 8px hsla(145,45%,38%,0.20)',
+  // Aged gold for warning  
+  warning: '0 0 8px hsla(38,70%,50%,0.20)',
+  // Burgundy ink for error
+  error: '0 0 8px hsla(355,40%,45%,0.20)',
+  // Copper for primary/info
+  primary: '0 0 8px hsla(25,75%,45%,0.20)',
 };
 
 // Tailwind-compatible shadow config (for tailwind.config.js)
 export const shadowConfig = {
-  // Light mode shadows
+  // Light mode shadows - vintage banking
   'subtle-sm': shadows.subtle.sm,
   'subtle': shadows.subtle.DEFAULT,
   'subtle-md': shadows.subtle.md,
@@ -76,6 +84,7 @@ export const shadowConfig = {
   'card': shadows.card,
   'card-hover': shadows.cardHover,
   'popover': shadows.popover,
+  'inset': shadows.inset,
 
   // Glass shadows (dark mode)
   'glass': glassShadows.glass,
@@ -87,4 +96,5 @@ export const shadowConfig = {
   'status-success': statusShadows.success,
   'status-warning': statusShadows.warning,
   'status-error': statusShadows.error,
+  'status-primary': statusShadows.primary,
 };

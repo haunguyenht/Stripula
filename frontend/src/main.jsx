@@ -29,8 +29,8 @@ createRoot(document.getElementById('root')).render(
             toastOptions={{
               duration: 4000,
             }}
-            gap={12}
-            visibleToasts={4}
+            gap={8}
+            visibleToasts={5}
             expand={false}
             closeButton
           />

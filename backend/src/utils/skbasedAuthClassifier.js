@@ -136,9 +136,9 @@ export function classifyAuthResult(declineCode, cvcCheck, setupIntentStatus) {
         return { status: 'LIVE', message: 'Card Authorized' };
     }
 
-    // 3DS required = LIVE (card is valid, just needs verification)
+    // 3DS required = 3DS status (exact status, not LIVE)
     if (setupIntentStatus === 'requires_action') {
-        return { status: 'LIVE', message: '3DS Required (Card Valid)' };
+        return { status: '3DS', message: '3DS Authentication Required' };
     }
 
     // Check CVC first

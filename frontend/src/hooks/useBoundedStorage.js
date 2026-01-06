@@ -21,7 +21,7 @@ export const MAX_RESULTS = 5000;
  */
 export function useBoundedResults(key, initialValue = []) {
   // Use sessionStorage with a high maxArrayLength since we handle limiting ourselves
-  const [results, setResults] = useSessionStorage(key, initialValue, { 
+  const [results, setResults, setResultsImmediate] = useSessionStorage(key, initialValue, { 
     maxArrayLength: MAX_RESULTS,
     debounceMs: 300 
   });
@@ -59,11 +59,12 @@ export function useBoundedResults(key, initialValue = []) {
   }, [setResults]);
 
   /**
-   * Clear all results
+   * Clear all results - uses immediate write to bypass debounce
+   * This ensures storage is cleared before any new validation starts
    */
   const clearResults = useCallback(() => {
-    setResults([]);
-  }, [setResults]);
+    setResultsImmediate([]);
+  }, [setResultsImmediate]);
 
   /**
    * Current count of stored results

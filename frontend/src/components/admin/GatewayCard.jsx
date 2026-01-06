@@ -82,7 +82,8 @@ function getGatewaySubType(gatewayId) {
   if (!gatewayId) return 'auth';
   if (gatewayId.startsWith('auth-')) return 'auth';
   if (gatewayId.startsWith('charge-')) return 'charge';
-  if (gatewayId.startsWith('sk-') || gatewayId.startsWith('skbased-')) return 'skbased';
+  if (gatewayId.startsWith('skbased-auth-')) return 'skbased-auth';  // SKAuth - only APPROVED
+  if (gatewayId.startsWith('sk-') || gatewayId.startsWith('skbased-')) return 'skbased';  // SKCharge - APPROVED + LIVE
   if (gatewayId.startsWith('shopify-')) return 'shopify';
   return 'auth';
 }
@@ -93,9 +94,10 @@ function getGatewaySubType(gatewayId) {
 function getPricingConfig(subType) {
   switch (subType) {
     case 'charge':
-      return { showApproved: true, showLive: true, approvedLabel: 'APPROVED' };
     case 'skbased':
       return { showApproved: true, showLive: true, approvedLabel: 'CHARGED' };
+    case 'skbased-auth':
+      return { showApproved: true, showLive: false, approvedLabel: 'APPROVED' };
     case 'auth':
     case 'shopify':
     default:
@@ -1471,13 +1473,11 @@ export function GatewayCard({
                   isActive={activeSection === 'proxy'}
                   onClick={() => setActiveSection('proxy')}
                 />
-                {!isSKBased && (
-                  <SectionTab
-                    section="pricing"
-                    isActive={activeSection === 'pricing'}
-                    onClick={() => setActiveSection('pricing')}
-                  />
-                )}
+                <SectionTab
+                  section="pricing"
+                  isActive={activeSection === 'pricing'}
+                  onClick={() => setActiveSection('pricing')}
+                />
                 <SectionTab
                   section="access"
                   isActive={activeSection === 'access'}
@@ -1519,7 +1519,7 @@ export function GatewayCard({
                     </motion.div>
                   )}
 
-                  {activeSection === 'pricing' && !isSKBased && (
+                  {activeSection === 'pricing' && (
                     <motion.div
                       key="pricing"
                       initial={{ opacity: 0, x: -10 }}

@@ -37,6 +37,9 @@ import { SKBasedChargeService } from './services/SKBasedChargeService.js';
 import { SKBasedAuthService } from './services/SKBasedAuthService.js';
 import { TelegramBotService } from './services/TelegramBotService.js';
 import { UserNotificationService } from './services/UserNotificationService.js';
+import { DashboardService } from './services/DashboardService.js';
+import { MaintenanceService } from './services/MaintenanceService.js';
+import { ErrorReporterService } from './services/ErrorReporterService.js';
 
 // Controllers
 import { AuthController } from './controllers/AuthController.js';
@@ -56,12 +59,19 @@ import { SavedProxyService } from './services/SavedProxyService.js';
 import { SKBasedController } from './controllers/SKBasedController.js';
 import { SKBasedAuthController } from './controllers/SKBasedAuthController.js';
 import { KeyController } from './controllers/KeyController.js';
+import { DashboardController } from './controllers/DashboardController.js';
+import { TelegramWebhookController } from './controllers/TelegramWebhookController.js';
+import { PlaywrightChargeController } from './controllers/PlaywrightChargeController.js';
 
 // Middleware
 import { AuthMiddleware } from './middleware/AuthMiddleware.js';
 import { AdminMiddleware } from './middleware/AdminMiddleware.js';
 import { CreditMiddleware } from './middleware/CreditMiddleware.js';
 import { RateLimitMiddleware } from './middleware/RateLimitMiddleware.js';
+import { OnlineUserTracker } from './middleware/OnlineUserTracker.js';
+import { SecurityMiddleware } from './middleware/SecurityMiddleware.js';
+import { MaintenanceMiddleware } from './middleware/MaintenanceMiddleware.js';
+import { GlobalErrorHandler } from './middleware/GlobalErrorHandler.js';
 
 // Config
 import { DEFAULTS } from './utils/constants.js';
@@ -88,6 +98,18 @@ function createContainer() {
     // Gateway Manager Service (initialized early for injection into validation services)
     const gatewayManagerService = new GatewayManagerService({ supabase });
 
+    // Dashboard Service (initialized early for injection into validation services)
+    // Requirements: 8.1, 8.2 - Statistics tracking integration
+    const dashboardService = new DashboardService({ supabase });
+
+    // Maintenance Service (for global maintenance mode management)
+    // Requirements: 1.1, 1.2, 1.3, 1.5, 1.6 - Maintenance mode toggle and persistence
+    const maintenanceService = new MaintenanceService({ supabase });
+
+    // Error Reporter Service (for error reporting to Telegram)
+    // Requirements: 6.3, 6.4, 6.5, 6.6 - Error reporting and rate limiting
+    const errorReporterService = new ErrorReporterService({ supabase });
+
     const keyChecker = new KeyCheckerService({
         stripeClient: infrastructure.stripeClient,
         gatewayManager: gatewayManagerService
@@ -96,29 +118,34 @@ function createContainer() {
     // SK-Based Auth Service (created before authService for injection)
     const skbasedAuthService = new SKBasedAuthService({
         speedManager,
-        gatewayManager: gatewayManagerService
+        gatewayManager: gatewayManagerService,
+        dashboardService // Inject for statistics tracking
     });
 
     const authService = new StripeAuthService({
         speedManager,
         gatewayManager: gatewayManagerService,
-        skbasedAuthService // Inject for routing skbased-auth-* gateways
+        skbasedAuthService, // Inject for routing skbased-auth-* gateways
+        dashboardService // Inject for statistics tracking
     });
 
     const shopifyChargeService = new ShopifyChargeService({
         speedManager,
-        gatewayManager: gatewayManagerService
+        gatewayManager: gatewayManagerService,
+        dashboardService // Inject for statistics tracking
     });
 
     const chargeService = new StripeChargeService({
         speedManager,
-        gatewayManager: gatewayManagerService
+        gatewayManager: gatewayManagerService,
+        dashboardService // Inject for statistics tracking
     });
 
     // SK-Based Charge Service
     const skbasedChargeService = new SKBasedChargeService({
         speedManager,
-        gatewayManager: gatewayManagerService
+        gatewayManager: gatewayManagerService,
+        dashboardService // Inject for statistics tracking
     });
 
     // Telegram Auth Service
@@ -127,15 +154,29 @@ function createContainer() {
     // Telegram Bot Service (for notifications)
     const telegramBotService = new TelegramBotService();
 
+    // Inject TelegramBotService into GatewayManagerService for health notifications
+    gatewayManagerService.telegramBotService = telegramBotService;
+
+    // Inject TelegramBotService into MaintenanceService for maintenance notifications
+    maintenanceService.telegramBotService = telegramBotService;
+
+    // Inject TelegramBotService into ErrorReporterService for error notifications
+    errorReporterService.telegramBotService = telegramBotService;
+
+    // Inject MaintenanceService and Supabase into TelegramBotService for maintenance commands
+    telegramBotService.setMaintenanceService(maintenanceService);
+    telegramBotService.setSupabase(supabase);
+
     // Credit Manager Service
     const creditManagerService = new CreditManagerService();
 
     // User Service
     const userService = new UserService();
 
-    // Gateway Config Service (with gatewayManager for SSE broadcasts)
+    // Gateway Config Service (with gatewayManager for SSE broadcasts and creditManagerService for cache invalidation)
     const gatewayConfigService = new GatewayConfigService({
-        gatewayManager: gatewayManagerService
+        gatewayManager: gatewayManagerService,
+        creditManagerService: creditManagerService
     });
 
     // Tier Limit Service (with gatewayManager for SSE broadcasts)
@@ -146,8 +187,14 @@ function createContainer() {
     // User Notification Service (for real-time user updates)
     const userNotificationService = new UserNotificationService();
 
+    // Online User Tracker (middleware for activity tracking)
+    const onlineUserTracker = new OnlineUserTracker({
+        supabase,
+        dashboardService
+    });
+
     // Admin Service
-    const adminService = new AdminService();
+    const adminService = new AdminService({ userService });
 
     // Redeem Key Service
     const redeemKeyService = new RedeemKeyService(creditManagerService);
@@ -155,31 +202,51 @@ function createContainer() {
     // Middleware
     const authMiddleware = new AuthMiddleware({ telegramAuthService, userService });
     const adminMiddleware = new AdminMiddleware();
-    const creditMiddleware = new CreditMiddleware({ 
-        creditManagerService, 
-        userService, 
-        gatewayConfigService 
+    const creditMiddleware = new CreditMiddleware({
+        creditManagerService,
+        userService,
+        gatewayConfigService
     });
     const rateLimitMiddleware = new RateLimitMiddleware();
 
+    // Security Middleware (Requirements: 5.1, 5.2, 5.3, 5.4)
+    // Validates requests and blocks potential security threats
+    const securityMiddleware = new SecurityMiddleware({ supabase });
+
+    // Maintenance Middleware (Requirements: 1.3, 1.4)
+    // Checks maintenance status and blocks non-admin users during maintenance
+    // Admin users can bypass maintenance mode to manage the system
+    const maintenanceMiddleware = new MaintenanceMiddleware({
+        maintenanceService,
+        telegramAuthService
+    });
+
+    // Global Error Handler (Requirements: 6.1, 7.1)
+    // Catches all unhandled errors and reports to Telegram
+    const globalErrorHandler = new GlobalErrorHandler({ errorReporter: errorReporterService });
+
     // Controllers
-    const authController = new AuthController({ 
-        authService, 
+    const authController = new AuthController({
+        authService,
         creditManagerService,
         telegramBotService
     });
-    const chargeController = new ChargeController({ 
-        chargeService, 
+    const chargeController = new ChargeController({
+        chargeService,
         creditManagerService,
         telegramBotService
     });
-    const shopifyController = new ShopifyChargeController({ 
-        shopifyChargeService, 
+    const shopifyController = new ShopifyChargeController({
+        shopifyChargeService,
         creditManagerService,
         telegramBotService
     });
     const proxyController = new ProxyController({});
-    const systemController = new SystemController({ tierLimitService });
+    const systemController = new SystemController({
+        tierLimitService,
+        maintenanceService,
+        errorReporterService
+    });
     const telegramAuthController = new TelegramAuthController({ telegramAuthService });
     const creditController = new CreditController({ creditManagerService });
     const userController = new UserController({ userService, userNotificationService });
@@ -189,8 +256,8 @@ function createContainer() {
     const speedConfigController = new SpeedConfigController({ speedConfigService, speedManager });
     // Saved Proxy Service
     const savedProxyService = new SavedProxyService();
-    
-    const gatewayController = new GatewayController({ 
+
+    const gatewayController = new GatewayController({
         gatewayManager: gatewayManagerService,
         gatewayConfigService: gatewayConfigService,
         userService: userService,
@@ -218,6 +285,22 @@ function createContainer() {
         gatewayManager: gatewayManagerService
     });
 
+    // Dashboard Controller
+    const dashboardController = new DashboardController({
+        dashboardService
+    });
+
+    // Telegram Webhook Controller (for gateway health inline button callbacks)
+    // Requirements: 6.1 - Handle Telegram webhook callbacks for inline buttons
+    const telegramWebhookController = new TelegramWebhookController({
+        gatewayManager: gatewayManagerService,
+        telegramBotService,
+        supabase
+    });
+
+    // Playwright Charge Controller (browser-based Stripe Elements charging)
+    const playwrightChargeController = new PlaywrightChargeController();
+
     return {
         infrastructure,
         services: {
@@ -237,13 +320,20 @@ function createContainer() {
             speedManager,
             gatewayManagerService,
             tierLimitService,
-            userNotificationService
+            userNotificationService,
+            dashboardService,
+            maintenanceService,
+            errorReporterService
         },
         middleware: {
             auth: authMiddleware,
             admin: adminMiddleware,
             credit: creditMiddleware,
-            rateLimit: rateLimitMiddleware
+            rateLimit: rateLimitMiddleware,
+            onlineUserTracker: onlineUserTracker,
+            security: securityMiddleware,
+            maintenance: maintenanceMiddleware,
+            globalErrorHandler: globalErrorHandler
         },
         controllers: {
             auth: authController,
@@ -261,7 +351,10 @@ function createContainer() {
             gateway: gatewayController,
             skbased: skbasedController,
             skbasedAuth: skbasedAuthController,
-            key: keyController
+            key: keyController,
+            dashboard: dashboardController,
+            telegramWebhook: telegramWebhookController,
+            playwright: playwrightChargeController
         }
     };
 }
@@ -280,6 +373,13 @@ function createApp(container) {
     app.use(cookieParser());
     app.use(express.json({ limit: '10mb' }));
     app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+    // ═══════════════════════════════════════════════════════════════
+    // Security Middleware - MUST be first after basic Express middleware
+    // Requirements: 5.1, 5.2, 5.3, 5.4 - Block security threats
+    // ═══════════════════════════════════════════════════════════════
+    const securityMiddleware = container.middleware.security;
+    app.use(securityMiddleware.protect());
 
     // Serve static files
     app.use(express.static(path.join(__dirname, '../public')));
@@ -301,12 +401,54 @@ function createApp(container) {
     const skbasedRoutes = container.controllers.skbased.getRoutes();
     const skbasedAuthRoutes = container.controllers.skbasedAuth.getRoutes();
     const keyRoutes = container.controllers.key.getRoutes();
+    const dashboardRoutes = container.controllers.dashboard.getRoutes();
+    const telegramWebhookRoutes = container.controllers.telegramWebhook.getRoutes();
+    const playwrightRoutes = container.controllers.playwright.getRoutes();
+
+    // ═══════════════════════════════════════════════════════════════
+    // Telegram Webhook route - NO AUTH REQUIRED for Telegram callbacks
+    // Must be registered BEFORE maintenance middleware
+    // Requirements: 6.1 - Expose POST /api/telegram/webhook endpoint
+    // ═══════════════════════════════════════════════════════════════
+    app.post('/api/telegram/webhook', telegramWebhookRoutes.handleWebhook);
 
     // Get middleware
     const authMiddleware = container.middleware.auth;
     const adminMiddleware = container.middleware.admin;
     const creditMiddleware = container.middleware.credit;
     const rateLimitMiddleware = container.middleware.rateLimit;
+    const onlineUserTracker = container.middleware.onlineUserTracker;
+    const maintenanceMiddleware = container.middleware.maintenance;
+    const globalErrorHandler = container.middleware.globalErrorHandler;
+
+    // ═══════════════════════════════════════════════════════════════
+    // Maintenance Middleware - Check maintenance status for API routes
+    // Requirements: 1.3, 1.4 - Block non-admin users during maintenance
+    // Applied to all /api/* routes except:
+    // - /api/auth/telegram/* (login routes)
+    // - /api/system/maintenance/* (maintenance status routes)
+    // - /api/health/* (health check routes)
+    // ═══════════════════════════════════════════════════════════════
+    app.use('/api', (req, res, next) => {
+        // Skip maintenance check for these routes
+        const skipPaths = [
+            '/auth/telegram/callback',
+            '/auth/refresh',
+            '/system/maintenance/status',
+            '/system/maintenance/stream',
+            '/health',
+            '/health/detailed'
+        ];
+
+        // Check if path should skip maintenance check
+        const shouldSkip = skipPaths.some(path => req.path === path || req.path.startsWith(path + '/'));
+        if (shouldSkip) {
+            return next();
+        }
+
+        // Apply maintenance check for API routes
+        return maintenanceMiddleware.checkAPI()(req, res, next);
+    });
 
     // ═══════════════════════════════════════════════════════════════
     // Telegram Auth routes - SSO authentication
@@ -336,14 +478,40 @@ function createApp(container) {
     app.get('/api/user/notifications/stream', authMiddleware.authenticate(), userRoutes.notificationStream);
 
     // ═══════════════════════════════════════════════════════════════
+    // Dashboard routes - Dashboard stats, leaderboard, online users
+    // All routes require authentication and track user activity
+    // Requirements: 1.1, 1.2, 2.1, 2.2, 3.1, 3.2, 5.1, 6.1, 8.3
+    // ═══════════════════════════════════════════════════════════════
+    app.get('/api/dashboard/stats',
+        authMiddleware.authenticate(),
+        onlineUserTracker.middleware(),
+        dashboardRoutes.getStats
+    );
+    app.get('/api/dashboard/stats/stream',
+        authMiddleware.authenticate(),
+        onlineUserTracker.middleware(),
+        dashboardRoutes.streamStats
+    );
+    app.get('/api/dashboard/leaderboard',
+        authMiddleware.authenticate(),
+        onlineUserTracker.middleware(),
+        dashboardRoutes.getLeaderboard
+    );
+    app.get('/api/dashboard/online-users',
+        authMiddleware.authenticate(),
+        onlineUserTracker.middleware(),
+        dashboardRoutes.getOnlineUsers
+    );
+
+    // ═══════════════════════════════════════════════════════════════
     // Auth routes - SetupIntent/Auth flows (WooCommerce, Yogatket)
     // Protected routes require authentication and credit check
     // ═══════════════════════════════════════════════════════════════
     app.get('/api/auth/sites', authRoutes.getSites);
     app.post('/api/auth/site', authRoutes.setSite);
     app.post('/api/auth/check', authMiddleware.optionalAuth(), authRoutes.checkCard);
-    app.post('/api/auth/batch-stream', 
-        authMiddleware.authenticate(), 
+    app.post('/api/auth/batch-stream',
+        authMiddleware.authenticate(),
         creditMiddleware.checkCredits(GATEWAY_IDS.AUTH_1),
         creditMiddleware.acquireLock(),
         authRoutes.checkBatchStream
@@ -358,8 +526,8 @@ function createApp(container) {
     app.get('/api/charge/health', chargeRoutes.getHealth); // Health check endpoint (Requirement 11.5)
     app.post('/api/charge/site', chargeRoutes.setSite);
     app.post('/api/charge/check', authMiddleware.optionalAuth(), chargeRoutes.checkCard);
-    app.post('/api/charge/batch-stream', 
-        authMiddleware.authenticate(), 
+    app.post('/api/charge/batch-stream',
+        authMiddleware.authenticate(),
         creditMiddleware.checkCredits(GATEWAY_IDS.CHARGE_1),
         creditMiddleware.acquireLock(),
         chargeRoutes.checkBatchStream
@@ -368,12 +536,14 @@ function createApp(container) {
 
     // ═══════════════════════════════════════════════════════════════
     // SK-Based routes - User-provided SK/PK key validation
-    // Protected routes require authentication only (NO credit deduction)
+    // Protected routes require authentication and credit deduction
     // Requirements: 3.1-3.3
     // ═══════════════════════════════════════════════════════════════
     app.get('/api/skbased/health', skbasedRoutes.getHealth);
-    app.post('/api/skbased/validate', 
-        authMiddleware.authenticate(), 
+    app.post('/api/skbased/validate',
+        authMiddleware.authenticate(),
+        creditMiddleware.checkCredits(GATEWAY_IDS.SKBASED_CHARGE_1),
+        creditMiddleware.acquireLock(),
         skbasedRoutes.startValidation
     );
     app.post('/api/skbased/stop', authMiddleware.optionalAuth(), skbasedRoutes.stopBatch);
@@ -383,12 +553,12 @@ function createApp(container) {
     // Uses user-provided SK/PK keys for direct Stripe API validation
     // NO credit deduction for SK-based gateways
     // ═══════════════════════════════════════════════════════════════
-    app.post('/api/skbased-auth/validate', 
-        authMiddleware.authenticate(), 
+    app.post('/api/skbased-auth/validate',
+        authMiddleware.authenticate(),
         skbasedAuthRoutes.startValidation
     );
-    app.get('/api/skbased-auth/validate/stream', 
-        authMiddleware.authenticate(), 
+    app.get('/api/skbased-auth/validate/stream',
+        authMiddleware.authenticate(),
         skbasedAuthRoutes.streamResults
     );
     app.post('/api/skbased-auth/stop', authMiddleware.optionalAuth(), skbasedAuthRoutes.stopValidation);
@@ -400,23 +570,14 @@ function createApp(container) {
     app.post('/api/keys/check-batch', authMiddleware.optionalAuth(), keyRoutes.checkKeysBatch);
 
     // ═══════════════════════════════════════════════════════════════
-    // Shopify routes - Shopify checkout validation
+    // Shopify routes - Auto Shopify API card validation (charge type)
+    // User provides Shopify URL for validation
     // Protected routes require authentication and credit check
     // ═══════════════════════════════════════════════════════════════
-    app.get('/api/shopify/sites', shopifyRoutes.getSites);
-    app.get('/api/shopify/all-sites', shopifyRoutes.getAllSites);
-    app.post('/api/shopify/site', shopifyRoutes.setSite);
-    app.post('/api/shopify/update-site', shopifyRoutes.updateSite);
     app.post('/api/shopify/check', authMiddleware.optionalAuth(), shopifyRoutes.checkCard);
-    app.post('/api/shopify/batch', 
-        authMiddleware.authenticate(), 
-        creditMiddleware.checkCredits(GATEWAY_IDS.SHOPIFY_1),
-        creditMiddleware.acquireLock(),
-        shopifyRoutes.checkBatch
-    );
-    app.post('/api/shopify/batch-stream', 
-        authMiddleware.authenticate(), 
-        creditMiddleware.checkCredits(GATEWAY_IDS.SHOPIFY_1),
+    app.post('/api/shopify/batch-stream',
+        authMiddleware.authenticate(),
+        creditMiddleware.checkCredits(GATEWAY_IDS.AUTO_SHOPIFY_1),
         creditMiddleware.acquireLock(),
         shopifyRoutes.checkBatchStream
     );
@@ -429,13 +590,21 @@ function createApp(container) {
     app.post('/api/proxy/check-stripe', proxyRoutes.checkStripeAccess);
 
     // ═══════════════════════════════════════════════════════════════
+    // Playwright routes - Browser-based Stripe Elements charging
+    // Uses real browser with human-like typing and proxy support
+    // ═══════════════════════════════════════════════════════════════
+    playwrightRoutes.forEach(route => {
+        app[route.method.toLowerCase()](route.path, authMiddleware.optionalAuth(), route.handler);
+    });
+
+    // ═══════════════════════════════════════════════════════════════
     // Redeem routes - Key redemption for authenticated users
     // Rate limited to 10 attempts per IP per minute (Requirement 8.4)
     // Requirements: 5.1, 5.8
     // ═══════════════════════════════════════════════════════════════
-    app.post('/api/redeem', 
+    app.post('/api/redeem',
         rateLimitMiddleware.limitByIPAndEndpoint('redeem', 10, 60 * 1000),
-        authMiddleware.authenticate(), 
+        authMiddleware.authenticate(),
         redeemRoutes.redeemKey
     );
 
@@ -445,53 +614,58 @@ function createApp(container) {
     // Requirements: 3.1, 3.2, 3.4, 3.5, 4.1, 4.7, 4.8
     // ═══════════════════════════════════════════════════════════════
     // Key management
-    app.post('/api/admin/keys/generate', 
-        authMiddleware.authenticate(), 
-        adminMiddleware.requireAdmin(), 
+    app.post('/api/admin/keys/generate',
+        authMiddleware.authenticate(),
+        adminMiddleware.requireAdmin(),
         adminRoutes.generateKeys
     );
-    app.get('/api/admin/keys', 
-        authMiddleware.authenticate(), 
-        adminMiddleware.requireAdmin(), 
+    app.get('/api/admin/keys',
+        authMiddleware.authenticate(),
+        adminMiddleware.requireAdmin(),
         adminRoutes.getKeys
     );
-    app.delete('/api/admin/keys/:id', 
-        authMiddleware.authenticate(), 
-        adminMiddleware.requireAdmin(), 
+    app.delete('/api/admin/keys/:id',
+        authMiddleware.authenticate(),
+        adminMiddleware.requireAdmin(),
         adminRoutes.revokeKey
     );
-    
+
     // User management
-    app.get('/api/admin/users', 
-        authMiddleware.authenticate(), 
-        adminMiddleware.requireAdmin(), 
+    app.get('/api/admin/users',
+        authMiddleware.authenticate(),
+        adminMiddleware.requireAdmin(),
         adminRoutes.getUsers
     );
-    app.patch('/api/admin/users/:id/tier', 
-        authMiddleware.authenticate(), 
-        adminMiddleware.requireAdmin(), 
+    app.patch('/api/admin/users/:id/tier',
+        authMiddleware.authenticate(),
+        adminMiddleware.requireAdmin(),
         adminRoutes.updateUserTier
     );
-    app.patch('/api/admin/users/:id/credits', 
-        authMiddleware.authenticate(), 
-        adminMiddleware.requireAdmin(), 
+    app.post('/api/admin/users/:id/tier/extend',
+        authMiddleware.authenticate(),
+        adminMiddleware.requireAdmin(),
+        adminRoutes.extendUserTier
+    );
+    app.patch('/api/admin/users/:id/credits',
+        authMiddleware.authenticate(),
+        adminMiddleware.requireAdmin(),
         adminRoutes.updateUserCredits
     );
-    app.post('/api/admin/users/:id/flag', 
-        authMiddleware.authenticate(), 
-        adminMiddleware.requireAdmin(), 
+    app.post('/api/admin/users/:id/flag',
+        authMiddleware.authenticate(),
+        adminMiddleware.requireAdmin(),
         adminRoutes.flagUser
     );
-    app.delete('/api/admin/users/:id/flag', 
-        authMiddleware.authenticate(), 
-        adminMiddleware.requireAdmin(), 
+    app.delete('/api/admin/users/:id/flag',
+        authMiddleware.authenticate(),
+        adminMiddleware.requireAdmin(),
         adminRoutes.unflagUser
     );
-    
+
     // Analytics
-    app.get('/api/admin/analytics', 
-        authMiddleware.authenticate(), 
-        adminMiddleware.requireAdmin(), 
+    app.get('/api/admin/analytics',
+        authMiddleware.authenticate(),
+        adminMiddleware.requireAdmin(),
         adminRoutes.getAnalytics
     );
 
@@ -499,24 +673,24 @@ function createApp(container) {
     // Tier Limit routes - Admin tier limit configuration
     // Requirements: 7.2, 7.3, 7.4, 7.5, 7.6
     // ═══════════════════════════════════════════════════════════════
-    app.get('/api/admin/tier-limits', 
-        authMiddleware.authenticate(), 
-        adminMiddleware.requireAdmin(), 
+    app.get('/api/admin/tier-limits',
+        authMiddleware.authenticate(),
+        adminMiddleware.requireAdmin(),
         adminRoutes.getTierLimits
     );
-    app.put('/api/admin/tier-limits', 
-        authMiddleware.authenticate(), 
-        adminMiddleware.requireAdmin(), 
+    app.put('/api/admin/tier-limits',
+        authMiddleware.authenticate(),
+        adminMiddleware.requireAdmin(),
         adminRoutes.updateTierLimits
     );
-    app.put('/api/admin/tier-limits/:tier', 
-        authMiddleware.authenticate(), 
-        adminMiddleware.requireAdmin(), 
+    app.put('/api/admin/tier-limits/:tier',
+        authMiddleware.authenticate(),
+        adminMiddleware.requireAdmin(),
         adminRoutes.updateSingleTierLimit
     );
-    app.post('/api/admin/tier-limits/reset', 
-        authMiddleware.authenticate(), 
-        adminMiddleware.requireAdmin(), 
+    app.post('/api/admin/tier-limits/reset',
+        authMiddleware.authenticate(),
+        adminMiddleware.requireAdmin(),
         adminRoutes.resetTierLimits
     );
 
@@ -526,33 +700,33 @@ function createApp(container) {
     // Requirements: 1.1, 1.2, 1.6, 3.6, 4.1, 4.2
     // ═══════════════════════════════════════════════════════════════
     // Public routes (authenticated users)
-    app.get('/api/speed-config/comparison/:gatewayId', 
-        authMiddleware.authenticate(), 
+    app.get('/api/speed-config/comparison/:gatewayId',
+        authMiddleware.authenticate(),
         speedConfigRoutes.getSpeedComparison
     );
-    app.get('/api/speed-config/:gatewayId/:tier', 
-        authMiddleware.authenticate(), 
+    app.get('/api/speed-config/:gatewayId/:tier',
+        authMiddleware.authenticate(),
         speedConfigRoutes.getSpeedConfig
     );
-    app.get('/api/speed-config/:gatewayId', 
-        authMiddleware.authenticate(), 
+    app.get('/api/speed-config/:gatewayId',
+        authMiddleware.authenticate(),
         speedConfigRoutes.getGatewayConfigs
     );
-    app.get('/api/speed-config', 
-        authMiddleware.authenticate(), 
-        adminMiddleware.requireAdmin(), 
+    app.get('/api/speed-config',
+        authMiddleware.authenticate(),
+        adminMiddleware.requireAdmin(),
         speedConfigRoutes.getAllConfigs
     );
-    
+
     // Admin routes (admin role required)
-    app.patch('/api/admin/speed-config/:gatewayId/:tier', 
-        authMiddleware.authenticate(), 
-        adminMiddleware.requireAdmin(), 
+    app.patch('/api/admin/speed-config/:gatewayId/:tier',
+        authMiddleware.authenticate(),
+        adminMiddleware.requireAdmin(),
         speedConfigRoutes.updateSpeedConfig
     );
-    app.post('/api/admin/speed-config/reset', 
-        authMiddleware.authenticate(), 
-        adminMiddleware.requireAdmin(), 
+    app.post('/api/admin/speed-config/reset',
+        authMiddleware.authenticate(),
+        adminMiddleware.requireAdmin(),
         speedConfigRoutes.resetToDefaults
     );
 
@@ -569,91 +743,104 @@ function createApp(container) {
     // Requirements: 5.1, 6.1, 6.2, 6.3, 6.4, 7.1
     // ═══════════════════════════════════════════════════════════════
     // Public routes (authenticated users)
-    app.get('/api/gateways', 
-        authMiddleware.authenticate(), 
+    app.get('/api/gateways',
+        authMiddleware.authenticate(),
         gatewayRoutes.listGateways
     );
-    app.get('/api/gateways/status/stream', 
-        authMiddleware.authenticate(), 
+    app.get('/api/gateways/status/stream',
+        authMiddleware.authenticate(),
         gatewayRoutes.streamStatus
     );
-    
+
     // Admin routes (admin role required)
-    app.get('/api/admin/gateways', 
-        authMiddleware.authenticate(), 
-        adminMiddleware.requireAdmin(), 
+    app.get('/api/admin/gateways',
+        authMiddleware.authenticate(),
+        adminMiddleware.requireAdmin(),
         gatewayRoutes.adminListGateways
     );
-    app.get('/api/admin/gateways/:id', 
-        authMiddleware.authenticate(), 
-        adminMiddleware.requireAdmin(), 
+    app.get('/api/admin/gateways/:id',
+        authMiddleware.authenticate(),
+        adminMiddleware.requireAdmin(),
         gatewayRoutes.getGateway
     );
-    app.put('/api/admin/gateways/:id/state', 
-        authMiddleware.authenticate(), 
-        adminMiddleware.requireAdmin(), 
+    app.put('/api/admin/gateways/:id/state',
+        authMiddleware.authenticate(),
+        adminMiddleware.requireAdmin(),
         gatewayRoutes.updateState
     );
-    app.post('/api/admin/gateways/:id/maintenance', 
-        authMiddleware.authenticate(), 
-        adminMiddleware.requireAdmin(), 
+    app.post('/api/admin/gateways/:id/maintenance',
+        authMiddleware.authenticate(),
+        adminMiddleware.requireAdmin(),
         gatewayRoutes.enableMaintenance
     );
-    app.delete('/api/admin/gateways/:id/maintenance', 
-        authMiddleware.authenticate(), 
-        adminMiddleware.requireAdmin(), 
+    app.delete('/api/admin/gateways/:id/maintenance',
+        authMiddleware.authenticate(),
+        adminMiddleware.requireAdmin(),
         gatewayRoutes.disableMaintenance
     );
-    app.get('/api/admin/gateways/:id/health', 
-        authMiddleware.authenticate(), 
-        adminMiddleware.requireAdmin(), 
+    app.get('/api/admin/gateways/:id/health',
+        authMiddleware.authenticate(),
+        adminMiddleware.requireAdmin(),
         gatewayRoutes.getHealth
     );
-    app.post('/api/admin/gateways/:id/health/reset', 
-        authMiddleware.authenticate(), 
-        adminMiddleware.requireAdmin(), 
+    app.post('/api/admin/gateways/:id/health/reset',
+        authMiddleware.authenticate(),
+        adminMiddleware.requireAdmin(),
         gatewayRoutes.resetHealth
     );
-    app.get('/api/admin/gateways/health/thresholds', 
-        authMiddleware.authenticate(), 
-        adminMiddleware.requireAdmin(), 
+    app.get('/api/admin/gateways/health/thresholds',
+        authMiddleware.authenticate(),
+        adminMiddleware.requireAdmin(),
         gatewayRoutes.getHealthThresholds
     );
-    app.put('/api/admin/gateways/health/thresholds', 
-        authMiddleware.authenticate(), 
-        adminMiddleware.requireAdmin(), 
+    app.put('/api/admin/gateways/health/thresholds',
+        authMiddleware.authenticate(),
+        adminMiddleware.requireAdmin(),
         gatewayRoutes.updateHealthThresholds
     );
-    app.get('/api/admin/gateways/audit', 
-        authMiddleware.authenticate(), 
-        adminMiddleware.requireAdmin(), 
+
+    // Manual health status control routes (Requirements: 4.1, 5.1)
+    app.post('/api/admin/gateways/:id/health-status',
+        authMiddleware.authenticate(),
+        adminMiddleware.requireAdmin(),
+        gatewayRoutes.setHealthStatus
+    );
+    app.post('/api/admin/gateways/:id/reset-metrics',
+        authMiddleware.authenticate(),
+        adminMiddleware.requireAdmin(),
+        gatewayRoutes.resetMetrics
+    );
+
+    app.get('/api/admin/gateways/audit',
+        authMiddleware.authenticate(),
+        adminMiddleware.requireAdmin(),
         gatewayRoutes.getAllAuditLogs
     );
-    app.get('/api/admin/gateways/:id/audit', 
-        authMiddleware.authenticate(), 
-        adminMiddleware.requireAdmin(), 
+    app.get('/api/admin/gateways/:id/audit',
+        authMiddleware.authenticate(),
+        adminMiddleware.requireAdmin(),
         gatewayRoutes.getAuditLogs
     );
 
     // Proxy configuration routes (Requirements: 7.1, 7.2, 7.3, 7.4, 7.5, 7.6)
-    app.get('/api/admin/gateways/:id/proxy', 
-        authMiddleware.authenticate(), 
-        adminMiddleware.requireAdmin(), 
+    app.get('/api/admin/gateways/:id/proxy',
+        authMiddleware.authenticate(),
+        adminMiddleware.requireAdmin(),
         gatewayRoutes.getProxyConfig
     );
-    app.put('/api/admin/gateways/:id/proxy', 
-        authMiddleware.authenticate(), 
-        adminMiddleware.requireAdmin(), 
+    app.put('/api/admin/gateways/:id/proxy',
+        authMiddleware.authenticate(),
+        adminMiddleware.requireAdmin(),
         gatewayRoutes.setProxyConfig
     );
-    app.delete('/api/admin/gateways/:id/proxy', 
-        authMiddleware.authenticate(), 
-        adminMiddleware.requireAdmin(), 
+    app.delete('/api/admin/gateways/:id/proxy',
+        authMiddleware.authenticate(),
+        adminMiddleware.requireAdmin(),
         gatewayRoutes.clearProxyConfig
     );
-    app.post('/api/admin/gateways/:id/proxy/test', 
-        authMiddleware.authenticate(), 
-        adminMiddleware.requireAdmin(), 
+    app.post('/api/admin/gateways/:id/proxy/test',
+        authMiddleware.authenticate(),
+        adminMiddleware.requireAdmin(),
         gatewayRoutes.testProxyConnection
     );
 
@@ -675,51 +862,51 @@ function createApp(container) {
     );
 
     // Credit rate configuration routes (Requirements: 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 11.1)
-    app.get('/api/gateways/credit-rates', 
-        authMiddleware.authenticate(), 
+    app.get('/api/gateways/credit-rates',
+        authMiddleware.authenticate(),
         gatewayRoutes.getAllCreditRates
     );
-    app.get('/api/admin/gateways/:id/credit-rate', 
-        authMiddleware.authenticate(), 
-        adminMiddleware.requireAdmin(), 
+    app.get('/api/admin/gateways/:id/credit-rate',
+        authMiddleware.authenticate(),
+        adminMiddleware.requireAdmin(),
         gatewayRoutes.getCreditRate
     );
-    app.put('/api/admin/gateways/:id/credit-rate', 
-        authMiddleware.authenticate(), 
-        adminMiddleware.requireAdmin(), 
+    app.put('/api/admin/gateways/:id/credit-rate',
+        authMiddleware.authenticate(),
+        adminMiddleware.requireAdmin(),
         gatewayRoutes.setCreditRate
     );
-    app.delete('/api/admin/gateways/:id/credit-rate', 
-        authMiddleware.authenticate(), 
-        adminMiddleware.requireAdmin(), 
+    app.delete('/api/admin/gateways/:id/credit-rate',
+        authMiddleware.authenticate(),
+        adminMiddleware.requireAdmin(),
         gatewayRoutes.resetCreditRate
     );
 
     // Pricing routes (admin) - set approved/live pricing
-    app.put('/api/admin/gateways/:id/pricing', 
-        authMiddleware.authenticate(), 
-        adminMiddleware.requireAdmin(), 
+    app.put('/api/admin/gateways/:id/pricing',
+        authMiddleware.authenticate(),
+        adminMiddleware.requireAdmin(),
         gatewayRoutes.setPricing
     );
 
     // Tier restriction routes (admin)
-    app.get('/api/gateways/tier-restrictions', 
-        authMiddleware.authenticate(), 
+    app.get('/api/gateways/tier-restrictions',
+        authMiddleware.authenticate(),
         gatewayRoutes.getAllTierRestrictions
     );
-    app.get('/api/admin/gateways/:id/tier-restriction', 
-        authMiddleware.authenticate(), 
-        adminMiddleware.requireAdmin(), 
+    app.get('/api/admin/gateways/:id/tier-restriction',
+        authMiddleware.authenticate(),
+        adminMiddleware.requireAdmin(),
         gatewayRoutes.getTierRestriction
     );
-    app.put('/api/admin/gateways/:id/tier-restriction', 
-        authMiddleware.authenticate(), 
-        adminMiddleware.requireAdmin(), 
+    app.put('/api/admin/gateways/:id/tier-restriction',
+        authMiddleware.authenticate(),
+        adminMiddleware.requireAdmin(),
         gatewayRoutes.setTierRestriction
     );
-    app.delete('/api/admin/gateways/:id/tier-restriction', 
-        authMiddleware.authenticate(), 
-        adminMiddleware.requireAdmin(), 
+    app.delete('/api/admin/gateways/:id/tier-restriction',
+        authMiddleware.authenticate(),
+        adminMiddleware.requireAdmin(),
         gatewayRoutes.clearTierRestriction
     );
 
@@ -731,13 +918,107 @@ function createApp(container) {
     app.post('/api/system/config/reload', systemRoutes.reloadConfig);
     app.post('/api/system/settings', systemRoutes.settings);
     app.post('/api/system/debug-mode', systemRoutes.debugMode);
-    
+
     // Tier limits route (authenticated users)
     // Requirements: 1.1 - Return current tier limits and defaults
-    app.get('/api/system/tier-limits', 
-        authMiddleware.authenticate(), 
+    app.get('/api/system/tier-limits',
+        authMiddleware.authenticate(),
         systemRoutes.getTierLimits
     );
+
+    // ═══════════════════════════════════════════════════════════════
+    // Maintenance Mode routes - Global maintenance mode management
+    // Requirements: 1.1, 1.2, 1.5 - Maintenance mode toggle and status
+    // ═══════════════════════════════════════════════════════════════
+    // Public routes (no auth required for status check)
+    app.get('/api/system/maintenance/status', systemRoutes.getMaintenanceStatus);
+    app.get('/api/system/maintenance/stream', systemRoutes.streamMaintenanceStatus);
+
+    // Admin routes (admin role required)
+    app.post('/api/admin/maintenance/enable',
+        authMiddleware.authenticate(),
+        adminMiddleware.requireAdmin(),
+        systemRoutes.enableMaintenance
+    );
+    app.post('/api/admin/maintenance/disable',
+        authMiddleware.authenticate(),
+        adminMiddleware.requireAdmin(),
+        systemRoutes.disableMaintenance
+    );
+
+    // ═══════════════════════════════════════════════════════════════
+    // Error Reporting routes - Client-side error reporting
+    // Requirement: 6.4 - POST /api/errors/report for client-side errors
+    // ═══════════════════════════════════════════════════════════════
+    app.post('/api/errors/report',
+        authMiddleware.optionalAuth(),
+        systemRoutes.reportError
+    );
+
+    // ═══════════════════════════════════════════════════════════════
+    // 404 Handler - Must be after all routes
+    // Requirements: 3.1, 7.4 - Return JSON for API routes, HTML for others
+    // ═══════════════════════════════════════════════════════════════
+    app.use((req, res, next) => {
+        // Check if this is an API route
+        const isApiRoute = req.path.startsWith('/api/');
+
+        if (isApiRoute) {
+            // Return JSON for API routes (Requirement 7.4)
+            return res.status(404).json({
+                status: 'ERROR',
+                error: {
+                    code: 404,
+                    type: 'NotFound',
+                    message: 'The requested resource was not found.'
+                }
+            });
+        }
+
+        // For non-API routes, return a simple HTML 404 page
+        // The frontend will handle displaying the proper 404 page
+        res.status(404).send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 - Page Not Found</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a2332 0%, #0d1520 100%);
+            color: #e5e7eb;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container { text-align: center; max-width: 500px; }
+        .icon { font-size: 64px; margin-bottom: 24px; }
+        h1 { font-size: 28px; font-weight: 600; margin-bottom: 16px; color: #f9fafb; }
+        .message { font-size: 16px; line-height: 1.6; color: #9ca3af; margin-bottom: 24px; }
+        a { color: #60a5fa; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">🔍</div>
+        <h1>Page Not Found</h1>
+        <p class="message">The page you're looking for doesn't exist or has been moved.</p>
+        <a href="/">Return to Dashboard</a>
+    </div>
+</body>
+</html>`);
+    });
+
+    // ═══════════════════════════════════════════════════════════════
+    // Global Error Handler - Must be LAST middleware
+    // Requirements: 6.1, 7.1 - Catch all unhandled errors
+    // ═══════════════════════════════════════════════════════════════
+    app.use(globalErrorHandler.handle());
 
     return app;
 }
@@ -757,6 +1038,10 @@ async function main() {
 
     // Initialize GatewayManagerService (loads states from database)
     await container.services.gatewayManagerService.initialize();
+
+    // Initialize MaintenanceService (loads maintenance state from database)
+    // Requirements: 1.6 - Persist maintenance mode state across server restarts
+    await container.services.maintenanceService.initialize();
 
     // Create Express app
     const app = createApp(container);

@@ -46,3 +46,10 @@ export {
     TIER_LIMIT_BOUNDS,
     VALID_TIERS as TIER_LIMIT_TIERS
 } from './TierLimitService.js';
+export { 
+    DashboardService, 
+    ONLINE_THRESHOLD, 
+    CACHE_TTL 
+} from './DashboardService.js';
+export { MaintenanceService } from './MaintenanceService.js';
+export { ErrorReporterService } from './ErrorReporterService.js';

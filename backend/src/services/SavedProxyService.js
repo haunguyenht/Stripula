@@ -106,10 +106,12 @@ export class SavedProxyService {
                 throw new Error('Failed to update saved proxy');
             }
 
-            // Increment use count
-            await supabase.rpc('increment_proxy_use_count', { proxy_id: existing.id }).catch(() => {
-                // RPC might not exist, ignore
-            });
+            // Increment use count (RPC might not exist, ignore errors)
+            try {
+                await supabase.rpc('increment_proxy_use_count', { proxy_id: existing.id });
+            } catch {
+                // RPC function might not exist, ignore
+            }
 
             return data;
         }
@@ -170,16 +172,17 @@ export class SavedProxyService {
             return;
         }
 
-        await supabase
-            .from(this.tableName)
-            .update({
-                last_used_at: new Date().toISOString(),
-                use_count: supabase.sql`use_count + 1`
-            })
-            .eq('id', id)
-            .catch(() => {
-                // Ignore errors - usage tracking is not critical
-            });
+        try {
+            await supabase
+                .from(this.tableName)
+                .update({
+                    last_used_at: new Date().toISOString(),
+                    use_count: supabase.sql`use_count + 1`
+                })
+                .eq('id', id);
+        } catch {
+            // Ignore errors - usage tracking is not critical
+        }
     }
 
     /**

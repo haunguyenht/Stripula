@@ -12,11 +12,11 @@ const ADMIN_VALID_TIERS = ['free', 'bronze', 'silver', 'gold', 'diamond'];
  * Handles administrative operations including user management,
  * tier updates, credit adjustments, and system analytics.
  * 
- * Requirements: 3.1, 3.2, 3.4, 3.5
+ * Requirements: 3.1, 3.2, 3.4, 3.5, 5.1-5.7
  */
 export class AdminService {
-    constructor() {
-        // Service is stateless, uses Supabase client directly
+    constructor(options = {}) {
+        this.userService = options.userService || null;
     }
 
     /**
@@ -86,6 +86,7 @@ export class AdminService {
             lastName: u.last_name,
             photoUrl: u.photo_url,
             tier: u.tier,
+            tierExpiresAt: u.tier_expires_at || null,
             creditBalance: parseFloat(u.credit_balance) || 0,
             isFlagged: u.is_flagged || false,
             flagReason: u.flag_reason,
@@ -108,15 +109,16 @@ export class AdminService {
     }
 
     /**
-     * Update user tier
+     * Update user tier with optional duration
      * 
-     * Requirements: 3.2
+     * Requirements: 3.2, 5.1, 5.2, 5.3
      * 
      * @param {string} userId - User UUID
      * @param {string} tier - New tier value
-     * @returns {Promise<Object>} Updated user
+     * @param {number|null} durationDays - Duration in days (null/0 = permanent)
+     * @returns {Promise<Object>} Updated user with tierExpiresAt
      */
-    async updateUserTier(userId, tier) {
+    async updateUserTier(userId, tier, durationDays = null) {
         if (!isSupabaseConfigured()) {
             throw new Error('Database not configured');
         }
@@ -129,10 +131,10 @@ export class AdminService {
             throw new Error(`Invalid tier: ${tier}. Must be one of: ${ADMIN_VALID_TIERS.join(', ')}`);
         }
 
-        // Get current user
+        // Get current user for previous tier info
         const { data: currentUser, error: fetchError } = await supabase
             .from('users')
-            .select('id, tier, username, first_name')
+            .select('id, tier, tier_expires_at, username, first_name')
             .eq('id', userId)
             .single();
 
@@ -141,26 +143,48 @@ export class AdminService {
         }
 
         const previousTier = currentUser.tier;
+        const previousExpiresAt = currentUser.tier_expires_at;
 
-        // Update user tier
-        const { data: updatedUser, error: updateError } = await supabase
-            .from('users')
-            .update({
-                tier: tier,
-                updated_at: new Date().toISOString()
-            })
-            .eq('id', userId)
-            .select()
-            .single();
+        // Use UserService.setTierWithDuration for tier update (Requirements 5.1, 5.2, 5.3)
+        let updatedUser;
+        if (this.userService) {
+            updatedUser = await this.userService.setTierWithDuration(userId, tier, durationDays);
+        } else {
+            // Fallback: direct database update if userService not available
+            let tierExpiresAt = null;
+            if (tier !== 'free' && durationDays !== null && durationDays !== undefined && durationDays > 0) {
+                if (durationDays > 365) {
+                    throw new Error('Duration cannot exceed 365 days');
+                }
+                const expiresAt = new Date();
+                expiresAt.setDate(expiresAt.getDate() + durationDays);
+                tierExpiresAt = expiresAt.toISOString();
+            }
 
-        if (updateError) {
-            throw new Error(`Failed to update tier: ${updateError.message}`);
+            const { data, error: updateError } = await supabase
+                .from('users')
+                .update({
+                    tier: tier,
+                    tier_expires_at: tierExpiresAt,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', userId)
+                .select()
+                .single();
+
+            if (updateError) {
+                throw new Error(`Failed to update tier: ${updateError.message}`);
+            }
+            updatedUser = data;
         }
 
         // Log the admin action
         await this._logAdminAction(userId, 'tier_update', {
             previousTier,
-            newTier: tier
+            newTier: tier,
+            previousExpiresAt,
+            newExpiresAt: updatedUser.tier_expires_at,
+            durationDays: durationDays || 'permanent'
         });
 
         return {
@@ -170,7 +194,121 @@ export class AdminService {
                 username: updatedUser.username,
                 firstName: updatedUser.first_name,
                 previousTier,
-                newTier: tier
+                newTier: tier,
+                tierExpiresAt: updatedUser.tier_expires_at,
+                durationDays: durationDays || null
+            }
+        };
+    }
+
+    /**
+     * Extend user's current tier duration
+     * 
+     * Requirements: 5.5, 5.6, 5.7
+     * 
+     * @param {string} userId - User UUID
+     * @param {number} additionalDays - Days to add (must be positive integer, 1-365)
+     * @returns {Promise<Object>} Result with previous and new expiration dates
+     */
+    async extendUserTier(userId, additionalDays) {
+        if (!isSupabaseConfigured()) {
+            throw new Error('Database not configured');
+        }
+
+        if (!userId) {
+            throw new Error('User ID is required');
+        }
+
+        // Validate additionalDays
+        if (!Number.isInteger(additionalDays)) {
+            throw new Error('Additional days must be a positive integer');
+        }
+        if (additionalDays < 1) {
+            throw new Error('Additional days must be a positive number');
+        }
+        if (additionalDays > 365) {
+            throw new Error('Additional days cannot exceed 365');
+        }
+
+        // Get current user for previous expiration info
+        const { data: currentUser, error: fetchError } = await supabase
+            .from('users')
+            .select('id, tier, tier_expires_at, username, first_name')
+            .eq('id', userId)
+            .single();
+
+        if (fetchError || !currentUser) {
+            throw new Error('User not found');
+        }
+
+        // Cannot extend free tier
+        if (currentUser.tier === 'free') {
+            throw new Error('Cannot extend duration for free tier');
+        }
+
+        const previousExpiresAt = currentUser.tier_expires_at;
+
+        // Use UserService.extendTierDuration for extension (Requirements 5.6, 5.7)
+        let updatedUser;
+        if (this.userService) {
+            updatedUser = await this.userService.extendTierDuration(userId, additionalDays);
+        } else {
+            // Fallback: direct calculation if userService not available
+            const now = new Date();
+            let newExpiresAt;
+
+            if (currentUser.tier_expires_at) {
+                const currentExpiration = new Date(currentUser.tier_expires_at);
+                
+                // Check if tier has already expired
+                if (currentExpiration <= now) {
+                    // Tier expired - calculate from today
+                    newExpiresAt = new Date(now);
+                } else {
+                    // Tier still active - add to current expiration
+                    newExpiresAt = new Date(currentExpiration);
+                }
+            } else {
+                // Permanent tier (no expiration) - extend from now
+                newExpiresAt = new Date(now);
+            }
+            
+            newExpiresAt.setDate(newExpiresAt.getDate() + additionalDays);
+
+            const { data, error: updateError } = await supabase
+                .from('users')
+                .update({
+                    tier_expires_at: newExpiresAt.toISOString(),
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', userId)
+                .select()
+                .single();
+
+            if (updateError) {
+                throw new Error(`Failed to extend tier duration: ${updateError.message}`);
+            }
+            updatedUser = data;
+        }
+
+        // Log the admin action
+        await this._logAdminAction(userId, 'tier_extension', {
+            tier: currentUser.tier,
+            previousExpiresAt,
+            newExpiresAt: updatedUser.tier_expires_at,
+            daysAdded: additionalDays
+        });
+
+        return {
+            success: true,
+            user: {
+                id: updatedUser.id,
+                username: updatedUser.username,
+                firstName: updatedUser.first_name,
+                tier: currentUser.tier,
+                previousExpiresAt,
+                newExpiresAt: updatedUser.tier_expires_at,
+                daysAdded: additionalDays
             }
         };
     }

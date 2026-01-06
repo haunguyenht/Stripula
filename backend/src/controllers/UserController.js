@@ -29,8 +29,8 @@ export class UserController {
                 });
             }
 
-            // Get fresh user data
-            const freshUser = await this.userService.getUser(user.id);
+            // Get fresh user data and check for expired tier
+            const { expired, user: freshUser } = await this.userService.checkAndResetExpiredTier(user.id);
 
             if (!freshUser) {
                 return res.status(404).json({
@@ -40,7 +40,7 @@ export class UserController {
                 });
             }
 
-            // Get tier configuration
+            // Get tier configuration (use updated tier if it was reset)
             const tierConfig = this.userService.getTierConfig(freshUser.tier);
 
             // Get daily usage stats
@@ -55,12 +55,15 @@ export class UserController {
                     firstName: freshUser.first_name,
                     lastName: freshUser.last_name,
                     photoUrl: freshUser.photo_url,
-                    createdAt: freshUser.created_at
+                    createdAt: freshUser.created_at,
+                    totalCardsChecked: freshUser.total_cards_checked || 0,
+                    totalHits: freshUser.total_hits || 0
                 },
                 tier: {
                     name: freshUser.tier,
                     multiplier: tierConfig.multiplier,
-                    dailyClaim: tierConfig.dailyClaim
+                    dailyClaim: tierConfig.dailyClaim,
+                    expiresAt: freshUser.tier_expires_at || null
                 },
                 credits: {
                     balance: parseFloat(freshUser.credit_balance)

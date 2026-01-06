@@ -7,8 +7,7 @@
  * - Accept SK key, PK key, cards array, and proxy config in request body
  * - Validate SK/PK key formats before processing
  * - Validate proxy configuration is provided
- * 
- * NOTE: SK-Based gateways do NOT deduct credits - users provide their own keys
+ * - Deduct credits for APPROVED/LIVE cards
  */
 import { GATEWAY_IDS } from '../utils/constants.js';
 
@@ -16,6 +15,7 @@ export class SKBasedController {
     constructor(options = {}) {
         this.skbasedService = options.skbasedService;
         this.telegramBotService = options.telegramBotService;
+        this.creditManagerService = options.creditManagerService;
         this.activeStreams = new Map(); // Track active SSE streams by session ID
     }
 
@@ -84,7 +84,7 @@ export class SKBasedController {
      */
     async startValidation(req, res) {
         const requestId = `skbased_${Date.now()}`;
-        const { skKey, pkKey, cards, cardList, proxy, chargeAmount = 100, currency = 'usd' } = req.body;
+        const { skKey, pkKey, cards, cardList, proxy, chargeAmount = 100, currency = 'gbp' } = req.body;
 
         // Get user tier from authenticated request
         const tier = req.user?.tier || 'free';
@@ -176,6 +176,12 @@ export class SKBasedController {
         sendEvent('start', { total: cardArray.length, tier, requestId });
 
         const gatewayId = GATEWAY_IDS.SKBASED_CHARGE_1;
+        
+        // Track credits deducted for this batch
+        let totalCreditsDeducted = 0;
+        let liveCount = 0;
+        let approvedCount = 0;
+        let stopReason = 'completed';
 
         try {
             const result = await this.skbasedService.processBatch(
@@ -187,6 +193,7 @@ export class SKBasedController {
                     chargeAmount,
                     currency,
                     tier,
+                    userId, // Pass userId for statistics tracking (Requirements 8.1, 8.2)
                     onProgress: (progress) => {
                         // Transform progress to match frontend expectations
                         // FE expects: { current, total, summary: { approved, live, die, error } }
@@ -204,18 +211,41 @@ export class SKBasedController {
                     },
                     onResult: async (result) => {
                         if (streamClosed) return;
-                        // No credit deduction for SK-based gateways
+
+                        // Deduct credits for APPROVED/LIVE cards
+                        const isBillable = result.status === 'APPROVED' || result.status === 'LIVE';
                         
+                        if (isBillable && userId && this.creditManagerService) {
+                            // APPROVED = charged, LIVE = 3DS required
+                            const statusType = result.status === 'APPROVED' ? 'approved' : 'live';
+                            
+                            if (result.status === 'APPROVED') approvedCount++;
+                            liveCount++;
+                            
+                            const deductResult = await this.creditManagerService.deductSingleCardCredit(
+                                userId,
+                                gatewayId,
+                                statusType
+                            );
+                            
+                            if (deductResult.success) {
+                                totalCreditsDeducted += deductResult.creditsDeducted;
+                                // Add credit info to result for FE display
+                                result.creditsDeducted = deductResult.creditsDeducted;
+                                result.newBalance = deductResult.newBalance;
+                            }
+                        }
+
                         // Send Telegram notification for approved/live cards
-                        if (this.telegramBotService && (result.status === 'APPROVED' || result.status === 'LIVE')) {
+                        if (this.telegramBotService && isBillable) {
                             this.telegramBotService.notifyCardApproved({
                                 user: req.user,
                                 result,
                                 gateway: 'sk-based-charge',
                                 type: 'skbased'
-                            }).catch(() => {});
+                            }).catch(() => { });
                         }
-                        
+
                         sendEvent('result', result);
                     }
                 }
@@ -224,6 +254,7 @@ export class SKBasedController {
             // Handle gateway unavailable case
             if (result.unavailable) {
                 const reason = result.unavailableReason?.message || 'Gateway is currently unavailable';
+                stopReason = 'unavailable';
 
                 sendEvent('error', {
                     message: reason,
@@ -231,19 +262,68 @@ export class SKBasedController {
                     gatewayId
                 });
 
+                // Release lock
+                if (userId && this.creditManagerService) {
+                    try {
+                        await this.creditManagerService.releaseOperationLockByUser(userId, stopReason);
+                    } catch {}
+                }
+
                 if (!streamClosed) {
                     try { res.end(); } catch { }
                 }
                 return;
             }
 
-            const approvedCount = result.stats?.approved || 0;
-            const liveCount = result.stats?.live || 0;
+            // Record batch transaction to history (only when credits were deducted)
+            if (userId && this.creditManagerService && totalCreditsDeducted > 0) {
+                try {
+                    await this.creditManagerService.recordBatchTransaction(userId, gatewayId, {
+                        totalCreditsDeducted,
+                        approvedCount,
+                        liveCount,
+                        totalCards: cardArray.length,
+                        declinedCount: result.stats?.declined || 0,
+                        errorCount: result.stats?.errors || 0
+                    });
+                } catch {}
+            }
+
+            // Release operation lock
+            if (userId && this.creditManagerService) {
+                try {
+                    await this.creditManagerService.releaseOperationLockByUser(userId, stopReason);
+                } catch {}
+            }
 
             sendEvent('complete', {
-                ...result
+                ...result,
+                totalCreditsDeducted,
+                liveCount,
+                approvedCount
             });
         } catch (error) {
+            // Record transaction on error if any credits were deducted
+            if (userId && this.creditManagerService && totalCreditsDeducted > 0) {
+                try {
+                    await this.creditManagerService.recordBatchTransaction(userId, gatewayId, {
+                        totalCreditsDeducted,
+                        approvedCount,
+                        liveCount,
+                        totalCards: cardArray.length,
+                        declinedCount: 0,
+                        errorCount: 1
+                    });
+                } catch {}
+            }
+            
+            // Release lock on error
+            if (userId && this.creditManagerService) {
+                try {
+                    await this.creditManagerService.releaseOperationLockByUser(userId, 'failed');
+                } catch {}
+            }
+
             sendEvent('error', { message: error.message });
         }
 
@@ -261,7 +341,19 @@ export class SKBasedController {
      * Stop the current batch validation
      */
     async stopBatch(req, res) {
+        const userId = req.user?.id;
+        
         this.skbasedService.stopBatch();
+        
+        // Release operation lock so user can start new validation
+        if (userId && this.creditManagerService) {
+            try {
+                await this.creditManagerService.releaseOperationLockByUser(userId, 'cancelled');
+            } catch (err) {
+                // Lock release error - ignore
+            }
+        }
+        
         res.json({ status: 'OK', message: 'Stop signal sent' });
     }
 

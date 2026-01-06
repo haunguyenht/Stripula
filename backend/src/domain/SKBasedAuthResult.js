@@ -74,6 +74,13 @@ export class SKBasedAuthResult {
     }
 
     /**
+     * Check if result is 3DS required
+     */
+    is3DS() {
+        return this.status === '3DS';
+    }
+
+    /**
      * Check if result is declined
      */
     isDeclined() {

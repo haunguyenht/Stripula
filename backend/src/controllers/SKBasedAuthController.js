@@ -80,7 +80,9 @@ export class SKBasedAuthController {
      * Start batch validation
      */
     async startValidation(req, res) {
-        const { skKey, pkKey, cards, proxy, tier = 'free' } = req.body;
+        const { skKey, pkKey, cards, proxy } = req.body;
+        // Get user tier from authenticated request (Requirement 3.1)
+        const tier = req.user?.tier || 'free';
 
         // Validate SK key
         const skValidation = this._validateSKKey(skKey);
@@ -118,6 +120,7 @@ export class SKBasedAuthController {
 
         // Store user for notifications
         const user = req.user;
+        const userId = req.user?.id;
 
         // Start batch processing (non-blocking)
         this.skbasedAuthService.processBatch(cards, {
@@ -125,6 +128,7 @@ export class SKBasedAuthController {
             pkKey,
             proxy: normalizedProxy,
             tier,
+            userId, // Pass userId for statistics tracking (Requirements 8.1, 8.2)
             onResult: (result) => {
                 // Send Telegram notification for approved/live cards
                 if (this.telegramBotService && (result.status === 'APPROVED' || result.status === 'LIVE')) {

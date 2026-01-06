@@ -17,11 +17,13 @@ import { useGatewayCreditRates } from '@/hooks/useGatewayCreditRates';
 const API_BASE = '/api';
 
 // Default gateway rates (fallback if API unavailable)
+// Based on billing type: auth/shopify use pricing_live, charge uses pricing_approved
 const DEFAULT_GATEWAY_RATES = {
-  auth: 1.0,
-  charge: 3.0,
-  skbased: 3.0,
-  shopify: 2.0
+  auth: 3.0,      // Uses pricing_live
+  charge: 5.0,    // Uses pricing_approved
+  skbased: 5.0,   // Uses pricing_approved (SK charge)
+  'skbased-auth': 3.0, // Uses pricing_live
+  shopify: 3.0    // Uses pricing_live
 };
 
 
@@ -38,14 +40,14 @@ export function useCredits(options = {}) {
     userTier: ratesTier
   } = useGatewayCreditRates();
 
-  // State
-  const [creditData, setCreditData] = useState({
-    balance: 0,
-    tier: 'free',
+  // State - Initialize with user data from AuthContext to prevent flash of 0
+  const [creditData, setCreditData] = useState(() => ({
+    balance: user?.creditBalance ?? user?.credit_balance ?? 0,
+    tier: user?.tier || 'free',
     gatewayRate: DEFAULT_GATEWAY_RATES[gatewayId] || 1.0,
-    isLoading: true,
+    isLoading: !user, // Not loading if we already have user data
     error: null
-  });
+  }));
   
   const [creditsConsumed, setCreditsConsumed] = useState(0);
   const [liveCardsCount, setLiveCardsCount] = useState(0);
@@ -117,6 +119,27 @@ export function useCredits(options = {}) {
   useEffect(() => {
     fetchCreditData();
   }, [fetchCreditData]);
+
+  // Sync credit data when user object changes (e.g., after AuthContext refresh)
+  useEffect(() => {
+    if (user) {
+      const userBalance = user.creditBalance ?? user.credit_balance ?? 0;
+      const userTier = user.tier || 'free';
+      
+      setCreditData(prev => {
+        // Only update if values actually changed to prevent unnecessary re-renders
+        if (prev.balance !== userBalance || prev.tier !== userTier) {
+          return {
+            ...prev,
+            balance: userBalance,
+            tier: userTier,
+            isLoading: false
+          };
+        }
+        return prev;
+      });
+    }
+  }, [user?.creditBalance, user?.credit_balance, user?.tier]);
 
   /**
    * Get effective rate (same for all tiers - no multiplier)

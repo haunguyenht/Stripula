@@ -3,191 +3,280 @@ import { Slot } from "@radix-ui/react-slot";
 import { cva } from "class-variance-authority";
 import { cn } from "../../lib/utils.js";
 
+/**
+ * Button Component - Dual Theme Design System
+ * 
+ * LIGHT MODE: Vintage Banking / Copper Foil
+ * - Letterpress shadow effects (embossed text appearance)
+ * - Copper foil gradients with metallic shimmer
+ * - Inset shadow for pressed/debossed appearance
+ * - Paper texture integration
+ * 
+ * DARK MODE: Liquid Aurora
+ * - Indigo aurora glow with neon pulse on hover
+ * - Liquid glass with specular highlights
+ * - Consistent blur(40px) and saturation(180%)
+ */
+
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[12px] text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[12px] text-sm font-medium transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 relative overflow-hidden",
   {
     variants: {
       variant: {
-        // Default - OrangeAI gradient button (light) / OPUX terracotta (dark)
+        // Default/Primary - Vintage copper (light) / Aurora indigo neon (dark)
         default: [
-          // Light mode: Clean gradient button with minimal shadow
-          "bg-gradient-to-b from-[rgb(255,64,23)] to-[rgb(220,50,15)]",
-          "text-white font-semibold",
-          "shadow-sm",
-          "hover:from-[rgb(255,80,40)] hover:to-[rgb(235,60,25)]",
-          "hover:shadow-md",
-          "active:translate-y-[1px] active:shadow-sm",
-          // Dark mode: OPUX terracotta button with subtle shadow
-          "dark:from-[#AB726F] dark:to-[#9d5e5b] dark:border-none",
-          "dark:hover:from-[#b4817e] dark:hover:to-[#a86b68]",
-          "dark:shadow-md",
-          "dark:hover:shadow-lg",
+          // Light mode: Copper foil gradient with letterpress effect
+          "bg-gradient-to-b from-[hsl(25,70%,52%)] via-[hsl(28,72%,48%)] to-[hsl(22,68%,38%)]",
+          "text-[hsl(42,60%,95%)] font-semibold tracking-wide",
+          "border border-[hsl(22,60%,35%)]",
+          // Embossed text shadow + outer glow + inner highlight
+          "shadow-[0_4px_16px_rgba(166,100,50,0.35),0_1px_2px_rgba(139,69,19,0.3),inset_0_1px_0_rgba(255,220,180,0.4),inset_0_-1px_0_rgba(100,50,20,0.2)]",
+          "[text-shadow:0_1px_0_rgba(100,50,20,0.3),0_-1px_0_rgba(255,200,150,0.2)]",
+          // Hover: Shimmer effect
+          "hover:from-[hsl(25,72%,56%)] hover:via-[hsl(30,75%,52%)] hover:to-[hsl(22,70%,42%)]",
+          "hover:shadow-[0_6px_24px_rgba(166,100,50,0.45),0_2px_4px_rgba(139,69,19,0.25),inset_0_1px_0_rgba(255,220,180,0.5)]",
+          "hover:translate-y-[-1px]",
+          // Active: Pressed/debossed
+          "active:translate-y-[1px] active:shadow-[inset_0_2px_4px_rgba(100,50,20,0.3),0_1px_2px_rgba(166,100,50,0.2)]",
+          // Dark mode: Aurora indigo with neon glow
+          "dark:bg-gradient-to-b dark:from-[hsl(250,90%,65%)] dark:to-[hsl(250,85%,55%)]",
+          "dark:text-white dark:border-none",
+          "dark:shadow-[0_0_20px_rgba(139,92,246,0.4),0_0_40px_rgba(34,211,238,0.15),inset_0_1px_0_rgba(255,255,255,0.2)]",
+          "dark:hover:shadow-[0_0_28px_rgba(139,92,246,0.55),0_0_56px_rgba(34,211,238,0.25),inset_0_1px_0_rgba(255,255,255,0.25)]",
+          "dark:hover:translate-y-[-1px]",
+          "dark:active:translate-y-[1px] dark:active:shadow-[0_0_12px_rgba(139,92,246,0.3)]",
+          "dark:[text-shadow:none]",
         ].join(" "),
 
-        // Destructive - red accent (matches default button style)
+        // Destructive - Burgundy ink (light) / Aurora rose neon (dark)
         destructive: [
-          // Light mode: Clean red gradient with minimal shadow
-          "bg-gradient-to-b from-[rgb(239,68,68)] to-[rgb(200,45,45)]",
-          "text-white font-semibold",
-          "shadow-sm",
-          "hover:from-[rgb(248,80,80)] hover:to-[rgb(220,55,55)]",
-          "hover:shadow-md",
-          "active:translate-y-[1px] active:shadow-sm",
-          // Dark mode: Solid red button (matches default terracotta style)
-          "dark:from-[#dc2626] dark:to-[#b91c1c] dark:border-none",
-          "dark:hover:from-[#ef4444] dark:hover:to-[#dc2626]",
-          "dark:shadow-md",
-          "dark:hover:shadow-lg",
+          // Light mode: Vintage burgundy with wax seal effect
+          "bg-gradient-to-b from-[hsl(355,50%,48%)] via-[hsl(355,48%,42%)] to-[hsl(355,45%,35%)]",
+          "text-[hsl(40,60%,95%)] font-semibold tracking-wide",
+          "border border-[hsl(355,40%,30%)]",
+          "shadow-[0_4px_14px_rgba(140,50,60,0.3),0_1px_2px_rgba(100,30,40,0.25),inset_0_1px_0_rgba(255,180,180,0.3)]",
+          "[text-shadow:0_1px_0_rgba(100,30,40,0.3)]",
+          "hover:from-[hsl(355,52%,52%)] hover:via-[hsl(355,50%,46%)] hover:to-[hsl(355,48%,38%)]",
+          "hover:shadow-[0_6px_20px_rgba(140,50,60,0.4),inset_0_1px_0_rgba(255,200,200,0.35)]",
+          "hover:translate-y-[-1px]",
+          "active:translate-y-[1px] active:shadow-[inset_0_2px_4px_rgba(100,30,40,0.3)]",
+          // Dark mode: Rose neon with pink aurora
+          "dark:bg-gradient-to-b dark:from-rose-500 dark:to-rose-600",
+          "dark:text-white dark:border-none",
+          "dark:shadow-[0_0_18px_rgba(244,63,94,0.4),0_0_36px_rgba(236,72,153,0.2),inset_0_1px_0_rgba(255,255,255,0.15)]",
+          "dark:hover:shadow-[0_0_24px_rgba(244,63,94,0.55),0_0_48px_rgba(236,72,153,0.3)]",
+          "dark:hover:translate-y-[-1px]",
+          "dark:[text-shadow:none]",
         ].join(" "),
 
-        // Outline - OrangeAI outline (light) / OPUX glass outline (dark)
+        // Outline - Engraved border (light) / Liquid glass (dark)
         outline: [
-          // Light mode: OrangeAI warm outline
-          "border border-[rgb(237,234,233)] bg-white text-[rgb(37,27,24)]",
-          "hover:bg-[rgb(248,247,247)] hover:border-[rgb(220,215,213)]",
-          "shadow-[0_1px_2px_rgba(37,27,24,0.04)]",
-          // Dark mode: OPUX glass outline
-          "dark:bg-transparent dark:text-white",
-          "dark:[background:linear-gradient(135deg,#33333340,#2e2e2e35)]",
-          "dark:[backdrop-filter:blur(12px)_saturate(150%)]",
-          "dark:border-[hsl(0_0%_100%/0.2)]",
-          "dark:hover:border-[hsl(0_0%_100%/0.3)]",
-          "dark:hover:[box-shadow:0_8px_32px_#00000060]",
+          // Light mode: Double-line engraved border like vintage certificates
+          "border-2 border-[hsl(25,55%,55%)] bg-[hsl(40,50%,97%)] text-[hsl(25,40%,30%)]",
+          "shadow-[inset_0_0_0_1px_hsl(40,50%,97%),inset_0_0_0_3px_hsl(25,45%,65%),0_2px_8px_rgba(101,67,33,0.08)]",
+          "[text-shadow:0_1px_0_rgba(255,255,255,0.5)]",
+          "hover:bg-[hsl(38,48%,94%)] hover:border-[hsl(25,60%,50%)]",
+          "hover:shadow-[inset_0_0_0_1px_hsl(38,48%,94%),inset_0_0_0_3px_hsl(25,50%,60%),0_4px_12px_rgba(101,67,33,0.12)]",
+          "active:shadow-[inset_0_2px_4px_rgba(101,67,33,0.15)]",
+          // Dark mode: Liquid glass with aurora rim
+          "dark:bg-[hsl(0_0%_100%/0.025)] dark:text-white",
+          "dark:backdrop-blur-[40px] dark:backdrop-saturate-[180%]",
+          "dark:border dark:border-[hsl(0_0%_100%/0.1)]",
+          "dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]",
+          "dark:hover:border-[hsl(250,90%,65%)/0.4]",
+          "dark:hover:shadow-[0_0_16px_rgba(139,92,246,0.2),inset_0_1px_0_rgba(255,255,255,0.12)]",
+          "dark:[text-shadow:none]",
         ].join(" "),
 
-        // Secondary - OrangeAI secondary (light) / OPUX glass (dark)
+        // Secondary - Aged parchment (light) / Liquid glass (dark)
         secondary: [
-          // Light mode: OrangeAI warm secondary
-          "bg-[rgb(248,247,247)] text-[rgb(37,27,24)] border border-[rgb(237,234,233)]",
-          "hover:bg-[rgb(245,245,245)] hover:border-[rgb(220,215,213)]",
-          // Dark mode: OPUX glass
-          "dark:bg-transparent dark:text-white",
-          "dark:[background:linear-gradient(135deg,#33333355,#2e2e2e50)]",
-          "dark:[backdrop-filter:blur(12px)_saturate(180%)]",
-          "dark:border-[hsl(0_0%_100%/0.15)]",
-          "dark:hover:border-[hsl(0_0%_100%/0.25)]",
-          "dark:hover:[box-shadow:0_8px_32px_#00000060]",
+          // Light mode: Aged parchment with subtle texture
+          "bg-gradient-to-b from-[hsl(40,45%,94%)] to-[hsl(38,35%,90%)]",
+          "text-[hsl(25,40%,28%)] border border-[hsl(30,30%,78%)]",
+          "shadow-[0_2px_8px_rgba(101,67,33,0.08),inset_0_1px_0_rgba(255,255,255,0.7),inset_0_-1px_0_rgba(101,67,33,0.05)]",
+          "[text-shadow:0_1px_0_rgba(255,255,255,0.4)]",
+          "hover:from-[hsl(38,48%,92%)] hover:to-[hsl(36,38%,87%)]",
+          "hover:border-[hsl(30,35%,70%)]",
+          "active:shadow-[inset_0_2px_4px_rgba(101,67,33,0.1)]",
+          // Dark mode: Enhanced liquid glass (bg-none resets light gradient)
+          "dark:bg-none dark:bg-[hsl(0_0%_100%/0.04)] dark:text-white",
+          "dark:backdrop-blur-[40px] dark:backdrop-saturate-[180%]",
+          "dark:border dark:border-[hsl(0_0%_100%/0.08)]",
+          "dark:shadow-[0_8px_32px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.08)]",
+          "dark:hover:bg-[hsl(0_0%_100%/0.06)]",
+          "dark:hover:border-[hsl(0_0%_100%/0.15)]",
+          "dark:hover:shadow-[0_12px_40px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.12)]",
+          "dark:[text-shadow:none]",
         ].join(" "),
 
-        // Ghost - minimal hover effect
+        // Ghost - Subtle vintage hover (light) / Aurora tint (dark)
         ghost: [
-          // Light mode: OrangeAI ghost
-          "text-[rgb(37,27,24)] hover:bg-[rgb(248,247,247)]",
-          // Dark mode: OPUX subtle glass on hover
+          // Light mode: Subtle copper tint on hover
+          "text-[hsl(25,40%,30%)]",
+          "hover:bg-[hsl(38,45%,92%)]",
+          "hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]",
+          "[text-shadow:0_1px_0_rgba(255,255,255,0.3)]",
+          // Dark mode: Aurora tint on hover
           "dark:text-white/80 dark:hover:text-white",
-          "dark:hover:bg-white/10",
-          "dark:hover:border dark:hover:border-white/10",
+          "dark:hover:bg-[hsl(250,90%,65%)/0.1]",
+          "dark:hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]",
+          "dark:[text-shadow:none]",
         ].join(" "),
 
-        // Link - text only
+        // Link - Copper foil (light) / Aurora indigo (dark)
         link: [
-          // Light mode: OrangeAI link
-          "text-[rgb(255,64,23)] underline-offset-4 hover:underline",
-          // Dark mode: terracotta text
-          "dark:text-[#AB726F] dark:hover:text-[#b4817e]",
+          // Light mode: Copper foil link with subtle underline
+          "text-copper-foil bg-clip-text",
+          "bg-gradient-to-r from-[hsl(25,70%,45%)] via-[hsl(30,75%,50%)] to-[hsl(22,65%,42%)]",
+          "underline-offset-4 hover:underline",
+          "hover:from-[hsl(25,75%,42%)] hover:via-[hsl(30,80%,48%)] hover:to-[hsl(22,70%,38%)]",
+          // Dark mode: Aurora indigo text with glow on hover
+          "dark:text-[hsl(250,90%,70%)] dark:bg-none",
+          "dark:hover:text-[hsl(250,95%,75%)]",
+          "dark:hover:drop-shadow-[0_0_8px_rgba(139,92,246,0.4)]",
         ].join(" "),
 
-        // Success - green accent
+        // Success - Antique green ink (light) / Emerald aurora (dark)
         success: [
-          // Light mode: Soft emerald with subtle gradient
-          "bg-gradient-to-b from-emerald-50 to-emerald-100/80",
-          "text-emerald-700 font-medium",
-          "border border-emerald-200/60",
-          "shadow-sm shadow-emerald-500/5",
-          "hover:from-emerald-100 hover:to-emerald-150/80",
-          "hover:border-emerald-300/60",
-          "hover:shadow-md hover:shadow-emerald-500/10",
-          "active:translate-y-[1px] active:shadow-sm",
-          // Dark mode: OPUX glass with emerald accent
-          "dark:from-transparent dark:to-transparent",
-          "dark:[background:linear-gradient(135deg,#33333365,#2e2e2e60)]",
-          "dark:[backdrop-filter:blur(12px)_saturate(180%)]",
+          // Light mode: Vintage green ink with embossed effect
+          "bg-gradient-to-b from-[hsl(145,40%,92%)] via-[hsl(145,38%,88%)] to-[hsl(145,35%,85%)]",
+          "text-[hsl(145,55%,28%)] font-medium",
+          "border border-[hsl(145,35%,70%)]",
+          "shadow-[0_2px_8px_rgba(45,100,70,0.1),inset_0_1px_0_rgba(255,255,255,0.6),inset_0_-1px_0_rgba(45,100,70,0.08)]",
+          "[text-shadow:0_1px_0_rgba(255,255,255,0.4)]",
+          "hover:from-[hsl(145,42%,90%)] hover:to-[hsl(145,38%,82%)]",
+          "hover:border-[hsl(145,40%,60%)]",
+          "active:shadow-[inset_0_2px_4px_rgba(45,100,70,0.15)]",
+          // Dark mode: Liquid glass with emerald neon accent
+          "dark:bg-[hsl(0_0%_100%/0.03)]",
+          "dark:backdrop-blur-[40px] dark:backdrop-saturate-[180%]",
           "dark:border dark:border-emerald-500/30",
           "dark:text-emerald-400",
-          "dark:shadow-[0_8px_32px_#0000005e,inset_0_1px_0_#ffffff0d]",
-          "dark:hover:border-emerald-500/50",
-          "dark:hover:shadow-[0_8px_32px_#00000070,inset_0_1px_0_#ffffff14]",
+          "dark:shadow-[0_0_12px_rgba(16,185,129,0.15),inset_0_1px_0_rgba(255,255,255,0.06)]",
+          "dark:hover:border-emerald-400/50",
+          "dark:hover:shadow-[0_0_20px_rgba(16,185,129,0.25),0_0_40px_rgba(34,211,238,0.1),inset_0_1px_0_rgba(255,255,255,0.1)]",
+          "dark:[text-shadow:none]",
         ].join(" "),
 
-        // Warning - amber accent
+        // Warning - Brass/gold ink (light) / Amber aurora (dark)
         warning: [
-          // Light mode: Soft amber with subtle gradient
-          "bg-gradient-to-b from-amber-50 to-amber-100/80",
-          "text-amber-700 font-medium",
-          "border border-amber-200/60",
-          "shadow-sm shadow-amber-500/5",
-          "hover:from-amber-100 hover:to-amber-150/80",
-          "hover:border-amber-300/60",
-          "hover:shadow-md hover:shadow-amber-500/10",
-          "active:translate-y-[1px] active:shadow-sm",
-          // Dark mode: OPUX glass with amber
-          "dark:from-transparent dark:to-transparent",
-          "dark:[background:linear-gradient(135deg,#33333365,#2e2e2e60)]",
-          "dark:[backdrop-filter:blur(12px)_saturate(180%)]",
+          // Light mode: Vintage brass/gold with embossed effect
+          "bg-gradient-to-b from-[hsl(42,55%,92%)] via-[hsl(40,50%,88%)] to-[hsl(38,45%,84%)]",
+          "text-[hsl(35,70%,32%)] font-medium",
+          "border border-[hsl(38,45%,70%)]",
+          "shadow-[0_2px_8px_rgba(140,100,40,0.12),inset_0_1px_0_rgba(255,255,255,0.6),inset_0_-1px_0_rgba(140,100,40,0.08)]",
+          "[text-shadow:0_1px_0_rgba(255,255,255,0.4)]",
+          "hover:from-[hsl(42,58%,90%)] hover:to-[hsl(38,48%,81%)]",
+          "hover:border-[hsl(38,50%,60%)]",
+          "active:shadow-[inset_0_2px_4px_rgba(140,100,40,0.15)]",
+          // Dark mode: Liquid glass with amber neon + pink aurora
+          "dark:bg-[hsl(0_0%_100%/0.03)]",
+          "dark:backdrop-blur-[40px] dark:backdrop-saturate-[180%]",
           "dark:border dark:border-amber-500/30",
           "dark:text-amber-400",
-          "dark:shadow-[0_8px_32px_#0000005e,inset_0_1px_0_#ffffff0d]",
-          "dark:hover:border-amber-500/50",
-          "dark:hover:shadow-[0_8px_32px_#00000070,inset_0_1px_0_#ffffff14]",
+          "dark:shadow-[0_0_12px_rgba(251,191,36,0.15),inset_0_1px_0_rgba(255,255,255,0.06)]",
+          "dark:hover:border-amber-400/50",
+          "dark:hover:shadow-[0_0_20px_rgba(251,191,36,0.25),0_0_40px_rgba(236,72,153,0.1),inset_0_1px_0_rgba(255,255,255,0.1)]",
+          "dark:[text-shadow:none]",
         ].join(" "),
 
-        // Contrast - OrangeAI dark button (light) / white button (dark)
+        // Contrast - Sepia ink (light) / White (dark)
         contrast: [
-          // Light mode: OrangeAI dark gradient button
-          "bg-gradient-to-b from-[rgb(22,22,18)] to-[rgb(43,44,46)]",
-          "text-white shadow-[0px_2px_6px_rgba(0,0,0,0.2)]",
-          "hover:from-[rgb(35,35,30)] hover:to-[rgb(55,56,58)]",
-          // Dark mode: white button
-          "dark:from-[#f5f5f5] dark:to-[#f5f5f5] dark:text-[#000]",
-          "dark:shadow-[#9e9e9eb0_0_0.706592px_0.706592px_-0.583333px,#9e9e9ead_0_1.80656px_1.80656px_-1.16667px,#fff_0_3px_1px_inset]",
-          "dark:hover:opacity-95",
+          // Light mode: Deep sepia/walnut with letterpress
+          "bg-gradient-to-b from-[hsl(25,35%,22%)] via-[hsl(25,30%,18%)] to-[hsl(25,28%,14%)]",
+          "text-[hsl(42,50%,92%)] font-semibold tracking-wide",
+          "border border-[hsl(25,25%,10%)]",
+          "shadow-[0_4px_16px_rgba(40,30,20,0.35),inset_0_1px_0_rgba(100,80,60,0.2)]",
+          "[text-shadow:0_1px_0_rgba(30,20,10,0.4),0_-1px_0_rgba(100,80,60,0.15)]",
+          "hover:from-[hsl(25,33%,26%)] hover:via-[hsl(25,28%,22%)] hover:to-[hsl(25,26%,18%)]",
+          "hover:translate-y-[-1px]",
+          "active:translate-y-[1px] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.3)]",
+          // Dark mode: Bright white with aurora shadow
+          "dark:bg-white dark:text-[hsl(220,18%,7%)]",
+          "dark:shadow-[0_0_20px_rgba(255,255,255,0.15),0_4px_16px_rgba(0,0,0,0.3)]",
+          "dark:hover:shadow-[0_0_28px_rgba(255,255,255,0.2),0_6px_24px_rgba(0,0,0,0.4)]",
+          "dark:hover:translate-y-[-1px]",
+          "dark:[text-shadow:none]",
         ].join(" "),
 
-        // Glass - OrangeAI glass (light) / OPUX glass (dark)
+        // Glass - Frosted parchment (light) / Liquid glass (dark)
         glass: [
-          // Light mode: OrangeAI glass button
-          "bg-white/80 backdrop-blur-xl border border-[rgb(237,234,233)] text-[rgb(37,27,24)]",
-          "hover:bg-white/90 hover:border-[rgb(220,215,213)]",
-          "shadow-[0_1px_3px_rgba(37,27,24,0.04),0_4px_12px_rgba(37,27,24,0.06)]",
-          // Dark mode: exact OPUX glass
-          "dark:bg-transparent dark:text-white",
-          "dark:[background:linear-gradient(135deg,#33333359,#2e2e2e52)]",
-          "dark:[backdrop-filter:blur(16px)_saturate(180%)]",
-          "dark:border-[0.5px] dark:border-[hsl(0_0%_100%/0.2)]",
-          "dark:shadow-[0_8px_32px_#0000005e,inset_0_1px_0_#ffffff0d]",
-          "dark:hover:border-[hsl(0_0%_100%/0.28)]",
-          "dark:hover:shadow-[0_8px_32px_#00000070,inset_0_1px_0_#ffffff14]",
+          // Light mode: Frosted vellum with subtle grain
+          "bg-gradient-to-b from-[hsl(40,50%,97%)]/90 to-[hsl(38,45%,95%)]/85",
+          "backdrop-blur-xl border border-[hsl(30,30%,75%)]/60",
+          "text-[hsl(25,40%,28%)]",
+          "shadow-[0_4px_16px_rgba(101,67,33,0.08),inset_0_1px_0_rgba(255,255,255,0.7),inset_0_-1px_0_rgba(101,67,33,0.05)]",
+          "[text-shadow:0_1px_0_rgba(255,255,255,0.4)]",
+          "hover:from-[hsl(40,52%,96%)]/95 hover:to-[hsl(38,48%,94%)]/90",
+          "hover:border-[hsl(30,35%,68%)]",
+          // Dark mode: Pure liquid glass
+          "dark:bg-[hsl(0_0%_100%/0.025)] dark:text-white",
+          "dark:backdrop-blur-[40px] dark:backdrop-saturate-[180%]",
+          "dark:border-[0.5px] dark:border-[hsl(0_0%_100%/0.1)]",
+          "dark:shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.08)]",
+          "dark:hover:bg-[hsl(0_0%_100%/0.04)]",
+          "dark:hover:border-[hsl(0_0%_100%/0.15)]",
+          "dark:hover:shadow-[0_12px_40px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.12)]",
+          "dark:[text-shadow:none]",
         ].join(" "),
 
-        // Black - OrangeAI dark button (light) / OPUX black (dark)
+        // Black - Deep walnut (light) / Cosmic black (dark)
         black: [
-          // Light mode: OrangeAI dark gradient button
-          "bg-gradient-to-b from-[rgb(22,22,18)] to-[rgb(43,44,46)]",
-          "text-white shadow-[0px_2px_6px_rgba(0,0,0,0.2)]",
-          "hover:from-[rgb(35,35,30)] hover:to-[rgb(55,56,58)]",
-          "active:translate-y-[1px]",
-          // Dark mode: OPUX black button
-          "dark:from-[#000] dark:to-[#000]",
-          "dark:shadow-[#3d3d3db8_0_0.602187px_1.08394px_-1.25px,#3d3d3da3_0_2.28853px_4.11936px_-2.5px,#3d3d3d40_0_10px_18px_-3.75px,#00000059_0_0.706592px_0.706592px_-0.583333px,#00000057_0_1.80656px_1.80656px_-1.16667px,#00000054_0_3.62176px_3.62176px_-1.75px,#0000004d_0_6.8656px_6.8656px_-2.33333px,#00000042_0_13.6468px_13.6468px_-2.91667px,#00000026_0_30px_30px_-3.5px]",
-          "dark:hover:translate-y-[-1px] dark:hover:opacity-95",
+          // Light mode: Deep walnut with premium feel
+          "bg-gradient-to-b from-[hsl(25,35%,16%)] via-[hsl(25,30%,12%)] to-[hsl(25,25%,8%)]",
+          "text-[hsl(42,55%,94%)] font-semibold",
+          "border border-[hsl(25,20%,6%)]",
+          "shadow-[0_6px_24px_rgba(30,20,10,0.4),inset_0_1px_0_rgba(80,60,40,0.15)]",
+          "[text-shadow:0_1px_0_rgba(20,15,10,0.5)]",
+          "hover:from-[hsl(25,33%,20%)] hover:via-[hsl(25,28%,16%)] hover:to-[hsl(25,23%,12%)]",
+          "hover:translate-y-[-1px]",
+          "active:translate-y-[1px] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.4)]",
+          // Dark mode: Pure black with aurora edge glow
+          "dark:bg-[hsl(220,18%,4%)] dark:text-white",
+          "dark:border dark:border-[hsl(0_0%_100%/0.08)]",
+          "dark:shadow-[0_0_0_1px_rgba(139,92,246,0.1),0_8px_32px_rgba(0,0,0,0.6)]",
+          "dark:hover:border-[hsl(250,90%,65%)/0.2]",
+          "dark:hover:shadow-[0_0_20px_rgba(139,92,246,0.15),0_12px_40px_rgba(0,0,0,0.7)]",
+          "dark:hover:translate-y-[-1px]",
+          "dark:[text-shadow:none]",
         ].join(" "),
 
-        // Terracotta - OPUX terracotta button
-        terracotta: [
-          // Light mode: OrangeAI orange button
-          "bg-gradient-to-b from-[rgb(255,64,23)] to-[rgb(220,50,15)]",
-          "text-white shadow-[0px_2px_6px_rgba(0,0,0,0.2)]",
-          "hover:from-[rgb(255,80,40)] hover:to-[rgb(235,60,25)]",
-          // Dark mode: OPUX terracotta button
-          "dark:from-[#9d5e5b] dark:to-[#9d5e5b]",
-          "dark:shadow-[#9d5e5bb8_0_0.602187px_1.08394px_-1.25px,#9d5e5ba3_0_2.28853px_4.11936px_-2.5px,#9d5e5b40_0_10px_18px_-3.75px,#00000059_0_0.706592px_0.706592px_-0.583333px,#00000057_0_1.80656px_1.80656px_-1.16667px,#00000054_0_3.62176px_3.62176px_-1.75px,#0000004d_0_6.8656px_6.8656px_-2.33333px,#00000042_0_13.6468px_13.6468px_-2.91667px,#00000026_0_30px_30px_-3.5px]",
-          "dark:hover:translate-y-[-1px] dark:hover:opacity-95",
+        // Aurora - New variant: Full aurora gradient button
+        aurora: [
+          // Light mode: Subtle aurora tint
+          "bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500",
+          "text-white font-semibold",
+          "shadow-[0_4px_16px_rgba(139,92,246,0.3)]",
+          "hover:shadow-[0_6px_24px_rgba(139,92,246,0.4)]",
+          "active:translate-y-[1px]",
+          // Dark mode: Full neon aurora with animated glow
+          "dark:bg-gradient-to-r dark:from-[hsl(250,90%,65%)] dark:via-[hsl(280,90%,65%)] dark:to-[hsl(320,90%,65%)]",
+          "dark:text-white",
+          "dark:shadow-[0_0_24px_rgba(139,92,246,0.5),0_0_48px_rgba(236,72,153,0.3),inset_0_1px_0_rgba(255,255,255,0.2)]",
+          "dark:hover:shadow-[0_0_32px_rgba(139,92,246,0.65),0_0_64px_rgba(236,72,153,0.4),inset_0_1px_0_rgba(255,255,255,0.25)]",
+          "dark:hover:translate-y-[-1px]",
+        ].join(" "),
+
+        // Cyan - Electric cyan neon (new variant)
+        cyan: [
+          // Light mode: Cyan gradient
+          "bg-gradient-to-b from-cyan-500 to-cyan-600",
+          "text-white font-semibold",
+          "shadow-[0_2px_8px_rgba(6,182,212,0.3)]",
+          "hover:from-cyan-400 hover:to-cyan-500",
+          "active:translate-y-[1px]",
+          // Dark mode: Electric cyan neon
+          "dark:bg-gradient-to-b dark:from-cyan-400 dark:to-cyan-500",
+          "dark:text-white",
+          "dark:shadow-[0_0_20px_rgba(34,211,238,0.5),0_0_40px_rgba(139,92,246,0.2),inset_0_1px_0_rgba(255,255,255,0.2)]",
+          "dark:hover:shadow-[0_0_28px_rgba(34,211,238,0.65),0_0_56px_rgba(139,92,246,0.3)]",
+          "dark:hover:translate-y-[-1px]",
         ].join(" "),
       },
       size: {
         default: "h-10 px-5 py-2.5",
         sm: "h-8 rounded-[10px] px-4 text-xs",
-        lg: "h-12 rounded-[12px] px-8 py-4",
+        lg: "h-12 rounded-[14px] px-8 py-4",
         icon: "h-10 w-10 rounded-[10px]",
       },
     },

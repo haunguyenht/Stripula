@@ -2,14 +2,13 @@ import { cn } from '@/lib/utils';
 import { motion } from 'motion/react';
 import { NavPill } from './NavPill';
 import { getTierConfig } from '../config/tier-config';
-import { LogOut, ShieldCheck, ChevronRight, Coins } from 'lucide-react';
+import { LogOut, ShieldCheck, Clock, Sparkles } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
@@ -19,22 +18,22 @@ import {
 } from '@/components/ui/tooltip';
 
 /**
- * UserPill - Right navbar section with user avatar and tier
+ * UserPill - Obsidian Aurora Design System
  * 
- * OPUX compact design: Avatar with tier indicator
- * Dropdown menu with profile, admin (if admin), and logout
- * 
- * @param {Object} user - User object { name, email, tier, credits, photoUrl }
- * @param {Function} onNavigate - Navigation handler
+ * Premium user section featuring:
+ * - Animated aurora ring around avatar
+ * - Tier-based holographic effects
+ * - Crystalline dropdown with aurora glow
+ * - Prismatic hover effects
  */
 export function UserPill({ user, onNavigate }) {
-  const { logout } = useAuth();
+  const { logout, tierExpiration } = useAuth();
   const tier = getTierConfig(user?.tier);
   const TierIcon = tier.icon;
   const photoUrl = user?.photoUrl || user?.photo_url;
   const displayName = user?.name || 'User';
   const isAdmin = user?.isAdmin || user?.is_admin || false;
-  const credits = user?.credits ?? 0;
+  const showExpirationWarning = tierExpiration?.isExpiringSoon && user?.tier !== 'free';
 
   const handleProfileClick = () => {
     if (onNavigate) onNavigate('profile');
@@ -48,7 +47,6 @@ export function UserPill({ user, onNavigate }) {
     await logout();
   };
 
-  // Navigate to profile when dropdown opens
   const handleOpenChange = (open) => {
     if (open) {
       handleProfileClick();
@@ -56,16 +54,32 @@ export function UserPill({ user, onNavigate }) {
   };
 
   return (
-    <div className="flex items-center gap-1.5">
-      {/* Theme Toggle */}
-      <NavPill className="px-1.5" delay={0}>
+    <div className="flex items-center gap-2">
+      {/* Theme Toggle with aurora styling */}
+      <NavPill className="px-1" delay={0}>
         <Tooltip>
           <TooltipTrigger asChild>
-            <div>
+            <motion.div
+              className={cn(
+                "p-1.5 rounded-xl transition-all duration-300",
+                // Dark mode: Aurora hover
+                "dark:hover:bg-white/[0.06]",
+                "dark:hover:shadow-[0_0_16px_-4px_rgba(139,92,246,0.4)]"
+              )}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
               <ThemeToggle />
-            </div>
+            </motion.div>
           </TooltipTrigger>
-          <TooltipContent side="bottom" className="text-xs">
+          <TooltipContent 
+            side="bottom" 
+            className={cn(
+              "text-xs",
+              "dark:bg-[rgba(8,10,18,0.95)] dark:border-violet-500/20 dark:text-white",
+              "dark:shadow-[0_0_20px_-4px_rgba(139,92,246,0.3)]"
+            )}
+          >
             <p>Toggle theme</p>
           </TooltipContent>
         </Tooltip>
@@ -74,182 +88,190 @@ export function UserPill({ user, onNavigate }) {
       {/* User Dropdown */}
       <DropdownMenu onOpenChange={handleOpenChange}>
         <DropdownMenuTrigger asChild>
-          <NavPill 
-            className="flex items-center gap-2 px-2 cursor-pointer hover:opacity-80 transition-opacity" 
-            delay={0}
+          <motion.div
+            className={cn(
+              "flex items-center gap-2.5 px-2 py-1.5 rounded-xl cursor-pointer transition-all duration-300",
+              // Light mode
+              "hover:bg-[hsl(38,40%,92%)]",
+              // Dark mode: Aurora glass container
+              "dark:bg-white/[0.02] dark:border dark:border-white/[0.06]",
+              "dark:hover:bg-white/[0.06]",
+              "dark:hover:border-cyan-400/20",
+              "dark:hover:shadow-[0_0_24px_-6px_rgba(34,211,238,0.3),0_0_16px_-4px_rgba(139,92,246,0.2)]"
+            )}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
           >
-          {/* User Avatar with tier ring and glow */}
-          <div className="relative">
-            {/* Animated glow ring */}
-            <motion.div
-              className={cn(
-                "absolute inset-0 rounded-full ring-2",
-                tier.borderColor
-              )}
-              animate={{ 
-                scale: [1, 1.2, 1],
-                opacity: [0.4, 0.7, 0.4]
-              }}
-              transition={{ 
-                duration: 2,
-                repeat: Infinity,
-                ease: "easeInOut"
-              }}
-            />
-            {photoUrl ? (
-              <img 
-                src={photoUrl} 
-                alt={displayName}
-                className={cn(
-                  "h-7 w-7 rounded-full object-cover relative",
-                  "shadow-md",
-                  tier.glowColor
-                )}
-              />
-            ) : (
-              <div className={cn(
-                "flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold relative",
-                "bg-gradient-to-br from-[rgb(255,64,23)] to-[rgb(220,50,15)] text-white",
-                "dark:from-primary/60 dark:to-primary/40 dark:text-white",
-                "shadow-md",
-                tier.glowColor
-              )}>
-                {displayName.charAt(0).toUpperCase()}
-              </div>
-            )}
-            {/* Online indicator */}
-            <div className={cn(
-              "absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full bg-emerald-500",
-              "ring-1 ring-background"
-            )} />
-          </div>
-          
-          {/* Tier icon & name with animation */}
-          <div className={cn("flex items-center gap-1", tier.color)}>
-            {TierIcon && (
+            {/* Avatar with Aurora Ring */}
+            <div className="relative">
+              {/* Animated aurora ring */}
               <motion.div
-                animate={tier.iconAnimation}
-                transition={tier.iconTransition}
-              >
-                <TierIcon className="h-3.5 w-3.5" />
-              </motion.div>
-            )}
-            <span className="hidden lg:inline text-xs font-semibold truncate max-w-[60px] text-[rgb(37,27,24)] dark:text-white/90">
-              {displayName}
-            </span>
-          </div>
-        </NavPill>
-      </DropdownMenuTrigger>
-      
-      <DropdownMenuContent 
-        align="end" 
-        className={cn(
-          "w-56 p-0 overflow-hidden",
-          "bg-white border-gray-200/80 shadow-lg",
-          "dark:bg-[#1a1a1a]/95 dark:border-white/5 dark:backdrop-blur-xl"
-        )}
-      >
-        {/* Header with tier gradient */}
-        <div 
-          onClick={handleProfileClick}
-          className={cn(
-            "p-3 bg-gradient-to-br cursor-pointer hover:opacity-90 transition-opacity",
-            tier.headerGradient || 'from-gray-50 to-white dark:from-white/5 dark:to-transparent'
-          )}
-        >
-          <div className="flex items-center gap-2">
-            {photoUrl ? (
-              <div className="relative shrink-0">
-                <motion.div
-                  className={cn(
-                    "absolute inset-0 rounded-lg ring-2",
-                    tier.borderColor
-                  )}
-                  animate={{ 
-                    scale: [1, 1.1, 1],
-                    opacity: [0.4, 0.7, 0.4]
-                  }}
-                  transition={{ 
-                    duration: 2,
-                    repeat: Infinity,
-                    ease: "easeInOut"
-                  }}
-                />
+                className={cn(
+                  "absolute -inset-1 rounded-full opacity-0 dark:opacity-100",
+                  // Aurora gradient ring
+                  "bg-gradient-to-r from-cyan-400 via-violet-500 to-pink-500",
+                  "blur-[2px]"
+                )}
+                animate={{ 
+                  rotate: [0, 360],
+                  scale: [0.95, 1.05, 0.95],
+                }}
+                transition={{ 
+                  rotate: { duration: 8, repeat: Infinity, ease: 'linear' },
+                  scale: { duration: 2, repeat: Infinity, ease: 'easeInOut' }
+                }}
+                style={{ opacity: 0.6 }}
+              />
+              
+              {/* Avatar image or initial */}
+              {photoUrl ? (
                 <img 
                   src={photoUrl} 
-                  alt="" 
+                  alt={displayName}
                   className={cn(
-                    "h-9 w-9 rounded-lg object-cover relative",
-                    "shadow-md",
-                    tier.glowColor
-                  )} 
+                    "relative h-8 w-8 rounded-full object-cover",
+                    "ring-2 ring-[hsl(30,35%,85%)]",
+                    // Dark mode: Crystalline border
+                    "dark:ring-[rgba(255,255,255,0.15)]",
+                    "shadow-lg"
+                  )}
                 />
-              </div>
-            ) : (
-              <div className={cn(
-                "h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center text-sm font-bold",
-                "shadow-md",
-                tier.glowColor
-              )}>
-                {displayName.charAt(0)}
-              </div>
-            )}
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold truncate">{displayName}</p>
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              ) : (
+                <div className={cn(
+                  "relative flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold",
+                  // Light mode
+                  "bg-gradient-to-br from-[hsl(25,70%,48%)] to-[hsl(22,65%,38%)] text-[hsl(40,50%,96%)]",
+                  "ring-2 ring-[hsl(30,35%,85%)]",
+                  // Dark mode: Aurora gradient avatar
+                  "dark:bg-gradient-to-br dark:from-cyan-500 dark:via-violet-500 dark:to-pink-500 dark:text-white",
+                  "dark:ring-[rgba(255,255,255,0.15)]",
+                  "shadow-lg"
+                )}
+                style={{ fontFamily: 'var(--font-heading)' }}
+                >
+                  {displayName.charAt(0).toUpperCase()}
+                </div>
+              )}
+              
+              {/* Status indicator */}
+              {showExpirationWarning ? (
+                <motion.div 
+                  className={cn(
+                    "absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full",
+                    "bg-amber-500 dark:bg-amber-400",
+                    "ring-2 ring-background",
+                    "flex items-center justify-center"
+                  )}
+                  animate={{ scale: [1, 1.2, 1] }}
+                  transition={{ duration: 1, repeat: Infinity }}
+                >
+                  <Clock className="h-1.5 w-1.5 text-white" />
+                </motion.div>
+              ) : (
+                <motion.div 
+                  className={cn(
+                    "absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full",
+                    "bg-emerald-500 dark:bg-emerald-400",
+                    "ring-2 ring-background",
+                    // Aurora glow
+                    "dark:shadow-[0_0_8px_2px_rgba(52,211,153,0.5)]"
+                  )}
+                  animate={{ scale: [1, 1.15, 1], opacity: [0.8, 1, 0.8] }}
+                  transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                />
+              )}
+            </div>
+            
+            {/* Tier icon & name */}
+            <div className={cn("flex items-center gap-1.5", tier.color)}>
+              {TierIcon && (
                 <motion.div
                   animate={tier.iconAnimation}
                   transition={tier.iconTransition}
+                  className="dark:drop-shadow-[0_0_4px_currentColor]"
                 >
-                  <TierIcon className={cn("h-3 w-3", tier.color)} />
+                  <TierIcon className="h-3.5 w-3.5" />
                 </motion.div>
-                <span className={tier.color}>{tier.label}</span>
-                <span>•</span>
-                <Coins className="h-3 w-3 text-amber-500" />
-                <span className="font-medium text-amber-600 dark:text-amber-400">{credits.toLocaleString()}</span>
-              </div>
+              )}
+              <span className={cn(
+                "hidden lg:inline text-xs font-semibold truncate max-w-[70px]",
+                "text-[hsl(25,35%,25%)] dark:text-white/90"
+              )}>
+                {displayName}
+              </span>
             </div>
-            <ChevronRight className="h-4 w-4 text-muted-foreground" />
-          </div>
-        </div>
+          </motion.div>
+        </DropdownMenuTrigger>
         
-        <DropdownMenuSeparator className="m-0 bg-gray-100 dark:bg-white/10" />
-        
-        {/* Menu Items */}
-        <div className="p-1.5">
+        <DropdownMenuContent 
+          align="end" 
+          className={cn(
+            "w-48 p-2 overflow-hidden",
+            // Light mode: Vintage Banking
+            "bg-gradient-to-b from-[hsl(40,50%,97%)] to-[hsl(38,45%,95%)]",
+            "border-[hsl(30,35%,75%)]/50",
+            "shadow-[0_8px_32px_rgba(101,67,33,0.12)]",
+            // ═══════════════════════════════════════════════════════════
+            // DARK MODE: Obsidian Aurora Dropdown
+            // ═══════════════════════════════════════════════════════════
+            "dark:bg-gradient-to-b dark:from-[rgba(8,10,18,0.98)] dark:to-[rgba(12,14,24,0.98)]",
+            "dark:backdrop-blur-[60px] dark:backdrop-saturate-[180%]",
+            // Aurora prismatic border
+            "dark:border dark:border-transparent",
+            "dark:[background-image:linear-gradient(to_bottom,rgba(8,10,18,0.98),rgba(12,14,24,0.98)),linear-gradient(135deg,rgba(34,211,238,0.3),rgba(139,92,246,0.25),rgba(236,72,153,0.25),rgba(34,211,238,0.3))]",
+            "dark:[background-origin:border-box] dark:[background-clip:padding-box,border-box]",
+            // Layered aurora glow
+            "dark:shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8),0_0_50px_-15px_rgba(139,92,246,0.25),0_0_30px_-10px_rgba(34,211,238,0.2),inset_0_1px_0_rgba(255,255,255,0.06)]"
+          )}
+        >
           {isAdmin && (
             <DropdownMenuItem 
               onClick={handleAdminClick}
               className={cn(
-                "gap-3 py-2 px-2.5 rounded-lg cursor-pointer",
-                "hover:bg-gray-100 dark:hover:bg-white/[0.08]"
+                "gap-3 py-2.5 px-3 rounded-xl cursor-pointer transition-all duration-200",
+                "hover:bg-[hsl(38,40%,92%)]",
+                // Dark mode: Aurora hover
+                "dark:hover:bg-gradient-to-r dark:hover:from-cyan-500/[0.1] dark:hover:to-violet-500/[0.08]",
+                "dark:hover:shadow-[0_0_16px_-6px_rgba(34,211,238,0.4)]"
               )}
             >
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gray-100 dark:bg-white/[0.08]">
-                <ShieldCheck className="h-3.5 w-3.5 text-gray-600 dark:text-gray-300" />
+              <div className={cn(
+                "flex h-8 w-8 items-center justify-center rounded-xl",
+                "bg-[hsl(38,35%,90%)]",
+                // Dark mode: Aurora icon container
+                "dark:bg-gradient-to-br dark:from-cyan-500/20 dark:to-violet-500/20",
+                "dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]"
+              )}>
+                <ShieldCheck className="h-4 w-4 text-[hsl(25,40%,40%)] dark:text-cyan-400" />
               </div>
-              <span className="text-sm font-medium">Admin Dashboard</span>
+              <span className="text-sm font-medium text-[hsl(25,35%,25%)] dark:text-white/90">Admin</span>
             </DropdownMenuItem>
           )}
           
           <DropdownMenuItem 
             onClick={handleLogout}
             className={cn(
-              "gap-3 py-2 px-2.5 rounded-lg cursor-pointer",
-              "text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10"
+              "gap-3 py-2.5 px-3 rounded-xl cursor-pointer transition-all duration-200",
+              "text-[hsl(0,55%,45%)] hover:bg-[hsl(0,50%,95%)]",
+              // Dark mode: Rose aurora hover
+              "dark:text-rose-400",
+              "dark:hover:bg-gradient-to-r dark:hover:from-rose-500/[0.12] dark:hover:to-pink-500/[0.08]",
+              "dark:hover:shadow-[0_0_16px_-6px_rgba(244,63,94,0.5)]"
             )}
           >
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-red-100 dark:bg-red-500/15">
-              <LogOut className="h-3.5 w-3.5" />
+            <div className={cn(
+              "flex h-8 w-8 items-center justify-center rounded-xl",
+              "bg-[hsl(0,45%,92%)]",
+              // Dark mode: Rose glow container
+              "dark:bg-rose-500/15",
+              "dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]"
+            )}>
+              <LogOut className="h-4 w-4" />
             </div>
             <span className="text-sm font-medium">Sign out</span>
           </DropdownMenuItem>
-        </div>
-      </DropdownMenuContent>
-    </DropdownMenu>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 }
-
-
-

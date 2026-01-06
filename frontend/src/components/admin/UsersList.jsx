@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, forwardRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Users, 
@@ -22,7 +22,11 @@ import {
   Plus,
   Minus,
   MoreHorizontal,
-  Calendar
+  Calendar,
+  Clock,
+  Timer,
+  CalendarPlus,
+  Infinity
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
@@ -45,6 +49,17 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/useToast';
 import { useAuth } from '@/contexts/AuthContext';
+import { TierExpirationCountdown } from '@/components/ui/TierExpirationCountdown';
+
+const DURATION_OPTIONS = [
+  { value: 0, label: 'Lifetime' },
+  { value: 7, label: '7 days' },
+  { value: 30, label: '30 days' },
+  { value: 90, label: '90 days' },
+  { value: 180, label: '180 days' },
+  { value: 365, label: '1 year' },
+  { value: -1, label: 'Custom...' },
+];
 
 /**
  * UsersList Component
@@ -327,20 +342,323 @@ function CreditsModal({ user, onClose, onSave }) {
 }
 
 /**
- * User Row Component
+ * Extend Tier Modal
+ * Allows admins to extend a user's tier duration
+ * Requirements: 5.5
  */
-function UserRow({ user, index, currentUser, onEditTier, onCredits, onFlag, onUnflag, editingTier, setEditingTier, handleUpdateTier, actionLoading }) {
+function ExtendTierModal({ user, onClose, onSave }) {
+  const [days, setDays] = useState('30');
+  const [isLoading, setIsLoading] = useState(false);
+  const { success, error } = useToast();
+  
+  const tier = user.tier || 'free';
+  const tierExpiresAt = user.tierExpiresAt || user.tier_expires_at;
+  const isPermanent = tier !== 'free' && !tierExpiresAt;
+  
+  // Calculate current expiration info
+  const currentExpiration = tierExpiresAt ? new Date(tierExpiresAt) : null;
+  const isExpired = currentExpiration && currentExpiration < new Date();
+  
+  // Calculate new expiration preview
+  const getNewExpiration = () => {
+    const numDays = parseInt(days, 10);
+    if (isNaN(numDays) || numDays < 1) return null;
+    
+    const baseDate = isExpired || !currentExpiration ? new Date() : currentExpiration;
+    const newDate = new Date(baseDate);
+    newDate.setDate(newDate.getDate() + numDays);
+    return newDate;
+  };
+  
+  const newExpiration = getNewExpiration();
+
+  const handleExtend = async () => {
+    const numDays = parseInt(days, 10);
+    if (isNaN(numDays) || numDays < 1) {
+      error('Please enter a valid number of days');
+      return;
+    }
+    
+    if (numDays > 365) {
+      error('Cannot extend more than 365 days at once');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await fetch(`${API_BASE}/admin/users/${user.id}/tier/extend`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ additionalDays: numDays })
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.status === 'OK') {
+        success(`Tier extended by ${numDays} days`);
+        onSave();
+        onClose();
+      } else {
+        error(data.message || 'Failed to extend tier');
+      }
+    } catch (err) {
+      error('Network error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Format date for display
+  const formatDate = (date) => {
+    if (!date) return '-';
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        className={cn(
+          "w-full max-w-md mx-4 rounded-2xl overflow-hidden",
+          "bg-white dark:bg-[rgba(30,41,59,0.95)]",
+          "border border-[rgb(237,234,233)] dark:border-white/10",
+          "shadow-xl dark:shadow-none"
+        )}
+      >
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold flex items-center gap-2 text-[rgb(37,27,24)] dark:text-white">
+              <div className="h-8 w-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                <CalendarPlus className="h-4 w-4 text-emerald-500" />
+              </div>
+              Extend Tier Duration
+            </h3>
+            <Button variant="ghost" size="icon" onClick={onClose} className="rounded-lg">
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+          
+          {/* User Info */}
+          <div className={cn(
+            "p-3 rounded-xl mb-4",
+            "bg-[rgb(250,247,245)] dark:bg-white/5",
+            "border border-[rgb(237,234,233)] dark:border-white/10"
+          )}>
+            <p className="text-sm text-muted-foreground">
+              Extending tier for <span className="font-medium text-foreground">{user.username || user.firstName || user.first_name}</span>
+            </p>
+            <p className="text-lg font-bold text-[rgb(37,27,24)] dark:text-white mt-1 capitalize">
+              Current tier: <span className="text-primary">{tier}</span>
+            </p>
+          </div>
+          
+          {/* Current Status */}
+          <div className={cn(
+            "p-3 rounded-xl mb-4",
+            isPermanent ? "bg-emerald-500/10 border-emerald-500/20" : 
+            isExpired ? "bg-red-500/10 border-red-500/20" : 
+            "bg-amber-500/10 border-amber-500/20",
+            "border"
+          )}>
+            <div className="flex items-center gap-2 mb-1">
+              <Clock className={cn(
+                "h-4 w-4",
+                isPermanent ? "text-emerald-600 dark:text-emerald-400" :
+                isExpired ? "text-red-600 dark:text-red-400" :
+                "text-amber-600 dark:text-amber-400"
+              )} />
+              <span className="text-xs font-medium text-muted-foreground">Current Status</span>
+            </div>
+            {isPermanent ? (
+              <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                Lifetime subscription (no expiration)
+              </p>
+            ) : isExpired ? (
+              <p className="text-sm font-medium text-red-600 dark:text-red-400">
+                Expired on {formatDate(currentExpiration)}
+              </p>
+            ) : (
+              <p className="text-sm font-medium text-amber-600 dark:text-amber-400">
+                Expires on {formatDate(currentExpiration)}
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-4">
+            {/* Days Input */}
+            <div className="space-y-2">
+              <Label className="text-xs font-medium">Days to add (1-365)</Label>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setDays(prev => String(Math.max(1, (parseInt(prev) || 0) - 7)))}
+                  className="rounded-xl"
+                >
+                  <Minus className="h-4 w-4" />
+                </Button>
+                <Input
+                  type="number"
+                  value={days}
+                  onChange={(e) => setDays(e.target.value)}
+                  placeholder="30"
+                  min={1}
+                  max={365}
+                  className="text-center rounded-xl"
+                />
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setDays(prev => String(Math.min(365, (parseInt(prev) || 0) + 7)))}
+                  className="rounded-xl"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              {/* Quick select buttons */}
+              <div className="flex gap-2 mt-2">
+                {[7, 30, 90, 180, 365].map(d => (
+                  <Button
+                    key={d}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setDays(String(d))}
+                    className={cn(
+                      "flex-1 text-xs rounded-lg",
+                      days === String(d) && "bg-primary/10 border-primary/30 text-primary"
+                    )}
+                  >
+                    {d === 365 ? '1y' : d === 180 ? '6m' : d === 90 ? '3m' : `${d}d`}
+                  </Button>
+                ))}
+              </div>
+            </div>
+            
+            {/* New Expiration Preview */}
+            {newExpiration && (
+              <div className={cn(
+                "p-3 rounded-xl",
+                "bg-emerald-500/10 border border-emerald-500/20"
+              )}>
+                <div className="flex items-center gap-2 mb-1">
+                  <Calendar className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                  <span className="text-xs font-medium text-muted-foreground">New Expiration</span>
+                </div>
+                <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                  {formatDate(newExpiration)}
+                </p>
+                {isExpired && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    (Calculated from today since tier is expired)
+                  </p>
+                )}
+              </div>
+            )}
+
+            <div className="flex gap-2 pt-2">
+              <Button variant="outline" onClick={onClose} className="flex-1 rounded-xl">
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleExtend} 
+                disabled={isLoading || isPermanent} 
+                className="flex-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white"
+              >
+                {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Extend Tier'}
+              </Button>
+            </div>
+            
+            {isPermanent && (
+              <p className="text-xs text-center text-muted-foreground">
+                Cannot extend a lifetime subscription. Change to a timed tier first.
+              </p>
+            )}
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+/**
+ * User Row Component - wrapped with forwardRef for AnimatePresence compatibility
+ */
+const UserRow = forwardRef(function UserRow({ user, index, currentUser, onEditTier, onCredits, onFlag, onUnflag, onExtend, editingTier, setEditingTier, handleUpdateTier, actionLoading }, ref) {
+  const [editDuration, setEditDuration] = useState(0);
+  const [editTierValue, setEditTierValue] = useState(null);
+  const [customDuration, setCustomDuration] = useState('');
+  const [showCustomInput, setShowCustomInput] = useState(false);
+  
   const tier = user.tier || 'free';
   const tierConfig = TIER_CONFIG[tier] || TIER_CONFIG.free;
   const TierIcon = tierConfig.icon;
   const isFlagged = user.flagged || user.is_flagged;
   const createdAt = user.createdAt || user.created_at;
+  const tierExpiresAt = user.tierExpiresAt || user.tier_expires_at;
   const isSelf = currentUser?.id === user.id;
   const isTargetAdmin = user.isAdmin || user.is_admin;
   const canFlag = !isSelf && !isTargetAdmin;
+  
+  // Calculate expiration status for highlighting
+  const getExpirationStatus = () => {
+    if (tier === 'free' || !tierExpiresAt) return null;
+    const expDate = new Date(tierExpiresAt);
+    const now = new Date();
+    const diffMs = expDate - now;
+    if (diffMs <= 0) return 'expired';
+    const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    if (days <= 3) return 'critical';
+    if (days <= 7) return 'warning';
+    return null;
+  };
+  const expirationStatus = getExpirationStatus();
+  
+  // Reset edit state when editing changes
+  useEffect(() => {
+    if (editingTier === user.id) {
+      setEditTierValue(tier);
+      setEditDuration(0);
+      setCustomDuration('');
+      setShowCustomInput(false);
+    }
+  }, [editingTier, user.id, tier]);
+  
+  const handleDurationChange = (value) => {
+    const numValue = parseInt(value, 10);
+    if (numValue === -1) {
+      // Custom option selected
+      setShowCustomInput(true);
+      setEditDuration(0);
+    } else {
+      setShowCustomInput(false);
+      setEditDuration(numValue);
+      setCustomDuration('');
+    }
+  };
+  
+  const handleConfirmTier = () => {
+    if (editTierValue) {
+      // Use custom duration if set, otherwise use selected duration
+      const finalDuration = showCustomInput && customDuration 
+        ? parseInt(customDuration, 10) 
+        : editDuration;
+      handleUpdateTier(user.id, editTierValue, finalDuration || null);
+    }
+    setEditingTier(null);
+  };
 
   return (
     <motion.div
+      ref={ref}
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.03 }}
@@ -350,7 +668,11 @@ function UserRow({ user, index, currentUser, onEditTier, onCredits, onFlag, onUn
         "border border-[rgb(237,234,233)] dark:border-white/5",
         "hover:border-[rgb(255,64,23)]/20 dark:hover:border-white/10",
         "hover:shadow-sm dark:hover:bg-white/[0.04]",
-        isFlagged && "border-red-200 dark:border-red-500/20 bg-red-50/50 dark:bg-red-500/5"
+        isFlagged && "border-red-200 dark:border-red-500/20 bg-red-50/50 dark:bg-red-500/5",
+        // Highlight expiring soon users
+        !isFlagged && expirationStatus === 'expired' && "border-red-300 dark:border-red-500/30 bg-red-50/30 dark:bg-red-500/5",
+        !isFlagged && expirationStatus === 'critical' && "border-amber-300 dark:border-amber-500/30 bg-amber-50/30 dark:bg-amber-500/5",
+        !isFlagged && expirationStatus === 'warning' && "border-amber-200 dark:border-amber-500/20 bg-amber-50/20 dark:bg-amber-500/[0.03]"
       )}
     >
       <div className="flex items-center gap-4">
@@ -382,6 +704,12 @@ function UserRow({ user, index, currentUser, onEditTier, onCredits, onFlag, onUn
                 Flagged
               </Badge>
             )}
+            {expirationStatus === 'expired' && !isFlagged && (
+              <Badge variant="outline" className="text-[10px] h-5 bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20">
+                <Timer className="h-3 w-3 mr-1" />
+                Expired
+              </Badge>
+            )}
             {isTargetAdmin && (
               <Badge variant="outline" className="text-[10px] h-5 bg-primary/10 text-primary border-primary/20">
                 Admin
@@ -394,14 +722,14 @@ function UserRow({ user, index, currentUser, onEditTier, onCredits, onFlag, onUn
         </div>
 
         {/* Tier Badge */}
-        <div className="hidden sm:block">
+        <div className="hidden sm:flex sm:flex-col sm:items-end gap-1">
           {editingTier === user.id ? (
             <div className="flex items-center gap-1">
               <Select 
-                defaultValue={tier}
-                onValueChange={(v) => handleUpdateTier(user.id, v)}
+                value={editTierValue || tier}
+                onValueChange={setEditTierValue}
               >
-                <SelectTrigger className="h-8 w-28 text-xs rounded-lg">
+                <SelectTrigger className="h-8 w-24 text-xs rounded-lg">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -412,6 +740,42 @@ function UserRow({ user, index, currentUser, onEditTier, onCredits, onFlag, onUn
                   ))}
                 </SelectContent>
               </Select>
+              {showCustomInput ? (
+                <Input
+                  type="number"
+                  min="1"
+                  max="365"
+                  placeholder="Days"
+                  value={customDuration}
+                  onChange={(e) => setCustomDuration(e.target.value)}
+                  className="h-8 w-20 text-xs rounded-lg"
+                />
+              ) : (
+                <Select
+                  value={String(editDuration)}
+                  onValueChange={handleDurationChange}
+                >
+                  <SelectTrigger className="h-8 w-24 text-xs rounded-lg">
+                    <SelectValue placeholder="Duration" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DURATION_OPTIONS.map(d => (
+                      <SelectItem key={d.value} value={String(d.value)}>
+                        {d.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-emerald-600"
+                onClick={handleConfirmTier}
+                disabled={showCustomInput && (!customDuration || parseInt(customDuration, 10) < 1 || parseInt(customDuration, 10) > 365)}
+              >
+                <Check className="h-3 w-3" />
+              </Button>
               <Button
                 variant="ghost"
                 size="icon"
@@ -422,21 +786,29 @@ function UserRow({ user, index, currentUser, onEditTier, onCredits, onFlag, onUn
               </Button>
             </div>
           ) : (
-            <button
-              onClick={() => setEditingTier(user.id)}
-              className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg",
-                "transition-colors",
-                tierConfig.bg,
-                tierConfig.border,
-                "border",
-                "hover:opacity-80"
+            <div className="flex flex-col items-end gap-1">
+              <button
+                onClick={() => setEditingTier(user.id)}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-lg",
+                  "transition-colors",
+                  tierConfig.bg,
+                  tierConfig.border,
+                  "border",
+                  "hover:opacity-80"
+                )}
+              >
+                <TierIcon className={cn("h-3.5 w-3.5", tierConfig.color)} />
+                <span className={cn("capitalize text-xs font-medium", tierConfig.color)}>{tier}</span>
+                {tier !== 'free' && !tierExpiresAt && (
+                  <Infinity className="h-3 w-3 text-emerald-500" />
+                )}
+                <Edit2 className="h-3 w-3 opacity-50 ml-1" />
+              </button>
+              {tier !== 'free' && tierExpiresAt && (
+                <TierExpirationCountdown expiresAt={tierExpiresAt} variant="inline" />
               )}
-            >
-              <TierIcon className={cn("h-3.5 w-3.5", tierConfig.color)} />
-              <span className={cn("capitalize text-xs font-medium", tierConfig.color)}>{tier}</span>
-              <Edit2 className="h-3 w-3 opacity-50 ml-1" />
-            </button>
+            </div>
           )}
         </div>
 
@@ -477,6 +849,12 @@ function UserRow({ user, index, currentUser, onEditTier, onCredits, onFlag, onUn
               <Crown className="h-4 w-4 mr-2 text-yellow-500" />
               Change Tier
             </DropdownMenuItem>
+            {tier !== 'free' && (
+              <DropdownMenuItem onClick={() => onExtend(user)}>
+                <CalendarPlus className="h-4 w-4 mr-2 text-emerald-500" />
+                Extend Tier
+              </DropdownMenuItem>
+            )}
             {canFlag && (
               <>
                 <DropdownMenuSeparator />
@@ -514,7 +892,7 @@ function UserRow({ user, index, currentUser, onEditTier, onCredits, onFlag, onUn
       )}
     </motion.div>
   );
-}
+});
 
 export function UsersList() {
   const [users, setUsers] = useState([]);
@@ -527,6 +905,7 @@ export function UsersList() {
   const [editingTier, setEditingTier] = useState(null);
   const [creditsModal, setCreditsModal] = useState(null);
   const [flagModal, setFlagModal] = useState(null);
+  const [extendModal, setExtendModal] = useState(null);
   const [actionLoading, setActionLoading] = useState(null);
   
   const { success, error } = useToast();
@@ -581,23 +960,29 @@ export function UsersList() {
   }, [page, search, tierFilter]);
 
   /**
-   * Update user tier
+   * Update user tier with optional duration
    */
-  const handleUpdateTier = useCallback(async (userId, newTier) => {
+  const handleUpdateTier = useCallback(async (userId, newTier, durationDays = null) => {
     setActionLoading(userId);
     
     try {
+      const body = { tier: newTier };
+      if (durationDays && durationDays > 0) {
+        body.durationDays = durationDays;
+      }
+      
       const response = await fetch(`${API_BASE}/admin/users/${userId}/tier`, {
         method: 'PATCH',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tier: newTier })
+        body: JSON.stringify(body)
       });
 
       const data = await response.json();
 
       if (response.ok && data.status === 'OK') {
-        success('Tier updated successfully');
+        const durationMsg = durationDays && durationDays > 0 ? ` for ${durationDays} days` : ' (lifetime)';
+        success(`Tier updated to ${newTier}${durationMsg}`);
         setEditingTier(null);
         fetchUsers();
       } else {
@@ -741,6 +1126,7 @@ export function UsersList() {
                     onCredits={setCreditsModal}
                     onFlag={setFlagModal}
                     onUnflag={handleUnflag}
+                    onExtend={setExtendModal}
                     editingTier={editingTier}
                     setEditingTier={setEditingTier}
                     handleUpdateTier={handleUpdateTier}
@@ -799,6 +1185,17 @@ export function UsersList() {
         <FlagModal
           user={flagModal}
           onClose={() => setFlagModal(null)}
+          onSave={fetchUsers}
+        />
+      )}
+      </AnimatePresence>
+
+      {/* Extend Tier Modal */}
+      <AnimatePresence>
+      {extendModal && (
+        <ExtendTierModal
+          user={extendModal}
+          onClose={() => setExtendModal(null)}
           onSave={fetchUsers}
         />
       )}

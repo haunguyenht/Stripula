@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import { Coins, AlertTriangle, TrendingDown, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Badge } from '@/components/ui/badge';
 
 /**
  * CreditInfo Component
@@ -36,10 +35,10 @@ export function CreditInfo({
   pricing = null,
   gatewayType = 'auth'
 }) {
-  // Normalize pricing config to handle both old format { approved: {min,max} } and new format { approved: number }
+  // Normalize pricing config - use API values only, no fallbacks
   const pricingConfig = useMemo(() => {
     if (!pricing) {
-      return { approved: 5, live: 3 };
+      return { approved: 0, live: 0 };
     }
     // New format: { approved: number, live: number }
     if (typeof pricing.approved === 'number') {
@@ -47,8 +46,8 @@ export function CreditInfo({
     }
     // Old format: { approved: { min, max }, live: { min, max } }
     return {
-      approved: pricing.approved?.max || 5,
-      live: pricing.live?.max || 3
+      approved: pricing.approved?.max || 0,
+      live: pricing.live?.max || 0
     };
   }, [pricing]);
 
@@ -94,78 +93,78 @@ export function CreditInfo({
   const percentage = Math.min((balance / estimatedCost) * 100, 100);
   
   return (
-    <div className={cn("space-y-2", className)}>
-      {/* Compact stats row */}
-      <div className="grid grid-cols-2 gap-2">
-        {/* Cost card */}
-        <div className="relative p-2.5 rounded-lg bg-muted/40 dark:bg-white/[0.04] overflow-hidden">
-          <div className="flex items-center gap-2 mb-1">
-            <Coins className="h-3.5 w-3.5 text-muted-foreground" />
-            <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Cost</span>
+    <div className={cn(
+      "p-3 rounded-xl space-y-3",
+      // Light mode
+      "bg-gray-50 border border-gray-100",
+      // Dark mode - glass
+      "dark:bg-white/[0.02] dark:border-white/[0.06]",
+      className
+    )}>
+      {/* Stats row */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          {/* Cost */}
+          <div>
+            <p className="text-[10px] text-gray-400 dark:text-white/40 uppercase tracking-wide mb-0.5">Est. Cost</p>
+            <p className="text-base font-bold tabular-nums text-gray-900 dark:text-white">
+              {estimatedCost.toLocaleString()}
+            </p>
           </div>
-          <p className="text-lg font-bold tabular-nums text-foreground">
-            {estimatedCost.toLocaleString()}
-          </p>
+          {/* Balance */}
+          <div>
+            <p className="text-[10px] text-gray-400 dark:text-white/40 uppercase tracking-wide mb-0.5">Balance</p>
+            <p className={cn(
+              "text-base font-bold tabular-nums",
+              hasSufficientCredits ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"
+            )}>
+              {balance.toLocaleString()}
+            </p>
+          </div>
         </div>
-        
-        {/* Balance card */}
-        <div className="relative p-2.5 rounded-lg bg-muted/40 dark:bg-white/[0.04] overflow-hidden">
-          <div className="flex items-center gap-2 mb-1">
-            <div className={cn(
-              "h-2 w-2 rounded-full",
-              hasSufficientCredits ? "bg-emerald-500" : "bg-amber-500"
-            )} />
-            <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Balance</span>
-          </div>
-          <p className={cn(
-            "text-lg font-bold tabular-nums",
-            hasSufficientCredits ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"
-          )}>
-            {balance.toLocaleString()}
-          </p>
+        {/* Status indicator */}
+        <div className={cn(
+          "px-2 py-1 rounded-md text-[10px] font-medium",
+          hasSufficientCredits 
+            ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" 
+            : "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+        )}>
+          {hasSufficientCredits ? "Ready" : `-${shortfall}`}
         </div>
       </div>
 
-      {/* Progress indicator */}
-      <div className="space-y-1">
-        <div className="h-1.5 rounded-full bg-muted dark:bg-white/[0.08] overflow-hidden">
-          <div 
-            className={cn(
-              "h-full rounded-full transition-all duration-500",
-              hasSufficientCredits 
-                ? "bg-gradient-to-r from-emerald-500 to-teal-400" 
-                : "bg-gradient-to-r from-amber-500 to-orange-400"
-            )}
-            style={{ width: `${percentage}%` }}
-          />
-        </div>
-        {!hasSufficientCredits && (
-          <p className="text-[10px] text-amber-600 dark:text-amber-400 flex items-center gap-1">
-            <AlertTriangle className="h-3 w-3" />
-            {shortfall} credits short
-          </p>
-        )}
+      {/* Progress bar */}
+      <div className="h-1 rounded-full bg-gray-200 dark:bg-white/[0.08] overflow-hidden">
+        <div 
+          className={cn(
+            "h-full rounded-full transition-all duration-500",
+            hasSufficientCredits 
+              ? "bg-emerald-500" 
+              : "bg-amber-500"
+          )}
+          style={{ width: `${percentage}%` }}
+        />
       </div>
 
-      {/* Pricing row */}
-      {(pricingConfig.approved || pricingConfig.live) && (
-        <div className="flex items-center gap-3 text-[10px] text-muted-foreground pt-1">
+      {/* Footer row */}
+      <div className="flex items-center justify-between text-[10px]">
+        <div className="flex items-center gap-3 text-gray-400 dark:text-white/40">
           <span className="flex items-center gap-1">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-            Approved: {pricingConfig.approved}
+            Live: {pricingConfig.approved || pricingConfig.live}
           </span>
-          {(gatewayType === 'charge' || gatewayType === 'skbased') && (
-            <span className="flex items-center gap-1">
-              <span className="h-1.5 w-1.5 rounded-full bg-sky-500" />
-              Live: {pricingConfig.live}
-            </span>
-          )}
           <span className="flex items-center gap-1">
-            <span className="h-1.5 w-1.5 rounded-full bg-neutral-400 dark:bg-neutral-600" />
-            Dead: Free
+            <span className="h-1.5 w-1.5 rounded-full bg-gray-300 dark:bg-white/20" />
+            Dead: 0
           </span>
         </div>
-      )}
+        {!hasSufficientCredits && (
+          <span className="text-amber-600 dark:text-amber-400 flex items-center gap-1">
+            <AlertTriangle className="h-3 w-3" />
+            May stop early
+          </span>
+        )}
+      </div>
     </div>
   );
 }

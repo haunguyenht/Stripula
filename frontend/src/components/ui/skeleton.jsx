@@ -2,28 +2,60 @@ import { motion } from 'motion/react';
 import { cn } from '@/lib/utils';
 
 /**
- * Skeleton Component - Content placeholder loaders
+ * Skeleton Component - Liquid Aurora Design System
  * 
- * Themed for both OrangeAI (light) and OPUX (dark) modes
- * Features smooth shimmer animation
+ * Light Theme: Vintage Banking with warm copper shimmer
+ * Dark Theme: Aurora shimmer with indigo→cyan sweep + liquid glass
+ * 
+ * Features:
+ * - Liquid glass background in dark mode
+ * - Dual-layer aurora gradient shimmer animation
+ * - Specular highlight edge
  */
 
-// Base skeleton with shimmer animation
+// Base skeleton with aurora shimmer animation
 export function Skeleton({ className, ...props }) {
   return (
     <div
       className={cn(
-        'relative overflow-hidden rounded-md',
-        'bg-[rgb(248,247,247)] dark:bg-white/5',
+        'relative overflow-hidden rounded-lg',
+        // Light mode: Vintage parchment
+        'bg-[hsl(38,25%,91%)]',
+        // Dark mode: Liquid glass base
+        'dark:bg-white/[0.04]',
+        // Specular highlight in dark mode
+        'dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]',
         className
       )}
       {...props}
     >
+      {/* Light mode shimmer - warm copper sweep */}
       <motion.div
-        className="absolute inset-0 bg-gradient-to-r from-transparent via-black/5 dark:via-white/10 to-transparent"
+        className="absolute inset-0 bg-gradient-to-r from-transparent via-[hsl(25,60%,75%)]/30 to-transparent dark:hidden"
         animate={{ x: ['-100%', '100%'] }}
         transition={{
           duration: 1.5,
+          repeat: Infinity,
+          ease: 'easeInOut',
+        }}
+      />
+      {/* Dark mode shimmer - Aurora indigo sweep */}
+      <motion.div
+        className="absolute inset-0 hidden dark:block bg-gradient-to-r from-transparent via-[var(--aurora-indigo)]/20 to-transparent"
+        animate={{ x: ['-100%', '100%'] }}
+        transition={{
+          duration: 2,
+          repeat: Infinity,
+          ease: 'easeInOut',
+        }}
+      />
+      {/* Secondary aurora layer - cyan, offset for depth */}
+      <motion.div
+        className="absolute inset-0 hidden dark:block bg-gradient-to-r from-transparent via-[var(--aurora-cyan)]/15 to-transparent"
+        animate={{ x: ['-100%', '100%'] }}
+        transition={{
+          duration: 2,
+          delay: 0.4,
           repeat: Infinity,
           ease: 'easeInOut',
         }}
@@ -63,13 +95,18 @@ export function SkeletonAvatar({ size = 'md', className }) {
   );
 }
 
-// Card content skeleton
+// Card content skeleton - Liquid Aurora styling
 export function SkeletonCard({ className }) {
   return (
     <div className={cn(
       'rounded-2xl p-4',
-      'bg-white dark:bg-[rgba(30,41,59,0.5)]',
-      'border border-[rgb(237,234,233)] dark:border-white/10',
+      // Light: Vintage banking cream
+      'bg-[hsl(38,45%,98%)] border border-[hsl(30,25%,85%)]',
+      // Dark: Liquid glass
+      'dark:bg-white/[0.03] dark:border-white/[0.08]',
+      'dark:backdrop-blur-[40px] dark:backdrop-saturate-[180%]',
+      // Specular highlight
+      'dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]',
       className
     )}>
       <div className="flex items-start gap-4">
@@ -84,17 +121,21 @@ export function SkeletonCard({ className }) {
   );
 }
 
-// Result card skeleton - matches ResultCard layout
+// Result card skeleton - Liquid Aurora styling matching ResultCard
 export function SkeletonResultCard({ className }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       className={cn(
-        'relative rounded-xl p-4',
-        'bg-white dark:bg-[rgba(30,41,59,0.5)]',
-        'border border-[rgb(237,234,233)] dark:border-white/10',
-        'dark:backdrop-blur-sm',
+        'relative rounded-2xl p-4',
+        // Light: Vintage banking cream
+        'bg-[hsl(38,45%,98%)] border border-[hsl(30,25%,85%)]',
+        // Dark: Liquid glass with aurora edge glow
+        'dark:bg-white/[0.03] dark:border-white/[0.08]',
+        'dark:backdrop-blur-[40px] dark:backdrop-saturate-[180%]',
+        // Specular highlight + subtle aurora glow
+        'dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_0_30px_-12px_rgba(139,92,246,0.15)]',
         className
       )}
     >
@@ -111,7 +152,10 @@ export function SkeletonResultCard({ className }) {
         <Skeleton className="h-6 w-16 rounded-full" />
       </div>
       {/* Bottom row - BIN info */}
-      <div className="flex items-center gap-2 mt-3 pt-3 border-t border-[rgb(237,234,233)] dark:border-white/5">
+      <div className={cn(
+        'flex items-center gap-2 mt-3 pt-3 border-t',
+        'border-[hsl(30,25%,88%)] dark:border-white/5'
+      )}>
         <Skeleton className="h-3 w-12" />
         <Skeleton className="h-3 w-16" />
         <Skeleton className="h-3 w-10" />
@@ -154,7 +198,10 @@ export function SkeletonTable({ rows = 5, columns = 4, className }) {
   return (
     <div className={cn('space-y-0', className)}>
       {/* Header */}
-      <div className="flex items-center gap-4 py-3 border-b border-[rgb(237,234,233)] dark:border-white/10">
+      <div className={cn(
+        'flex items-center gap-4 py-3 border-b',
+        'border-[hsl(30,25%,88%)] dark:border-white/10'
+      )}>
         {Array.from({ length: columns }).map((_, i) => (
           <Skeleton
             key={i}

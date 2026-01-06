@@ -15,6 +15,7 @@ import { GATEWAY_IDS } from '../utils/constants.js';
  * Integrates with:
  * - SpeedManager for tier-based concurrency and delay limits
  * - GatewayManager for availability checks and health metrics
+ * - DashboardService for statistics tracking (Requirements: 8.1, 8.2)
  * 
  * Events emitted:
  * - 'result': Emitted for each completed card validation
@@ -29,12 +30,15 @@ export class SKBasedAuthService extends EventEmitter {
      * @param {Object} options - Configuration options
      * @param {Object} options.speedManager - SpeedManager instance for tier-based limits
      * @param {Object} options.gatewayManager - GatewayManager instance for availability checks
+     * @param {Object} options.dashboardService - DashboardService instance for statistics tracking
      * @param {boolean} options.debug - Enable debug logging (default: true)
      */
     constructor(options = {}) {
         super();
         this.speedManager = options.speedManager || null;
         this.gatewayManager = options.gatewayManager || null;
+        // Dashboard Service for statistics tracking (Requirements: 8.1, 8.2)
+        this.dashboardService = options.dashboardService || null;
         this.debug = options.debug !== false;
         this.validator = new SKBasedAuthValidator({ debug: this.debug });
         this.abortFlag = false;
@@ -125,12 +129,15 @@ export class SKBasedAuthService extends EventEmitter {
      * Uses SpeedManager for tier-based speed limits when available.
      * Emits 'result', 'progress', and 'batchComplete' events for real-time streaming.
      * 
+     * Requirements: 8.1, 8.2 - Statistics tracking integration
+     * 
      * @param {string[]} cards - Array of card strings in format "number|mm|yy|cvv"
      * @param {Object} options - Processing options
      * @param {string} options.skKey - Stripe secret key (required)
      * @param {string} options.pkKey - Stripe publishable key (required)
      * @param {Object} options.proxy - Proxy configuration (required)
      * @param {string} options.tier - User tier for speed limits (default: 'free')
+     * @param {string} options.userId - User ID for statistics tracking
      * @param {Function} options.onProgress - Progress callback
      * @param {Function} options.onResult - Result callback
      * @returns {Promise<Object>} Batch results with stats
@@ -141,6 +148,7 @@ export class SKBasedAuthService extends EventEmitter {
             pkKey,
             proxy,
             tier = 'free',
+            userId = null,
             onProgress = null,
             onResult = null
         } = options;
@@ -178,7 +186,7 @@ export class SKBasedAuthService extends EventEmitter {
         const results = [];
         const total = cards.length;
         let processed = 0;
-        const stats = { live: 0, ccn: 0, declined: 0, errors: 0 };
+        const stats = { live: 0, ccn: 0, declined: 0, errors: 0, threeDS: 0 };
         const startTime = Date.now();
 
         // Validation options for each card
@@ -231,6 +239,8 @@ export class SKBasedAuthService extends EventEmitter {
                                 stats.live++;
                             } else if (result.isCCN()) {
                                 stats.ccn++;
+                            } else if (result.is3DS()) {
+                                stats.threeDS++;
                             } else if (result.isDeclined()) {
                                 stats.declined++;
                             } else {
@@ -257,6 +267,18 @@ export class SKBasedAuthService extends EventEmitter {
                 const duration = ((Date.now() - startTime) / 1000).toFixed(1);
                 const liveCount = stats.live;
 
+                // Increment user statistics (Requirements: 8.1, 8.2)
+                // cardsCount = total cards validated, hitsCount = live cards
+                // For SK-based auth: LIVE and CCN both count as hits (valid cards)
+                const hitsCount = stats.live + stats.ccn;
+                if (userId && this.dashboardService) {
+                    try {
+                        await this.dashboardService.incrementUserStats(userId, total, hitsCount);
+                    } catch (err) {
+                        console.error('[SKBasedAuthService] Failed to increment user stats:', err.message);
+                    }
+                }
+
                 // Emit batchComplete
                 const batchResult = {
                     results,
@@ -279,6 +301,16 @@ export class SKBasedAuthService extends EventEmitter {
                 if (error.message === 'Execution cancelled' || error.message === 'Aborted') {
                     const duration = ((Date.now() - startTime) / 1000).toFixed(1);
                     const liveCount = stats.live;
+
+                    // Increment user statistics for processed cards before abort (Requirements: 8.1, 8.2)
+                    const hitsCount = stats.live + stats.ccn;
+                    if (userId && this.dashboardService && processed > 0) {
+                        try {
+                            await this.dashboardService.incrementUserStats(userId, processed, hitsCount);
+                        } catch (err) {
+                            console.error('[SKBasedAuthService] Failed to increment user stats (aborted):', err.message);
+                        }
+                    }
 
                     const abortedResult = {
                         results,

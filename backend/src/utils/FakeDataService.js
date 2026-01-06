@@ -2,6 +2,9 @@ import { faker, fakerEN_US, fakerEN_GB, fakerEN_CA, fakerEN_AU, fakerDE, fakerFR
 import axios from 'axios';
 import { getStateAbbrev } from './helpers.js';
 
+/**
+ * Locale-specific faker instances for country-accurate data
+ */
 const LOCALE_FAKERS = {
     'en_US': fakerEN_US,
     'en_GB': fakerEN_GB,
@@ -18,11 +21,32 @@ const LOCALE_FAKERS = {
 /**
  * Centralized Fake Data Service
  * Single source of truth for generating fake user data across all clients
- * Uses @faker-js/faker and randomuser.me API
+ * Uses @faker-js/faker for all data generation
+ * 
+ * NOTE: Gmail is excluded per AGENTS.md - sites block it
  */
 
-const EMAIL_DOMAINS = ['outlook.com', 'yahoo.com', 'hotmail.com', 'protonmail.com', 'icloud.com'];
+/**
+ * Popular email domains - NO GMAIL (blocked by most sites)
+ */
+const EMAIL_DOMAINS = [
+    // Microsoft (most trusted)
+    'outlook.com', 'hotmail.com', 'live.com', 'msn.com',
+    // Yahoo
+    'yahoo.com', 'ymail.com', 
+    // Apple
+    'icloud.com', 'me.com', 'mac.com',
+    // Other major providers
+    'aol.com', 'zoho.com', 'mail.com', 'gmx.com', 'gmx.net',
+    // European providers
+    'web.de', 'freenet.de', 'orange.fr', 'laposte.net',
+    // Business-friendly
+    'fastmail.com', 'tutanota.com', 'proton.me'
+];
 
+/**
+ * Country configurations for locale-aware data generation
+ */
 const COUNTRY_CONFIGS = {
     // North America
     US: { nat: 'us', locale: 'en_US', zipFormat: '#####', phoneFormat: '(###) ###-####' },
@@ -74,6 +98,20 @@ const COUNTRY_CONFIGS = {
     CO: { nat: 'co', locale: 'es', zipFormat: '######', phoneFormat: '+57 ### ### ####' }
 };
 
+/**
+ * Phone country prefixes
+ */
+const PHONE_PREFIXES = {
+    US: '+1', CA: '+1', GB: '+44', AU: '+61', NZ: '+64',
+    DE: '+49', FR: '+33', NL: '+31', ES: '+34', IT: '+39',
+    CH: '+41', AT: '+43', BE: '+32', SE: '+46', NO: '+47',
+    DK: '+45', FI: '+358', IE: '+353', PL: '+48', PT: '+351',
+    BR: '+55', MX: '+52', AR: '+54', CL: '+56', CO: '+57',
+    SG: '+65', MY: '+60', JP: '+81', KR: '+82', HK: '+852',
+    TW: '+886', IN: '+91', TH: '+66', PH: '+63', ID: '+62',
+    VN: '+84', AE: '+971', SA: '+966', IL: '+972'
+};
+
 class FakeDataService {
     /**
      * Get faker instance for locale
@@ -83,17 +121,17 @@ class FakeDataService {
     }
 
     /**
-     * Get random element from array
+     * Get random element from array using faker
      */
     randomElement(arr) {
-        return arr[Math.floor(Math.random() * arr.length)];
+        return faker.helpers.arrayElement(arr);
     }
 
     /**
-     * Get random integer between min and max (inclusive)
+     * Get random integer between min and max (inclusive) using faker
      */
     randomInt(min, max) {
-        return Math.floor(Math.random() * (max - min + 1)) + min;
+        return faker.number.int({ min, max });
     }
 
     /**
@@ -104,13 +142,41 @@ class FakeDataService {
     }
 
     /**
-     * Generate fake user with first/last name
+     * Generate realistic email address using faker names
+     * Uses various common email patterns real people use
      */
-    generateFakeUser() {
-        const firstName = faker.person.firstName();
-        const lastName = faker.person.lastName();
-        const rand = this.randomInt(1000, 9999);
+    generateEmail(firstName = null, lastName = null) {
+        const first = (firstName || faker.person.firstName()).toLowerCase().replace(/[^a-z]/g, '');
+        const last = (lastName || faker.person.lastName()).toLowerCase().replace(/[^a-z]/g, '');
+        const num = this.randomInt(1, 9999);
         const domain = this.getRandomEmailDomain();
+        
+        // Common email patterns real people use
+        const patterns = [
+            `${first}.${last}${num}`,           // john.smith123
+            `${first}${last}${num}`,            // johnsmith123
+            `${first}_${last}${num}`,           // john_smith123
+            `${first}${num}`,                   // john123
+            `${first[0]}${last}${num}`,         // jsmith123
+            `${first}.${last[0]}${num}`,        // john.s123
+            `${last}.${first}${num}`,           // smith.john123
+            `${first}${last.slice(0, 3)}${num}`,// johnsmi123
+            `${last}${first[0]}${num}`,         // smithj123
+            `${first}${this.randomInt(1950, 2005)}` // john1985
+        ];
+        
+        return `${this.randomElement(patterns)}@${domain}`;
+    }
+
+    /**
+     * Generate fake user with full details
+     */
+    generateFakeUser(countryCode = 'US') {
+        const config = COUNTRY_CONFIGS[countryCode] || COUNTRY_CONFIGS.US;
+        const localFaker = this.getFaker(config.locale);
+        
+        const firstName = localFaker.person.firstName();
+        const lastName = localFaker.person.lastName();
 
         return {
             first: firstName,
@@ -118,70 +184,67 @@ class FakeDataService {
             firstName,
             lastName,
             fullName: `${firstName} ${lastName}`,
-            email: `${firstName.toLowerCase()}${rand}@${domain}`,
-            phone: this.generatePhone()
+            email: this.generateEmail(firstName, lastName),
+            phone: this.generatePhone(countryCode)
         };
     }
 
     /**
-     * Generate random phone number (US format)
+     * Generate random phone number for country using faker
      */
-    generatePhone() {
-        const area = this.randomInt(200, 999);
-        const prefix = this.randomInt(200, 999);
-        const line = this.randomInt(1000, 9999);
-        return `${area}${prefix}${line}`;
+    generatePhone(countryCode = 'US') {
+        const config = COUNTRY_CONFIGS[countryCode] || COUNTRY_CONFIGS.US;
+        const localFaker = this.getFaker(config.locale);
+        
+        // Use faker's phone number with country format
+        if (config.phoneFormat) {
+            return localFaker.phone.number(config.phoneFormat);
+        }
+        return localFaker.phone.number();
     }
 
     /**
-     * Generate phone number for specific country
+     * Generate phone number with international prefix
      */
-    generatePhoneForCountry(countryCode) {
-        const prefixes = {
-            US: '+1', GB: '+44', CA: '+1', AU: '+61',
-            DE: '+49', FR: '+33', NL: '+31', ES: '+34',
-            IT: '+39', BR: '+55'
-        };
-        const prefix = prefixes[countryCode] || '+1';
-        const digits = Array(10).fill(0).map(() => Math.floor(Math.random() * 10)).join('');
+    generatePhoneWithPrefix(countryCode = 'US') {
+        const prefix = PHONE_PREFIXES[countryCode] || '+1';
+        // Generate 10 digits for the number part
+        const digits = faker.string.numeric(10);
         return `${prefix}${digits}`;
     }
 
     /**
      * Generate random credentials (email + password)
+     * Uses faker.js for realistic names with popular email providers
      */
     generateCredentials() {
-        const user = `user${this.randomInt(1000, 9999)}`;
-        const domain = this.getRandomEmailDomain();
+        const firstName = faker.person.firstName();
+        const lastName = faker.person.lastName();
+        
         return {
-            email: `${user}@${domain}`,
-            password: `Pass${this.randomInt(10000, 99999)}!`
+            email: this.generateEmail(firstName, lastName),
+            password: faker.internet.password({ length: 12, memorable: false, prefix: 'Aa1!' })
         };
     }
 
     /**
-     * Generate random birth date
+     * Generate random birth date using faker
+     * Returns adult age (18-55 years old)
      */
     generateBirthDate() {
-        const year = this.randomInt(1970, 1999);
-        const month = String(this.randomInt(1, 12)).padStart(2, '0');
-        const day = String(this.randomInt(1, 28)).padStart(2, '0');
-        return `${year}-${month}-${day}`;
+        const date = faker.date.birthdate({ min: 18, max: 55, mode: 'age' });
+        return date.toISOString().split('T')[0]; // YYYY-MM-DD format
     }
 
     /**
-     * Generate UUID v4
+     * Generate UUID v4 using faker
      */
     generateUUID() {
-        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-            const r = Math.random() * 16 | 0;
-            const v = c === 'x' ? r : (r & 0x3 | 0x8);
-            return v.toString(16);
-        });
+        return faker.string.uuid();
     }
 
     /**
-     * Generate random postal code
+     * Generate random postal code for country using faker
      */
     generatePostalCode(countryCode = 'US') {
         const config = COUNTRY_CONFIGS[countryCode] || COUNTRY_CONFIGS.US;
@@ -191,33 +254,33 @@ class FakeDataService {
 
     /**
      * Generate billing details for Stripe
-     * Falls back to US if country code is unknown/unsupported
+     * Uses locale-appropriate faker for country-accurate data
      */
     generateBillingDetails(countryCode = 'US') {
-        const user = this.generateFakeUser();
-
         // Normalize and validate country code
         const normalizedCode = (countryCode || 'US').toUpperCase();
-        const hasConfig = COUNTRY_CONFIGS.hasOwnProperty(normalizedCode);
-
-        // Use the config or fallback to US
-        const effectiveCountry = hasConfig ? normalizedCode : 'US';
+        const effectiveCountry = COUNTRY_CONFIGS.hasOwnProperty(normalizedCode) ? normalizedCode : 'US';
         const config = COUNTRY_CONFIGS[effectiveCountry];
         const localFaker = this.getFaker(config.locale);
 
+        const firstName = localFaker.person.firstName();
+        const lastName = localFaker.person.lastName();
+
         return {
-            country: effectiveCountry, // Use effective country, not original (for AVS consistency)
-            state: effectiveCountry === 'US' ? localFaker.location.state({ abbreviated: true }) : localFaker.location.state(),
+            country: effectiveCountry,
+            state: effectiveCountry === 'US' 
+                ? localFaker.location.state({ abbreviated: true }) 
+                : localFaker.location.state(),
             city: localFaker.location.city(),
             line1: localFaker.location.streetAddress(),
             postalCode: localFaker.location.zipCode(config.zipFormat),
-            name: user.fullName,
-            email: user.email
+            name: `${firstName} ${lastName}`,
+            email: this.generateEmail(firstName, lastName)
         };
     }
 
     /**
-     * Generate address object
+     * Generate full address object using faker
      */
     generateAddress(countryCode = 'US') {
         const config = COUNTRY_CONFIGS[countryCode] || COUNTRY_CONFIGS.US;
@@ -225,8 +288,11 @@ class FakeDataService {
 
         return {
             line1: localFaker.location.streetAddress(),
+            line2: faker.helpers.maybe(() => localFaker.location.secondaryAddress(), { probability: 0.3 }),
             city: localFaker.location.city(),
-            state: countryCode === 'US' ? localFaker.location.state({ abbreviated: true }) : localFaker.location.state(),
+            state: countryCode === 'US' 
+                ? localFaker.location.state({ abbreviated: true }) 
+                : localFaker.location.state(),
             postalCode: localFaker.location.zipCode(config.zipFormat),
             country: countryCode
         };
@@ -253,13 +319,16 @@ class FakeDataService {
                 zip = zip.slice(0, -3) + ' ' + zip.slice(-3);
             }
 
+            const firstName = user.name.first;
+            const lastName = user.name.last;
+
             return {
-                firstName: user.name.first,
-                lastName: user.name.last,
-                first: user.name.first,
-                last: user.name.last,
-                fullName: `${user.name.first} ${user.name.last}`,
-                email: `${user.login.username}${this.randomInt(100, 999)}@${this.getRandomEmailDomain()}`,
+                firstName,
+                lastName,
+                first: firstName,
+                last: lastName,
+                fullName: `${firstName} ${lastName}`,
+                email: this.generateEmail(firstName, lastName),
                 street: `${user.location.street.number} ${user.location.street.name}`,
                 line1: `${user.location.street.number} ${user.location.street.name}`,
                 city: user.location.city,
@@ -267,15 +336,16 @@ class FakeDataService {
                 zip: zip,
                 postalCode: zip,
                 country: countryCode,
-                phone: user.phone?.replace(/[^\d+]/g, '') || this.generatePhoneForCountry(countryCode)
+                phone: user.phone?.replace(/[^\d+]/g, '') || this.generatePhoneWithPrefix(countryCode)
             };
         } catch (error) {
+            // Fallback to faker-based generation
             return this.generateFallbackIdentity(countryCode);
         }
     }
 
     /**
-     * Generate fallback identity using faker
+     * Generate fallback identity using faker (when API fails)
      */
     generateFallbackIdentity(countryCode = 'US') {
         const config = COUNTRY_CONFIGS[countryCode] || COUNTRY_CONFIGS.US;
@@ -292,15 +362,17 @@ class FakeDataService {
             first: firstName,
             last: lastName,
             fullName: `${firstName} ${lastName}`,
-            email: `${firstName.toLowerCase()}${lastName.toLowerCase()}${this.randomInt(100, 999)}@${this.getRandomEmailDomain()}`,
+            email: this.generateEmail(firstName, lastName),
             street,
             line1: street,
             city: localFaker.location.city(),
-            state: countryCode === 'US' ? localFaker.location.state({ abbreviated: true }) : localFaker.location.state(),
+            state: countryCode === 'US' 
+                ? localFaker.location.state({ abbreviated: true }) 
+                : localFaker.location.state(),
             zip: zip,
             postalCode: zip,
             country: countryCode,
-            phone: this.generatePhoneForCountry(countryCode)
+            phone: this.generatePhoneWithPrefix(countryCode)
         };
     }
 
@@ -310,6 +382,34 @@ class FakeDataService {
     async generateIdentityForBin(binData) {
         const countryCode = binData?.countryCode || 'US';
         return this.generateRealisticIdentity(countryCode);
+    }
+
+    /**
+     * Generate company/business name using faker
+     */
+    generateCompanyName() {
+        return faker.company.name();
+    }
+
+    /**
+     * Generate credit card holder name (for display)
+     */
+    generateCardholderName() {
+        return faker.person.fullName().toUpperCase();
+    }
+
+    /**
+     * Generate random user agent string
+     */
+    generateUserAgent() {
+        return faker.internet.userAgent();
+    }
+
+    /**
+     * Generate IP address
+     */
+    generateIPAddress() {
+        return faker.internet.ip();
     }
 }
 

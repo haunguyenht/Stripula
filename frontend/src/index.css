@@ -23,6 +23,439 @@
   .scrollbar-none::-webkit-scrollbar {
     display: none;
   }
+
+  /* ===== VINTAGE BANKING ENHANCEMENT UTILITIES ===== */
+  
+  /* Paper texture overlay - adds aged parchment feel */
+  .vintage-paper {
+    background-image: var(--paper-grain);
+    background-blend-mode: multiply;
+  }
+  
+  /* Guilloche pattern for certificates/banknotes */
+  .vintage-guilloche {
+    background-image: var(--guilloche-pattern);
+    background-repeat: repeat;
+  }
+  
+  /* Watermark effect for premium cards */
+  .vintage-watermark {
+    background-image: var(--watermark-pattern);
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
+  }
+  
+  /* Copper foil text effect */
+  .text-copper-foil {
+    background: linear-gradient(
+      135deg,
+      hsl(25, 70%, 50%) 0%,
+      hsl(35, 80%, 60%) 25%,
+      hsl(25, 75%, 45%) 50%,
+      hsl(30, 65%, 55%) 75%,
+      hsl(22, 70%, 42%) 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  
+  /* Embossed/letterpress text effect */
+  .text-embossed {
+    text-shadow: 
+      0 1px 0 rgba(255, 255, 255, 0.5),
+      0 -1px 0 rgba(101, 67, 33, 0.15);
+  }
+  
+  /* Debossed/inset text effect */
+  .text-debossed {
+    text-shadow: 
+      0 -1px 0 rgba(255, 255, 255, 0.3),
+      0 1px 2px rgba(101, 67, 33, 0.2);
+  }
+  
+  /* Engraved border effect - double line vintage style */
+  .border-engraved {
+    border: 1px solid hsl(30, 25%, 75%);
+    box-shadow: 
+      inset 0 0 0 1px hsl(30, 20%, 85%),
+      inset 0 0 0 3px hsl(38, 45%, 96%),
+      inset 0 0 0 4px hsl(30, 25%, 78%);
+  }
+  
+  /* Certificate/bond border with double rule */
+  .border-certificate {
+    border: 2px solid hsl(25, 70%, 50%);
+    box-shadow: 
+      inset 0 0 0 4px hsl(38, 45%, 96%),
+      inset 0 0 0 5px hsl(25, 60%, 60%),
+      0 4px 20px rgba(101, 67, 33, 0.1);
+  }
+  
+  /* Wax seal shadow effect */
+  .shadow-wax-seal {
+    box-shadow: 
+      0 4px 12px rgba(139, 69, 19, 0.25),
+      0 2px 4px rgba(139, 69, 19, 0.15),
+      inset 0 -2px 4px rgba(0, 0, 0, 0.1),
+      inset 0 2px 4px rgba(255, 255, 255, 0.3);
+  }
+  
+  /* Copper coin/medal effect */
+  .shadow-copper-coin {
+    box-shadow: 
+      0 6px 20px rgba(166, 100, 50, 0.3),
+      0 2px 6px rgba(139, 69, 19, 0.2),
+      inset 0 1px 0 rgba(255, 200, 150, 0.4),
+      inset 0 -1px 0 rgba(100, 60, 30, 0.3);
+  }
+  
+  /* Raised bank card effect */
+  .shadow-bank-card {
+    box-shadow: 
+      0 10px 40px rgba(101, 67, 33, 0.15),
+      0 4px 12px rgba(101, 67, 33, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.5),
+      inset 0 -1px 0 rgba(101, 67, 33, 0.05);
+  }
+  
+  /* Ledger line - horizontal ruled effect */
+  .ledger-line {
+    background-image: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 27px,
+      hsl(30, 20%, 85%) 27px,
+      hsl(30, 20%, 85%) 28px
+    );
+  }
+  
+  /* Copper shimmer animation on hover */
+  .hover-copper-shimmer {
+    position: relative;
+    overflow: hidden;
+  }
+  .hover-copper-shimmer::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      110deg,
+      transparent 25%,
+      rgba(255, 200, 150, 0.3) 50%,
+      transparent 75%
+    );
+    transform: translateX(-100%);
+    transition: transform 0.6s ease;
+  }
+  .hover-copper-shimmer:hover::after {
+    transform: translateX(100%);
+  }
+  
+  /* Vintage ink stamp effect */
+  .ink-stamp {
+    position: relative;
+  }
+  .ink-stamp::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    background: var(--paper-grain);
+    opacity: 0.5;
+    mix-blend-mode: multiply;
+    pointer-events: none;
+  }
+  
+  /* Corner ornament flourish */
+  .corner-flourish {
+    position: relative;
+  }
+  .corner-flourish::before,
+  .corner-flourish::after {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border: 2px solid hsl(25, 60%, 55%);
+    pointer-events: none;
+  }
+  .corner-flourish::before {
+    top: 8px;
+    left: 8px;
+    border-right: none;
+    border-bottom: none;
+  }
+  .corner-flourish::after {
+    bottom: 8px;
+    right: 8px;
+    border-left: none;
+    border-top: none;
+  }
+  
+  /* ===== ADVANCED VINTAGE BANKING EFFECTS ===== */
+  
+  /* Rosette pattern - circular security pattern like currency */
+  .vintage-rosette {
+    position: relative;
+  }
+  .vintage-rosette::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: 
+      repeating-conic-gradient(
+        from 0deg at 50% 50%,
+        transparent 0deg 10deg,
+        hsl(25, 40%, 70%, 0.03) 10deg 20deg
+      );
+    pointer-events: none;
+  }
+  
+  /* Filigree border - ornate decorative border */
+  .border-filigree {
+    position: relative;
+    border: 1px solid hsl(30, 25%, 75%);
+  }
+  .border-filigree::before {
+    content: '';
+    position: absolute;
+    inset: 3px;
+    border: 1px solid hsl(25, 50%, 65%);
+    border-radius: inherit;
+    pointer-events: none;
+  }
+  .border-filigree::after {
+    content: '';
+    position: absolute;
+    inset: 6px;
+    border: 1px dashed hsl(25, 40%, 72%);
+    border-radius: inherit;
+    pointer-events: none;
+  }
+  
+  /* Intaglio print effect - deep embossed appearance */
+  .text-intaglio {
+    text-shadow: 
+      0 1px 0 rgba(255, 255, 255, 0.7),
+      0 -1px 1px rgba(101, 67, 33, 0.2),
+      0 2px 3px rgba(101, 67, 33, 0.08);
+    letter-spacing: 0.02em;
+  }
+  
+  /* Gold leaf shimmer - premium text effect */
+  .text-gold-leaf {
+    background: linear-gradient(
+      120deg,
+      hsl(42, 80%, 45%) 0%,
+      hsl(48, 90%, 55%) 20%,
+      hsl(42, 85%, 50%) 40%,
+      hsl(38, 75%, 48%) 60%,
+      hsl(45, 88%, 52%) 80%,
+      hsl(42, 80%, 45%) 100%
+    );
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: gold-shimmer 4s ease-in-out infinite;
+  }
+  
+  @keyframes gold-shimmer {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+  
+  /* Patina effect - aged copper appearance */
+  .patina-copper {
+    background: linear-gradient(
+      145deg,
+      hsl(25, 65%, 48%) 0%,
+      hsl(28, 60%, 52%) 25%,
+      hsl(165, 25%, 55%) 50%,
+      hsl(28, 55%, 50%) 75%,
+      hsl(25, 62%, 46%) 100%
+    );
+  }
+  
+  /* Bank note watermark circle */
+  .watermark-circle {
+    position: relative;
+  }
+  .watermark-circle::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 80%;
+    height: 80%;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: radial-gradient(
+      circle,
+      transparent 30%,
+      hsl(38, 30%, 88%, 0.4) 50%,
+      transparent 70%
+    );
+    pointer-events: none;
+    opacity: 0.5;
+  }
+  
+  /* Engraved line divider */
+  .divider-engraved {
+    position: relative;
+    height: 3px;
+    background: linear-gradient(
+      to bottom,
+      hsl(30, 20%, 80%),
+      hsl(40, 35%, 94%),
+      hsl(30, 20%, 80%)
+    );
+    border-radius: 2px;
+  }
+  .divider-engraved::before,
+  .divider-engraved::after {
+    content: '◆';
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 8px;
+    color: hsl(25, 50%, 55%);
+  }
+  .divider-engraved::before { left: 8px; }
+  .divider-engraved::after { right: 8px; }
+  
+  /* Treasury seal shadow - official stamp appearance */
+  .shadow-treasury-seal {
+    box-shadow:
+      0 0 0 2px hsl(25, 55%, 52%),
+      0 0 0 4px hsl(40, 40%, 95%),
+      0 0 0 5px hsl(25, 45%, 58%),
+      0 8px 24px rgba(101, 67, 33, 0.2),
+      inset 0 2px 4px rgba(255, 255, 255, 0.3),
+      inset 0 -2px 4px rgba(101, 67, 33, 0.15);
+  }
+  
+  /* Copper coin spin animation */
+  .coin-flip {
+    animation: coin-flip-spin 0.6s ease-in-out;
+    transform-style: preserve-3d;
+  }
+  
+  @keyframes coin-flip-spin {
+    0% { transform: rotateY(0deg); }
+    50% { transform: rotateY(180deg); }
+    100% { transform: rotateY(360deg); }
+  }
+  
+  /* Vintage fade-in with paper unfold effect */
+  .animate-paper-unfold {
+    animation: paper-unfold 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    transform-origin: top center;
+  }
+  
+  @keyframes paper-unfold {
+    0% {
+      opacity: 0;
+      transform: perspective(800px) rotateX(-15deg) translateY(-10px);
+    }
+    100% {
+      opacity: 1;
+      transform: perspective(800px) rotateX(0deg) translateY(0);
+    }
+  }
+  
+  /* Wax seal press animation */
+  .animate-seal-press {
+    animation: seal-press 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  
+  @keyframes seal-press {
+    0% { transform: scale(1.2); opacity: 0; }
+    60% { transform: scale(0.95); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  
+  /* Ledger row hover highlight */
+  .ledger-row-hover {
+    transition: all 0.2s ease;
+  }
+  .ledger-row-hover:hover {
+    background: linear-gradient(
+      90deg,
+      transparent,
+      hsl(38, 45%, 94%),
+      hsl(38, 45%, 94%),
+      transparent
+    );
+  }
+  
+  /* Vintage number display - like old bank tickers */
+  .vintage-number {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.05em;
+    text-shadow: 
+      0 1px 0 rgba(255, 255, 255, 0.6),
+      0 -1px 0 rgba(101, 67, 33, 0.1);
+  }
+  
+  /* Ornamental corner brackets */
+  .corner-brackets {
+    position: relative;
+  }
+  .corner-brackets::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 16px; height: 16px;
+    border-top: 2px solid hsl(25, 50%, 55%);
+    border-left: 2px solid hsl(25, 50%, 55%);
+    pointer-events: none;
+  }
+  .corner-brackets::after {
+    content: '';
+    position: absolute;
+    bottom: 0; right: 0;
+    width: 16px; height: 16px;
+    border-bottom: 2px solid hsl(25, 50%, 55%);
+    border-right: 2px solid hsl(25, 50%, 55%);
+    pointer-events: none;
+  }
+  
+  /* Securities grid pattern - like stock certificates */
+  .securities-grid {
+    background-image: 
+      linear-gradient(hsl(30, 15%, 88%) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(30, 15%, 88%) 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+  
+  /* Raised button plate effect */
+  .plate-raised {
+    background: linear-gradient(
+      145deg,
+      hsl(40, 45%, 96%) 0%,
+      hsl(38, 40%, 94%) 50%,
+      hsl(36, 38%, 91%) 100%
+    );
+    box-shadow:
+      0 1px 2px rgba(101, 67, 33, 0.12),
+      inset 0 1px 0 rgba(255, 255, 255, 0.8),
+      inset 0 -1px 0 rgba(101, 67, 33, 0.08);
+  }
+  
+  /* Sunken/inset plate effect */
+  .plate-sunken {
+    background: linear-gradient(
+      145deg,
+      hsl(36, 35%, 90%) 0%,
+      hsl(38, 40%, 93%) 50%,
+      hsl(40, 42%, 95%) 100%
+    );
+    box-shadow:
+      inset 0 1px 3px rgba(101, 67, 33, 0.12),
+      inset 0 -1px 0 rgba(255, 255, 255, 0.5);
+  }
 }
 
 /* =========================================
@@ -50,62 +483,84 @@
     /* ===== GRADIENT VARIABLES ===== */
     --gradient-aurora: linear-gradient(135deg, hsl(3 26% 55%), hsl(295 100% 60%));
     
-    /* ===== ORANGEAI LIGHT MODE ===== */
-    /* Pure white background */
-    --background: 0 0% 100%;
-    /* Warm dark brown text - rgb(37, 27, 24) */
-    --foreground: 14 21% 12%;
+    /* ===== VINTAGE BANKING LIGHT MODE ===== */
+    /* Cream Paper Background - Aged Parchment */
+    --background: 38 45% 96%;
+    /* Rich Sepia Text - Vintage Ink */
+    --foreground: 25 35% 18%;
     
-    /* Surfaces - warm off-white */
-    --card: 0 6% 97%;
-    --card-foreground: 14 21% 12%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 14 21% 12%;
+    /* Surfaces - Antique Paper Tones */
+    --card: 40 40% 95%;
+    --card-foreground: 25 35% 18%;
+    --popover: 38 50% 97%;
+    --popover-foreground: 25 35% 18%;
     
-    /* Primary - Vibrant orange rgb(255, 64, 23) */
-    --primary: 11 100% 55%;
-    --primary-foreground: 0 0% 100%;
+    /* Primary - Copper Foil (rich bronze-copper) */
+    --primary: 25 75% 45%;
+    --primary-foreground: 40 45% 96%;
     
-    /* Secondary/muted - warm neutrals */
-    --secondary: 0 0% 96%;
-    --secondary-foreground: 14 21% 12%;
-    /* rgb(245, 245, 245) */
-    --muted: 0 0% 96%;
-    /* rgb(145, 134, 131) - warm gray */
-    --muted-foreground: 13 6% 54%;
-    /* rgb(248, 247, 247) - warm accent bg */
-    --accent: 0 6% 97%;
-    --accent-foreground: 14 21% 12%;
+    /* Secondary/muted - Aged Paper Tones */
+    --secondary: 35 30% 92%;
+    --secondary-foreground: 25 35% 18%;
+    /* Parchment muted */
+    --muted: 38 25% 90%;
+    /* Faded ink gray-brown */
+    --muted-foreground: 25 15% 45%;
+    /* Warm accent - subtle gold tint */
+    --accent: 42 35% 93%;
+    --accent-foreground: 25 35% 18%;
     
     /* Status colors */
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive: 0 65% 50%;
+    --destructive-foreground: 40 45% 96%;
     
-    /* Borders - warm border rgb(237, 234, 233) */
-    --border: 15 9% 92%;
-    --input: 15 9% 92%;
-    /* Orange focus ring */
-    --ring: 11 100% 55%;
+    /* Borders - Copper-tinted sepia */
+    --border: 30 25% 82%;
+    --input: 30 20% 85%;
+    /* Copper focus ring */
+    --ring: 25 75% 45%;
     
-    /* ===== ORANGEAI TYPOGRAPHY ===== */
-    --font-heading: 'Playfair Display', 'Bricolage Grotesque', serif;
-    --font-body: 'Inter Tight', sans-serif;
+    /* ===== VINTAGE BANKING TYPOGRAPHY ===== */
+    --font-heading: 'Cormorant Garamond', 'Playfair Display', 'Georgia', serif;
+    --font-body: 'DM Sans', 'Inter', sans-serif;
+    --font-mono: 'IBM Plex Mono', 'JetBrains Mono', monospace;
 
-    /* ===== ORANGEAI SHADOW TOKENS (exact match) ===== */
-    --shadow-card: 0 10px 30px rgba(0, 0, 0, 0.1);
-    --shadow-card-hover: 0 20px 40px rgba(0, 0, 0, 0.1);
-    --shadow-button: 0px 2px 6px 0px rgba(0, 0, 0, 0.2);
-    --shadow-button-light: 0px 2px 8px 0px rgba(0, 0, 0, 0.04);
-    --shadow-button-primary: 0 4px 15px rgba(255, 64, 23, 0.3);
-    --shadow-chat: 0 22px 30px rgba(0, 0, 0, 0.18);
-    --shadow-input: 0 1px 2px rgba(37, 27, 24, 0.04);
-    --shadow-dropdown: 0 4px 20px rgba(37, 27, 24, 0.12);
+    /* ===== VINTAGE BANKING SHADOW TOKENS ===== */
+    --shadow-card: 0 4px 20px rgba(101, 67, 33, 0.08), 0 1px 3px rgba(101, 67, 33, 0.05);
+    --shadow-card-hover: 0 12px 40px rgba(101, 67, 33, 0.12), 0 4px 12px rgba(101, 67, 33, 0.08);
+    --shadow-button: 0 2px 8px rgba(101, 67, 33, 0.15);
+    --shadow-button-light: 0 1px 4px rgba(101, 67, 33, 0.06);
+    --shadow-button-primary: 0 4px 16px rgba(166, 100, 50, 0.35);
+    --shadow-chat: 0 16px 48px rgba(101, 67, 33, 0.15);
+    --shadow-input: inset 0 1px 2px rgba(101, 67, 33, 0.06);
+    --shadow-dropdown: 0 8px 32px rgba(101, 67, 33, 0.12);
+    /* New vintage shadows */
+    --shadow-emboss: inset 0 1px 0 rgba(255, 255, 255, 0.6), inset 0 -1px 0 rgba(101, 67, 33, 0.1);
+    --shadow-inset: inset 0 2px 6px rgba(101, 67, 33, 0.08);
+    --shadow-copper-glow: 0 0 20px rgba(184, 115, 51, 0.2);
     
-    /* ===== ORANGEAI BORDER RADIUS TOKENS ===== */
-    --radius-md: 12px;
-    --radius-lg: 16px;
-    --radius-xl: 20px;
-    --radius-xxl: 24px;
+    /* ===== VINTAGE BANKING BORDER RADIUS TOKENS ===== */
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+    --radius-xxl: 20px;
+    
+    /* ===== VINTAGE BANKING COPPER PALETTE ===== */
+    --copper-50: 35 80% 96%;
+    --copper-100: 32 75% 90%;
+    --copper-200: 30 70% 80%;
+    --copper-300: 28 65% 65%;
+    --copper-400: 25 70% 55%;
+    --copper-500: 25 75% 45%;
+    --copper-600: 22 75% 38%;
+    --copper-700: 20 70% 30%;
+    --copper-800: 18 65% 22%;
+    --copper-900: 15 55% 15%;
+    
+    /* ===== VINTAGE PAPER TEXTURES ===== */
+    --paper-grain: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='paper'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.04' numOctaves='5' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23paper)' opacity='0.03'/%3E%3C/svg%3E");
+    --guilloche-pattern: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0 Q45 15 30 30 Q15 15 30 0' fill='none' stroke='%23b8733340' stroke-width='0.5'/%3E%3Cpath d='M0 30 Q15 45 30 30 Q15 15 0 30' fill='none' stroke='%23b8733320' stroke-width='0.5'/%3E%3C/svg%3E");
+    --watermark-pattern: url("data:image/svg+xml,%3Csvg width='200' height='200' viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='100' cy='100' r='80' fill='none' stroke='%23b8733308' stroke-width='1'/%3E%3Ccircle cx='100' cy='100' r='60' fill='none' stroke='%23b8733306' stroke-width='1'/%3E%3Ccircle cx='100' cy='100' r='40' fill='none' stroke='%23b8733304' stroke-width='1'/%3E%3C/svg%3E")
 
     /* ===== STATUS COLORS (Light) ===== */
     --success: 152 55% 42%;
@@ -176,45 +631,60 @@
     }
   }
 
-  /* ===== OPUX DARK MODE ===== */
+  /* ===== LIQUID AURORA DARK MODE ===== */
   .dark {
-    /* Background: OPUX teal-dark */
-    --background: 201 44% 14%;
+    /* Background: Deep cosmic blue (darker, richer) */
+    --background: 220 18% 7%;
     --foreground: 0 0% 100%;
     
-    /* Surfaces: OPUX secondary */
-    --card: 216 28% 15%;
+    /* Surfaces: Dark cosmic with slight blue tint */
+    --card: 220 20% 10%;
     --card-foreground: 0 0% 100%;
-    --popover: 216 28% 15%;
+    --popover: 220 20% 10%;
     --popover-foreground: 0 0% 100%;
     
-    /* Primary: OPUX terracotta accent */
-    --primary: 3 26% 55%;
+    /* Primary: Electric indigo accent */
+    --primary: 250 90% 65%;
     --primary-foreground: 0 0% 100%;
     
-    /* Secondary/muted */
-    --secondary: 216 28% 18%;
+    /* ===== AURORA PALETTE ===== */
+    --aurora-cyan: 185 100% 60%;
+    --aurora-purple: 270 100% 70%;
+    --aurora-pink: 320 100% 65%;
+    --aurora-blue: 210 100% 65%;
+    --aurora-indigo: 250 90% 65%;
+    
+    /* Secondary/muted - updated for cosmic theme */
+    --secondary: 220 18% 12%;
     --secondary-foreground: 0 0% 100%;
-    --muted: 216 28% 18%;
-    --muted-foreground: 240 4% 66%;
-    --accent: 3 26% 55%;
+    --muted: 220 18% 12%;
+    --muted-foreground: 220 10% 55%;
+    --accent: 250 90% 65%;
     --accent-foreground: 0 0% 100%;
     
     /* Destructive */
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 72% 50%;
     --destructive-foreground: 0 0% 100%;
     
-    /* Borders - subtle white with opacity for glass effect */
-    --border: 0 0% 100% / 0.12;
-    --input: 216 28% 18%;
-    --ring: 3 26% 55%;
+    /* Borders - subtle white with enhanced opacity for liquid glass */
+    --border: 0 0% 100% / 0.08;
+    --input: 220 18% 12%;
+    --ring: 250 90% 65%;
+    
+    /* ===== LIQUID GLASS TOKENS ===== */
+    --glass-blur: 40px;
+    --glass-saturation: 180%;
+    --glass-bg: 0 0% 100% / 0.025;
+    --glass-bg-elevated: 0 0% 100% / 0.04;
+    --glass-border: 0 0% 100% / 0.06;
+    --glass-specular: 0 0% 100% / 0.08;
     
     /* ===== SEMANTIC SURFACE TOKENS (Dark) ===== */
     /* Use these for consistent backgrounds */
-    --surface-primary: 216 28% 15%;          /* Main card bg */
-    --surface-secondary: 0 0% 100% / 0.05;   /* Subtle bg like muted/30 */
-    --surface-elevated: 0 0% 100% / 0.08;    /* Hover states */
-    --surface-overlay: 0 0% 0% / 0.5;        /* Modal backdrops */
+    --surface-primary: 220 20% 10%;          /* Main card bg */
+    --surface-secondary: 0 0% 100% / 0.03;   /* Subtle bg */
+    --surface-elevated: 0 0% 100% / 0.05;    /* Hover states */
+    --surface-overlay: 0 0% 0% / 0.6;        /* Modal backdrops */
     
     /* ===== STATUS SEMANTIC TOKENS (Dark) ===== */
     /* Online/Success - emerald glow */
@@ -292,25 +762,29 @@
     color: hsl(var(--foreground));
   }
 
-  /* OPUX Dark mode body - tiled background with grainy overlay */
+  /* Liquid Aurora Dark mode body - cosmic blue with subtle texture */
   /* WebP with PNG fallback using image-set */
   .dark body,
   body.dark {
-    background-color: #142833;
-    background-image: url(/bg-tile.webp);
-    background-image: image-set(
-      url(/bg-tile.webp) type("image/webp"),
-      url(/bg-tile.png) type("image/png")
-    );
-    background-size: 200px 200px;
-    background-repeat: repeat;
+    background-color: hsl(220 18% 7%);
+    background-image: 
+      radial-gradient(ellipse 80% 50% at 50% -20%, rgba(139, 92, 246, 0.08) 0%, transparent 50%),
+      url(/bg-tile.webp);
+    background-image: 
+      radial-gradient(ellipse 80% 50% at 50% -20%, rgba(139, 92, 246, 0.08) 0%, transparent 50%),
+      image-set(
+        url(/bg-tile.webp) type("image/webp"),
+        url(/bg-tile.png) type("image/png")
+      );
+    background-size: 100% 100%, 200px 200px;
+    background-repeat: no-repeat, repeat;
     background-attachment: scroll;
     position: relative;
   }
 
-  /* OPUX Background utilities - WebP optimized */
+  /* Liquid Aurora Background utilities - WebP optimized */
   .bg-opux-tile {
-    background-color: #142833;
+    background-color: hsl(220 18% 7%);
     background-image: url(/bg-tile.webp);
     background-image: image-set(
       url(/bg-tile.webp) type("image/webp"),
@@ -324,9 +798,9 @@
   }
 
   .bg-opux-landscape {
-    background-image: url(/bottom-section-bg.webp);
+    background-image: url(/grainy-background-new.webp);
     background-image: image-set(
-      url(/bottom-section-bg.webp) type("image/webp"),
+      url(/grainy-background-new.webp) type("image/webp"),
       url(/bottom-section-bg.png) type("image/png")
     );
     background-size: cover;
@@ -350,7 +824,7 @@
   }
 
   .bg-opux-vignette {
-    box-shadow: inset 0 0 300px 120px hsl(201 44% 5% / 0.4);
+    box-shadow: inset 0 0 300px 120px hsl(220 18% 4% / 0.5);
     pointer-events: none;
   }
 
@@ -448,6 +922,135 @@
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.3);
   }
+}
+
+/* =========================================
+   LIQUID AURORA GLASS SYSTEM (2025)
+   Apple Liquid Glass inspired with aurora accents
+   ========================================= */
+
+/* Liquid Glass Header - navbar with specular highlights */
+.dark .liquid-glass-header {
+  position: relative;
+  overflow: hidden;
+}
+
+.dark .liquid-glass-header::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  /* Specular top edge highlight */
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.12) 0%,
+    rgba(255, 255, 255, 0.03) 8%,
+    transparent 40%
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+.dark .liquid-glass-header::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  /* Aurora rim gradient */
+  background: linear-gradient(
+    90deg,
+    rgba(34, 211, 238, 0.15) 0%,
+    rgba(139, 92, 246, 0.2) 25%,
+    rgba(236, 72, 153, 0.15) 50%,
+    rgba(139, 92, 246, 0.2) 75%,
+    rgba(34, 211, 238, 0.15) 100%
+  );
+  background-size: 200% 100%;
+  animation: aurora-rim-shift 8s ease-in-out infinite;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: xor;
+  -webkit-mask-composite: xor;
+  padding: 1px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes aurora-rim-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+/* Liquid Glass Card - for cards and panels */
+.dark .liquid-glass-card {
+  position: relative;
+  background: rgba(255, 255, 255, 0.025);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+/* Aurora Glow utilities */
+.dark .aurora-glow-cyan {
+  box-shadow: 0 0 40px -10px hsl(185 100% 60% / 0.3);
+}
+
+.dark .aurora-glow-purple {
+  box-shadow: 0 0 40px -10px hsl(270 100% 70% / 0.3);
+}
+
+.dark .aurora-glow-indigo {
+  box-shadow: 0 0 40px -10px hsl(250 90% 65% / 0.3);
+}
+
+.dark .aurora-glow-pink {
+  box-shadow: 0 0 40px -10px hsl(320 100% 65% / 0.3);
+}
+
+/* Aurora Ambient Background - reusable classes */
+.dark .aurora-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  pointer-events: none;
+}
+
+.dark .aurora-blob-indigo {
+  background: radial-gradient(ellipse at center, rgba(139, 92, 246, 0.15) 0%, rgba(139, 92, 246, 0.05) 40%, transparent 70%);
+}
+
+.dark .aurora-blob-cyan {
+  background: radial-gradient(ellipse at center, rgba(34, 211, 238, 0.12) 0%, rgba(34, 211, 238, 0.04) 40%, transparent 70%);
+}
+
+.dark .aurora-blob-pink {
+  background: radial-gradient(ellipse at center, rgba(236, 72, 153, 0.1) 0%, rgba(236, 72, 153, 0.03) 40%, transparent 70%);
+}
+
+/* Aurora shimmer animation */
+@keyframes aurora-shimmer {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 0.9; transform: scale(1.05); }
+}
+
+.dark .aurora-shimmer {
+  animation: aurora-shimmer 8s ease-in-out infinite;
+}
+
+/* Aurora pulse for accent elements */
+@keyframes aurora-pulse {
+  0%, 100% { 
+    box-shadow: 0 0 20px -5px rgba(139, 92, 246, 0.3), 0 0 40px -10px rgba(34, 211, 238, 0.2);
+  }
+  50% { 
+    box-shadow: 0 0 30px -5px rgba(139, 92, 246, 0.4), 0 0 60px -10px rgba(34, 211, 238, 0.3);
+  }
+}
+
+.dark .aurora-pulse {
+  animation: aurora-pulse 4s ease-in-out infinite;
 }
 
 /* =========================================
@@ -678,6 +1281,164 @@
 }
 
 /* =========================================
+   LIQUID AURORA - NEON GLOW PULSE ANIMATIONS
+   Organic breathing effects inspired by aurora borealis
+   
+   Features:
+   - Multi-layered shadows: core + aurora tint + outer glow
+   - Asymmetric timing for natural "breathing" effect
+   - Specular highlight animation (inset top edge)
+   - Color-specific aurora shifts
+   ========================================= */
+
+/* Emerald Neon Pulse - APPROVED status */
+@keyframes neon-pulse-emerald {
+  0%, 100% {
+    box-shadow: 
+      0 0 20px rgba(16, 185, 129, 0.5),
+      0 0 40px rgba(34, 211, 238, 0.2),
+      0 0 60px rgba(16, 185, 129, 0.15),
+      inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  }
+  25% {
+    box-shadow: 
+      0 0 26px rgba(52, 211, 153, 0.6),
+      0 0 50px rgba(34, 211, 238, 0.3),
+      0 0 75px rgba(16, 185, 129, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+  50% {
+    box-shadow: 
+      0 0 32px rgba(52, 211, 153, 0.65),
+      0 0 60px rgba(34, 211, 238, 0.35),
+      0 0 90px rgba(16, 185, 129, 0.25),
+      inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  }
+  75% {
+    box-shadow: 
+      0 0 24px rgba(16, 185, 129, 0.55),
+      0 0 45px rgba(34, 211, 238, 0.25),
+      0 0 70px rgba(16, 185, 129, 0.18),
+      inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  }
+}
+
+.dark .animate-neon-pulse-emerald {
+  animation: neon-pulse-emerald 3s ease-in-out infinite;
+}
+
+/* Cyan Neon Pulse - LIVE status */
+@keyframes neon-pulse-cyan {
+  0%, 100% {
+    box-shadow: 
+      0 0 24px rgba(34, 211, 238, 0.55),
+      0 0 48px rgba(139, 92, 246, 0.25),
+      0 0 72px rgba(34, 211, 238, 0.15),
+      inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  }
+  33% {
+    box-shadow: 
+      0 0 32px rgba(34, 211, 238, 0.7),
+      0 0 64px rgba(139, 92, 246, 0.4),
+      0 0 96px rgba(34, 211, 238, 0.25),
+      inset 0 1px 0 rgba(255, 255, 255, 0.28);
+  }
+  66% {
+    box-shadow: 
+      0 0 28px rgba(34, 211, 238, 0.6),
+      0 0 52px rgba(139, 92, 246, 0.32),
+      0 0 80px rgba(34, 211, 238, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  }
+}
+
+.dark .animate-neon-pulse-cyan {
+  animation: neon-pulse-cyan 2.5s ease-in-out infinite;
+}
+
+/* Amber Neon Pulse - ERROR/WARNING status */
+@keyframes neon-pulse-amber {
+  0%, 100% {
+    box-shadow: 
+      0 0 16px rgba(251, 191, 36, 0.35),
+      0 0 32px rgba(236, 72, 153, 0.15),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+  50% {
+    box-shadow: 
+      0 0 24px rgba(251, 191, 36, 0.5),
+      0 0 48px rgba(236, 72, 153, 0.25),
+      inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  }
+}
+
+.dark .animate-neon-pulse-amber {
+  animation: neon-pulse-amber 2s ease-in-out infinite;
+}
+
+/* Orange Neon Pulse - CORAL/3DS status */
+@keyframes neon-pulse-orange {
+  0%, 100% {
+    box-shadow: 
+      0 0 22px rgba(251, 146, 60, 0.5),
+      0 0 44px rgba(236, 72, 153, 0.2),
+      0 0 66px rgba(249, 115, 22, 0.12),
+      inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  }
+  40% {
+    box-shadow: 
+      0 0 32px rgba(251, 146, 60, 0.65),
+      0 0 60px rgba(236, 72, 153, 0.35),
+      0 0 88px rgba(249, 115, 22, 0.22),
+      inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  }
+  70% {
+    box-shadow: 
+      0 0 26px rgba(251, 146, 60, 0.55),
+      0 0 50px rgba(236, 72, 153, 0.28),
+      0 0 75px rgba(249, 115, 22, 0.16),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+}
+
+.dark .animate-neon-pulse-orange {
+  animation: neon-pulse-orange 2.8s ease-in-out infinite;
+}
+
+/* Aurora shimmer sweep - Enhanced LIVE effect */
+@keyframes aurora-shimmer-sweep {
+  0% {
+    background-position: -200% center;
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 0.9;
+  }
+  100% {
+    background-position: 200% center;
+    opacity: 0.6;
+  }
+}
+
+.dark .animate-aurora-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(139, 92, 246, 0.15) 25%,
+    rgba(255, 255, 255, 0.2) 50%,
+    rgba(34, 211, 238, 0.15) 75%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: aurora-shimmer-sweep 3s ease-in-out infinite;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+/* =========================================
    OPUX GLASS SYSTEM
    Complete glass variants with noise overlays
    
@@ -892,6 +1653,93 @@
     box-shadow: 
       inset 0 2px 4px rgba(0, 0, 0, 0.3),
       0 0 0 2px hsl(var(--terracotta) / 0.15);
+  }
+
+  /* ===== OPUX Glass - Transparent with Tile Pattern ===== */
+  /* Premium frosted glass that shows background tile through blur */
+  .opux-glass-transparent {
+    position: relative;
+    background: rgba(255, 255, 255, 0.02);
+    backdrop-filter: blur(24px) saturate(150%);
+    -webkit-backdrop-filter: blur(24px) saturate(150%);
+    border: 0.5px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius);
+    box-shadow: 
+      0 8px 32px rgba(0, 0, 0, 0.4),
+      inset 0 0.5px 0 rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease-out;
+  }
+
+  .opux-glass-transparent::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background-image: url(/bg-tile.webp);
+    background-image: image-set(
+      url(/bg-tile.webp) type("image/webp"),
+      url(/bg-tile.png) type("image/png")
+    );
+    background-size: 200px 200px;
+    background-repeat: repeat;
+    opacity: 0.03;
+    pointer-events: none;
+    mix-blend-mode: overlay;
+  }
+
+  .opux-glass-transparent::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, transparent 50%);
+    pointer-events: none;
+  }
+
+  .opux-glass-transparent:hover {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.12);
+    box-shadow: 
+      0 12px 48px rgba(0, 0, 0, 0.5),
+      inset 0 0.5px 0 rgba(255, 255, 255, 0.15);
+    transform: translateY(-2px);
+  }
+
+  /* Status-tinted transparent glass variants */
+  .opux-glass-transparent-success {
+    background: rgba(52, 211, 153, 0.03);
+    border-color: rgba(52, 211, 153, 0.15);
+    box-shadow: 
+      0 0 40px -10px rgba(52, 211, 153, 0.2),
+      0 8px 32px rgba(0, 0, 0, 0.4),
+      inset 0 0.5px 0 rgba(255, 255, 255, 0.1);
+  }
+
+  .opux-glass-transparent-success:hover {
+    background: rgba(52, 211, 153, 0.05);
+    border-color: rgba(52, 211, 153, 0.2);
+    box-shadow: 
+      0 0 60px -10px rgba(52, 211, 153, 0.3),
+      0 12px 48px rgba(0, 0, 0, 0.5),
+      inset 0 0.5px 0 rgba(255, 255, 255, 0.15);
+  }
+
+  .opux-glass-transparent-error {
+    background: rgba(251, 113, 133, 0.02);
+    border-color: rgba(251, 113, 133, 0.12);
+    box-shadow: 
+      0 0 30px -10px rgba(251, 113, 133, 0.15),
+      0 8px 32px rgba(0, 0, 0, 0.4),
+      inset 0 0.5px 0 rgba(255, 255, 255, 0.08);
+  }
+
+  .opux-glass-transparent-warning {
+    background: rgba(251, 191, 36, 0.02);
+    border-color: rgba(251, 191, 36, 0.12);
+    box-shadow: 
+      0 0 30px -10px rgba(251, 191, 36, 0.15),
+      0 8px 32px rgba(0, 0, 0, 0.4),
+      inset 0 0.5px 0 rgba(255, 255, 255, 0.08);
   }
 }
 
@@ -1744,507 +2592,585 @@
 }
 
 /* =========================================
-   SONNER TOAST STYLES - PREMIUM REDESIGN
-   Distinctive floating card design with status ribbon
-   ========================================= */
+    SONNER TOAST STYLES
+    Light: Vintage Banking / Cream Paper + Copper Foil
+    Dark: Liquid Aurora Glass (unchanged)
+    ========================================= */
 
-/* ===== TOAST CSS VARIABLES ===== */
-:root {
-  /* Toast status colors */
-  --toast-success: #10b981;
-  --toast-success-light: #d1fae5;
-  --toast-error: #f43f5e;
-  --toast-error-light: #ffe4e6;
-  --toast-warning: #f59e0b;
-  --toast-warning-light: #fef3c7;
-  --toast-info: #0ea5e9;
-  --toast-info-light: #e0f2fe;
-}
-
-/* ===== BASE TOAST CONTAINER ===== */
+/* Toast container positioning */
 [data-sonner-toaster] {
-  font-family: var(--font-body), 'Inter Tight', system-ui, -apple-system, sans-serif !important;
+  --width: 380px !important;
+  font-family: 'DM Sans', system-ui, sans-serif !important;
 }
 
-/* ===== TOAST ENTRANCE/EXIT ANIMATIONS ===== */
-@keyframes toast-slide-in {
-  0% {
-    opacity: 0;
-    transform: translateX(100%) scale(0.96);
+/* ===== KEYFRAME ANIMATIONS ===== */
+/* Vintage ledger slide - like a drawer opening */
+@keyframes toast-ledger-slide {
+  0% { 
+    opacity: 0; 
+    transform: translateX(40px) rotateY(-8deg);
+    filter: blur(2px);
   }
-  100% {
-    opacity: 1;
-    transform: translateX(0) scale(1);
+  60% {
+    transform: translateX(-4px) rotateY(1deg);
   }
-}
-
-@keyframes toast-slide-out {
-  0% {
-    opacity: 1;
-    transform: translateX(0) scale(1);
-  }
-  100% {
-    opacity: 0;
-    transform: translateX(30%) scale(0.96);
+  100% { 
+    opacity: 1; 
+    transform: translateX(0) rotateY(0);
+    filter: blur(0);
   }
 }
 
-@keyframes toast-icon-pop {
-  0% {
-    transform: scale(0.5);
+/* Wax seal press animation for icons */
+@keyframes toast-wax-press {
+  0% { 
+    transform: scale(0.3) rotate(-15deg);
     opacity: 0;
   }
   50% {
-    transform: scale(1.2);
+    transform: scale(1.2) rotate(5deg);
   }
-  100% {
-    transform: scale(1);
+  70% {
+    transform: scale(0.95) rotate(-2deg);
+  }
+  100% { 
+    transform: scale(1) rotate(0);
     opacity: 1;
   }
 }
 
-@keyframes toast-progress {
-  0% {
-    transform: scaleX(1);
+/* Copper shimmer across surface */
+@keyframes toast-copper-shimmer {
+  0% { 
+    left: -100%; 
+    opacity: 0;
   }
-  100% {
-    transform: scaleX(0);
+  20% {
+    opacity: 1;
+  }
+  100% { 
+    left: 150%; 
+    opacity: 0;
   }
 }
 
-/* ===== LIGHT MODE TOAST ===== */
-
-/* Base toast - light mode */
-:root:not(.dark) [data-sonner-toast],
-body:not(.dark) [data-sonner-toast] {
-  position: relative !important;
-  background: #ffffff !important;
-  border: none !important;
-  border-radius: 16px !important;
-  box-shadow: 
-    0 1px 3px rgba(0, 0, 0, 0.04),
-    0 6px 16px -4px rgba(0, 0, 0, 0.08),
-    0 12px 32px -8px rgba(0, 0, 0, 0.06),
-    inset 0 0 0 1px rgba(0, 0, 0, 0.04) !important;
-  color: #1a1a1a !important;
-  padding: 0 !important;
-  overflow: hidden !important;
-  animation: toast-slide-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
-}
-
-:root:not(.dark) [data-sonner-toast][data-removed="true"],
-body:not(.dark) [data-sonner-toast][data-removed="true"] {
-  animation: toast-slide-out 0.3s cubic-bezier(0.4, 0, 1, 1) forwards !important;
-}
-
-/* Inner content wrapper for padding */
-:root:not(.dark) [data-sonner-toast] > *,
-body:not(.dark) [data-sonner-toast] > * {
-  position: relative !important;
-  z-index: 1 !important;
-}
-
-/* Status ribbon - light mode (using box-shadow trick) */
-:root:not(.dark) [data-sonner-toast]::before,
-body:not(.dark) [data-sonner-toast]::before {
-  content: '' !important;
-  position: absolute !important;
-  left: 0 !important;
-  top: 0 !important;
-  bottom: 0 !important;
-  width: 4px !important;
-  background: #d4d4d4 !important;
-  z-index: 2 !important;
-}
-
-:root:not(.dark) [data-sonner-toast][data-type="success"]::before,
-body:not(.dark) [data-sonner-toast][data-type="success"]::before {
-  background: var(--toast-success) !important;
-}
-
-:root:not(.dark) [data-sonner-toast][data-type="error"]::before,
-body:not(.dark) [data-sonner-toast][data-type="error"]::before {
-  background: var(--toast-error) !important;
-}
-
-:root:not(.dark) [data-sonner-toast][data-type="warning"]::before,
-body:not(.dark) [data-sonner-toast][data-type="warning"]::before {
-  background: var(--toast-warning) !important;
-}
-
-:root:not(.dark) [data-sonner-toast][data-type="info"]::before,
-body:not(.dark) [data-sonner-toast][data-type="info"]::before {
-  background: var(--toast-info) !important;
-}
-
-:root:not(.dark) [data-sonner-toast][data-type="loading"]::before,
-body:not(.dark) [data-sonner-toast][data-type="loading"]::before {
-  background: linear-gradient(180deg, #a3a3a3, #737373) !important;
-}
-
-/* Toast content wrapper - light mode */
-:root:not(.dark) [data-sonner-toast] [data-content],
-body:not(.dark) [data-sonner-toast] [data-content] {
-  gap: 3px !important;
-  padding: 14px 16px 14px 20px !important;
-}
-
-/* Toast title - light mode */
-:root:not(.dark) [data-sonner-toast] [data-title],
-body:not(.dark) [data-sonner-toast] [data-title] {
-  color: #1a1a1a !important;
-  font-weight: 600 !important;
-  font-size: 13px !important;
-  line-height: 1.35 !important;
-  letter-spacing: -0.02em !important;
-}
-
-/* Toast description - light mode */
-:root:not(.dark) [data-sonner-toast] [data-description],
-body:not(.dark) [data-sonner-toast] [data-description] {
-  color: #6b6b6b !important;
-  font-size: 12px !important;
-  line-height: 1.4 !important;
-  font-weight: 450 !important;
-  margin-top: 2px !important;
-}
-
-/* Icon wrapper - light mode */
-:root:not(.dark) [data-sonner-toast] [data-icon],
-body:not(.dark) [data-sonner-toast] [data-icon] {
-  width: 20px !important;
-  height: 20px !important;
-  margin-left: 16px !important;
-  margin-top: 14px !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  border-radius: 50% !important;
-  flex-shrink: 0 !important;
-}
-
-/* Icon colors - light mode */
-:root:not(.dark) [data-sonner-toast][data-type="success"] [data-icon],
-body:not(.dark) [data-sonner-toast][data-type="success"] [data-icon] {
-  color: var(--toast-success) !important;
-  animation: toast-icon-pop 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
-}
-
-:root:not(.dark) [data-sonner-toast][data-type="error"] [data-icon],
-body:not(.dark) [data-sonner-toast][data-type="error"] [data-icon] {
-  color: var(--toast-error) !important;
-  animation: toast-icon-pop 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
-}
-
-:root:not(.dark) [data-sonner-toast][data-type="warning"] [data-icon],
-body:not(.dark) [data-sonner-toast][data-type="warning"] [data-icon] {
-  color: var(--toast-warning) !important;
-}
-
-:root:not(.dark) [data-sonner-toast][data-type="info"] [data-icon],
-body:not(.dark) [data-sonner-toast][data-type="info"] [data-icon] {
-  color: var(--toast-info) !important;
-}
-
-/* Close button - light mode */
-:root:not(.dark) [data-sonner-toast] [data-close-button],
-body:not(.dark) [data-sonner-toast] [data-close-button] {
-  position: absolute !important;
-  top: 8px !important;
-  right: 8px !important;
-  background: transparent !important;
-  border: none !important;
-  color: #a3a3a3 !important;
-  border-radius: 8px !important;
-  width: 24px !important;
-  height: 24px !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
-  opacity: 0 !important;
-}
-
-:root:not(.dark) [data-sonner-toast]:hover [data-close-button],
-body:not(.dark) [data-sonner-toast]:hover [data-close-button] {
-  opacity: 1 !important;
-}
-
-:root:not(.dark) [data-sonner-toast] [data-close-button]:hover,
-body:not(.dark) [data-sonner-toast] [data-close-button]:hover {
-  background: rgba(0, 0, 0, 0.05) !important;
-  color: #525252 !important;
-  transform: scale(1.1) !important;
-}
-
-/* Action button - light mode */
-:root:not(.dark) [data-sonner-toast] [data-button],
-body:not(.dark) [data-sonner-toast] [data-button] {
-  background: #1a1a1a !important;
-  color: white !important;
-  border: none !important;
-  border-radius: 8px !important;
-  font-weight: 600 !important;
-  font-size: 11px !important;
-  padding: 6px 12px !important;
-  text-transform: uppercase !important;
-  letter-spacing: 0.03em !important;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
-  margin-right: 12px !important;
-  margin-bottom: 12px !important;
-}
-
-:root:not(.dark) [data-sonner-toast] [data-button]:hover,
-body:not(.dark) [data-sonner-toast] [data-button]:hover {
-  background: #404040 !important;
-  transform: translateY(-1px) !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
-}
-
-/* Cancel button - light mode */
-:root:not(.dark) [data-sonner-toast] [data-cancel],
-body:not(.dark) [data-sonner-toast] [data-cancel] {
-  background: transparent !important;
-  color: #737373 !important;
-  border: 1px solid rgba(0, 0, 0, 0.08) !important;
-  font-weight: 500 !important;
-}
-
-:root:not(.dark) [data-sonner-toast] [data-cancel]:hover,
-body:not(.dark) [data-sonner-toast] [data-cancel]:hover {
-  background: rgba(0, 0, 0, 0.03) !important;
-  color: #525252 !important;
-}
-
-/* ===== DARK MODE TOAST (Premium Glass) ===== */
-
-/* Base toast - dark mode */
-:root.dark [data-sonner-toast],
-.dark [data-sonner-toast] {
-  position: relative !important;
-  background: rgba(24, 24, 27, 0.92) !important;
-  backdrop-filter: blur(16px) saturate(180%) !important;
-  -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
-  border: none !important;
-  border-radius: 16px !important;
-  box-shadow: 
-    0 0 0 1px rgba(255, 255, 255, 0.06),
-    0 8px 24px -4px rgba(0, 0, 0, 0.4),
-    0 16px 48px -8px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
-  color: rgba(255, 255, 255, 0.95) !important;
-  padding: 0 !important;
-  overflow: hidden !important;
-  animation: toast-slide-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
-}
-
-:root.dark [data-sonner-toast][data-removed="true"],
-.dark [data-sonner-toast][data-removed="true"] {
-  animation: toast-slide-out 0.3s cubic-bezier(0.4, 0, 1, 1) forwards !important;
-}
-
-/* Status ribbon - dark mode */
-:root.dark [data-sonner-toast]::before,
-.dark [data-sonner-toast]::before {
-  content: '' !important;
-  position: absolute !important;
-  left: 0 !important;
-  top: 0 !important;
-  bottom: 0 !important;
-  width: 4px !important;
-  background: #525252 !important;
-  z-index: 2 !important;
-}
-
-:root.dark [data-sonner-toast][data-type="success"]::before,
-.dark [data-sonner-toast][data-type="success"]::before {
-  background: var(--toast-success) !important;
-  box-shadow: 0 0 12px var(--toast-success), 0 0 24px rgba(16, 185, 129, 0.3) !important;
-}
-
-:root.dark [data-sonner-toast][data-type="error"]::before,
-.dark [data-sonner-toast][data-type="error"]::before {
-  background: var(--toast-error) !important;
-  box-shadow: 0 0 12px var(--toast-error), 0 0 24px rgba(244, 63, 94, 0.3) !important;
-}
-
-:root.dark [data-sonner-toast][data-type="warning"]::before,
-.dark [data-sonner-toast][data-type="warning"]::before {
-  background: var(--toast-warning) !important;
-  box-shadow: 0 0 12px var(--toast-warning), 0 0 24px rgba(245, 158, 11, 0.3) !important;
-}
-
-:root.dark [data-sonner-toast][data-type="info"]::before,
-.dark [data-sonner-toast][data-type="info"]::before {
-  background: var(--toast-info) !important;
-  box-shadow: 0 0 12px var(--toast-info), 0 0 24px rgba(14, 165, 233, 0.3) !important;
-}
-
-:root.dark [data-sonner-toast][data-type="loading"]::before,
-.dark [data-sonner-toast][data-type="loading"]::before {
-  background: linear-gradient(180deg, #737373, #525252) !important;
-}
-
-/* Toast content wrapper - dark mode */
-:root.dark [data-sonner-toast] [data-content],
-.dark [data-sonner-toast] [data-content] {
-  gap: 3px !important;
-  padding: 14px 16px 14px 20px !important;
-}
-
-/* Toast title - dark mode */
-:root.dark [data-sonner-toast] [data-title],
-.dark [data-sonner-toast] [data-title] {
-  color: rgba(255, 255, 255, 0.95) !important;
-  font-weight: 600 !important;
-  font-size: 13px !important;
-  line-height: 1.35 !important;
-  letter-spacing: -0.02em !important;
-}
-
-/* Toast description - dark mode */
-:root.dark [data-sonner-toast] [data-description],
-.dark [data-sonner-toast] [data-description] {
-  color: rgba(255, 255, 255, 0.5) !important;
-  font-size: 12px !important;
-  line-height: 1.4 !important;
-  font-weight: 450 !important;
-  margin-top: 2px !important;
-}
-
-/* Icon wrapper - dark mode */
-:root.dark [data-sonner-toast] [data-icon],
-.dark [data-sonner-toast] [data-icon] {
-  width: 20px !important;
-  height: 20px !important;
-  margin-left: 16px !important;
-  margin-top: 14px !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  border-radius: 50% !important;
-  flex-shrink: 0 !important;
-}
-
-/* Icon colors with glow - dark mode */
-:root.dark [data-sonner-toast][data-type="success"] [data-icon],
-.dark [data-sonner-toast][data-type="success"] [data-icon] {
-  color: #4ade80 !important;
-  filter: drop-shadow(0 0 6px rgba(74, 222, 128, 0.5)) !important;
-  animation: toast-icon-pop 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
-}
-
-:root.dark [data-sonner-toast][data-type="error"] [data-icon],
-.dark [data-sonner-toast][data-type="error"] [data-icon] {
-  color: #fb7185 !important;
-  filter: drop-shadow(0 0 6px rgba(251, 113, 133, 0.5)) !important;
-  animation: toast-icon-pop 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
-}
-
-:root.dark [data-sonner-toast][data-type="warning"] [data-icon],
-.dark [data-sonner-toast][data-type="warning"] [data-icon] {
-  color: #fbbf24 !important;
-  filter: drop-shadow(0 0 6px rgba(251, 191, 36, 0.5)) !important;
-}
-
-:root.dark [data-sonner-toast][data-type="info"] [data-icon],
-.dark [data-sonner-toast][data-type="info"] [data-icon] {
-  color: #38bdf8 !important;
-  filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.5)) !important;
-}
-
-/* Close button - dark mode */
-:root.dark [data-sonner-toast] [data-close-button],
-.dark [data-sonner-toast] [data-close-button] {
-  position: absolute !important;
-  top: 8px !important;
-  right: 8px !important;
-  background: transparent !important;
-  border: none !important;
-  color: rgba(255, 255, 255, 0.3) !important;
-  border-radius: 8px !important;
-  width: 24px !important;
-  height: 24px !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
-  opacity: 0 !important;
-}
-
-:root.dark [data-sonner-toast]:hover [data-close-button],
-.dark [data-sonner-toast]:hover [data-close-button] {
-  opacity: 1 !important;
-}
-
-:root.dark [data-sonner-toast] [data-close-button]:hover,
-.dark [data-sonner-toast] [data-close-button]:hover {
-  background: rgba(255, 255, 255, 0.1) !important;
-  color: rgba(255, 255, 255, 0.8) !important;
-  transform: scale(1.1) !important;
-}
-
-/* Action button - dark mode */
-:root.dark [data-sonner-toast] [data-button],
-.dark [data-sonner-toast] [data-button] {
-  background: rgba(255, 255, 255, 0.95) !important;
-  color: #1a1a1a !important;
-  border: none !important;
-  border-radius: 8px !important;
-  font-weight: 600 !important;
-  font-size: 11px !important;
-  padding: 6px 12px !important;
-  text-transform: uppercase !important;
-  letter-spacing: 0.03em !important;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
-  margin-right: 12px !important;
-  margin-bottom: 12px !important;
-}
-
-:root.dark [data-sonner-toast] [data-button]:hover,
-.dark [data-sonner-toast] [data-button]:hover {
-  background: #ffffff !important;
-  transform: translateY(-1px) !important;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3), 0 0 20px rgba(255, 255, 255, 0.1) !important;
-}
-
-/* Cancel button - dark mode */
-:root.dark [data-sonner-toast] [data-cancel],
-.dark [data-sonner-toast] [data-cancel] {
-  background: transparent !important;
-  color: rgba(255, 255, 255, 0.5) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  font-weight: 500 !important;
-}
-
-:root.dark [data-sonner-toast] [data-cancel]:hover,
-.dark [data-sonner-toast] [data-cancel]:hover {
-  background: rgba(255, 255, 255, 0.05) !important;
-  color: rgba(255, 255, 255, 0.8) !important;
-}
-
-/* ===== TOAST ICON SVG ===== */
-[data-sonner-toast] [data-icon] svg {
-  width: 18px !important;
-  height: 18px !important;
-}
-
-/* Loading spinner animation */
-[data-sonner-toast][data-type="loading"] [data-icon] {
-  animation: toast-spin 1s linear infinite !important;
-}
-
-@keyframes toast-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-/* ===== REDUCED MOTION ===== */
-@media (prefers-reduced-motion: reduce) {
-  [data-sonner-toast] {
-    animation: none !important;
+/* Vintage paper texture pulse */
+@keyframes toast-paper-settle {
+  0% { 
+    box-shadow: 
+      0 8px 30px rgba(101, 67, 33, 0.15),
+      0 2px 8px rgba(101, 67, 33, 0.1),
+      inset 0 1px 0 rgba(255, 248, 240, 0.9),
+      inset 0 -1px 0 rgba(101, 67, 33, 0.08);
   }
+  50% {
+    box-shadow: 
+      0 12px 40px rgba(101, 67, 33, 0.2),
+      0 4px 12px rgba(101, 67, 33, 0.12),
+      inset 0 1px 0 rgba(255, 248, 240, 1),
+      inset 0 -1px 0 rgba(101, 67, 33, 0.1);
+  }
+  100% { 
+    box-shadow: 
+      0 8px 30px rgba(101, 67, 33, 0.15),
+      0 2px 8px rgba(101, 67, 33, 0.1),
+      inset 0 1px 0 rgba(255, 248, 240, 0.9),
+      inset 0 -1px 0 rgba(101, 67, 33, 0.08);
+  }
+}
+
+@keyframes toast-border-glow {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+/* ===== BASE TOAST - Vintage Banking Light Mode ===== */
+[data-sonner-toast] {
+  /* Vintage copper/sepia color palette */
+  --toast-success: hsl(145, 55%, 32%);
+  --toast-success-bg: linear-gradient(165deg, hsl(38, 45%, 97%) 0%, hsl(35, 40%, 94%) 50%, hsl(38, 45%, 96%) 100%);
+  --toast-error: hsl(0, 55%, 42%);
+  --toast-error-bg: linear-gradient(165deg, hsl(38, 45%, 97%) 0%, hsl(5, 40%, 94%) 50%, hsl(38, 45%, 96%) 100%);
+  --toast-warning: hsl(30, 70%, 40%);
+  --toast-warning-bg: linear-gradient(165deg, hsl(38, 45%, 97%) 0%, hsl(35, 55%, 92%) 50%, hsl(38, 45%, 96%) 100%);
+  --toast-info: hsl(200, 50%, 35%);
+  --toast-info-bg: linear-gradient(165deg, hsl(38, 45%, 97%) 0%, hsl(200, 30%, 93%) 50%, hsl(38, 45%, 96%) 100%);
   
+  position: relative !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.01em !important;
+  padding: 16px 20px 16px 18px !important;
+  border-radius: 4px !important;
+  gap: 14px !important;
+  overflow: hidden !important;
+  
+  /* Aged cream paper background with subtle grain */
+  background: 
+    linear-gradient(165deg, hsl(38, 45%, 98%) 0%, hsl(35, 40%, 96%) 100%),
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E") !important;
+  background-blend-mode: normal, multiply !important;
+  
+  /* Double-line engraved border like vintage certificates */
+  border: 1px solid hsl(30, 25%, 78%) !important;
+  box-shadow: 
+    /* Outer shadow - bank card depth */
+    0 8px 30px rgba(101, 67, 33, 0.12),
+    0 2px 8px rgba(101, 67, 33, 0.08),
+    /* Inner double border effect */
+    inset 0 0 0 1px hsl(30, 20%, 88%),
+    inset 0 0 0 3px hsl(38, 45%, 97%),
+    inset 0 0 0 4px hsl(30, 25%, 82%),
+    /* Top highlight - embossed edge */
+    inset 0 1px 0 rgba(255, 248, 240, 0.9),
+    /* Bottom shadow - letterpress depth */
+    inset 0 -1px 0 rgba(101, 67, 33, 0.08) !important;
+  
+  color: hsl(25, 40%, 25%) !important;
+  animation: toast-ledger-slide 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+
+/* Copper foil accent bar - left side */
+[data-sonner-toast]::before {
+  content: '' !important;
+  position: absolute !important;
+  left: 0 !important;
+  top: 8px !important;
+  bottom: 8px !important;
+  width: 5px !important;
+  /* Metallic copper gradient with via stops for shimmer */
+  background: linear-gradient(
+    180deg, 
+    hsl(25, 70%, 55%) 0%,
+    hsl(35, 80%, 62%) 25%,
+    hsl(28, 75%, 50%) 50%,
+    hsl(32, 70%, 58%) 75%,
+    hsl(22, 65%, 48%) 100%
+  ) !important;
+  border-radius: 0 3px 3px 0 !important;
+  /* Copper coin shadow effect */
+  box-shadow: 
+    1px 0 4px rgba(166, 100, 50, 0.4),
+    inset 0 1px 0 rgba(255, 200, 150, 0.5),
+    inset 0 -1px 0 rgba(100, 60, 30, 0.4) !important;
+}
+
+/* Copper shimmer sweep effect */
+[data-sonner-toast]::after {
+  content: '' !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: -100% !important;
+  width: 40% !important;
+  height: 100% !important;
+  background: linear-gradient(
+    110deg,
+    transparent 20%,
+    rgba(255, 200, 150, 0.15) 40%,
+    rgba(255, 220, 180, 0.25) 50%,
+    rgba(255, 200, 150, 0.15) 60%,
+    transparent 80%
+  ) !important;
+  animation: toast-copper-shimmer 1.8s ease-out 0.3s forwards !important;
+  pointer-events: none !important;
+}
+
+/* ===== LIGHT MODE STATUS VARIANTS - Vintage Banking ===== */
+[data-sonner-toast][data-type="success"] {
+  background: var(--toast-success-bg) !important;
+  /* Copper-green patina accent */
+  --accent-from: hsl(155, 50%, 45%);
+  --accent-to: hsl(145, 55%, 35%);
+}
+[data-sonner-toast][data-type="success"]::before {
+  background: linear-gradient(
+    180deg, 
+    hsl(155, 50%, 50%) 0%,
+    hsl(150, 55%, 42%) 50%,
+    hsl(145, 50%, 38%) 100%
+  ) !important;
+  box-shadow: 
+    1px 0 4px rgba(45, 120, 80, 0.4),
+    inset 0 1px 0 rgba(150, 220, 180, 0.5),
+    inset 0 -1px 0 rgba(30, 80, 50, 0.4) !important;
+}
+
+[data-sonner-toast][data-type="error"] {
+  background: var(--toast-error-bg) !important;
+  /* Deep burgundy/sealing wax red */
+  --accent-from: hsl(0, 50%, 50%);
+  --accent-to: hsl(0, 55%, 38%);
+}
+[data-sonner-toast][data-type="error"]::before {
+  background: linear-gradient(
+    180deg, 
+    hsl(5, 55%, 52%) 0%,
+    hsl(0, 60%, 45%) 50%,
+    hsl(355, 55%, 38%) 100%
+  ) !important;
+  box-shadow: 
+    1px 0 4px rgba(140, 50, 50, 0.4),
+    inset 0 1px 0 rgba(220, 150, 150, 0.5),
+    inset 0 -1px 0 rgba(80, 30, 30, 0.4) !important;
+}
+
+[data-sonner-toast][data-type="warning"] {
+  background: var(--toast-warning-bg) !important;
+  /* Rich copper/bronze */
+  --accent-from: hsl(35, 75%, 52%);
+  --accent-to: hsl(28, 70%, 42%);
+}
+[data-sonner-toast][data-type="warning"]::before {
+  background: linear-gradient(
+    180deg, 
+    hsl(40, 80%, 55%) 0%,
+    hsl(32, 75%, 48%) 50%,
+    hsl(25, 70%, 42%) 100%
+  ) !important;
+  box-shadow: 
+    1px 0 4px rgba(180, 120, 40, 0.4),
+    inset 0 1px 0 rgba(255, 220, 150, 0.5),
+    inset 0 -1px 0 rgba(120, 70, 20, 0.4) !important;
+}
+
+[data-sonner-toast][data-type="info"] {
+  background: var(--toast-info-bg) !important;
+  /* Aged ink blue */
+  --accent-from: hsl(205, 55%, 50%);
+  --accent-to: hsl(200, 50%, 38%);
+}
+[data-sonner-toast][data-type="info"]::before {
+  background: linear-gradient(
+    180deg, 
+    hsl(210, 55%, 55%) 0%,
+    hsl(205, 50%, 48%) 50%,
+    hsl(200, 50%, 40%) 100%
+  ) !important;
+  box-shadow: 
+    1px 0 4px rgba(50, 100, 140, 0.4),
+    inset 0 1px 0 rgba(150, 190, 220, 0.5),
+    inset 0 -1px 0 rgba(30, 60, 90, 0.4) !important;
+}
+
+/* Light mode icon styling - Wax seal treatment */
+[data-sonner-toast][data-type="success"] [data-icon] { 
+  color: hsl(145, 55%, 32%) !important;
+  filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.6)) drop-shadow(0 2px 3px rgba(45, 100, 60, 0.25)) !important;
+  animation: toast-wax-press 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s both !important;
+}
+[data-sonner-toast][data-type="error"] [data-icon] { 
+  color: hsl(0, 55%, 42%) !important;
+  filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.6)) drop-shadow(0 2px 3px rgba(140, 50, 50, 0.25)) !important;
+  animation: toast-wax-press 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s both !important;
+}
+[data-sonner-toast][data-type="warning"] [data-icon] { 
+  color: hsl(30, 70%, 38%) !important;
+  filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.6)) drop-shadow(0 2px 3px rgba(160, 100, 30, 0.25)) !important;
+  animation: toast-wax-press 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s both !important;
+}
+[data-sonner-toast][data-type="info"] [data-icon] { 
+  color: hsl(200, 50%, 35%) !important;
+  filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.6)) drop-shadow(0 2px 3px rgba(50, 90, 130, 0.25)) !important;
+  animation: toast-wax-press 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s both !important;
+}
+
+/* ===== DARK MODE - Liquid Aurora Glass ===== */
+.dark [data-sonner-toast] {
+  background: rgba(255, 255, 255, 0.025) !important;
+  backdrop-filter: blur(40px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(40px) saturate(180%) !important;
+  border: 1px solid rgba(255,255,255,0.06) !important;
+  box-shadow: 
+    0 8px 32px rgba(0,0,0,0.5),
+    0 0 60px -20px rgba(139, 92, 246, 0.15),
+    inset 0 1px 0 rgba(255,255,255,0.08) !important;
+  color: rgba(255,255,255,0.95) !important;
+}
+
+/* Dark mode shimmer - aurora sweep */
+.dark [data-sonner-toast]::after {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(139, 92, 246, 0.08) 25%,
+    rgba(34, 211, 238, 0.08) 50%,
+    rgba(139, 92, 246, 0.08) 75%,
+    transparent 100%
+  ) !important;
+  animation: toast-aurora-sweep 2s ease-out 0.2s forwards !important;
+}
+
+@keyframes toast-aurora-sweep {
+  0% { left: -100%; opacity: 0; }
+  20% { opacity: 1; }
+  100% { left: 100%; opacity: 0; }
+}
+
+/* Dark mode animated aurora border */
+.dark [data-sonner-toast]::before {
+  width: 3px !important;
+  background: linear-gradient(
+    180deg,
+    hsl(185 100% 60%) 0%,
+    hsl(250 90% 65%) 50%,
+    hsl(320 100% 65%) 100%
+  ) !important;
+  background-size: 100% 200% !important;
+  animation: toast-aurora-gradient 4s ease infinite, toast-border-glow 2s ease-in-out infinite !important;
+}
+
+@keyframes toast-aurora-gradient {
+  0%, 100% { background-position: 0% 0%; }
+  50% { background-position: 0% 100%; }
+}
+
+/* Dark mode specular top edge */
+.dark [data-sonner-toast] {
+  background-image: 
+    linear-gradient(180deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.02) 15%, transparent 40%) !important;
+  background-size: 100% 100% !important;
+  background-repeat: no-repeat !important;
+}
+
+/* Dark mode status - liquid glass with aurora neon glow */
+.dark [data-sonner-toast][data-type="success"] {
+  --accent-from: #34d399;
+  --accent-to: #10b981;
+  background: rgba(52, 211, 153, 0.03) !important;
+  border-color: rgba(52, 211, 153, 0.12) !important;
+  box-shadow: 
+    0 0 60px -15px rgba(52, 211, 153, 0.4),
+    0 0 30px -10px rgba(52, 211, 153, 0.2),
+    0 8px 32px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.08) !important;
+}
+.dark [data-sonner-toast][data-type="error"] {
+  --accent-from: #f87171;
+  --accent-to: #ef4444;
+  background: rgba(248, 113, 113, 0.03) !important;
+  border-color: rgba(248, 113, 113, 0.12) !important;
+  box-shadow: 
+    0 0 60px -15px rgba(248, 113, 113, 0.4),
+    0 0 30px -10px rgba(248, 113, 113, 0.2),
+    0 8px 32px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.08) !important;
+}
+.dark [data-sonner-toast][data-type="warning"] {
+  --accent-from: #fbbf24;
+  --accent-to: #f59e0b;
+  background: rgba(251, 191, 36, 0.03) !important;
+  border-color: rgba(251, 191, 36, 0.12) !important;
+  box-shadow: 
+    0 0 60px -15px rgba(251, 191, 36, 0.35),
+    0 0 30px -10px rgba(251, 191, 36, 0.18),
+    0 8px 32px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.08) !important;
+}
+.dark [data-sonner-toast][data-type="info"] {
+  --accent-from: #22d3ee;
+  --accent-to: #0ea5e9;
+  background: rgba(34, 211, 238, 0.03) !important;
+  border-color: rgba(34, 211, 238, 0.12) !important;
+  box-shadow: 
+    0 0 60px -15px rgba(34, 211, 238, 0.4),
+    0 0 30px -10px rgba(34, 211, 238, 0.2),
+    0 8px 32px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.08) !important;
+}
+
+/* Dark mode icons with enhanced neon glow pulse */
+.dark [data-sonner-toast][data-type="success"] [data-icon] { 
+  color: #34d399 !important;
+  filter: drop-shadow(0 0 8px rgba(52,211,153,0.7)) drop-shadow(0 0 16px rgba(52,211,153,0.4)) !important;
+  animation: neon-icon-pulse-success 2s ease-in-out 0.3s !important;
+}
+.dark [data-sonner-toast][data-type="error"] [data-icon] { 
+  color: #f87171 !important;
+  filter: drop-shadow(0 0 8px rgba(248,113,113,0.7)) drop-shadow(0 0 16px rgba(248,113,113,0.4)) !important;
+  animation: neon-icon-pulse-error 0.5s ease-in-out 0.2s 2 !important;
+}
+.dark [data-sonner-toast][data-type="warning"] [data-icon] { 
+  color: #fbbf24 !important;
+  filter: drop-shadow(0 0 8px rgba(251,191,36,0.7)) drop-shadow(0 0 16px rgba(251,191,36,0.4)) !important;
+  animation: neon-icon-pulse-warning 1.5s ease-in-out 0.3s !important;
+}
+.dark [data-sonner-toast][data-type="info"] [data-icon] { 
+  color: #22d3ee !important;
+  filter: drop-shadow(0 0 8px rgba(34,211,238,0.7)) drop-shadow(0 0 16px rgba(34,211,238,0.4)) !important;
+  animation: neon-icon-pulse-info 2s ease-in-out 0.3s !important;
+}
+
+/* Neon pulse animations per status */
+@keyframes neon-icon-pulse-success {
+  0%, 100% { filter: drop-shadow(0 0 8px rgba(52,211,153,0.7)) drop-shadow(0 0 16px rgba(52,211,153,0.4)); }
+  50% { filter: drop-shadow(0 0 12px rgba(52,211,153,0.9)) drop-shadow(0 0 24px rgba(52,211,153,0.6)); }
+}
+@keyframes neon-icon-pulse-error {
+  0%, 100% { filter: drop-shadow(0 0 8px rgba(248,113,113,0.7)) drop-shadow(0 0 16px rgba(248,113,113,0.4)); transform: scale(1); }
+  50% { filter: drop-shadow(0 0 14px rgba(248,113,113,1)) drop-shadow(0 0 28px rgba(248,113,113,0.6)); transform: scale(1.1); }
+}
+@keyframes neon-icon-pulse-warning {
+  0%, 100% { filter: drop-shadow(0 0 8px rgba(251,191,36,0.7)) drop-shadow(0 0 16px rgba(251,191,36,0.4)); }
+  50% { filter: drop-shadow(0 0 12px rgba(251,191,36,0.9)) drop-shadow(0 0 24px rgba(251,191,36,0.6)); }
+}
+@keyframes neon-icon-pulse-info {
+  0%, 100% { filter: drop-shadow(0 0 8px rgba(34,211,238,0.7)) drop-shadow(0 0 16px rgba(34,211,238,0.4)); }
+  50% { filter: drop-shadow(0 0 12px rgba(34,211,238,0.9)) drop-shadow(0 0 24px rgba(34,211,238,0.6)); }
+}
+
+/* ===== SHARED STYLES ===== */
+[data-sonner-toast] [data-icon] {
+  width: 22px !important;
+  height: 22px !important;
+  flex-shrink: 0 !important;
+}
+[data-sonner-toast] [data-icon] svg {
+  width: 22px !important;
+  height: 22px !important;
+}
+
+/* Title styling - Light mode: embossed letterpress effect */
+[data-sonner-toast] [data-title] {
+  font-weight: 600 !important;
+  font-size: 13.5px !important;
+  line-height: 1.45 !important;
+  letter-spacing: 0.02em !important;
+  color: hsl(25, 45%, 22%) !important;
+  /* Letterpress embossed text shadow */
+  text-shadow: 
+    0 1px 0 rgba(255, 255, 255, 0.6),
+    0 -1px 0 rgba(101, 67, 33, 0.08) !important;
+}
+.dark [data-sonner-toast] [data-title] {
+  color: rgba(255,255,255,0.97) !important;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3) !important;
+}
+
+/* Description styling - Light mode: aged ink effect */
+[data-sonner-toast] [data-description] {
+  font-size: 12px !important;
+  font-weight: 450 !important;
+  opacity: 1 !important;
+  margin-top: 3px !important;
+  color: hsl(25, 30%, 40%) !important;
+  letter-spacing: 0.01em !important;
+}
+.dark [data-sonner-toast] [data-description] {
+  color: rgba(255,255,255,0.6) !important;
+  opacity: 1 !important;
+}
+
+/* Close button - Light mode: copper coin style */
+[data-sonner-toast] [data-close-button] {
+  position: absolute !important;
+  top: 50% !important;
+  right: 12px !important;
+  transform: translateY(-50%) !important;
+  left: unset !important;
+  width: 24px !important;
+  height: 24px !important;
+  border-radius: 50% !important;
+  border: 1px solid hsl(30, 25%, 78%) !important;
+  background: linear-gradient(165deg, hsl(38, 45%, 97%) 0%, hsl(35, 40%, 94%) 100%) !important;
+  color: hsl(25, 40%, 40%) !important;
+  opacity: 0 !important;
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+  box-shadow: 
+    0 2px 4px rgba(101, 67, 33, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    inset 0 -1px 0 rgba(101, 67, 33, 0.08) !important;
+}
+[data-sonner-toast]:hover [data-close-button] {
+  opacity: 0.8 !important;
+}
+[data-sonner-toast] [data-close-button]:hover {
+  opacity: 1 !important;
+  /* Copper foil gradient on hover */
+  background: linear-gradient(
+    165deg,
+    hsl(30, 60%, 65%) 0%,
+    hsl(35, 70%, 58%) 50%,
+    hsl(28, 65%, 52%) 100%
+  ) !important;
+  border-color: hsl(25, 50%, 45%) !important;
+  color: white !important;
+  transform: translateY(-50%) scale(1.08) !important;
+  box-shadow: 
+    0 4px 8px rgba(166, 100, 50, 0.25),
+    inset 0 1px 0 rgba(255, 200, 150, 0.5),
+    inset 0 -1px 0 rgba(100, 60, 30, 0.3) !important;
+}
+
+.dark [data-sonner-toast] [data-close-button] {
+  background: rgba(255,255,255,0.06) !important;
+  border: none !important;
+  border-radius: 6px !important;
+  color: rgba(255,255,255,0.7) !important;
+  box-shadow: none !important;
+}
+.dark [data-sonner-toast] [data-close-button]:hover {
+  background: rgba(255,255,255,0.12) !important;
+  color: rgba(255,255,255,0.95) !important;
+  box-shadow: none !important;
+}
+
+/* Action button - Light mode: engraved bank button style */
+[data-sonner-toast] [data-button] {
+  font-size: 11.5px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.03em !important;
+  text-transform: uppercase !important;
+  padding: 7px 14px !important;
+  border-radius: 3px !important;
+  background: linear-gradient(165deg, hsl(38, 45%, 97%) 0%, hsl(35, 40%, 93%) 100%) !important;
+  border: 1px solid hsl(30, 25%, 75%) !important;
+  color: hsl(25, 45%, 30%) !important;
+  transition: all 0.2s ease !important;
+  /* Embossed text effect */
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5) !important;
+  box-shadow: 
+    0 2px 4px rgba(101, 67, 33, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    inset 0 -1px 0 rgba(101, 67, 33, 0.05) !important;
+}
+[data-sonner-toast] [data-button]:hover {
+  /* Copper foil gradient on hover */
+  background: linear-gradient(
+    165deg,
+    hsl(28, 65%, 55%) 0%,
+    hsl(32, 70%, 48%) 50%,
+    hsl(25, 60%, 45%) 100%
+  ) !important;
+  border-color: hsl(25, 55%, 42%) !important;
+  color: white !important;
+  text-shadow: 0 1px 1px rgba(80, 50, 20, 0.3) !important;
+  box-shadow: 
+    0 4px 8px rgba(166, 100, 50, 0.2),
+    inset 0 1px 0 rgba(255, 200, 150, 0.4),
+    inset 0 -1px 0 rgba(100, 60, 30, 0.2) !important;
+}
+
+.dark [data-sonner-toast] [data-button] {
+  background: rgba(255,255,255,0.1) !important;
+  border: none !important;
+  color: rgba(255,255,255,0.9) !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  text-shadow: none !important;
+  box-shadow: none !important;
+  border-radius: 8px !important;
+}
+.dark [data-sonner-toast] [data-button]:hover {
+  background: rgba(255,255,255,0.16) !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  [data-sonner-toast],
+  [data-sonner-toast]::before,
+  [data-sonner-toast]::after,
   [data-sonner-toast] [data-icon] {
     animation: none !important;
   }
@@ -2400,6 +3326,33 @@ body:not(.dark) [data-sonner-toast] [data-cancel]:hover {
    LOGIN PAGE - CINEMATIC ANIMATIONS
    Immersive effects for login experience
    ========================================= */
+
+/* ===== LUXURY CARD EFFECTS ===== */
+@keyframes shimmer {
+  0%, 100% {
+    opacity: 0.3;
+    transform: translateX(-100%);
+  }
+  50% {
+    opacity: 0.8;
+    transform: translateX(100%);
+  }
+}
+
+@keyframes holographic-shift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  25% {
+    background-position: 50% 100%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  75% {
+    background-position: 50% 0%;
+  }
+}
 
 /* ===== GRADIENT MESH - Light Mode ===== */
 @keyframes gradient-mesh-morph {
@@ -2717,6 +3670,135 @@ body:not(.dark) [data-sonner-toast] [data-cancel]:hover {
   animation: spotlight-breathe 4s ease-in-out infinite;
 }
 
+/* ===== GRADIENT CARD ANIMATIONS ===== */
+@keyframes gradient-shift {
+  0%, 100% {
+    background-position: 0% 0%;
+  }
+  50% {
+    background-position: 0% 100%;
+  }
+}
+
+@keyframes shimmer-sweep {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.animate-gradient-shift {
+  animation: gradient-shift 8s ease-in-out infinite;
+}
+
+.animate-shimmer-sweep {
+  animation: shimmer-sweep 4s ease-in-out infinite;
+}
+
+/* ===== LOGIN PAGE ANIMATIONS ===== */
+@keyframes float-slow {
+  0%, 100% {
+    transform: translateY(0) translateX(0);
+  }
+  50% {
+    transform: translateY(-20px) translateX(10px);
+  }
+}
+
+@keyframes float-slow-reverse {
+  0%, 100% {
+    transform: translateY(0) translateX(0);
+  }
+  50% {
+    transform: translateY(20px) translateX(-10px);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes pulse-slow {
+  0%, 100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes border-glow {
+  0%, 100% {
+    opacity: 0.5;
+    box-shadow: inset 0 0 20px rgba(100, 160, 220, 0.1);
+  }
+  50% {
+    opacity: 1;
+    box-shadow: inset 0 0 30px rgba(100, 160, 220, 0.15);
+  }
+}
+
+.animate-float-slow {
+  animation: float-slow 8s ease-in-out infinite;
+}
+
+.animate-float-slow-reverse {
+  animation: float-slow-reverse 10s ease-in-out infinite;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 4s ease-in-out infinite;
+}
+
+.animate-border-glow {
+  animation: border-glow 3s ease-in-out infinite;
+}
+
+/* ===== BLOB ANIMATION FOR LOGIN PAGE ===== */
+@keyframes blob {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+    border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
+  }
+  25% {
+    transform: translate(20px, -30px) scale(1.05);
+    border-radius: 50% 60% 50% 60% / 60% 40% 60% 40%;
+  }
+  50% {
+    transform: translate(-20px, 20px) scale(0.95);
+    border-radius: 60% 40% 30% 70% / 50% 60% 50% 40%;
+  }
+  75% {
+    transform: translate(10px, 10px) scale(1.02);
+    border-radius: 40% 60% 60% 40% / 70% 30% 50% 50%;
+  }
+}
+
+.animate-blob {
+  animation: blob 12s ease-in-out infinite;
+}
+
+.animation-delay-2000 {
+  animation-delay: 2s;
+}
+
+.animation-delay-4000 {
+  animation-delay: 4s;
+}
+
 /* ===== 3D PERSPECTIVE CONTAINER ===== */
 .perspective-container {
   perspective: 1000px;
@@ -2726,6 +3808,803 @@ body:not(.dark) [data-sonner-toast] [data-cancel]:hover {
 .tilt-card {
   transform-style: preserve-3d;
   transition: transform 0.1s ease-out;
+}
+
+/* =========================================
+   LIQUID AURORA DARK THEME ENHANCEMENTS
+   Premium glass, aurora glows, neon effects
+   ========================================= */
+
+/* ===== AURORA GLOW ANIMATIONS ===== */
+@keyframes aurora-pulse {
+  0%, 100% {
+    opacity: 0.6;
+    filter: blur(60px);
+  }
+  50% {
+    opacity: 0.85;
+    filter: blur(70px);
+  }
+}
+
+@keyframes aurora-drift {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  25% {
+    transform: translate(30px, -20px) scale(1.05);
+  }
+  50% {
+    transform: translate(-20px, 30px) scale(0.95);
+  }
+  75% {
+    transform: translate(20px, 10px) scale(1.02);
+  }
+}
+
+@keyframes glass-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes neon-pulse {
+  0%, 100% {
+    box-shadow: 
+      0 0 5px currentColor,
+      0 0 10px currentColor,
+      0 0 20px currentColor;
+    opacity: 1;
+  }
+  50% {
+    box-shadow: 
+      0 0 10px currentColor,
+      0 0 20px currentColor,
+      0 0 40px currentColor;
+    opacity: 0.9;
+  }
+}
+
+@keyframes specular-sweep {
+  0% {
+    transform: translateX(-100%) rotate(-15deg);
+  }
+  100% {
+    transform: translateX(300%) rotate(-15deg);
+  }
+}
+
+@keyframes aurora-border-glow {
+  0%, 100% {
+    border-color: rgba(139, 92, 246, 0.25);
+    box-shadow: 
+      0 0 20px rgba(139, 92, 246, 0.15),
+      inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  }
+  33% {
+    border-color: rgba(34, 211, 238, 0.25);
+    box-shadow: 
+      0 0 20px rgba(34, 211, 238, 0.15),
+      inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  }
+  66% {
+    border-color: rgba(236, 72, 153, 0.25);
+    box-shadow: 
+      0 0 20px rgba(236, 72, 153, 0.15),
+      inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  }
+}
+
+@keyframes holographic-shift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+/* ===== LIQUID GLASS UTILITIES ===== */
+@layer utilities {
+  /* Base liquid glass effect */
+  .liquid-glass {
+    background: rgba(255, 255, 255, 0.025);
+    backdrop-filter: blur(40px) saturate(180%);
+    -webkit-backdrop-filter: blur(40px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    box-shadow: 
+      inset 0 1px 0 rgba(255, 255, 255, 0.08),
+      0 8px 32px rgba(0, 0, 0, 0.3);
+  }
+
+  /* Elevated liquid glass */
+  .liquid-glass-elevated {
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(60px) saturate(200%);
+    -webkit-backdrop-filter: blur(60px) saturate(200%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 
+      inset 0 1px 0 rgba(255, 255, 255, 0.1),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.2),
+      0 12px 48px rgba(0, 0, 0, 0.4);
+  }
+
+  /* Frosted liquid glass */
+  .liquid-glass-frosted {
+    background: rgba(15, 18, 25, 0.85);
+    backdrop-filter: blur(80px) saturate(220%);
+    -webkit-backdrop-filter: blur(80px) saturate(220%);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    box-shadow: 
+      inset 0 1px 0 rgba(255, 255, 255, 0.05),
+      0 16px 64px rgba(0, 0, 0, 0.5);
+  }
+
+  /* Glass with aurora tint */
+  .liquid-glass-aurora {
+    background: 
+      linear-gradient(135deg, rgba(139, 92, 246, 0.05) 0%, transparent 50%),
+      rgba(255, 255, 255, 0.025);
+    backdrop-filter: blur(40px) saturate(180%);
+    -webkit-backdrop-filter: blur(40px) saturate(180%);
+    border: 1px solid rgba(139, 92, 246, 0.15);
+    box-shadow: 
+      0 0 40px -10px rgba(139, 92, 246, 0.25),
+      inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  }
+
+  /* Shimmer overlay effect */
+  .glass-shimmer {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .glass-shimmer::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.03) 45%,
+      rgba(255, 255, 255, 0.06) 50%,
+      rgba(255, 255, 255, 0.03) 55%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: glass-shimmer 8s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  /* Specular highlight sweep on hover */
+  .specular-sweep {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .specular-sweep::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 50%;
+    height: 200%;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.08),
+      transparent
+    );
+    transform: translateX(-100%) rotate(-15deg);
+    transition: none;
+    pointer-events: none;
+  }
+  
+  .specular-sweep:hover::before {
+    animation: specular-sweep 0.6s ease-out;
+  }
+}
+
+/* ===== AURORA GLOW UTILITIES ===== */
+@layer utilities {
+  /* Indigo aurora glow */
+  .aurora-glow-indigo {
+    box-shadow: 
+      0 0 20px rgba(139, 92, 246, 0.2),
+      0 0 40px rgba(139, 92, 246, 0.1),
+      0 0 60px rgba(139, 92, 246, 0.05);
+  }
+
+  /* Cyan aurora glow */
+  .aurora-glow-cyan {
+    box-shadow: 
+      0 0 20px rgba(34, 211, 238, 0.2),
+      0 0 40px rgba(34, 211, 238, 0.1),
+      0 0 60px rgba(34, 211, 238, 0.05);
+  }
+
+  /* Pink aurora glow */
+  .aurora-glow-pink {
+    box-shadow: 
+      0 0 20px rgba(236, 72, 153, 0.2),
+      0 0 40px rgba(236, 72, 153, 0.1),
+      0 0 60px rgba(236, 72, 153, 0.05);
+  }
+
+  /* Multi-color aurora glow */
+  .aurora-glow-multi {
+    box-shadow: 
+      0 0 30px rgba(139, 92, 246, 0.15),
+      0 0 60px rgba(34, 211, 238, 0.1),
+      0 0 90px rgba(236, 72, 153, 0.08);
+  }
+
+  /* Aurora border with animated color shift */
+  .aurora-border-animated {
+    animation: aurora-border-glow 8s ease-in-out infinite;
+  }
+
+  /* Neon glow for status indicators */
+  .neon-glow-emerald {
+    color: #10b981;
+    box-shadow: 
+      0 0 5px #10b981,
+      0 0 10px rgba(16, 185, 129, 0.5),
+      0 0 20px rgba(16, 185, 129, 0.3);
+  }
+
+  .neon-glow-rose {
+    color: #f43f5e;
+    box-shadow: 
+      0 0 5px #f43f5e,
+      0 0 10px rgba(244, 63, 94, 0.5),
+      0 0 20px rgba(244, 63, 94, 0.3);
+  }
+
+  .neon-glow-amber {
+    color: #f59e0b;
+    box-shadow: 
+      0 0 5px #f59e0b,
+      0 0 10px rgba(245, 158, 11, 0.5),
+      0 0 20px rgba(245, 158, 11, 0.3);
+  }
+
+  /* Animated neon pulse */
+  .neon-pulse {
+    animation: neon-pulse 2s ease-in-out infinite;
+  }
+}
+
+/* ===== AURORA ACCENT ELEMENTS ===== */
+@layer utilities {
+  /* Holographic gradient text */
+  .text-aurora-holographic {
+    background: linear-gradient(
+      90deg,
+      #8b5cf6 0%,
+      #22d3ee 25%,
+      #ec4899 50%,
+      #22d3ee 75%,
+      #8b5cf6 100%
+    );
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: holographic-shift 6s linear infinite;
+  }
+
+  /* Aurora gradient text (static) */
+  .text-aurora-gradient {
+    background: linear-gradient(135deg, #8b5cf6 0%, #22d3ee 50%, #ec4899 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  /* Aurora underline accent */
+  .aurora-underline {
+    position: relative;
+  }
+  
+  .aurora-underline::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, #8b5cf6, #22d3ee, #ec4899);
+    border-radius: 1px;
+    opacity: 0;
+    transform: scaleX(0);
+    transition: all 0.3s ease;
+  }
+  
+  .aurora-underline:hover::after {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+
+  /* Aurora dot indicator */
+  .aurora-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #8b5cf6, #22d3ee);
+    box-shadow: 
+      0 0 8px rgba(139, 92, 246, 0.5),
+      0 0 16px rgba(34, 211, 238, 0.3);
+  }
+
+  /* Aurora ring around elements */
+  .aurora-ring {
+    position: relative;
+  }
+  
+  .aurora-ring::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: inherit;
+    padding: 2px;
+    background: linear-gradient(135deg, #8b5cf6, #22d3ee, #ec4899);
+    -webkit-mask: 
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    mask: 
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  
+  .aurora-ring:hover::before {
+    opacity: 1;
+  }
+}
+
+/* ===== STATUS NEON INDICATORS (Dark Mode) ===== */
+.dark .status-neon-online {
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.3) 0%, rgba(16, 185, 129, 0) 70%);
+  box-shadow: 
+    inset 0 0 10px rgba(16, 185, 129, 0.2),
+    0 0 20px rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.4);
+}
+
+.dark .status-neon-degraded {
+  background: radial-gradient(circle, rgba(249, 115, 22, 0.3) 0%, rgba(249, 115, 22, 0) 70%);
+  box-shadow: 
+    inset 0 0 10px rgba(249, 115, 22, 0.2),
+    0 0 20px rgba(249, 115, 22, 0.15);
+  border-color: rgba(249, 115, 22, 0.4);
+}
+
+.dark .status-neon-offline {
+  background: radial-gradient(circle, rgba(239, 68, 68, 0.3) 0%, rgba(239, 68, 68, 0) 70%);
+  box-shadow: 
+    inset 0 0 10px rgba(239, 68, 68, 0.2),
+    0 0 20px rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.dark .status-neon-maintenance {
+  background: radial-gradient(circle, rgba(245, 158, 11, 0.3) 0%, rgba(245, 158, 11, 0) 70%);
+  box-shadow: 
+    inset 0 0 10px rgba(245, 158, 11, 0.2),
+    0 0 20px rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.4);
+}
+
+/* ===== ANIMATION UTILITIES ===== */
+.animate-aurora-pulse {
+  animation: aurora-pulse 4s ease-in-out infinite;
+}
+
+.animate-aurora-drift {
+  animation: aurora-drift 20s ease-in-out infinite;
+}
+
+.animate-glass-shimmer {
+  animation: glass-shimmer 8s ease-in-out infinite;
+}
+
+.animate-holographic {
+  animation: holographic-shift 6s linear infinite;
+}
+
+/* =========================================
+   PREMIUM LIQUID AURORA COMPONENTS
+   Distinctive, production-grade dark effects
+   ========================================= */
+
+/* ===== PRISMATIC GLASS CARD ===== */
+/* Ultra-premium card with shifting prismatic edge */
+@keyframes prismatic-edge {
+  0%, 100% {
+    border-image: linear-gradient(135deg, 
+      rgba(139, 92, 246, 0.4) 0%, 
+      rgba(34, 211, 238, 0.3) 25%,
+      rgba(236, 72, 153, 0.35) 50%,
+      rgba(34, 211, 238, 0.3) 75%,
+      rgba(139, 92, 246, 0.4) 100%
+    ) 1;
+  }
+  50% {
+    border-image: linear-gradient(135deg, 
+      rgba(34, 211, 238, 0.4) 0%, 
+      rgba(236, 72, 153, 0.35) 25%,
+      rgba(139, 92, 246, 0.4) 50%,
+      rgba(236, 72, 153, 0.35) 75%,
+      rgba(34, 211, 238, 0.4) 100%
+    ) 1;
+  }
+}
+
+.dark .prismatic-card {
+  position: relative;
+  background: 
+    linear-gradient(135deg, rgba(139, 92, 246, 0.03) 0%, transparent 50%, rgba(34, 211, 238, 0.02) 100%),
+    rgba(255, 255, 255, 0.025);
+  backdrop-filter: blur(48px) saturate(180%);
+  -webkit-backdrop-filter: blur(48px) saturate(180%);
+  border: 1px solid transparent;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.dark .prismatic-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, 
+    rgba(139, 92, 246, 0.35) 0%, 
+    rgba(34, 211, 238, 0.25) 33%,
+    rgba(236, 72, 153, 0.3) 66%,
+    rgba(139, 92, 246, 0.35) 100%
+  );
+  background-size: 300% 300%;
+  animation: prismatic-edge 8s linear infinite;
+  -webkit-mask: 
+    linear-gradient(#fff 0 0) content-box, 
+    linear-gradient(#fff 0 0);
+  mask: 
+    linear-gradient(#fff 0 0) content-box, 
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+.dark .prismatic-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, transparent 40%);
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+/* ===== HOLOGRAPHIC BADGE ===== */
+@keyframes holo-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.dark .holo-badge {
+  position: relative;
+  overflow: hidden;
+  background: 
+    linear-gradient(90deg, 
+      transparent 0%,
+      rgba(255, 255, 255, 0.08) 20%,
+      rgba(139, 92, 246, 0.15) 40%,
+      rgba(34, 211, 238, 0.15) 50%,
+      rgba(236, 72, 153, 0.15) 60%,
+      rgba(255, 255, 255, 0.08) 80%,
+      transparent 100%
+    ),
+    rgba(15, 18, 25, 0.9);
+  background-size: 200% 100%;
+  animation: holo-shimmer 4s linear infinite;
+  border: 0.5px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 
+    0 0 20px rgba(139, 92, 246, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.dark .holo-badge::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+/* ===== AURORA REVEAL HOVER ===== */
+/* Interactive aurora that reveals on hover */
+.dark .aurora-reveal {
+  position: relative;
+  overflow: hidden;
+}
+
+.dark .aurora-reveal::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: radial-gradient(circle, 
+    rgba(139, 92, 246, 0.15) 0%, 
+    rgba(34, 211, 238, 0.1) 40%,
+    transparent 70%
+  );
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1), 
+              height 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+}
+
+.dark .aurora-reveal:hover::before {
+  width: 300%;
+  height: 300%;
+}
+
+/* ===== DEPTH LAYER CARD ===== */
+/* Card with multiple depth layers creating 3D illusion */
+.dark .depth-card {
+  position: relative;
+  background: rgba(15, 18, 25, 0.85);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 20px;
+  box-shadow: 
+    0 1px 0 rgba(255, 255, 255, 0.08) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.3) inset,
+    0 20px 50px -10px rgba(0, 0, 0, 0.6),
+    0 10px 25px -5px rgba(0, 0, 0, 0.4);
+}
+
+/* Inner glow layer */
+.dark .depth-card::before {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  border-radius: inherit;
+  background: linear-gradient(180deg, 
+    rgba(255, 255, 255, 0.04) 0%, 
+    transparent 30%,
+    transparent 70%,
+    rgba(0, 0, 0, 0.1) 100%
+  );
+  pointer-events: none;
+}
+
+/* Aurora ambient layer */
+.dark .depth-card::after {
+  content: '';
+  position: absolute;
+  inset: -50%;
+  background: radial-gradient(ellipse at top, 
+    rgba(139, 92, 246, 0.08) 0%, 
+    transparent 50%
+  );
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+.dark .depth-card:hover::after {
+  opacity: 1;
+}
+
+/* ===== NEON STATUS GLOW PULSE ===== */
+@keyframes neon-breathe {
+  0%, 100% {
+    box-shadow: 
+      0 0 5px currentColor,
+      0 0 10px currentColor,
+      0 0 20px currentColor,
+      0 0 40px currentColor;
+    filter: brightness(1);
+  }
+  50% {
+    box-shadow: 
+      0 0 8px currentColor,
+      0 0 16px currentColor,
+      0 0 32px currentColor,
+      0 0 64px currentColor;
+    filter: brightness(1.1);
+  }
+}
+
+.dark .neon-breathe-emerald {
+  color: #10b981;
+  animation: neon-breathe 2s ease-in-out infinite;
+}
+
+.dark .neon-breathe-cyan {
+  color: #22d3ee;
+  animation: neon-breathe 2s ease-in-out infinite;
+}
+
+.dark .neon-breathe-pink {
+  color: #ec4899;
+  animation: neon-breathe 2s ease-in-out infinite;
+}
+
+.dark .neon-breathe-amber {
+  color: #f59e0b;
+  animation: neon-breathe 2s ease-in-out infinite;
+}
+
+/* ===== GLASS REFLECTION ===== */
+/* Realistic glass reflection that follows mouse (applied via JS) */
+.dark .glass-reflection {
+  position: relative;
+  overflow: hidden;
+}
+
+.dark .glass-reflection::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(
+    circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+    rgba(255, 255, 255, 0.08) 0%,
+    transparent 40%
+  );
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.dark .glass-reflection:hover::before {
+  opacity: 1;
+}
+
+/* ===== FROSTED PANEL ===== */
+/* Ultra-premium frosted glass panel */
+.dark .frosted-panel {
+  background: 
+    linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%),
+    rgba(15, 18, 25, 0.75);
+  backdrop-filter: blur(80px) saturate(200%) brightness(1.05);
+  -webkit-backdrop-filter: blur(80px) saturate(200%) brightness(1.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+  box-shadow: 
+    0 32px 64px -16px rgba(0, 0, 0, 0.5),
+    0 16px 32px -8px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+}
+
+/* Specular highlight */
+.dark .frosted-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(180deg, 
+    rgba(255, 255, 255, 0.06) 0%, 
+    transparent 25%
+  );
+  pointer-events: none;
+}
+
+/* ===== AURORA BORDER TRACE ===== */
+/* Animated border that traces around the element */
+@keyframes border-trace {
+  0% {
+    clip-path: inset(0 100% 100% 0);
+  }
+  25% {
+    clip-path: inset(0 0 100% 0);
+  }
+  50% {
+    clip-path: inset(0 0 0 100%);
+  }
+  75% {
+    clip-path: inset(100% 0 0 0);
+  }
+  100% {
+    clip-path: inset(0 100% 100% 0);
+  }
+}
+
+.dark .aurora-trace {
+  position: relative;
+}
+
+.dark .aurora-trace::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #8b5cf6, #22d3ee, #ec4899, #8b5cf6);
+  animation: border-trace 4s linear infinite;
+  z-index: -1;
+}
+
+/* ===== COSMIC CARD ===== */
+/* Premium card with star-field effect */
+.dark .cosmic-card {
+  position: relative;
+  background: 
+    radial-gradient(circle at 20% 20%, rgba(139, 92, 246, 0.08) 0%, transparent 30%),
+    radial-gradient(circle at 80% 80%, rgba(34, 211, 238, 0.06) 0%, transparent 30%),
+    radial-gradient(circle at 50% 50%, rgba(236, 72, 153, 0.04) 0%, transparent 40%),
+    rgba(10, 12, 18, 0.95);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 20px;
+  box-shadow: 
+    0 24px 48px -12px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+/* Star particles */
+.dark .cosmic-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: 
+    radial-gradient(1px 1px at 10% 20%, rgba(255, 255, 255, 0.4), transparent),
+    radial-gradient(1px 1px at 30% 70%, rgba(255, 255, 255, 0.3), transparent),
+    radial-gradient(1px 1px at 50% 30%, rgba(255, 255, 255, 0.5), transparent),
+    radial-gradient(1px 1px at 70% 80%, rgba(255, 255, 255, 0.25), transparent),
+    radial-gradient(1px 1px at 90% 40%, rgba(255, 255, 255, 0.35), transparent),
+    radial-gradient(1.5px 1.5px at 25% 45%, rgba(139, 92, 246, 0.6), transparent),
+    radial-gradient(1.5px 1.5px at 75% 55%, rgba(34, 211, 238, 0.5), transparent);
+  pointer-events: none;
+}
+
+/* ===== INTERACTIVE GLOW BUTTON ===== */
+.dark .glow-button {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.dark .glow-button::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  background: linear-gradient(135deg, #8b5cf6, #22d3ee, #ec4899);
+  border-radius: inherit;
+  opacity: 0;
+  filter: blur(12px);
+  transition: opacity 0.3s ease;
+  z-index: -1;
+}
+
+.dark .glow-button:hover::before {
+  opacity: 0.6;
+}
+
+.dark .glow-button:active::before {
+  opacity: 0.8;
+  filter: blur(8px);
 }
 
 /* ===== REDUCED MOTION ===== */
@@ -2740,7 +4619,30 @@ body:not(.dark) [data-sonner-toast] [data-cancel]:hover {
   .animate-twinkle,
   .animate-card-float,
   .animate-spotlight-breathe,
-  .animate-telegram-pulse {
+  .animate-telegram-pulse,
+  .animate-gradient-shift,
+  .animate-shimmer-sweep,
+  .animate-float-slow,
+  .animate-float-slow-reverse,
+  .animate-float,
+  .animate-pulse-slow,
+  .animate-border-glow,
+  .animate-blob,
+  .animate-aurora-pulse,
+  .animate-aurora-drift,
+  .animate-glass-shimmer,
+  .animate-holographic,
+  .aurora-border-animated,
+  .neon-pulse,
+  .glass-shimmer::after,
+  .text-aurora-holographic,
+  .dark .prismatic-card::before,
+  .dark .holo-badge,
+  .dark .aurora-trace::before,
+  .dark .neon-breathe-emerald,
+  .dark .neon-breathe-cyan,
+  .dark .neon-breathe-pink,
+  .dark .neon-breathe-amber {
     animation: none !important;
   }
   

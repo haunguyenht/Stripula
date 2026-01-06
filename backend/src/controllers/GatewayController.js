@@ -491,6 +491,147 @@ export class GatewayController {
     }
 
     // ═══════════════════════════════════════════════════════════════
+    // Manual Health Status Control Endpoints (Requirements: 4.1, 4.2, 4.3, 4.5, 4.6, 5.1, 5.2, 5.3, 5.4, 5.5)
+    // ═══════════════════════════════════════════════════════════════
+
+    /**
+     * POST /api/admin/gateways/:id/health-status
+     * Manually set gateway health status
+     * 
+     * Requirements: 4.1, 4.2, 4.3, 4.5, 4.6
+     * - Validate gateway ID and status
+     * - Call gatewayManager.setManualHealthStatus()
+     * - Return success response with old/new status
+     */
+    async setHealthStatus(req, res) {
+        try {
+            const { id } = req.params;
+            const { status, reason } = req.body;
+
+            // Validate gateway ID (Requirement 4.1)
+            if (!id) {
+                return res.status(400).json({
+                    status: 'ERROR',
+                    code: 'MISSING_ID',
+                    message: 'Gateway ID is required'
+                });
+            }
+
+            // Validate status (Requirement 4.2, 4.3)
+            const validStatuses = ['online', 'degraded', 'offline'];
+            if (!status || !validStatuses.includes(status)) {
+                return res.status(400).json({
+                    status: 'ERROR',
+                    code: 'INVALID_STATUS',
+                    message: `Invalid status. Must be one of: ${validStatuses.join(', ')}`
+                });
+            }
+
+            // Call gatewayManager.setManualHealthStatus() (Requirements 4.2, 4.5, 4.6)
+            const result = await this.gatewayManager.setManualHealthStatus(id, status, {
+                adminId: req.user.id,
+                reason: reason || `Manual change via admin panel`
+            });
+
+            res.json({
+                status: 'OK',
+                message: `Gateway health status updated to ${status}`,
+                ...result,
+                timestamp: new Date().toISOString()
+            });
+        } catch (error) {
+            if (error.message.includes('not found')) {
+                return res.status(404).json({
+                    status: 'ERROR',
+                    code: 'GATEWAY_NOT_FOUND',
+                    message: 'Gateway not found'
+                });
+            }
+
+            if (error.message.includes('Invalid health status')) {
+                return res.status(400).json({
+                    status: 'ERROR',
+                    code: 'INVALID_STATUS',
+                    message: error.message
+                });
+            }
+
+            res.status(500).json({
+                status: 'ERROR',
+                code: 'UPDATE_FAILED',
+                message: error.message || 'Failed to update health status'
+            });
+        }
+    }
+
+    /**
+     * POST /api/admin/gateways/:id/reset-metrics
+     * Reset health metrics without changing status
+     * 
+     * Requirements: 5.1, 5.2, 5.3, 5.4, 5.5
+     * - Validate gateway ID
+     * - Call metrics.reset() without changing health_status
+     * - Log audit entry
+     * - Return success response
+     */
+    async resetMetrics(req, res) {
+        try {
+            const { id } = req.params;
+
+            // Validate gateway ID (Requirement 5.1)
+            if (!id) {
+                return res.status(400).json({
+                    status: 'ERROR',
+                    code: 'MISSING_ID',
+                    message: 'Gateway ID is required'
+                });
+            }
+
+            // Get metrics for the gateway
+            const metrics = this.gatewayManager.healthMetrics.get(id);
+            if (!metrics) {
+                return res.status(404).json({
+                    status: 'ERROR',
+                    code: 'GATEWAY_NOT_FOUND',
+                    message: 'Gateway not found'
+                });
+            }
+
+            // Get gateway to retrieve current health status
+            const gateway = this.gatewayManager.getGateway(id);
+            const currentStatus = gateway ? gateway.healthStatus : 'unknown';
+
+            // Reset metrics without changing health_status (Requirements 5.2, 5.3)
+            metrics.reset();
+
+            // Log audit entry (Requirement 5.5)
+            await this.gatewayManager._logAuditEntry(
+                id, 
+                'metrics_reset', 
+                'metrics_reset', 
+                req.user.id, 
+                'Health metrics reset by admin'
+            );
+
+            res.json({
+                status: 'OK',
+                message: 'Health metrics reset successfully',
+                gatewayId: id,
+                healthStatus: currentStatus, // Status unchanged (Requirement 5.3)
+                metrics: metrics.toJSON(),
+                timestamp: new Date().toISOString()
+            });
+        } catch (error) {
+            // Non-admin user check (Requirement 5.4 - handled by AdminMiddleware)
+            res.status(500).json({
+                status: 'ERROR',
+                code: 'RESET_FAILED',
+                message: error.message || 'Failed to reset metrics'
+            });
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
     // Proxy Configuration Endpoints (Requirements: 7.1, 7.2, 7.3, 7.4, 7.5, 7.6)
     // ═══════════════════════════════════════════════════════════════
 
@@ -1602,6 +1743,9 @@ export class GatewayController {
             resetHealth: this.resetHealth.bind(this),
             getHealthThresholds: this.getHealthThresholds.bind(this),
             updateHealthThresholds: this.updateHealthThresholds.bind(this),
+            // Manual health status control endpoints (Requirements: 4.1, 5.1)
+            setHealthStatus: this.setHealthStatus.bind(this),
+            resetMetrics: this.resetMetrics.bind(this),
             getAuditLogs: this.getAuditLogs.bind(this),
             getAllAuditLogs: this.getAllAuditLogs.bind(this),
             // Proxy configuration endpoints (Requirements: 7.1, 7.2, 7.3, 7.4, 7.5, 7.6)

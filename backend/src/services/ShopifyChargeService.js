@@ -1,125 +1,70 @@
 import { EventEmitter } from 'events';
 import { ShopifyValidator } from '../validators/ShopifyValidator.js';
 import { ShopifyResult } from '../domain/ShopifyResult.js';
-import { SHOPIFY_SITES, DEFAULT_SHOPIFY_SITE, DEFAULTS } from '../utils/constants.js';
+import { DEFAULTS } from '../utils/constants.js';
 import { binLookupClient } from '../infrastructure/external/BinLookupClient.js';
 import { classifyFailure } from '../utils/failureClassifier.js';
 
 /**
  * Shopify Charge Service
- * Orchestrates Shopify checkout validation using the modular validator pattern
+ * Orchestrates Shopify card validation using Auto Shopify API
+ * User provides the Shopify site URL for validation
  * 
- * Requirements: 3.1, 3.2, 3.3, 3.4 - Uses SpeedManager for tier-based speed limits
- * Requirements: 2.2, 2.5, 3.2, 4.1 - Gateway availability and health tracking
- * Requirements: 3.1, 3.2, 3.3 (Proxy) - Per-gateway proxy configuration
+ * API: https://autoshopi.up.railway.app/?cc=cc&url=site&proxy=proxy
+ * 
+ * Requirements: 8.1, 8.2 - Statistics tracking integration
  */
 export class ShopifyChargeService extends EventEmitter {
     constructor(options = {}) {
         super();
-        this.site = options.site || DEFAULT_SHOPIFY_SITE;
         this.concurrency = options.concurrency || DEFAULTS.CONCURRENCY;
         this.speedManager = options.speedManager || null;
         this.gatewayManager = options.gatewayManager || null;
-        this.validator = new ShopifyValidator({
-            site: this.site
-        });
+        // Dashboard Service for statistics tracking (Requirements: 8.1, 8.2)
+        this.dashboardService = options.dashboardService || null;
+        // User-provided Shopify URL and proxy
+        this.shopifyUrl = '';
+        this.proxyString = '';
+        this.validator = new ShopifyValidator({});
         this.abortFlag = false;
         this.currentExecutor = null;
-        // Current gateway proxy config (set before batch processing)
         this._currentProxyConfig = null;
     }
 
     /**
-     * Get available Shopify sites (only configured ones with prodUrl)
+     * Set the Shopify URL for validation
      */
-    getAvailableSites() {
-        return Object.values(SHOPIFY_SITES)
-            .filter(site => site.prodUrl) // Only return sites with prodUrl
-            .map(site => {
-                // Auto-derive domain from prodUrl
-                let domain = site.domain;
-                if (!domain && site.prodUrl) {
-                    const match = site.prodUrl.match(/:\/\/([^\/]+)/);
-                    domain = match ? match[1] : null;
-                }
-                return {
-                    id: site.id,
-                    label: site.label,
-                    domain
-                };
-            });
+    setShopifyUrl(url) {
+        this.shopifyUrl = url;
+        this.validator.setShopifyUrl(url);
     }
 
     /**
-     * Get all sites (including unconfigured)
-     * Auto-derives domain from prodUrl if not explicitly set
+     * Set proxy string (ip:port:username:password)
      */
-    getAllSites() {
-        return Object.values(SHOPIFY_SITES).map(site => {
-            // Auto-derive domain from prodUrl
-            let domain = site.domain;
-            if (!domain && site.prodUrl) {
-                const match = site.prodUrl.match(/:\/\/([^\/]+)/);
-                domain = match ? match[1] : null;
-            }
-            return {
-                id: site.id,
-                label: site.label,
-                domain: domain || '(not configured)',
-                configured: !!site.prodUrl
-            };
-        });
+    setProxy(proxyString) {
+        this.proxyString = proxyString;
+        this.validator.setProxy(proxyString);
     }
 
     /**
-     * Set active site
+     * Get current Shopify URL
      */
-    setSite(siteId) {
-        const site = Object.values(SHOPIFY_SITES).find(s => s.id === siteId);
-        if (site) {
-            this.site = site;
-            this.validator.setSite(site);
-            return true;
-        }
-        return false;
-    }
-
-    /**
-     * Update site configuration (for hot reload)
-     */
-    updateSiteConfig(siteId, config) {
-        const site = Object.values(SHOPIFY_SITES).find(s => s.id === siteId);
-        if (site) {
-            Object.assign(site, config);
-            if (this.site.id === siteId) {
-                this.validator.setSite(site);
-            }
-            return true;
-        }
-        return false;
+    getShopifyUrl() {
+        return this.shopifyUrl;
     }
 
     /**
      * Create a proxy manager wrapper for gateway-specific proxy config
-     * This allows the validator to use the gateway's proxy configuration
-     * 
-     * Requirements: 3.1, 3.2, 3.3 (Proxy) - Per-gateway proxy configuration
-     * 
-     * @param {Object|null} proxyConfig - Gateway proxy config from GatewayManager
-     * @returns {Object|null} Proxy manager-like object or null
      */
     _createGatewayProxyManager(proxyConfig) {
         if (!proxyConfig) {
             return null;
         }
 
-        // Create a proxy manager-like object that returns the gateway's proxy config
-        // ProxyAgentFactory.create() expects an object with {type, host, port, username?, password?}
         return {
             isEnabled: () => true,
             getNextProxy: async () => {
-                // Return the proxy config object directly (not a URL string)
-                // ProxyAgentFactory.create() will build the URL from this object
                 return {
                     type: proxyConfig.type || 'http',
                     host: proxyConfig.host,
@@ -133,34 +78,26 @@ export class ShopifyChargeService extends EventEmitter {
 
     /**
      * Process a single card
-     * Records success/failure for gateway health tracking (Requirement 4.1)
-     * Uses proper failure classification (Requirements 4.1, 4.2, 4.3)
-     * 
-     * @param {string} cardLine - Card in format "number|mm|yy|cvv"
-     * @returns {Promise<ShopifyResult>}
      */
     async processCard(cardLine) {
-        const gatewayId = this.site?.id || 'shopify-01';
+        const gatewayId = 'auto-shopify-1';
         const startTime = Date.now();
 
         try {
             const cardInfo = this.validator.parseCard(cardLine);
 
             if (!cardInfo) {
-                // Format errors should NOT be recorded as gateway failures (Requirement 4.3)
                 return ShopifyResult.error('INVALID_FORMAT', { card: cardLine });
             }
 
             const result = await this.validator.validate(cardInfo);
             const latencyMs = Date.now() - startTime;
 
-            // Record success/failure for health tracking (Requirements 4.1, 4.2)
+            // Record success/failure for health tracking
             if (this.gatewayManager) {
                 if (result.isApproved() || result.isDeclined()) {
-                    // Both approved and declined are successful gateway responses (Requirement 4.1)
                     this.gatewayManager.recordSuccess(gatewayId, latencyMs);
                 } else if (result.status === 'ERROR') {
-                    // Classify the error and record with proper category (Requirement 4.2)
                     const category = classifyFailure(result.message);
                     this.gatewayManager.recordFailure(gatewayId, result.message, category);
                 }
@@ -180,8 +117,6 @@ export class ShopifyChargeService extends EventEmitter {
 
             return result;
         } catch (error) {
-
-            // Record failure with proper classification for health tracking (Requirement 4.2)
             if (this.gatewayManager) {
                 const category = classifyFailure(error);
                 this.gatewayManager.recordFailure(gatewayId, error.message, category);
@@ -193,35 +128,44 @@ export class ShopifyChargeService extends EventEmitter {
 
     /**
      * Process multiple cards with concurrency control
-     * Uses SpeedManager for tier-based speed limits when available
      * 
-     * Requirements: 3.1, 3.2, 3.3, 3.4 - Tier-based speed enforcement
-     * Requirements: 2.2, 2.5, 3.2, 4.1 - Gateway availability and health tracking
-     * Requirements: 3.1, 3.2, 3.3 (Proxy) - Per-gateway proxy configuration
-     * 
-     * @param {string[]} cards - Array of card strings
-     * @param {Object} options - Processing options
-     * @returns {Promise<Object>}
+     * Requirements: 8.1, 8.2 - Statistics tracking integration
      */
     async processBatch(cards, options = {}) {
         const {
             concurrency = DEFAULTS.CONCURRENCY,
-            delayBetweenCards = 3000, // Shopify needs longer delays
             onProgress = null,
             onResult = null,
-            tier = 'free'
+            tier = 'free',
+            shopifyUrl = null,
+            userId = null
         } = options;
 
-        // Get the gateway ID for the current site
-        const gatewayId = this.site?.id || 'shopify-01';
+        // Set URL if provided
+        if (shopifyUrl) {
+            this.setShopifyUrl(shopifyUrl);
+        }
 
-        // Check gateway availability before processing (Requirement 2.2)
+        if (!this.shopifyUrl) {
+            const errorResult = {
+                results: [],
+                stats: { approved: 0, declined: 0, errors: cards.length },
+                total: cards.length,
+                liveCount: 0,
+                duration: 0,
+                error: 'Shopify URL is required'
+            };
+            this.emit('batchComplete', errorResult);
+            return errorResult;
+        }
+
+        const gatewayId = 'auto-shopify-1';
+
+        // Check gateway availability
         if (this.gatewayManager) {
             const isAvailable = this.gatewayManager.isAvailable(gatewayId);
             if (!isAvailable) {
                 const reason = this.gatewayManager.getUnavailabilityReason(gatewayId);
-
-                // Emit batchComplete to release any locks (Requirement 2.5)
                 const unavailableResult = {
                     results: [],
                     stats: { approved: 0, declined: 0, errors: 0 },
@@ -232,27 +176,25 @@ export class ShopifyChargeService extends EventEmitter {
                     unavailableReason: reason,
                     gatewayId
                 };
-
                 this.emit('batchComplete', unavailableResult);
-
-                // Return early with unavailable status
                 return unavailableResult;
             }
 
-            // Retrieve proxy configuration from GatewayManager (Requirement 3.1 Proxy)
+            // Retrieve proxy configuration from gateway (admin-configured)
             const proxyConfig = this.gatewayManager.getProxyConfig(gatewayId);
             if (proxyConfig) {
-                // Create a proxy manager wrapper for the gateway's proxy config
                 const gatewayProxyManager = this._createGatewayProxyManager(proxyConfig);
-                // Update validator with gateway proxy (Requirement 3.2 Proxy)
                 this.validator = new ShopifyValidator({
-                    site: this.site,
-                    proxyManager: gatewayProxyManager
+                    shopifyUrl: this.shopifyUrl,
+                    proxyManager: gatewayProxyManager,
+                    proxyString: this.proxyString // Preserve user-provided proxy
                 });
                 this._currentProxyConfig = proxyConfig;
             } else {
+                // No gateway proxy config - use user-provided proxyString
                 this.validator = new ShopifyValidator({
-                    site: this.site
+                    shopifyUrl: this.shopifyUrl,
+                    proxyString: this.proxyString
                 });
                 this._currentProxyConfig = null;
             }
@@ -260,7 +202,6 @@ export class ShopifyChargeService extends EventEmitter {
 
         this.abortFlag = false;
         this.concurrency = concurrency;
-        this.validator.setConcurrency(concurrency);
 
         const results = [];
         const total = cards.length;
@@ -268,25 +209,25 @@ export class ShopifyChargeService extends EventEmitter {
         const stats = { approved: 0, declined: 0, errors: 0 };
         const startTime = Date.now();
 
-        // Use SpeedManager if available (Requirement 3.1)
+        // Use SpeedManager if available
         if (this.speedManager) {
             try {
-                const executor = await this.speedManager.createExecutor('charge', tier);
+                // Get tier-based delay but force concurrency to 1 for Auto Shopify
+                // (external API may have rate limits)
+                const settings = await this.speedManager.getSpeedSettings('charge', tier);
+                const { SpeedExecutor } = await import('./SpeedExecutor.js');
+                const executor = new SpeedExecutor(1, settings.delay); // Force concurrency=1
                 this.currentExecutor = executor;
 
-                // Convert cards to tasks
                 const tasks = cards.map((card, index) => async () => {
                     if (this.abortFlag) {
                         throw new Error('Aborted');
                     }
-
                     const result = await this.processCard(card);
                     result.index = index;
                     return result;
                 });
 
-                // Execute with speed limits (Requirements 3.2, 3.3)
-                // Use onResult callback for live streaming results
                 await executor.executeBatch(
                     tasks,
                     (completed, totalTasks) => {
@@ -299,7 +240,6 @@ export class ShopifyChargeService extends EventEmitter {
                         });
                     },
                     async (execResult, index) => {
-                        // Live streaming: emit result immediately as each task completes
                         if (execResult.success) {
                             const result = execResult.result;
                             results.push(result);
@@ -311,6 +251,11 @@ export class ShopifyChargeService extends EventEmitter {
 
                             this.emit('result', result);
                             if (onResult) await Promise.resolve(onResult(result.toJSON ? result.toJSON() : result));
+
+                            // Check if we should stop the batch (CAPTCHA or SITE_DEAD after retries)
+                            if (result.shouldStopBatch) {
+                                this.stopBatch();
+                            }
                         } else {
                             const errorResult = ShopifyResult.error(execResult.error, { card: cards[index] });
                             results.push(errorResult);
@@ -325,10 +270,18 @@ export class ShopifyChargeService extends EventEmitter {
                     }
                 );
 
-                // Results already processed via onResult callback above
-
                 const duration = ((Date.now() - startTime) / 1000).toFixed(1);
                 const liveCount = stats.approved;
+
+                // Increment user statistics (Requirements: 8.1, 8.2)
+                // cardsCount = total cards validated, hitsCount = approved cards
+                if (userId && this.dashboardService) {
+                    try {
+                        await this.dashboardService.incrementUserStats(userId, total, liveCount);
+                    } catch (err) {
+                        console.error('[ShopifyChargeService] Failed to increment user stats:', err.message);
+                    }
+                }
 
                 this.emit('complete', { results, stats, duration: parseFloat(duration) });
                 this.emit('batchComplete', {
@@ -337,7 +290,7 @@ export class ShopifyChargeService extends EventEmitter {
                     liveCount,
                     total,
                     duration: parseFloat(duration),
-                    gatewayId: 'shopify'
+                    gatewayId
                 });
 
                 this.currentExecutor = null;
@@ -350,6 +303,15 @@ export class ShopifyChargeService extends EventEmitter {
                     const duration = ((Date.now() - startTime) / 1000).toFixed(1);
                     const liveCount = stats.approved;
 
+                    // Increment user statistics for processed cards before abort (Requirements: 8.1, 8.2)
+                    if (userId && this.dashboardService && processed > 0) {
+                        try {
+                            await this.dashboardService.incrementUserStats(userId, processed, liveCount);
+                        } catch (err) {
+                            console.error('[ShopifyChargeService] Failed to increment user stats (aborted):', err.message);
+                        }
+                    }
+
                     this.emit('complete', { results, stats, duration: parseFloat(duration), aborted: true });
                     this.emit('batchComplete', {
                         results,
@@ -358,18 +320,14 @@ export class ShopifyChargeService extends EventEmitter {
                         total,
                         duration: parseFloat(duration),
                         aborted: true,
-                        gatewayId: 'shopify'
+                        gatewayId
                     });
 
                     return { results, stats, total, liveCount, duration: parseFloat(duration), aborted: true };
                 }
-
-                // Fall through to legacy processing on other errors
-
             }
         }
 
-        // SpeedManager is required - throw error if not available
         throw new Error('SpeedManager is required for batch processing');
     }
 
@@ -378,12 +336,9 @@ export class ShopifyChargeService extends EventEmitter {
      */
     stopBatch() {
         this.abortFlag = true;
-
-        // Cancel SpeedExecutor if active
         if (this.currentExecutor) {
             this.currentExecutor.cancel();
         }
-
         this.emit('abort');
     }
 }

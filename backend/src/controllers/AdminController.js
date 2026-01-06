@@ -25,7 +25,7 @@ export class AdminController {
      */
     async generateKeys(req, res) {
         try {
-            const { type, value, quantity, maxUses, expiresAt, note } = req.body;
+            const { type, value, quantity, maxUses, expiresAt, durationDays, note } = req.body;
 
             // Validate required fields
             if (!type) {
@@ -58,6 +58,7 @@ export class AdminController {
                 quantity: parseInt(quantity, 10),
                 maxUses: maxUses ? parseInt(maxUses, 10) : 1,
                 expiresAt: expiresAt || null,
+                durationDays: durationDays ? parseInt(durationDays, 10) : null,
                 note: note || null,
                 createdBy: req.user.id
             });
@@ -194,14 +195,17 @@ export class AdminController {
 
     /**
      * PATCH /api/admin/users/:id/tier
-     * Update user tier (admin only)
+     * Update user tier with optional duration (admin only)
      * 
      * Requirement: 3.2
+     * 
+     * Body: { tier: string, durationDays?: number }
+     * - durationDays: null/0/undefined = permanent, 1-365 = timed subscription
      */
     async updateUserTier(req, res) {
         try {
             const { id } = req.params;
-            const { tier } = req.body;
+            const { tier, durationDays } = req.body;
 
             if (!id) {
                 return res.status(400).json({
@@ -219,19 +223,24 @@ export class AdminController {
                 });
             }
 
-            const result = await this.adminService.updateUserTier(id, tier);
+            // Parse and validate durationDays
+            const parsedDuration = durationDays ? parseInt(durationDays, 10) : null;
+
+            const result = await this.adminService.updateUserTier(id, tier, parsedDuration);
 
             if (this.userNotificationService && result.success) {
                 this.userNotificationService.notifyTierChange(
                     id,
                     result.user.newTier,
-                    result.user.previousTier
+                    result.user.previousTier,
+                    result.user.tierExpiresAt
                 );
             }
 
+            const durationMsg = parsedDuration ? ` for ${parsedDuration} days` : ' (permanent)';
             res.json({
                 status: 'OK',
-                message: `User tier updated to ${tier}`,
+                message: `User tier updated to ${tier}${durationMsg}`,
                 ...result
             });
         } catch (error) {
@@ -255,6 +264,104 @@ export class AdminController {
                 status: 'ERROR',
                 code: 'UPDATE_FAILED',
                 message: 'Failed to update user tier'
+            });
+        }
+    }
+
+    /**
+     * POST /api/admin/users/:id/tier/extend
+     * Extend user's current tier duration (admin only)
+     * 
+     * Requirements: 5.5, 5.6, 5.7
+     * 
+     * Body: { additionalDays: number }
+     * - additionalDays: 1-365 days to add to current expiration
+     */
+    async extendUserTier(req, res) {
+        try {
+            const { id } = req.params;
+            const { additionalDays } = req.body;
+
+            if (!id) {
+                return res.status(400).json({
+                    status: 'ERROR',
+                    code: 'MISSING_ID',
+                    message: 'User ID is required'
+                });
+            }
+
+            if (additionalDays === undefined || additionalDays === null) {
+                return res.status(400).json({
+                    status: 'ERROR',
+                    code: 'MISSING_DAYS',
+                    message: 'Additional days is required'
+                });
+            }
+
+            // Parse and validate additionalDays
+            const parsedDays = parseInt(additionalDays, 10);
+            if (isNaN(parsedDays) || parsedDays < 1) {
+                return res.status(400).json({
+                    status: 'ERROR',
+                    code: 'INVALID_DAYS',
+                    message: 'Additional days must be a positive integer'
+                });
+            }
+
+            if (parsedDays > 365) {
+                return res.status(400).json({
+                    status: 'ERROR',
+                    code: 'DURATION_TOO_LONG',
+                    message: 'Additional days cannot exceed 365'
+                });
+            }
+
+            const result = await this.adminService.extendUserTier(id, parsedDays);
+
+            if (this.userNotificationService && result.success) {
+                this.userNotificationService.notifyTierExtension(
+                    id,
+                    result.user.tier,
+                    result.user.previousExpiresAt,
+                    result.user.newExpiresAt,
+                    result.user.daysAdded
+                );
+            }
+
+            res.json({
+                status: 'OK',
+                message: `Tier extended by ${parsedDays} days`,
+                ...result
+            });
+        } catch (error) {
+            if (error.message === 'User not found') {
+                return res.status(404).json({
+                    status: 'ERROR',
+                    code: 'USER_NOT_FOUND',
+                    message: 'User not found'
+                });
+            }
+
+            if (error.message.includes('Cannot extend duration for free tier')) {
+                return res.status(400).json({
+                    status: 'ERROR',
+                    code: 'CANNOT_EXTEND_FREE',
+                    message: error.message
+                });
+            }
+
+            if (error.message.includes('Additional days')) {
+                return res.status(400).json({
+                    status: 'ERROR',
+                    code: 'INVALID_DAYS',
+                    message: error.message
+                });
+            }
+
+            res.status(500).json({
+                status: 'ERROR',
+                code: 'EXTEND_FAILED',
+                message: 'Failed to extend user tier'
             });
         }
     }
@@ -726,6 +833,7 @@ export class AdminController {
             // User management
             getUsers: this.getUsers.bind(this),
             updateUserTier: this.updateUserTier.bind(this),
+            extendUserTier: this.extendUserTier.bind(this),
             updateUserCredits: this.updateUserCredits.bind(this),
             flagUser: this.flagUser.bind(this),
             unflagUser: this.unflagUser.bind(this),

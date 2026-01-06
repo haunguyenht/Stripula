@@ -71,14 +71,14 @@ export function ThemeToggle({ className }) {
       onClick={handleToggle}
       className={cn(
         // Base button styling
-        "relative flex items-center justify-center w-8 h-8 rounded-xl cursor-pointer",
+        "relative flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer",
         "transition-colors duration-200",
-        // Light mode: OrangeAI styling
-        "bg-transparent hover:bg-[rgb(248,247,247)]",
+        // Light mode: Vintage Banking - warm parchment hover
+        "bg-transparent hover:bg-[hsl(38,40%,92%)]",
         // Dark mode: OPUX glass styling
         "dark:hover:bg-white/10",
         // Focus ring
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/20 focus-visible:ring-offset-2",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(25,70%,50%)]/20 focus-visible:ring-offset-2",
         className
       )}
       whileHover={{ scale: 1.05 }}
@@ -118,7 +118,7 @@ export function ThemeToggle({ className }) {
             : { duration: 0.3, ease: [0.16, 1, 0.3, 1] }
         }
       >
-        <Moon className="w-4 h-4 text-slate-700 dark:text-slate-400" />
+        <Moon className="w-4 h-4 text-[hsl(25,50%,35%)] dark:text-slate-400" />
       </motion.div>
     </motion.button>
   );

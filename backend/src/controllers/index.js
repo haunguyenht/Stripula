@@ -12,3 +12,5 @@ export { HealthController } from './HealthController.js';
 export { SpeedConfigController } from './SpeedConfigController.js';
 export { GatewayController } from './GatewayController.js';
 export { SKBasedController } from './SKBasedController.js';
+export { DashboardController } from './DashboardController.js';
+export { TelegramWebhookController } from './TelegramWebhookController.js';

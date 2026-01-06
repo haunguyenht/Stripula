@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
-import { Trash2, Copy, Check, Globe, Building2, Zap, AlertTriangle, ShieldX } from 'lucide-react';
+import { Copy, Check, Globe, Building2, Zap } from 'lucide-react';
 import { AnimatePresence } from 'motion/react';
 import { useToast } from '@/hooks/useToast';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
@@ -12,27 +12,17 @@ import { useValidation } from '@/contexts/ValidationContext';
 import { useDebouncedValue } from '@/hooks/useDebouncedFilter';
 import { processCardInput, getProcessingToastMessage, getTierLimitExceededMessage, validateForSubmission, getGeneratedCardsErrorMessage } from '@/lib/utils/card-parser';
 import { handleCreditError, showCreditErrorToast, handleBackendError, handleTimeoutError } from '@/utils/creditErrors';
-import { GatewayStatusIndicator, GatewayUnavailableMessage } from '@/components/ui/GatewayStatusIndicator';
-import { GatewayInfoSummary } from '@/components/ui/GatewayInfoSummary';
-import { ImportButton } from '@/components/ui/ImportButton';
+import { GatewayUnavailableMessage } from '@/components/ui/GatewayStatusIndicator';
 import { ExportButton } from '@/components/ui/ExportButton';
+import { CardInputSection } from '@/components/ui/CardInputSection';
 
 import { TwoPanelLayout } from '../../layout/TwoPanelLayout';
 import { ResultsPanel, ResultItem, ProgressBar } from '../ResultsPanel';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { SpeedBadge } from '@/components/ui/TierSpeedControl';
 import { useSpeedConfig } from '@/hooks/useSpeedConfig';
 import { GatewayMessageFormatter } from '@/utils/gatewayMessage';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Celebration, useCelebration } from '@/components/ui/Celebration';
 import { 
   ResultCard, 
@@ -50,9 +40,10 @@ import {
   DurationDisplay, 
   CopyButton,
   CardNumber,
+  GatewayBadge,
 } from '@/components/ui/result-card-parts';
 import { BrandIcon } from '@/components/ui/brand-icons';
-import { CreditInfo, CreditSummary, EffectiveRateBadge, BatchConfirmDialog, BATCH_CONFIRM_THRESHOLD } from '@/components/credits';
+import { CreditSummary, BatchConfirmDialog, BATCH_CONFIRM_THRESHOLD, BatchConfigCard } from '@/components/credits';
 import { cn } from '@/lib/utils';
 import { toTitleCase } from '@/lib/utils/card-helpers';
 
@@ -64,8 +55,8 @@ export function StripeChargePanel({
   const [concurrency, setConcurrency] = useLocalStorage('stripeChargeConcurrency', 1);
   const [sites, setSites] = useState([]);
   const [selectedSite, setSelectedSite] = useLocalStorage('stripeChargeSelectedSite', 'charge-1');
-  const [cardResults, setCardResults] = useSessionStorage('session_chargeResults', [], { maxArrayLength: 200 });
-  const [cardStats, setCardStats] = useSessionStorage('session_chargeStats', { approved: 0, threeDS: 0, declined: 0, error: 0, total: 0 });
+  const [cardResults, setCardResults, setCardResultsImmediate] = useSessionStorage('session_chargeResults', [], { maxArrayLength: 200 });
+  const [cardStats, setCardStats, setCardStatsImmediate] = useSessionStorage('session_chargeStats', { approved: 0, threeDS: 0, declined: 0, error: 0, total: 0 });
   const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [currentItem, setCurrentItem] = useState(null);
@@ -169,6 +160,12 @@ export function StripeChargePanel({
   }, []);
 
   const handleSiteChange = async (siteId) => {
+    // Prevent selecting unavailable gateways
+    const gateway = getGateway(siteId);
+    if (gateway && !gateway.isAvailable) {
+      warning('This gateway is currently under maintenance');
+      return;
+    }
     setSelectedSite(siteId);
     try {
       await fetch('/api/charge/site', {
@@ -183,12 +180,17 @@ export function StripeChargePanel({
   };
 
   const clearResults = useCallback(() => {
-    setCardResults([]);
-    setCardStats({ approved: 0, threeDS: 0, declined: 0, error: 0, total: 0 });
+    // Use immediate setters to bypass debounce - ensures storage is cleared before new validation
+    setCardResultsImmediate([]);
+    setCardStatsImmediate({ approved: 0, threeDS: 0, declined: 0, error: 0, total: 0 });
     setPage(1);
     setBatchComplete(false);
     resetTracking();
-  }, [setCardResults, setCardStats, resetTracking]);
+  }, [setCardResultsImmediate, setCardStatsImmediate, resetTracking]);
+
+  const clearCards = useCallback(() => {
+    setCards('');
+  }, [setCards]);
 
   // Helper to check if batch confirmation is needed - Requirements: 13.1
   const needsBatchConfirmation = useCallback((count) => {
@@ -633,211 +635,55 @@ export function StripeChargePanel({
       </div>
 
       {/* Card Input */}
-      <div className={cn(
-        "rounded-xl overflow-hidden transition-all duration-200",
-        "bg-white border border-[rgb(230,225,223)] shadow-sm",
-        "focus-within:border-[rgb(255,64,23)]/40 focus-within:ring-2 focus-within:ring-[rgb(255,64,23)]/10",
-        "dark:bg-white/5 dark:border-white/10 dark:shadow-none",
-        "dark:focus-within:border-white/20 dark:focus-within:ring-primary/20"
-      )}>
-        <Textarea
-          id="charge-cards-input"
-          name="charge-cards-input"
-          className={cn(
-            "font-mono text-xs min-h-[80px] resize-none border-0 rounded-none focus-visible:ring-0 focus-visible:ring-offset-0",
-            "bg-transparent",
-            isLoading && "opacity-50"
-          )}
-          placeholder="Enter cards (one per line)&#10;4111111111111111|01|25|123"
-          value={cards}
-          onChange={(e) => setCards(e.target.value)}
-          onBlur={handleCardsBlur}
-          disabled={isLoading}
-        />
-
-        <div className="flex items-center justify-between px-3 py-2 border-t border-[rgb(237,234,233)] dark:border-white/10 bg-[rgb(250,249,249)] dark:bg-white/5">
-          <div className="flex items-center gap-2">
-            {/* Card count with tier limit - Requirements: 1.4, 5.1, 5.2, 5.3, 5.4 */}
-            <Badge 
-              variant={limitStatus.isError ? "destructive" : limitStatus.isWarning ? "warning" : "secondary"} 
-              className={cn(
-                "text-[10px] h-6",
-                limitStatus.isError && "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20",
-                limitStatus.isWarning && "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
-              )}
-            >
-              {cardCount}/{limitStatus.limit} cards
-              {limitStatus.isWarning && <AlertTriangle className="w-3 h-3 ml-1" />}
-            </Badge>
-          </div>
-
-          <div className="flex items-center gap-1.5">
-            {/* Import Button - Requirements: 1.1, 1.4 */}
-            <ImportButton
-              onImport={handleImport}
-              disabled={isLoading}
-              variant="ghost"
-              size="icon"
-              showLabel={false}
-              className="h-8 w-8"
-            />
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={clearResults}
-              disabled={isLoading}
-              title="Clear all"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </Button>
-            {isLoading ? (
-              <Button variant="destructive" size="sm" className="h-8" onClick={handleStop}>
-                Stop
-              </Button>
-            ) : (
-              <Button 
-                size="sm" 
-                className="h-8" 
-                onClick={handleCheckCards}
-                disabled={limitStatus.isError || cardCount === 0 || cardValidation.isGenerated || !selectedGatewayStatus?.isAvailable}
-                title={
-                  !selectedGatewayStatus?.isAvailable
-                    ? 'Gateway is unavailable'
-                    : cardValidation.isGenerated 
-                      ? 'Generated cards not allowed' 
-                      : limitStatus.isError 
-                        ? `Exceeds ${userTier} tier limit of ${limitStatus.limit} cards` 
-                        : undefined
-                }
-              >
-                Start Charge
-              </Button>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Generated cards warning */}
-      {cardValidation.isGenerated && (
-        <div className="flex items-center gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-xs">
-          <ShieldX className="w-4 h-4 flex-shrink-0" />
-          <span>
-            Generated cards detected ({cardValidation.generatedDetection?.confidence}% confidence). 
-            BIN-generated cards are not allowed.
-          </span>
-        </div>
-      )}
-
-      {/* Tier limit exceeded warning - Requirements: 1.2, 1.3 */}
-      {limitStatus.isError && !cardValidation.isGenerated && (
-        <div className="flex items-center gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-xs">
-          <AlertTriangle className="w-4 h-4 flex-shrink-0" />
-          <span>
-            You have {cardCount} cards but your {userTier} tier limit is {limitStatus.limit}. 
-            Please remove {limitStatus.excess} card{limitStatus.excess > 1 ? 's' : ''} to continue.
-          </span>
-        </div>
-      )}
-
-      <AnimatePresence mode="wait">
-        {isLoading && progress.total > 0 && (
+      <CardInputSection
+        cards={cards}
+        onCardsChange={setCards}
+        onCardsBlur={handleCardsBlur}
+        onImport={handleImport}
+        onClear={clearCards}
+        onStart={handleCheckCards}
+        onStop={handleStop}
+        isLoading={isLoading}
+        cardCount={cardCount}
+        limitStatus={limitStatus}
+        cardValidation={cardValidation}
+        userTier={userTier}
+        isGatewayAvailable={selectedGatewayStatus?.isAvailable}
+        startButtonLabel="Start Charge"
+        progressBar={isLoading && progress.total > 0 && (
           <ProgressBar key="progress" current={progress.current} total={progress.total} />
         )}
-      </AnimatePresence>
+      />
 
-      {/* Gateway Selection */}
-      {sites.length > 0 && (
-        <div className="space-y-3 pt-4 border-t border-[rgb(230,225,223)] dark:border-white/10">
-          <Label className="text-xs font-medium flex items-center gap-1.5">
-            <Globe className="w-3.5 h-3.5" />
-            Charge Gateway
-          </Label>
-
-          {/* Show warning if all gateways unavailable - Requirement: 5.5 */}
-          {allChargeGatewaysUnavailable && (
-            <GatewayUnavailableMessage allUnavailable={true} />
-          )}
-
-          {/* Show warning for selected unavailable gateway - Requirement: 5.4 */}
-          {selectedGatewayStatus && !selectedGatewayStatus.isAvailable && !allChargeGatewaysUnavailable && (
-            <GatewayUnavailableMessage gateway={selectedGatewayStatus} />
-          )}
-
-          <div className="flex items-center gap-2">
-            <Select value={selectedSite} onValueChange={handleSiteChange} disabled={isLoading}>
-              <SelectTrigger className="h-9 flex-1">
-                <SelectValue placeholder="Select gateway" />
-              </SelectTrigger>
-              <SelectContent>
-                {sites.map(site => {
-                  const gatewayStatus = getGateway(site.id);
-                  const isAvailable = gatewayStatus?.isAvailable ?? true;
-                  const sitePricing = getPricing(site.id);
-
-                  return (
-                    <SelectItem
-                      key={site.id}
-                      value={site.id}
-                      className={cn(!isAvailable && "opacity-60")}
-                    >
-                      <div className="flex items-center gap-2">
-                        {/* Status indicator - Requirement: 5.1, 5.3 */}
-                        {gatewayStatus && (
-                          <GatewayStatusIndicator
-                            state={gatewayStatus.state}
-                            healthStatus={gatewayStatus.healthStatus}
-                            reason={gatewayStatus.maintenanceReason}
-                            size="sm"
-                          />
-                        )}
-                        <span>{site.label}</span>
-                        {/* Show maintenance indicator - Requirement: 5.2 */}
-                        {gatewayStatus?.state === 'maintenance' && (
-                          <span className="text-amber-500 text-xs">(maintenance)</span>
-                        )}
-                        {gatewayStatus?.healthStatus === 'offline' && gatewayStatus?.state !== 'maintenance' && (
-                          <span className="text-red-500 text-xs">(offline)</span>
-                        )}
-                      </div>
-                    </SelectItem>
-                  );
-                })}
-              </SelectContent>
-            </Select>
-          </div>
-          
-          {/* Gateway speed info summary */}
-          <GatewayInfoSummary 
-            speedConfig={chargeSpeedConfig} 
-            className="mt-2"
-          />
-        </div>
+      {/* Gateway unavailable warnings */}
+      {allChargeGatewaysUnavailable && (
+        <GatewayUnavailableMessage allUnavailable={true} />
+      )}
+      {selectedGatewayStatus && !selectedGatewayStatus.isAvailable && !allChargeGatewaysUnavailable && (
+        <GatewayUnavailableMessage gateway={selectedGatewayStatus} />
       )}
 
-      {/* Credit Info - Requirements: 4.3, 4.4, 4.6, 11.1, 11.2 */}
-      {isAuthenticated && (
-        <div className="pt-4 border-t border-[rgb(230,225,223)] dark:border-white/10">
-          {batchComplete && liveCardsCount > 0 ? (
-            <CreditSummary
-              liveCardsCount={liveCardsCount}
-              creditsConsumed={creditsConsumed}
-              newBalance={balance}
-            />
-          ) : (
-            <CreditInfo
-              cardCount={cardCount}
-              balance={balance}
-              effectiveRate={effectiveRate}
-              creditsConsumed={creditsConsumed}
-              liveCardsCount={liveCardsCount}
-              isLoading={isLoading}
-              showConsumed={false}
-              pricing={pricing}
-              gatewayType="charge"
-            />
-          )}
-        </div>
+      {/* Unified Gateway + Cost Card */}
+      {batchComplete && liveCardsCount > 0 ? (
+        <CreditSummary
+          liveCardsCount={liveCardsCount}
+          creditsConsumed={creditsConsumed}
+          newBalance={balance}
+        />
+      ) : (
+        <BatchConfigCard
+          sites={sites}
+          selectedSite={selectedSite}
+          onSiteChange={handleSiteChange}
+          getGateway={getGateway}
+          isLoading={isLoading}
+          speedConfig={chargeSpeedConfig}
+          cardCount={cardCount}
+          balance={balance}
+          effectiveRate={effectiveRate}
+          isAuthenticated={isAuthenticated}
+          pricing={pricing}
+        />
       )}
 
     </div>
@@ -990,6 +836,10 @@ function formatChargeMessage(result) {
     if (rawMessage.includes('RETRY')) {
       return 'Max retries reached';
     }
+    // Handle redundant "Error" message
+    if (rawMessage.toLowerCase() === 'error' || rawMessage.trim() === '') {
+      return 'Validation failed';
+    }
     return rawMessage || 'Validation error';
   }
 
@@ -1110,11 +960,12 @@ const ChargeResultItem = React.memo(function ChargeResultItem({ result, index, c
           </ResultCardDataZone>
         )}
 
-        {/* Zone 3: Response - Message */}
+        {/* Zone 3: Response - Message + Gateway */}
         <ResultCardResponseZone>
           <ResultCardMessage status={getEffectiveStatus()} className="flex-1">
             {friendlyMessage}
           </ResultCardMessage>
+          <GatewayBadge gateway={gateway} />
         </ResultCardResponseZone>
 
         {/* Zone 4: Security - Risk, CVC, AVS checks (only for CHARGED) */}

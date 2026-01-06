@@ -42,6 +42,13 @@ function PanelLoadingFallback() {
 export default function StripeOwn({ initialTab }) {
   const [activeTab, setActiveTab] = useLocalStorage('stripeOwnTab', initialTab || 'keys');
 
+  // Sync activeTab when initialTab prop changes (e.g., navigating from SKBased to SK Key Check)
+  useEffect(() => {
+    if (initialTab && initialTab !== activeTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
+
   // ══════════════════════════════════════════════════════════════════
   // KEY VALIDATION STATE
   // Results use sessionStorage - survives refresh/crash, clears on browser close
@@ -51,7 +58,7 @@ export default function StripeOwn({ initialTab }) {
     results: keyResults, 
     setResults: setKeyResults 
   } = useBoundedResults('session_keyResults', []);
-  const [keyStats, setKeyStats] = useSessionStorage('session_keyStats', {
+  const [keyStats, setKeyStats, setKeyStatsImmediate] = useSessionStorage('session_keyStats', {
     live: 0, livePlus: 0, liveZero: 0, liveNeg: 0, dead: 0, error: 0, total: 0
   });
   const [selectedKeyIndex, setSelectedKeyIndex] = useLocalStorage('stripeOwnSelectedKey', -1);
@@ -68,7 +75,7 @@ export default function StripeOwn({ initialTab }) {
   } = useBoundedResults('session_cardResults', []);
   
   const cardResults = rawCardResults;
-  const [cardStats, setCardStats] = useSessionStorage('session_cardStats', {
+  const [cardStats, setCardStats, setCardStatsImmediate] = useSessionStorage('session_cardStats', {
     approved: 0, live: 0, die: 0, error: 0, total: 0
   });
 
@@ -91,6 +98,8 @@ export default function StripeOwn({ initialTab }) {
     proxy: '',
     concurrency: 3,
     validationMethod: 'direct_api',
+    chargeAmount: '1',
+    currency: 'usd',
   });
 
   // ══════════════════════════════════════════════════════════════════
@@ -219,6 +228,7 @@ export default function StripeOwn({ initialTab }) {
             setKeyResults={setKeyResults}
             keyStats={keyStats}
             setKeyStats={setKeyStats}
+            setKeyStatsImmediate={setKeyStatsImmediate}
             selectedKeyIndex={selectedKeyIndex}
             onKeySelect={handleKeySelect}
             isLoading={isLoading}
@@ -238,6 +248,7 @@ export default function StripeOwn({ initialTab }) {
             setCardResults={setCardResults}
             cardStats={cardStats}
             setCardStats={setCardStats}
+            setCardStatsImmediate={setCardStatsImmediate}
             settings={settings}
             onSettingsChange={setSettings}
             keyResults={keyResults}

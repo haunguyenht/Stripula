@@ -128,6 +128,9 @@ export class GatewayConfigService {
 
         // Gateway manager for SSE broadcasts (Requirement 14.1)
         this.gatewayManager = options.gatewayManager || null;
+        
+        // CreditManagerService reference for cache invalidation
+        this.creditManagerService = options.creditManagerService || null;
     }
 
     /**
@@ -373,12 +376,18 @@ export class GatewayConfigService {
     /**
      * Invalidate the gateway config cache
      * Called when configs are updated to ensure new rates apply immediately
+     * Also invalidates CreditManagerService cache if available
      * 
      * Requirement: 5.3
      */
-    invalidateCache() {
+    invalidateCache(gatewayId = null) {
         this._cache = null;
         this._cacheTime = null;
+        
+        // Also invalidate CreditManagerService cache for immediate effect
+        if (this.creditManagerService && typeof this.creditManagerService.invalidateGatewayCache === 'function') {
+            this.creditManagerService.invalidateGatewayCache(gatewayId);
+        }
     }
 
     // ============================================================

@@ -1,6 +1,9 @@
 /**
  * HealthMetrics domain class
  * Tracks health metrics for a gateway including success rate, latency, and failure counts
+ * 
+ * NOTE: Health status is now MANUALLY controlled - no automatic status changes.
+ * This class only tracks metrics and provides alert/recovery threshold detection.
  */
 export class HealthMetrics {
     static HEALTH = {
@@ -16,11 +19,12 @@ export class HealthMetrics {
         NETWORK_ERROR: 'network_error'
     };
 
-    // Thresholds for health status calculation
-    static THRESHOLDS = {
-        DEGRADED_SUCCESS_RATE: 50,      // Below 50% success rate = degraded
-        OFFLINE_CONSECUTIVE_FAILURES: 5, // 5+ consecutive failures = offline
-        ROLLING_WINDOW_SIZE: 10          // Track last 10 requests
+    // Alert thresholds for notifications (NOT automatic status changes)
+    static ALERT_THRESHOLDS = {
+        CONSECUTIVE_FAILURES: 15,      // Alert at 15+ consecutive failures
+        SUCCESS_RATE_PERCENT: 30,      // Alert at <30% success rate
+        ROLLING_WINDOW_SIZE: 50,       // Track last 50 requests for rate calculation
+        RECOVERY_CONSECUTIVE: 5        // Recovery after 5 consecutive successes
     };
 
     constructor(gatewayId) {
@@ -30,9 +34,12 @@ export class HealthMetrics {
         this.totalSuccesses = 0;
         this.totalFailures = 0;
         this.consecutiveFailures = 0;
+        this.consecutiveSuccesses = 0;  // NEW: Track consecutive successes for recovery detection
         this.lastSuccessAt = null;
         this.lastFailureAt = null;
+        this.lastError = null;  // NEW: Track last error message/type
         this.avgLatencyMs = 0;
+        this.storedHealthStatus = HealthMetrics.HEALTH.ONLINE;  // NEW: Stored status (manual control only)
         
         // Failure breakdown by category
         this.failuresByCategory = {
@@ -51,6 +58,7 @@ export class HealthMetrics {
         this.totalRequests++;
         this.totalSuccesses++;
         this.consecutiveFailures = 0;
+        this.consecutiveSuccesses++;  // Increment consecutive successes
         this.lastSuccessAt = new Date();
         this._updateRecentRequests(true, latencyMs);
         this._updateAvgLatency();
@@ -58,19 +66,63 @@ export class HealthMetrics {
 
     /**
      * Record a failed request
-     * @param {string} _errorType - Optional error type for tracking (used for auto-classification if category not provided)
+     * @param {string} errorType - Error type/message for tracking
      * @param {string} category - Failure category: proxy_error, gateway_error, timeout, network_error
      */
-    recordFailure(_errorType = null, category = null) {
+    recordFailure(errorType = null, category = null) {
         this.totalRequests++;
         this.totalFailures++;
         this.consecutiveFailures++;
+        this.consecutiveSuccesses = 0;  // Reset consecutive successes
         this.lastFailureAt = new Date();
+        this.lastError = errorType;  // Track last error
         this._updateRecentRequests(false, 0);
         
         // Record failure by category
         const validCategory = this._validateCategory(category);
         this.failuresByCategory[validCategory]++;
+    }
+
+    /**
+     * Check if alert thresholds are exceeded (for notification purposes)
+     * Does NOT change health status automatically
+     * @returns {Object} { shouldAlert: boolean, reason: string, metrics: Object }
+     */
+    shouldTriggerAlert() {
+        const successRate = this.getSuccessRate();
+        const thresholds = HealthMetrics.ALERT_THRESHOLDS;
+        
+        let shouldAlert = false;
+        let reason = '';
+        
+        // Check consecutive failures threshold
+        if (this.consecutiveFailures >= thresholds.CONSECUTIVE_FAILURES) {
+            shouldAlert = true;
+            reason = `${this.consecutiveFailures} consecutive failures (threshold: ${thresholds.CONSECUTIVE_FAILURES})`;
+        }
+        // Check success rate threshold
+        else if (successRate < thresholds.SUCCESS_RATE_PERCENT && this.recentRequests.length >= 10) {
+            shouldAlert = true;
+            reason = `Success rate ${successRate}% below threshold (${thresholds.SUCCESS_RATE_PERCENT}%)`;
+        }
+        
+        return {
+            shouldAlert,
+            reason,
+            metrics: {
+                consecutiveFailures: this.consecutiveFailures,
+                successRate,
+                lastError: this.lastError
+            }
+        };
+    }
+
+    /**
+     * Check if recovery threshold is met (5 consecutive successes)
+     * @returns {boolean} True if gateway has recovered
+     */
+    shouldTriggerRecovery() {
+        return this.consecutiveSuccesses >= HealthMetrics.ALERT_THRESHOLDS.RECOVERY_CONSECUTIVE;
     }
 
     /**
@@ -124,24 +176,23 @@ export class HealthMetrics {
     }
 
     /**
-     * Calculate health status based on metrics
-     * - 5+ consecutive failures = offline
-     * - <50% success rate in last 10 requests = degraded
-     * - Otherwise = online
+     * Get health status - returns STORED status only (no auto-calculation)
+     * Health status is now controlled manually via setHealthStatus()
      * @returns {string} Health status
      */
     getHealthStatus() {
-        // Check consecutive failures first (highest priority)
-        if (this.consecutiveFailures >= HealthMetrics.THRESHOLDS.OFFLINE_CONSECUTIVE_FAILURES) {
-            return HealthMetrics.HEALTH.OFFLINE;
+        return this.storedHealthStatus;
+    }
+
+    /**
+     * Set health status manually
+     * @param {string} status - Health status: online, degraded, offline
+     */
+    setHealthStatus(status) {
+        const validStatuses = Object.values(HealthMetrics.HEALTH);
+        if (validStatuses.includes(status)) {
+            this.storedHealthStatus = status;
         }
-        
-        // Check success rate
-        if (this.getSuccessRate() < HealthMetrics.THRESHOLDS.DEGRADED_SUCCESS_RATE) {
-            return HealthMetrics.HEALTH.DEGRADED;
-        }
-        
-        return HealthMetrics.HEALTH.ONLINE;
     }
 
     /**
@@ -153,7 +204,7 @@ export class HealthMetrics {
     }
 
     /**
-     * Reset all metrics
+     * Reset all metrics (does NOT change health status)
      */
     reset() {
         this.recentRequests = [];
@@ -161,10 +212,13 @@ export class HealthMetrics {
         this.totalSuccesses = 0;
         this.totalFailures = 0;
         this.consecutiveFailures = 0;
+        this.consecutiveSuccesses = 0;
         this.lastSuccessAt = null;
         this.lastFailureAt = null;
+        this.lastError = null;
         this.avgLatencyMs = 0;
         this.resetFailureCategories();
+        // NOTE: storedHealthStatus is NOT reset - preserves manual status
     }
 
     /**
@@ -177,8 +231,10 @@ export class HealthMetrics {
             successRate: this.getSuccessRate(),
             avgLatencyMs: this.avgLatencyMs,
             consecutiveFailures: this.consecutiveFailures,
+            consecutiveSuccesses: this.consecutiveSuccesses,
             lastSuccessAt: this.lastSuccessAt,
             lastFailureAt: this.lastFailureAt,
+            lastError: this.lastError,
             totalRequests: this.totalRequests,
             totalSuccesses: this.totalSuccesses,
             totalFailures: this.totalFailures,
@@ -201,8 +257,8 @@ export class HealthMetrics {
             timestamp: Date.now() 
         });
         
-        // Keep only the last N requests
-        if (this.recentRequests.length > HealthMetrics.THRESHOLDS.ROLLING_WINDOW_SIZE) {
+        // Keep only the last N requests (using new ALERT_THRESHOLDS)
+        if (this.recentRequests.length > HealthMetrics.ALERT_THRESHOLDS.ROLLING_WINDOW_SIZE) {
             this.recentRequests.shift();
         }
     }
@@ -232,9 +288,12 @@ export class HealthMetrics {
         metrics.totalSuccesses = data.totalSuccesses || 0;
         metrics.totalFailures = data.totalFailures || 0;
         metrics.consecutiveFailures = data.consecutiveFailures || 0;
+        metrics.consecutiveSuccesses = data.consecutiveSuccesses || 0;
         metrics.lastSuccessAt = data.lastSuccessAt ? new Date(data.lastSuccessAt) : null;
         metrics.lastFailureAt = data.lastFailureAt ? new Date(data.lastFailureAt) : null;
+        metrics.lastError = data.lastError || null;
         metrics.avgLatencyMs = data.avgLatencyMs || 0;
+        metrics.storedHealthStatus = data.healthStatus || HealthMetrics.HEALTH.ONLINE;
         
         // Parse failure categories
         if (data.failuresByCategory) {

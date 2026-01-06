@@ -12,7 +12,8 @@ import {
   Hash,
   Users,
   AlertCircle,
-  ClipboardList
+  ClipboardList,
+  Clock
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
@@ -66,10 +67,20 @@ const TIER_OPTIONS = [
 
 const CREDIT_PRESETS = [50, 100, 250, 500, 1000];
 
+const DURATION_PRESETS = [
+  { value: null, label: 'Lifetime', icon: '∞' },
+  { value: 7, label: '7 days', icon: '7d' },
+  { value: 30, label: '30 days', icon: '30d' },
+  { value: 90, label: '90 days', icon: '90d' },
+  { value: 180, label: '180 days', icon: '180d' },
+  { value: 365, label: '1 year', icon: '1y' },
+];
+
 export function KeyGenerator({ onKeysGenerated }) {
   const [type, setType] = useState('credits');
   const [creditAmount, setCreditAmount] = useState('100');
   const [tierValue, setTierValue] = useState('bronze');
+  const [durationDays, setDurationDays] = useState(null);
   const [quantity, setQuantity] = useState('1');
   const [maxUses, setMaxUses] = useState('1');
   const [expiresAt, setExpiresAt] = useState('');
@@ -94,6 +105,7 @@ export function KeyGenerator({ onKeysGenerated }) {
           quantity: parseInt(quantity, 10),
           maxUses: parseInt(maxUses, 10),
           expiresAt: expiresAt || null,
+          durationDays: type === 'tier' ? durationDays : null,
           note: note.trim() || null
         })
       });
@@ -112,7 +124,7 @@ export function KeyGenerator({ onKeysGenerated }) {
     } finally {
       setIsLoading(false);
     }
-  }, [type, creditAmount, tierValue, quantity, maxUses, expiresAt, note, success, error, onKeysGenerated]);
+  }, [type, creditAmount, tierValue, durationDays, quantity, maxUses, expiresAt, note, success, error, onKeysGenerated]);
 
   const handleCopyKey = useCallback(async (code, index) => {
     try {
@@ -270,6 +282,56 @@ export function KeyGenerator({ onKeysGenerated }) {
               </Select>
             )}
           </div>
+
+          {/* Duration (Tier only) */}
+          {type === 'tier' && (
+            <div className="space-y-3">
+              <Label className="text-xs font-medium flex items-center gap-1.5">
+                <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                Subscription Duration
+              </Label>
+              <div className="flex flex-wrap gap-2">
+                {DURATION_PRESETS.map(preset => (
+                  <button
+                    key={preset.value ?? 'permanent'}
+                    onClick={() => setDurationDays(preset.value)}
+                    className={cn(
+                      "px-3 py-1.5 rounded-lg text-sm font-medium transition-colors",
+                      durationDays === preset.value
+                        ? "bg-purple-500 text-white"
+                        : "bg-[rgb(250,247,245)] dark:bg-white/5 hover:bg-purple-500/10 text-muted-foreground"
+                    )}
+                  >
+                    {preset.icon}
+                  </button>
+                ))}
+              </div>
+              <Input
+                type="number"
+                value={durationDays === null ? '' : durationDays}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === '' || val === '0') {
+                    setDurationDays(null);
+                  } else {
+                    const num = parseInt(val, 10);
+                    if (!isNaN(num) && num >= 1 && num <= 365) {
+                      setDurationDays(num);
+                    }
+                  }
+                }}
+                placeholder="Custom days (1-365) or empty for lifetime"
+                min="1"
+                max="365"
+                className="rounded-xl"
+              />
+              <p className="text-xs text-muted-foreground">
+                {durationDays === null 
+                  ? 'Tier upgrade is lifetime (never expires)'
+                  : `Tier will expire after ${durationDays} day${durationDays !== 1 ? 's' : ''}`}
+              </p>
+            </div>
+          )}
 
           {/* Quantity & Max Uses */}
           <div className="grid grid-cols-2 gap-4">
@@ -434,9 +496,16 @@ export function KeyGenerator({ onKeysGenerated }) {
                         <code className="text-sm font-mono tracking-wider text-[rgb(37,27,24)] dark:text-white block truncate">
                           {key.code}
                         </code>
-                        <Badge variant="secondary" className="text-[10px] h-4 mt-1">
-                          {type === 'credits' ? `${creditAmount} credits` : tierValue}
-                        </Badge>
+                        <div className="flex items-center gap-1 mt-1">
+                          <Badge variant="secondary" className="text-[10px] h-4">
+                            {type === 'credits' ? `${creditAmount} credits` : tierValue}
+                          </Badge>
+                          {type === 'tier' && durationDays && (
+                            <Badge variant="outline" className="text-[10px] h-4">
+                              {durationDays}d
+                            </Badge>
+                          )}
+                        </div>
                       </div>
                     </div>
                     <Button

@@ -4,20 +4,21 @@ import {
   Users, 
   Key, 
   BarChart3, 
-  Loader2,
   ShieldAlert,
   RefreshCw,
   Gauge,
   Server,
   CreditCard,
   Shield,
-  Settings2
+  Settings2,
+  Wrench
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { PageLoader } from '@/components/ui/page-loader';
 import { useAuth } from '@/contexts/AuthContext';
 import { KeyGenerator } from '@/components/admin/KeyGenerator';
 import { KeysList } from '@/components/admin/KeysList';
@@ -26,6 +27,7 @@ import { AnalyticsDashboard } from '@/components/admin/AnalyticsDashboard';
 import { AdminSpeedConfig } from '@/components/admin/AdminSpeedConfig';
 import { AdminGatewayManagement } from '@/components/admin/AdminGatewayManagement';
 import { TierLimitsConfig } from '@/components/admin/TierLimitsConfig';
+import { MaintenanceControls } from '@/components/admin/MaintenanceControls';
 import { 
   transition, 
   softStaggerContainer, 
@@ -35,7 +37,7 @@ import {
 /**
  * AdminPage Component
  * Admin dashboard with tabs for Users, Keys, and Analytics
- * Redesigned with OrangeAI (light) / OPUX (dark) design system
+ * Redesigned with Vintage Banking (light) / Liquid Aurora (dark) design system
  * 
  * Requirements: 3.1
  */
@@ -49,6 +51,7 @@ const ADMIN_TABS = [
   { id: 'gateways', label: 'Gateways', icon: Server, description: 'Gateway status & config' },
   { id: 'speed', label: 'Speed', icon: Gauge, description: 'Speed limits per tier' },
   { id: 'limits', label: 'Limits', icon: CreditCard, description: 'Card input limits' },
+  { id: 'system', label: 'System', icon: Wrench, description: 'Maintenance & system settings' },
   { id: 'analytics', label: 'Analytics', icon: BarChart3, description: 'Usage statistics' },
 ];
 
@@ -91,20 +94,7 @@ export function AdminPage() {
 
   // Loading state
   if (authLoading || isCheckingAdmin) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="text-center"
-        >
-          <div className="h-16 w-16 rounded-2xl bg-primary/10 dark:bg-primary/20 flex items-center justify-center mx-auto mb-4">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
-          <p className="text-sm text-muted-foreground">Checking permissions...</p>
-        </motion.div>
-      </div>
-    );
+    return <PageLoader variant="admin" />;
   }
 
   // Not authenticated
@@ -116,17 +106,18 @@ export function AdminPage() {
           animate={{ opacity: 1, y: 0 }}
           className={cn(
             "max-w-md w-full rounded-2xl overflow-hidden",
-            "bg-white dark:bg-[rgba(30,41,59,0.5)]",
-            "border border-[rgb(237,234,233)] dark:border-white/10",
+            // Light: Vintage Banking cream parchment
+            "bg-[hsl(40,45%,97%)] dark:bg-[rgba(30,41,59,0.5)]",
+            "border border-[hsl(30,25%,82%)] dark:border-white/10",
             "dark:backdrop-blur-sm shadow-lg dark:shadow-none"
           )}
         >
           <div className="p-8 text-center">
-            <div className="w-20 h-20 rounded-2xl bg-[rgb(250,247,245)] dark:bg-white/5 flex items-center justify-center mx-auto mb-6">
-              <ShieldAlert className="h-10 w-10 text-muted-foreground/50" />
+            <div className="w-20 h-20 rounded-2xl bg-[hsl(38,35%,93%)] dark:bg-white/5 flex items-center justify-center mx-auto mb-6">
+              <ShieldAlert className="h-10 w-10 text-[hsl(25,20%,50%)] dark:text-muted-foreground/50" />
             </div>
-            <h2 className="text-2xl font-bold text-[rgb(37,27,24)] dark:text-white mb-2">Access Denied</h2>
-            <p className="text-muted-foreground">
+            <h2 className="text-2xl font-bold font-serif text-[hsl(25,35%,18%)] dark:text-white mb-2">Access Denied</h2>
+            <p className="text-[hsl(25,20%,45%)] dark:text-muted-foreground">
               Please log in to access the admin dashboard.
             </p>
           </div>
@@ -144,17 +135,18 @@ export function AdminPage() {
           animate={{ opacity: 1, y: 0 }}
           className={cn(
             "max-w-md w-full rounded-2xl overflow-hidden",
-            "bg-white dark:bg-[rgba(30,41,59,0.5)]",
-            "border border-red-200 dark:border-red-500/20",
+            // Light: Vintage Banking with burgundy accent
+            "bg-[hsl(40,45%,97%)] dark:bg-[rgba(30,41,59,0.5)]",
+            "border border-[hsl(355,30%,78%)] dark:border-red-500/20",
             "dark:backdrop-blur-sm shadow-lg dark:shadow-none"
           )}
         >
           <div className="p-8 text-center">
-            <div className="w-20 h-20 rounded-2xl bg-red-500/10 flex items-center justify-center mx-auto mb-6">
-              <ShieldAlert className="h-10 w-10 text-red-500" />
+            <div className="w-20 h-20 rounded-2xl bg-[hsl(355,35%,92%)] dark:bg-red-500/10 flex items-center justify-center mx-auto mb-6">
+              <ShieldAlert className="h-10 w-10 text-[hsl(355,45%,45%)] dark:text-red-500" />
             </div>
-            <h2 className="text-2xl font-bold text-[rgb(37,27,24)] dark:text-white mb-2">Admin Access Required</h2>
-            <p className="text-muted-foreground mb-6">
+            <h2 className="text-2xl font-bold font-serif text-[hsl(25,35%,18%)] dark:text-white mb-2">Admin Access Required</h2>
+            <p className="text-[hsl(25,20%,45%)] dark:text-muted-foreground mb-6">
               You don't have permission to access the admin dashboard.
             </p>
             <Button 
@@ -181,29 +173,56 @@ export function AdminPage() {
         initial="initial"
         animate="animate"
       >
-        {/* Header Card */}
+        {/* Header Card - Vintage ledger/registry styling */}
         <motion.div 
           variants={softStaggerItem} 
           transition={transition.opux}
           className={cn(
             "rounded-2xl overflow-hidden mb-6",
-            "bg-white dark:bg-[rgba(30,41,59,0.5)]",
-            "border border-[rgb(237,234,233)] dark:border-white/10",
-            "dark:backdrop-blur-sm shadow-sm dark:shadow-none"
+            // Light: Vintage Banking cream parchment with certificate double-line border
+            "bg-gradient-to-b from-[hsl(42,50%,98%)] via-[hsl(40,45%,97%)] to-[hsl(38,40%,95%)]",
+            "border border-[hsl(30,25%,82%)]",
+            "shadow-[0_4px_16px_hsl(25,30%,25%,0.06),0_0_0_1px_hsl(30,25%,85%),0_0_0_3px_hsl(42,45%,97%),0_0_0_4px_hsl(30,20%,80%)]",
+            // Dark mode (bg-none resets light gradient)
+            "dark:bg-none dark:bg-[rgba(30,41,59,0.5)] dark:border-white/10",
+            "dark:backdrop-blur-sm dark:shadow-none"
           )}
         >
-          {/* Gradient Header */}
-          <div className="relative px-6 py-6 bg-gradient-to-br from-[rgb(255,64,23)]/5 via-[rgb(255,64,23)]/3 to-transparent dark:from-primary/10 dark:via-primary/5 dark:to-transparent border-b border-[rgb(237,234,233)] dark:border-white/10">
-            <div className="flex items-center justify-between">
+          {/* Gradient Header with guilloche pattern */}
+          <div className="relative px-6 py-6 bg-gradient-to-br from-[hsl(25,50%,88%)]/50 via-[hsl(30,40%,92%)]/30 to-transparent dark:from-primary/10 dark:via-primary/5 dark:to-transparent border-b border-[hsl(30,25%,85%)] dark:border-white/10">
+            {/* Subtle guilloche pattern overlay for light mode */}
+            <div 
+              className="absolute inset-0 opacity-[0.015] dark:opacity-0 pointer-events-none"
+              style={{
+                backgroundImage: `repeating-linear-gradient(0deg, transparent, transparent 2px, currentColor 2px, currentColor 3px),
+                                 repeating-linear-gradient(90deg, transparent, transparent 2px, currentColor 2px, currentColor 3px)`,
+                backgroundSize: '10px 10px'
+              }}
+            />
+            
+            <div className="flex items-center justify-between relative">
               <div className="flex items-center gap-4">
-                <div className="h-14 w-14 rounded-xl bg-primary/10 dark:bg-primary/20 flex items-center justify-center">
-                  <Shield className="h-7 w-7 text-primary" />
+                <div className={cn(
+                  "h-14 w-14 rounded-xl flex items-center justify-center",
+                  // Light: copper coin effect (dark:bg-none resets light gradient)
+                  "bg-gradient-to-b from-[hsl(28,45%,90%)] to-[hsl(25,40%,85%)]",
+                  "shadow-[0_2px_6px_hsl(25,30%,35%,0.12),inset_0_1px_0_rgba(255,255,255,0.5),inset_0_-1px_0_rgba(101,67,33,0.1)]",
+                  "dark:bg-none dark:bg-primary/20 dark:shadow-none"
+                )}>
+                  <Shield className="h-7 w-7 text-[hsl(25,75%,45%)] dark:text-primary" />
                 </div>
                 <div>
-                  <h1 className="text-2xl md:text-3xl font-bold text-[rgb(37,27,24)] dark:text-white">
+                  <h1 className={cn(
+                    "text-2xl md:text-3xl font-bold font-serif text-[hsl(25,35%,18%)] dark:text-white",
+                    // Light: letterpress embossed heading
+                    "[text-shadow:0_1px_0_rgba(255,255,255,0.7),0_-1px_0_rgba(101,67,33,0.1)] dark:[text-shadow:none]"
+                  )}>
                     Admin Dashboard
                   </h1>
-                  <p className="text-sm text-muted-foreground mt-0.5">
+                  <p className={cn(
+                    "text-sm text-[hsl(25,20%,45%)] dark:text-muted-foreground mt-0.5",
+                    "[text-shadow:0_1px_0_rgba(255,255,255,0.5)] dark:[text-shadow:none]"
+                  )}>
                     Manage users, keys, gateways, and system settings
                   </p>
                 </div>
@@ -211,9 +230,9 @@ export function AdminPage() {
               <div className="flex items-center gap-3">
                 <Badge 
                   variant="outline" 
-                  className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                  className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-[hsl(145,35%,92%)] text-[hsl(145,45%,35%)] dark:bg-emerald-500/10 dark:text-emerald-400 border-[hsl(145,30%,75%)] dark:border-emerald-500/20"
                 >
-                  <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="h-2 w-2 rounded-full bg-[hsl(145,45%,40%)] dark:bg-emerald-500 animate-pulse" />
                   Admin
                 </Badge>
                 <Button 
@@ -229,13 +248,17 @@ export function AdminPage() {
             </div>
           </div>
 
-          {/* Tabs Navigation */}
+          {/* Tabs Navigation - Vintage ledger tabs */}
           <div className="p-4">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className={cn(
                 "inline-flex h-12 items-center justify-start rounded-xl p-1 gap-1",
-                "bg-[rgb(250,247,245)] dark:bg-white/5",
-                "border border-[rgb(237,234,233)] dark:border-white/10",
+                // Light: Vintage Banking aged paper with inset shadow
+                "bg-gradient-to-b from-[hsl(40,38%,94%)] to-[hsl(38,35%,91%)]",
+                "shadow-[inset_0_1px_3px_hsl(25,30%,35%,0.08),0_1px_0_rgba(255,255,255,0.6)]",
+                "border border-[hsl(30,25%,82%)]",
+                // Dark mode (bg-none resets light gradient)
+                "dark:bg-none dark:bg-white/5 dark:border-white/10 dark:shadow-none",
                 "w-full overflow-x-auto"
               )}>
                 {ADMIN_TABS.map((tab) => {
@@ -248,15 +271,20 @@ export function AdminPage() {
                       className={cn(
                         "flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium",
                         "transition-all duration-200",
-                        "data-[state=active]:bg-white dark:data-[state=active]:bg-white/10",
-                        "data-[state=active]:shadow-sm",
-                        "data-[state=active]:text-[rgb(255,64,23)] dark:data-[state=active]:text-primary",
+                        // Light: cream active state with copper text and embossed effect
+                        "data-[state=active]:bg-gradient-to-b data-[state=active]:from-[hsl(44,45%,99%)] data-[state=active]:to-[hsl(42,40%,96%)]",
+                        "data-[state=active]:shadow-[0_1px_3px_hsl(25,30%,35%,0.1),inset_0_1px_0_rgba(255,255,255,0.7)]",
+                        "data-[state=active]:text-[hsl(25,75%,45%)]",
+                        "data-[state=active]:[text-shadow:0_1px_0_rgba(255,255,255,0.6)]",
+                        // Dark mode (bg-none resets light gradient)
+                        "dark:data-[state=active]:bg-none dark:data-[state=active]:bg-white/10 dark:data-[state=active]:shadow-sm",
+                        "dark:data-[state=active]:text-primary dark:data-[state=active]:[text-shadow:none]",
                         "whitespace-nowrap"
                       )}
                     >
                       <Icon className={cn(
                         "h-4 w-4",
-                        isActive ? "text-[rgb(255,64,23)] dark:text-primary" : "text-muted-foreground"
+                        isActive ? "text-[hsl(25,75%,45%)] dark:text-primary" : "text-[hsl(25,20%,50%)] dark:text-muted-foreground"
                       )} />
                       <span className="hidden sm:inline">{tab.label}</span>
                     </TabsTrigger>
@@ -287,6 +315,10 @@ export function AdminPage() {
 
                 <TabsContent value="limits" className="m-0">
                   <TierLimitsConfig />
+                </TabsContent>
+
+                <TabsContent value="system" className="m-0">
+                  <MaintenanceControls />
                 </TabsContent>
 
                 <TabsContent value="analytics" className="m-0">

@@ -4,7 +4,7 @@
 Stripe card validation tool: React + Vite frontend (port 4000), Node.js + Express backend (port 5001).
 UI built with **shadcn/ui** + Tailwind CSS, animations via **motion** package.
 
-**Design System**: Dual-theme - OrangeAI (light mode) + OPUX glass (dark mode).
+**Design System**: Dual-theme - Vintage Banking (light mode) + Liquid Aurora glass (dark mode).
 
 ## Commands
 ```bash
@@ -50,7 +50,7 @@ cd frontend && npx shadcn@latest add [component-name]
 ### Frontend
 - **Layout**: `TwoPanelLayout` - config left, results right; Sheet drawer on mobile
 - **Styling**: Tailwind CSS with shadcn tokens, CVA for variants, `cn()` for class merging
-- **Theme**: CSS variables (shadcn), dual-theme support (OrangeAI light / OPUX dark)
+- **Theme**: CSS variables (shadcn), dual-theme support (Vintage Banking light / Liquid Aurora dark)
 - **Responsive**: `useBreakpoint()` hook, mobile breakpoint < 768px
 - **Background**: Layered system with tile, grainy texture, landscape (dark mode)
 
@@ -99,21 +99,27 @@ frontend/src/
 - **VirtualList** - Virtualized list for performance
 - **NavPill** - Glass navigation pill (OPUX style)
 - **ActionsPill** - Credits, theme toggle, profile section
-- **AppBackground** - Layered background (tile → grainy → landscape → vignette)
+- **AppBackground** - Layered background with animated aurora blobs + floating particles
 
 ## Design Tokens
 
-### Light Mode (OrangeAI)
-- Background: `#ffffff`
-- Primary: `rgb(255, 64, 23)` (vibrant orange)
-- Border: `rgb(237, 234, 233)`
-- Card shadow: `0 10px 30px rgba(0,0,0,0.1)`
+### Light Mode (Vintage Banking)
+- **Background**: Cream parchment `hsl(40,50%,97%)` → `hsl(35,40%,93%)`
+- **Primary**: Copper foil `hsl(25,65%,50%)`
+- **Text**: Sepia ink `hsl(25,40%,25%)` with embossed shadows
+- **Border**: Double-rule certificate `hsl(30,35%,75%)`
+- **Cards**: Certificate borders with inset shadows
+- **Icons**: Wax seal styling with copper coin shadows
+- **Texture**: Paper grain SVG noise at 3-4% opacity
 
-### Dark Mode (OPUX)
-- Background: `hsl(201 44% 14%)` with tile pattern
-- Primary: `hsl(3 26% 55%)` (terracotta)
-- Glass: Blur + noise texture overlay
-- Card shadow: `0 8px 32px #0000005e` with inner glow
+### Dark Mode (Liquid Aurora)
+- **Background**: `hsl(220 18% 7%)` (deep cosmic blue) with tile pattern
+- **Primary**: `hsl(250 90% 65%)` (electric indigo)
+- **Aurora Colors**: Indigo (#8b5cf6), Cyan (#22d3ee), Pink (#ec4899)
+- **Glass**: `backdrop-blur-[40-60px]` + `backdrop-saturate-[180-200%]`
+- **Specular**: `inset_0_1px_0_rgba(255,255,255,0.08)` (top edge highlight)
+- **Card shadow**: Aurora multi-glow `shadow-[0_16px_48px_rgba(0,0,0,0.5),0_0_60px_-20px_rgba(139,92,246,0.15)]`
+- **Accent bar**: Prismatic gradient `from-[#8b5cf6] via-[#22d3ee] to-[#ec4899]`
 
 ## Agent Rules
 
@@ -131,6 +137,9 @@ frontend/src/
 - Follow DI pattern - inject dependencies via constructor
 - Add new validators via `ValidatorFactory`
 - Use View Transitions API for page-level theme transitions
+- Add `dark:[text-shadow:none]` when adding light mode text shadows
+- Use `hsl()` values in warm 25-40 hue range for vintage feel
+- Use `bg-gradient-to-b` with from/via/to for metallic copper effects
 
 ### DO NOT
 - Create custom CSS classes - use Tailwind utilities
@@ -139,6 +148,19 @@ frontend/src/
 - Use `framer-motion` - use `motion` package
 - Bypass the service layer in controllers
 - Use `.js` extension in imports
+- Forget to preserve dark mode styles when enhancing light mode
+- Forget `dark:bg-none` when overriding light mode gradients in dark mode
+
+### Critical: Gradient Reset Pattern
+When light mode uses `bg-gradient-to-*` and dark mode needs a solid color:
+```jsx
+// ❌ WRONG - gradient shows through (background-image > background-color)
+className="bg-gradient-to-b from-cream to-paper dark:bg-[rgba(15,18,25,0.92)]"
+
+// ✅ CORRECT - reset gradient first, then set color
+className="bg-gradient-to-b from-cream to-paper dark:bg-none dark:bg-[rgba(15,18,25,0.92)]"
+```
+The `dark:bg-none` resets `background-image` so `background-color` takes effect.
 
 ## Auth Validation Architecture
 
@@ -288,11 +310,59 @@ import { cardVariants } from '@/lib/styles/card-variants';
 
 ### Glass effects (dark mode)
 ```css
-/* Available utility classes */
-.opux-glass           /* Standard glass */
-.opux-glass-elevated  /* Elevated glass */
-.opux-glass-subtle    /* Subtle glass */
-.opux-glass-ultra-tight /* Minimal blur */
+/* Liquid glass utility classes */
+.liquid-glass           /* Base 40px blur glass */
+.liquid-glass-elevated  /* Premium 60px blur glass */
+.liquid-glass-frosted   /* Frosted 80px blur glass */
+.liquid-glass-aurora    /* Glass with indigo aurora tint */
+
+/* Premium card variants */
+.prismatic-card    /* Animated color-shifting border */
+.cosmic-card       /* Star-field with aurora nebulae */
+.depth-card        /* Multi-layer 3D depth */
+.frosted-panel     /* Ultra-premium frosted glass */
+
+/* Interactive effects */
+.aurora-reveal     /* Radial aurora on hover */
+.glass-shimmer     /* Auto shimmer overlay */
+.specular-sweep    /* Light sweep on hover */
+.glow-button       /* Aurora glow behind button */
+
+/* Neon status glows */
+.neon-breathe-emerald  /* Green breathing glow */
+.neon-breathe-cyan     /* Cyan breathing glow */
+.neon-breathe-pink     /* Pink breathing glow */
+.neon-breathe-amber    /* Amber breathing glow */
+
+/* Aurora utilities */
+.aurora-glow-indigo   /* Indigo glow shadow */
+.aurora-glow-cyan     /* Cyan glow shadow */
+.aurora-glow-pink     /* Pink glow shadow */
+.aurora-glow-multi    /* Multi-color aurora */
+.holo-badge           /* Holographic shimmer badge */
+.aurora-trace         /* Animated border trace */
+```
+
+### Vintage Banking patterns (light mode)
+```jsx
+/* Certificate card with double-rule border */
+<div className={cn(
+  "bg-gradient-to-b from-[hsl(40,50%,97%)] via-[hsl(38,45%,95%)] to-[hsl(35,40%,93%)]",
+  "border-2 border-[hsl(30,35%,75%)]",
+  "shadow-[inset_0_0_0_3px_hsl(38,45%,96%),inset_0_0_0_4px_hsl(30,30%,80%)]"
+)}>
+
+/* Embossed text (add dark:[text-shadow:none]) */
+<h3 className="text-[hsl(25,40%,25%)] [text-shadow:0_1px_0_rgba(255,255,255,0.5)] dark:[text-shadow:none]">
+
+/* Wax seal icon container */
+<div className={cn(
+  "bg-gradient-to-br from-[hsl(25,65%,50%)] via-[hsl(30,70%,48%)] to-[hsl(25,60%,42%)]",
+  "shadow-[inset_0_1px_0_rgba(255,255,255,0.25),0_2px_6px_rgba(101,67,33,0.25)]"
+)}>
+
+/* Corner ornaments (L-shaped borders) */
+<div className="absolute top-3 left-3 w-6 h-6 border-l-2 border-t-2 border-[hsl(25,60%,55%)]/50 rounded-tl-sm dark:hidden" />
 ```
 
 ### Navigation structure

@@ -10,62 +10,63 @@ import {
   DialogTitle,
   DialogBody,
 } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/Button"
+import { Button } from "@/components/ui/button"
 
 /**
- * ConfirmationDialog - Redesigned for OrangeAI/OPUX Design System
+ * ConfirmationDialog - Liquid Aurora Design System
  * 
  * A modern, reusable confirmation dialog with:
- * - Optional icon indicators with proper theming
- * - Improved typography and spacing
- * - Better visual hierarchy
+ * - Optional icon indicators with aurora neon glow
+ * - Liquid glass styling inherited from Dialog
+ * - Aurora accent colors for variants
  * - Smooth loading states
- * 
- * @param {boolean} open - Whether the dialog is open
- * @param {Function} onOpenChange - Callback when open state changes
- * @param {string} title - Dialog title
- * @param {string} description - Dialog description
- * @param {React.ReactNode} children - Custom content to render in the dialog body
- * @param {string} confirmText - Label for confirm button (default: "Confirm")
- * @param {string} cancelText - Label for cancel button (default: "Cancel")
- * @param {Function} onConfirm - Callback when user confirms
- * @param {Function} onCancel - Callback when user cancels (optional)
- * @param {boolean} destructive - Use destructive button style (default: false)
- * @param {boolean} isLoading - Loading state - disables buttons and shows spinner
- * @param {string} variant - Dialog variant: "default" | "danger" | "warning" | "success" | "info"
- * @param {React.ReactNode} icon - Custom icon to display (overrides variant icon)
  */
 
 const VARIANT_CONFIG = {
   default: {
     icon: HelpCircle,
-    iconBg: "bg-neutral-100 dark:bg-white/10",
+    // Light: Vintage neutral
+    iconBg: "bg-neutral-100 dark:bg-white/[0.06]",
     iconColor: "text-neutral-500 dark:text-white/60",
-    iconRing: "ring-neutral-200/50 dark:ring-white/10",
+    iconRing: "ring-neutral-200/50 dark:ring-white/[0.1]",
+    // Aurora glow
+    iconGlow: "dark:shadow-[0_0_12px_-4px_rgba(139,92,246,0.3)]",
   },
   danger: {
     icon: AlertCircle,
-    iconBg: "bg-red-50 dark:bg-red-500/15",
-    iconColor: "text-red-600 dark:text-red-400",
-    iconRing: "ring-red-100 dark:ring-red-500/20",
+    // Light: Vintage burgundy
+    iconBg: "bg-red-50 dark:bg-rose-500/[0.1]",
+    iconColor: "text-red-600 dark:text-rose-400",
+    iconRing: "ring-red-100 dark:ring-rose-500/25",
+    // Aurora neon glow
+    iconGlow: "dark:shadow-[0_0_16px_-4px_rgba(244,63,94,0.5)]",
   },
   warning: {
     icon: AlertTriangle,
-    iconBg: "bg-amber-50 dark:bg-amber-500/15",
+    // Light: Sepia gold
+    iconBg: "bg-amber-50 dark:bg-amber-500/[0.1]",
     iconColor: "text-amber-600 dark:text-amber-400",
-    iconRing: "ring-amber-100 dark:ring-amber-500/20",
+    iconRing: "ring-amber-100 dark:ring-amber-500/25",
+    // Aurora neon glow
+    iconGlow: "dark:shadow-[0_0_16px_-4px_rgba(245,158,11,0.5)]",
   },
   success: {
     icon: CheckCircle2,
-    iconBg: "bg-emerald-50 dark:bg-emerald-500/15",
+    // Light: Antique green
+    iconBg: "bg-emerald-50 dark:bg-emerald-500/[0.1]",
     iconColor: "text-emerald-600 dark:text-emerald-400",
-    iconRing: "ring-emerald-100 dark:ring-emerald-500/20",
+    iconRing: "ring-emerald-100 dark:ring-emerald-500/25",
+    // Aurora neon glow
+    iconGlow: "dark:shadow-[0_0_16px_-4px_rgba(16,185,129,0.5)]",
   },
   info: {
     icon: Info,
-    iconBg: "bg-blue-50 dark:bg-blue-500/15",
-    iconColor: "text-blue-600 dark:text-blue-400",
-    iconRing: "ring-blue-100 dark:ring-blue-500/20",
+    // Light: Copper | Dark: Cyan aurora
+    iconBg: "bg-blue-50 dark:bg-[var(--aurora-cyan)]/[0.1]",
+    iconColor: "text-blue-600 dark:text-[var(--aurora-cyan)]",
+    iconRing: "ring-blue-100 dark:ring-[var(--aurora-cyan)]/25",
+    // Aurora neon glow - cyan
+    iconGlow: "dark:shadow-[0_0_16px_-4px_rgba(34,211,238,0.5)]",
   },
 };
 
@@ -116,7 +117,9 @@ export function ConfirmationDialog({
                 "shrink-0 p-2.5 rounded-xl",
                 "ring-1",
                 variantConfig.iconBg,
-                variantConfig.iconRing
+                variantConfig.iconRing,
+                // Aurora neon glow in dark mode
+                variantConfig.iconGlow
               )}>
                 <IconComponent className={cn("h-5 w-5", variantConfig.iconColor)} />
               </div>
@@ -143,14 +146,15 @@ export function ConfirmationDialog({
             disabled={isLoading}
             className={cn(
               "h-10 font-medium text-[14px]",
-              // Light mode
-              "border-neutral-200 text-neutral-700",
-              "hover:bg-neutral-100 hover:text-neutral-900",
-              "hover:border-neutral-300",
-              // Dark mode
-              "dark:border-white/10 dark:text-white/70",
-              "dark:hover:bg-white/[0.06] dark:hover:text-white",
-              "dark:hover:border-white/20"
+              // Light mode: Vintage banking
+              "border-[hsl(30,25%,82%)] text-[hsl(25,35%,35%)]",
+              "hover:bg-[hsl(38,30%,94%)] hover:text-[hsl(25,35%,25%)]",
+              "hover:border-[hsl(25,75%,55%)]",
+              // Dark mode: Liquid glass
+              "dark:border-white/[0.1] dark:text-white/70",
+              "dark:hover:bg-white/[0.08] dark:hover:text-white",
+              "dark:hover:border-white/[0.2]",
+              "dark:hover:shadow-[0_0_16px_-4px_rgba(139,92,246,0.2)]"
             )}
           >
             {cancelText}
@@ -162,10 +166,13 @@ export function ConfirmationDialog({
             className={cn(
               "h-10 font-medium text-[14px] min-w-[100px]",
               isDestructive && [
-                "bg-red-600 hover:bg-red-700",
-                "dark:bg-red-600 dark:hover:bg-red-500",
-                "shadow-sm hover:shadow-md",
-                "shadow-red-600/20 hover:shadow-red-600/30"
+                // Light mode: Burgundy ink
+                "bg-[hsl(355,40%,45%)] hover:bg-[hsl(355,45%,40%)]",
+                "shadow-[hsla(355,40%,45%,0.2)] hover:shadow-[hsla(355,40%,45%,0.3)]",
+                // Dark mode: Rose with aurora neon glow
+                "dark:bg-rose-600 dark:hover:bg-rose-500",
+                "dark:shadow-[0_0_20px_-4px_rgba(244,63,94,0.5)]",
+                "dark:hover:shadow-[0_0_28px_-4px_rgba(244,63,94,0.6)]"
               ]
             )}
           >

@@ -144,34 +144,58 @@ export function useGatewayCreditRates() {
   }, [rates]);
 
   /**
-   * Get effective rate for a gateway
+   * Get gateway billing type based on ID
+   * - Auth gateways use pricing_live
+   * - Charge gateways use pricing_approved
+   */
+  const getGatewayBillingType = useCallback((gatewayId) => {
+    if (!gatewayId) return 'live';
+    // Auth gateways and Shopify use pricing_live
+    if (gatewayId.startsWith('auth-')) return 'live';
+    if (gatewayId.startsWith('skbased-auth-')) return 'live';
+    if (gatewayId.startsWith('shopify-')) return 'live';
+    if (gatewayId.startsWith('auto-shopify-')) return 'live';
+    // Charge gateways use pricing_approved
+    if (gatewayId.startsWith('charge-')) return 'approved';
+    if (gatewayId.startsWith('skbased-') && !gatewayId.startsWith('skbased-auth-')) return 'approved';
+    return 'live';
+  }, []);
+
+  /**
+   * Get effective rate for a gateway (based on billing type)
+   * - Auth/Shopify gateways: use pricing_live
+   * - Charge gateways: use pricing_approved
    */
   const getEffectiveRate = useCallback((gatewayId) => {
     const rate = rates.find(r => r.gatewayId === gatewayId);
+    const billingType = getGatewayBillingType(gatewayId);
+    
     if (!rate) {
-      if (gatewayId.startsWith('auth-')) return 1.0;
-      if (gatewayId.startsWith('charge-')) return 3.0;
-      if (gatewayId === 'skbased') return 3.0;
-      if (gatewayId.startsWith('shopify-')) return 2.0;
-      return 1.0;
+      // Default fallback rates
+      if (gatewayId.startsWith('auth-')) return 3.0; // pricing_live default
+      if (gatewayId.startsWith('charge-')) return 5.0; // pricing_approved default
+      if (gatewayId.startsWith('skbased-auth-')) return 3.0;
+      if (gatewayId.startsWith('skbased-')) return 5.0;
+      if (gatewayId.startsWith('shopify-')) return 3.0;
+      return 3.0;
     }
+    
+    // Return correct rate based on billing type
+    if (rate.pricing) {
+      return billingType === 'approved' 
+        ? (rate.pricing.approved ?? 5) 
+        : (rate.pricing.live ?? 3);
+    }
+    
     return rate.effectiveRate || rate.rate;
-  }, [rates]);
+  }, [rates, getGatewayBillingType]);
 
   /**
-   * Get base rate for a gateway
+   * Get base rate for a gateway (same as effective rate - based on billing type)
    */
   const getBaseRate = useCallback((gatewayId) => {
-    const rate = rates.find(r => r.gatewayId === gatewayId);
-    if (!rate) {
-      if (gatewayId.startsWith('auth-')) return 1.0;
-      if (gatewayId.startsWith('charge-')) return 3.0;
-      if (gatewayId === 'skbased') return 3.0;
-      if (gatewayId.startsWith('shopify-')) return 2.0;
-      return 1.0;
-    }
-    return rate.rate;
-  }, [rates]);
+    return getEffectiveRate(gatewayId);
+  }, [getEffectiveRate]);
 
   /**
    * Calculate estimated cost for a batch
@@ -209,6 +233,7 @@ export function useGatewayCreditRates() {
     getEffectiveRate,
     getBaseRate,
     getPricing,
+    getGatewayBillingType,
     calculateEstimatedCost,
     refresh,
     getGatewaysByParentType,
@@ -223,6 +248,7 @@ export function useGatewayCreditRates() {
     getEffectiveRate,
     getBaseRate,
     getPricing,
+    getGatewayBillingType,
     calculateEstimatedCost,
     refresh,
     getGatewaysByParentType,

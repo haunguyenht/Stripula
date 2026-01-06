@@ -5,11 +5,14 @@ import { X } from "lucide-react"
 import { cn } from "@/lib/utils.js"
 
 /**
- * Sheet Component - Redesigned for OrangeAI/OPUX Design System
+ * Sheet Component - Liquid Aurora Design System
  * 
- * Mobile drawer/slide-out panel with glass morphism effects
- * Light mode: Clean white with subtle shadows
- * Dark mode: Glass morphism with gradient overlays
+ * Dark mode features:
+ * - Overlay: Deep cosmic blur with aurora gradient
+ * - Content: Liquid glass panel with 60px blur
+ * - Aurora edge glow on borders
+ * - Specular highlight (top edge glow)
+ * - Handle bar with subtle aurora tint
  */
 
 const Sheet = SheetPrimitive.Root
@@ -24,15 +27,16 @@ const SheetOverlay = React.forwardRef(({ className, ...props }, ref) => (
   <SheetPrimitive.Overlay
     className={cn(
       "fixed inset-0 z-50",
-      // Light mode overlay
-      "bg-neutral-900/40",
-      // Dark mode overlay
-      "dark:bg-black/70",
+      // Light mode: Vintage sepia overlay
+      "bg-[hsl(25,30%,20%)]/40",
+      // Dark mode: Deep cosmic with aurora tint
+      "dark:bg-[hsl(220,18%,5%)]/80",
       // Backdrop blur
-      "backdrop-blur-sm dark:backdrop-blur-md",
+      "backdrop-blur-sm dark:backdrop-blur-xl",
       // Animations
       "data-[state=open]:animate-in data-[state=closed]:animate-out",
       "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+      "duration-300",
       className
     )}
     {...props}
@@ -56,13 +60,14 @@ const sheetVariants = cva(
           "max-h-[85vh]",
           "p-6 pb-8",
           "rounded-b-2xl",
-          // Light mode
-          "bg-white border-b border-neutral-200/80",
-          "shadow-[0_8px_32px_rgba(0,0,0,0.12)]",
-          // Dark mode
-          "dark:bg-[#1a1d24]/95 dark:border-white/[0.08]",
-          "dark:shadow-[0_8px_48px_rgba(0,0,0,0.5)]",
-          "dark:backdrop-blur-xl",
+          // Light mode: Vintage Banking
+          "bg-gradient-to-b from-[hsl(40,50%,97%)] to-[hsl(38,45%,95%)] border-b border-[hsl(30,35%,75%)]/50",
+          "shadow-[0_8px_32px_rgba(101,67,33,0.12)]",
+          // Dark mode: Liquid Aurora glass (bg-none resets gradient)
+          "dark:bg-none dark:bg-[rgba(15,18,25,0.95)]",
+          "dark:backdrop-blur-[60px] dark:backdrop-saturate-[180%]",
+          "dark:border-b dark:border-[hsl(0_0%_100%/0.08)]",
+          "dark:shadow-[0_0_0_1px_rgba(139,92,246,0.06),0_8px_48px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.08)]",
           // Animations
           "data-[state=closed]:slide-out-to-top data-[state=open]:slide-in-from-top"
         ),
@@ -71,13 +76,14 @@ const sheetVariants = cva(
           "max-h-[90vh]",
           "p-6 pt-4",
           "rounded-t-2xl",
-          // Light mode
-          "bg-white border-t border-neutral-200/80",
-          "shadow-[0_-8px_32px_rgba(0,0,0,0.12)]",
-          // Dark mode
-          "dark:bg-[#1a1d24]/95 dark:border-white/[0.08]",
-          "dark:shadow-[0_-8px_48px_rgba(0,0,0,0.5)]",
-          "dark:backdrop-blur-xl",
+          // Light mode: Vintage Banking
+          "bg-gradient-to-b from-[hsl(40,50%,97%)] to-[hsl(38,45%,95%)] border-t border-[hsl(30,35%,75%)]/50",
+          "shadow-[0_-8px_32px_rgba(101,67,33,0.12)]",
+          // Dark mode: Liquid Aurora glass (bg-none resets gradient)
+          "dark:bg-none dark:bg-[rgba(15,18,25,0.95)]",
+          "dark:backdrop-blur-[60px] dark:backdrop-saturate-[180%]",
+          "dark:border-t dark:border-[hsl(0_0%_100%/0.08)]",
+          "dark:shadow-[0_0_0_1px_rgba(139,92,246,0.06),0_-8px_48px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.08)]",
           // Animations
           "data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom"
         ),
@@ -85,13 +91,14 @@ const sheetVariants = cva(
           "inset-y-0 left-0",
           "h-full w-[85vw] sm:max-w-sm",
           "p-6",
-          // Light mode
-          "bg-white border-r border-neutral-200/80",
-          "shadow-[8px_0_32px_rgba(0,0,0,0.12)]",
-          // Dark mode
-          "dark:bg-[#1a1d24]/95 dark:border-white/[0.08]",
-          "dark:shadow-[8px_0_48px_rgba(0,0,0,0.5)]",
-          "dark:backdrop-blur-xl",
+          // Light mode: Vintage Banking
+          "bg-gradient-to-r from-[hsl(40,50%,97%)] to-[hsl(38,45%,95%)] border-r border-[hsl(30,35%,75%)]/50",
+          "shadow-[8px_0_32px_rgba(101,67,33,0.12)]",
+          // Dark mode: Liquid Aurora glass (bg-none resets gradient)
+          "dark:bg-none dark:bg-[rgba(15,18,25,0.95)]",
+          "dark:backdrop-blur-[60px] dark:backdrop-saturate-[180%]",
+          "dark:border-r dark:border-[hsl(0_0%_100%/0.08)]",
+          "dark:shadow-[0_0_0_1px_rgba(139,92,246,0.06),8px_0_48px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.08)]",
           // Animations
           "data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left"
         ),
@@ -99,13 +106,14 @@ const sheetVariants = cva(
           "inset-y-0 right-0",
           "h-full w-[85vw] sm:max-w-sm",
           "p-6",
-          // Light mode
-          "bg-white border-l border-neutral-200/80",
-          "shadow-[-8px_0_32px_rgba(0,0,0,0.12)]",
-          // Dark mode
-          "dark:bg-[#1a1d24]/95 dark:border-white/[0.08]",
-          "dark:shadow-[-8px_0_48px_rgba(0,0,0,0.5)]",
-          "dark:backdrop-blur-xl",
+          // Light mode: Vintage Banking
+          "bg-gradient-to-l from-[hsl(40,50%,97%)] to-[hsl(38,45%,95%)] border-l border-[hsl(30,35%,75%)]/50",
+          "shadow-[-8px_0_32px_rgba(101,67,33,0.12)]",
+          // Dark mode: Liquid Aurora glass (bg-none resets gradient)
+          "dark:bg-none dark:bg-[rgba(15,18,25,0.95)]",
+          "dark:backdrop-blur-[60px] dark:backdrop-saturate-[180%]",
+          "dark:border-l dark:border-[hsl(0_0%_100%/0.08)]",
+          "dark:shadow-[0_0_0_1px_rgba(139,92,246,0.06),-8px_0_48px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.08)]",
           // Animations
           "data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right"
         ),
@@ -126,16 +134,16 @@ const SheetContent = React.forwardRef(
         className={cn(sheetVariants({ side }), className)}
         {...props}
       >
-        {/* Subtle gradient overlay for dark mode */}
+        {/* Aurora gradient overlay for dark mode */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none hidden dark:block">
           <div className="absolute inset-0 bg-gradient-to-b from-white/[0.04] via-transparent to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.02] via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-br from-[hsl(250,90%,65%)]/[0.03] via-transparent to-[hsl(185,100%,60%)]/[0.02]" />
         </div>
         
-        {/* Handle bar for bottom sheet (mobile) */}
+        {/* Handle bar for bottom sheet with aurora tint */}
         {side === "bottom" && (
           <div className="absolute top-2 left-1/2 -translate-x-1/2">
-            <div className="w-10 h-1 rounded-full bg-neutral-300 dark:bg-white/20" />
+            <div className="w-10 h-1 rounded-full bg-neutral-300 dark:bg-white/20 dark:shadow-[0_0_8px_rgba(139,92,246,0.2)]" />
           </div>
         )}
         
@@ -144,7 +152,7 @@ const SheetContent = React.forwardRef(
           {children}
         </div>
         
-        {/* Close button */}
+        {/* Close button with aurora hover */}
         <SheetPrimitive.Close 
           className={cn(
             "absolute right-4 top-4 z-20",
@@ -153,15 +161,16 @@ const SheetContent = React.forwardRef(
             // Light mode
             "text-neutral-400 hover:text-neutral-600",
             "bg-transparent hover:bg-neutral-100",
-            // Dark mode
+            // Dark mode: Aurora hover
             "dark:text-white/40 dark:hover:text-white/90",
-            "dark:hover:bg-white/10",
+            "dark:hover:bg-[hsl(250,90%,65%)/0.15]",
+            "dark:hover:shadow-[0_0_12px_rgba(139,92,246,0.2)]",
             // Focus ring
-            "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+            "focus:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(250,90%,65%)/0.4]",
             // Transition
-            "transition-all duration-150",
+            "transition-all duration-200",
             "disabled:pointer-events-none",
-            // Hide for bottom sheets (they have handle)
+            // Adjust for bottom sheets
             side === "bottom" && "top-3"
           )}
         >
@@ -178,7 +187,7 @@ const SheetHeader = ({ className, ...props }) => (
   <div
     className={cn(
       "flex flex-col gap-2 text-center sm:text-left",
-      "pb-4 border-b border-neutral-200/60 dark:border-white/[0.06]",
+      "pb-4 border-b border-neutral-200/60 dark:border-white/[0.08]",
       className
     )}
     {...props}
@@ -190,7 +199,7 @@ const SheetFooter = ({ className, ...props }) => (
   <div
     className={cn(
       "flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3",
-      "pt-4 mt-auto border-t border-neutral-200/60 dark:border-white/[0.06]",
+      "pt-4 mt-auto border-t border-neutral-200/60 dark:border-white/[0.08]",
       className
     )}
     {...props}
@@ -224,14 +233,11 @@ const SheetDescription = React.forwardRef(({ className, ...props }, ref) => (
 ))
 SheetDescription.displayName = SheetPrimitive.Description.displayName
 
-/**
- * SheetBody - Scrollable content area
- */
 const SheetBody = ({ className, ...props }) => (
   <div
     className={cn(
       "flex-1 overflow-y-auto py-4",
-      "-mx-6 px-6", // Extend to edges for proper scrollbar position
+      "-mx-6 px-6",
       "text-[14px] leading-relaxed",
       "text-neutral-600 dark:text-white/70",
       className

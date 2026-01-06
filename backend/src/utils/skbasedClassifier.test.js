@@ -174,9 +174,9 @@ describe('Property 6: Decline Code Classification Consistency', () => {
             expect(result.message).toContain('Insufficient Funds');
         });
 
-        it('Requirement 9.7: fraudulent returns LIVE', () => {
+        it('Requirement 9.7: fraudulent returns DECLINED (DIE card)', () => {
             const result = classifyDecline('fraudulent');
-            expect(result.status).toBe('LIVE');
+            expect(result.status).toBe('DECLINED');
             expect(result.message).toContain('Fraudulent');
         });
 

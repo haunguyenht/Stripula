@@ -94,15 +94,37 @@ export class UserNotificationService extends EventEmitter {
      * @param {string} userId - User UUID
      * @param {string} newTier - New tier
      * @param {string} previousTier - Previous tier
+     * @param {string|null} tierExpiresAt - Tier expiration date (ISO string or null for permanent)
      */
-    notifyTierChange(userId, newTier, previousTier) {
+    notifyTierChange(userId, newTier, previousTier, tierExpiresAt = null) {
         this.sendToUser(userId, {
             type: 'tierChange',
             tier: newTier,
             previousTier,
+            tierExpiresAt,
             timestamp: new Date().toISOString()
         });
-        this.emit('tierChange', { userId, newTier, previousTier });
+        this.emit('tierChange', { userId, newTier, previousTier, tierExpiresAt });
+    }
+
+    /**
+     * Notify user of tier extension
+     * @param {string} userId - User UUID
+     * @param {string} tier - Current tier
+     * @param {string|null} previousExpiresAt - Previous expiration date
+     * @param {string} newExpiresAt - New expiration date
+     * @param {number} daysAdded - Number of days added
+     */
+    notifyTierExtension(userId, tier, previousExpiresAt, newExpiresAt, daysAdded) {
+        this.sendToUser(userId, {
+            type: 'tierExtension',
+            tier,
+            previousExpiresAt,
+            newExpiresAt,
+            daysAdded,
+            timestamp: new Date().toISOString()
+        });
+        this.emit('tierExtension', { userId, tier, previousExpiresAt, newExpiresAt, daysAdded });
     }
 
     /**

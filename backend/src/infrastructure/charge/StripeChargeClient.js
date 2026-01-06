@@ -48,29 +48,7 @@ export class StripeChargeClient {
         return null;
     }
 
-    /**
-     * Check if an error is retryable (proxy/network error)
-     * @private
-     */
-    _isRetryableError(error) {
-        const message = (error.message || '').toLowerCase();
-        const causeMessage = (error.cause?.message || '').toLowerCase();
-        const code = (error.code || '').toLowerCase();
 
-        return RETRYABLE_ERRORS.some(pattern =>
-            message.includes(pattern) ||
-            causeMessage.includes(pattern) ||
-            code.includes(pattern)
-        );
-    }
-
-    /**
-     * Sleep for a given duration
-     * @private
-     */
-    _sleep(ms) {
-        return new Promise(resolve => setTimeout(resolve, ms));
-    }
 
     /**
      * Create axios config with Bearer authentication (Requirement 5.1)
@@ -94,22 +72,29 @@ export class StripeChargeClient {
     }
 
     /**
-     * Charge a Source using the Charges API
+     * Charge a Source using the Charges API (SK) or PaymentIntents API (RK)
      * 
-     * Uses Bearer auth with SK key (Requirement 5.1)
+     * Automatically detects key type:
+     * - SK keys (sk_live_xxx): Uses /v1/charges endpoint
+     * - RK keys (rk_live_xxx): Uses /v1/payment_intents endpoint
+     * 
+     * Uses Bearer auth (Requirement 5.1)
      * Configurable amount, default $1.00 = 100 cents (Requirement 5.2)
      * USD currency by default (Requirement 5.3)
      * Extracts risk_level, network_status, avs_check, cvc_check (Requirements 5.6, 5.7)
      * 
-     * NOTE: Does NOT retry on network errors because Sources are consumed on first charge attempt.
-     * Retry logic should be handled at the validator level by creating a new source.
-     * 
      * @param {string} sourceId - Source ID (src_xxx)
-     * @param {string} skKey - Stripe secret key (sk_live_xxx or sk_test_xxx)
+     * @param {string} secretKey - Stripe secret key (sk_) or restricted key (rk_)
      * @param {object} options - { amount, currency, proxy, description }
      * @returns {Promise<object>} Charge result with outcome details
      */
-    async charge(sourceId, skKey, options = {}) {
+    async charge(sourceId, secretKey, options = {}) {
+        // Detect key type and route to appropriate method
+        if (secretKey.startsWith('rk_')) {
+            return this._chargeWithPaymentIntent(sourceId, secretKey, options);
+        }
+
+        // SK key - use Charges API
         const {
             amount = 100,           // Default $1.00 (Requirement 5.2)
             currency = 'usd',       // Default USD (Requirement 5.3)
@@ -136,7 +121,7 @@ export class StripeChargeClient {
             'expand[]': 'outcome'
         });
 
-        const config = this._createConfig(skKey, proxy);
+        const config = this._createConfig(secretKey, proxy);
 
         try {
 
@@ -394,6 +379,91 @@ export class StripeChargeClient {
             return {
                 success: false,
                 error: error.response?.data?.error?.message || error.message
+            };
+        }
+    }
+
+    /**
+     * Charge a Source using RK key via PaymentIntents API
+     * RK keys often lack permission for /v1/charges, so we use /v1/payment_intents
+     * 
+     * @private
+     * @param {string} sourceId - Source ID (src_xxx)
+     * @param {string} rkKey - Stripe restricted key (rk_live_xxx)
+     * @param {object} options - { amount, currency, proxy, description }
+     * @returns {Promise<object>} Charge result
+     */
+    async _chargeWithPaymentIntent(sourceId, rkKey, options = {}) {
+        const {
+            amount = 100,
+            currency = 'usd',
+            description = 'Card validation charge'
+        } = options;
+
+        const proxy = options.proxy || await this._getProxyFromManager();
+
+        // Build request body for PaymentIntents
+        const data = new URLSearchParams({
+            'amount': String(amount),
+            'currency': currency,
+            'source': sourceId,
+            'confirm': 'true',
+            'automatic_payment_methods[enabled]': 'false',
+            'payment_method_types[]': 'card',
+            'description': description
+        });
+
+        const config = this._createConfig(rkKey, proxy);
+
+        try {
+            const response = await axios.post(
+                'https://api.stripe.com/v1/payment_intents',
+                data.toString(),
+                config
+            );
+
+            const piData = response.data;
+            const isSuccess = piData.status === 'succeeded';
+
+            return {
+                success: isSuccess,
+                paymentIntentId: piData.id,
+                chargeId: piData.latest_charge,
+                status: piData.status,
+                paid: isSuccess,
+                amount: piData.amount,
+                currency: piData.currency,
+                requires3DS: piData.status === 'requires_action',
+                nextAction: piData.next_action,
+                keyType: 'RK'
+            };
+        } catch (error) {
+            if (error.code === 'ERR_CANCELED' || error.name === 'AbortError') {
+                return {
+                    success: false,
+                    error: 'Request cancelled',
+                    isAborted: true
+                };
+            }
+
+            if (error.response?.data?.error) {
+                const stripeError = error.response.data.error;
+
+                return {
+                    success: false,
+                    error: stripeError.message,
+                    code: stripeError.code,
+                    declineCode: stripeError.decline_code,
+                    chargeId: stripeError.charge || null,
+                    paymentIntentId: stripeError.payment_intent?.id || null,
+                    keyType: 'RK'
+                };
+            }
+
+            return {
+                success: false,
+                error: error.message,
+                isNetworkError: true
             };
         }
     }

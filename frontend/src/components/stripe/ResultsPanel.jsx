@@ -58,19 +58,19 @@ export function ResultsPanel({
   return (
     <div className={cn("flex flex-col h-full", className)}>
       <ResultsHeader>
-        <div className="flex items-center justify-between gap-2">
-          {/* Stats - scrollable on overflow */}
-          <div className="flex-1 min-w-0 overflow-x-auto scrollbar-none">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          {/* Stats - wraps on mobile, scrollable on overflow */}
+          <div className="flex-1 min-w-0 overflow-x-auto scrollbar-none order-1">
             <StatPillGroup
               stats={safeStats}
               activeFilter={activeFilter}
               onFilterChange={onFilterChange}
-              className="flex-nowrap"
+              className="flex-wrap sm:flex-nowrap"
             />
           </div>
 
-          {/* Actions - always icon only for consistency */}
-          <div className="flex items-center gap-0.5 shrink-0">
+          {/* Actions - moves to second row on very small screens */}
+          <div className="flex items-center gap-0.5 shrink-0 order-2">
             {/* Custom header actions (e.g., ExportButton) */}
             {headerActions}
             {onRefresh && (

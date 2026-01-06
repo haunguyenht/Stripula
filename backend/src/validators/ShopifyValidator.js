@@ -1,26 +1,38 @@
 import { ShopifyResult } from '../domain/ShopifyResult.js';
-import { ShopifyClient } from '../infrastructure/auth/ShopifyClient.js';
-import { DEFAULT_SHOPIFY_SITE } from '../utils/constants.js';
+import { AutoShopifyClient } from '../infrastructure/auth/AutoShopifyClient.js';
 
 /**
  * Shopify Validator
- * Validates cards via Shopify checkout flow
- * Creates fresh session per card for rate-limit avoidance
+ * Validates cards via Auto Shopify API (charge type)
+ * API: https://autoshopi.up.railway.app/?cc=cc&url=site&proxy=proxy
  */
 export class ShopifyValidator {
     constructor(options = {}) {
-        this.site = options.site || DEFAULT_SHOPIFY_SITE;
         this.proxyManager = options.proxyManager || null;
-        this.client = new ShopifyClient(this.site, { proxyManager: this.proxyManager });
+        this.shopifyUrl = options.shopifyUrl || '';
+        this.proxyString = options.proxyString || '';
+        this._initClient();
+    }
+
+    _initClient() {
+        this.client = new AutoShopifyClient(
+            { prodUrl: this.shopifyUrl, baseUrl: this.shopifyUrl },
+            { proxyManager: this.proxyManager, proxyString: this.proxyString }
+        );
     }
 
     getName() {
-        return `ShopifyValidator (${this.site.label})`;
+        return `ShopifyValidator (Auto API)`;
     }
 
-    setSite(site) {
-        this.site = site;
-        this.client = new ShopifyClient(site, { proxyManager: this.proxyManager });
+    setShopifyUrl(url) {
+        this.shopifyUrl = url;
+        this._initClient();
+    }
+
+    setProxy(proxyString) {
+        this.proxyString = proxyString;
+        this._initClient();
     }
 
     setConcurrency(concurrency) {
@@ -31,39 +43,36 @@ export class ShopifyValidator {
         const startTime = Date.now();
         const fullCard = `${cardInfo.number}|${cardInfo.expMonth}|${cardInfo.expYear}|${cardInfo.cvc}`;
 
+        if (!this.shopifyUrl) {
+            return ShopifyResult.error('Shopify URL is required', {
+                card: fullCard,
+                duration: Date.now() - startTime
+            });
+        }
+
         try {
             const result = await this.client.validateCard(cardInfo);
 
             if (!result.success) {
                 return ShopifyResult.error(result.error, {
                     card: fullCard,
-                    site: this.site.label,
-                    domain: this.site.domain,
+                    site: this.shopifyUrl,
                     duration: result.duration || (Date.now() - startTime)
                 });
             }
 
-            // Parse the checkout response
-            const shopifyResult = ShopifyResult.fromCheckoutResponse(
-                result.body,
-                result.errorMessage,
-                {
-                    card: fullCard,
-                    site: this.site.label,
-                    domain: this.site.domain,
-                    gateway: result.gateway,
-                    price: result.price,
-                    duration: result.duration || (Date.now() - startTime)
-                }
-            );
-
-            return shopifyResult;
+            return ShopifyResult.fromAutoApiResponse(result, {
+                card: fullCard,
+                site: result.site || this.shopifyUrl,
+                gateway: result.gateway,
+                price: result.price,
+                duration: result.duration || (Date.now() - startTime)
+            });
 
         } catch (error) {
             return ShopifyResult.error(error.message, {
                 card: fullCard,
-                site: this.site.label,
-                domain: this.site.domain,
+                site: this.shopifyUrl,
                 duration: Date.now() - startTime
             });
         }

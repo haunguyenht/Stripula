@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events';
-import { SKBasedModernValidator } from '../validators/SKBasedModernValidator.js';
+import { PlaywrightValidator } from '../validators/PlaywrightValidator.js';
 import { SKBasedResult } from '../domain/SKBasedResult.js';
 import { classifyFailure } from '../utils/failureClassifier.js';
 import { GATEWAY_IDS } from '../utils/constants.js';
@@ -7,13 +7,14 @@ import { GATEWAY_IDS } from '../utils/constants.js';
 /**
  * SK-Based Charge Service
  * 
- * Orchestrates SK-based card validation using the modern PaymentMethod → PaymentIntent flow.
- * Uses js.stripe.com origin with payment-element headers for reduced Radar friction.
+ * Orchestrates SK-based card validation using browser-based Stripe Elements.
+ * Uses Playwright with human-like typing for authentic fraud signals.
  * Extends EventEmitter for real-time result streaming to the frontend.
  * 
  * Integrates with:
  * - SpeedManager for tier-based concurrency and delay limits
  * - GatewayManager for availability checks and health metrics
+ * - DashboardService for statistics tracking (Requirements: 8.1, 8.2)
  * 
  * Events emitted:
  * - 'result': Emitted for each completed card validation
@@ -21,12 +22,12 @@ import { GATEWAY_IDS } from '../utils/constants.js';
  * - 'batchComplete': Emitted when batch processing completes
  * - 'abort': Emitted when batch is stopped
  * 
- * Modern Flow Features:
- * - PaymentMethod → PaymentIntent (recommended by Stripe)
- * - js.stripe.com origin with payment-element user agent
- * - Fresh fingerprints (guid, muid, sid) per request
- * - Client attribution metadata for legitimacy
- * - Auto-refund on success
+ * Playwright Features:
+ * - Real browser with Stripe Elements (authentic fraud signals)
+ * - Human-like typing (50-150ms per keystroke)
+ * - 3DS modal detection
+ * - Detailed Radar outcomes (risk_level, AVS, CVC)
+ * - Proxy support
  */
 export class SKBasedChargeService extends EventEmitter {
     /**
@@ -35,15 +36,21 @@ export class SKBasedChargeService extends EventEmitter {
      * @param {Object} options - Configuration options
      * @param {Object} options.speedManager - SpeedManager instance for tier-based limits
      * @param {Object} options.gatewayManager - GatewayManager instance for availability checks
+     * @param {Object} options.dashboardService - DashboardService instance for statistics tracking
      * @param {boolean} options.debug - Enable debug logging (default: true)
      */
     constructor(options = {}) {
         super();
         this.speedManager = options.speedManager || null;
         this.gatewayManager = options.gatewayManager || null;
+        // Dashboard Service for statistics tracking (Requirements: 8.1, 8.2)
+        this.dashboardService = options.dashboardService || null;
         this.debug = options.debug !== false;
-        // Use modern validator (PaymentMethod → PaymentIntent flow)
-        this.validator = new SKBasedModernValidator({ debug: this.debug });
+        // Use Playwright validator (browser-based Stripe Elements)
+        this.validator = new PlaywrightValidator({
+            debug: this.debug,
+            headless: options.headless ?? true
+        });
         this.abortFlag = false;
         this.currentExecutor = null;
     }
@@ -146,6 +153,7 @@ export class SKBasedChargeService extends EventEmitter {
      * @param {number} options.chargeAmount - Amount to charge in cents (default: 100)
      * @param {string} options.currency - Currency code (default: 'usd')
      * @param {string} options.tier - User tier for speed limits (default: 'free')
+     * @param {string} options.userId - User ID for statistics tracking
      * @param {Function} options.onProgress - Progress callback
      * @param {Function} options.onResult - Result callback
      * @returns {Promise<Object>} Batch results with stats
@@ -158,6 +166,7 @@ export class SKBasedChargeService extends EventEmitter {
             chargeAmount = 100,
             currency = 'usd',
             tier = 'free',
+            userId = null,
             onProgress = null,
             onResult = null
         } = options;
@@ -277,6 +286,16 @@ export class SKBasedChargeService extends EventEmitter {
                 const duration = ((Date.now() - startTime) / 1000).toFixed(1);
                 const liveCount = stats.live;
 
+                // Increment user statistics (Requirements: 8.1, 8.2)
+                // cardsCount = total cards validated, hitsCount = live/approved cards
+                if (userId && this.dashboardService) {
+                    try {
+                        await this.dashboardService.incrementUserStats(userId, total, liveCount);
+                    } catch (err) {
+                        console.error('[SKBasedChargeService] Failed to increment user stats:', err.message);
+                    }
+                }
+
                 // Emit batchComplete (Requirement 8.3)
                 const batchResult = {
                     results,
@@ -299,6 +318,15 @@ export class SKBasedChargeService extends EventEmitter {
                 if (error.message === 'Execution cancelled' || error.message === 'Aborted') {
                     const duration = ((Date.now() - startTime) / 1000).toFixed(1);
                     const liveCount = stats.live;
+
+                    // Increment user statistics for processed cards before abort (Requirements: 8.1, 8.2)
+                    if (userId && this.dashboardService && processed > 0) {
+                        try {
+                            await this.dashboardService.incrementUserStats(userId, processed, liveCount);
+                        } catch (err) {
+                            console.error('[SKBasedChargeService] Failed to increment user stats (aborted):', err.message);
+                        }
+                    }
 
                     const abortedResult = {
                         results,

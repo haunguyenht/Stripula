@@ -9,6 +9,25 @@ import { createContext, useContext, useState, useEffect, useCallback, useMemo } 
 
 const AuthContext = createContext(null);
 
+/**
+ * Calculate tier expiration status
+ */
+function getTierExpirationStatus(tierExpiresAt) {
+  if (!tierExpiresAt) return { isExpired: false, isExpiringSoon: false, daysRemaining: null };
+  
+  const expDate = new Date(tierExpiresAt);
+  const now = new Date();
+  const diffMs = expDate - now;
+  const daysRemaining = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+  
+  return {
+    isExpired: daysRemaining <= 0,
+    isExpiringSoon: daysRemaining > 0 && daysRemaining <= 7,
+    daysRemaining: Math.max(0, daysRemaining),
+    expiresAt: expDate
+  };
+}
+
 // API base URL - uses Vite proxy in development
 const API_BASE = '/api';
 
@@ -203,6 +222,12 @@ export function AuthProvider({ children }) {
     initAuth();
   }, [fetchCurrentUser]);
 
+  // Calculate tier expiration status
+  const tierExpiration = useMemo(() => {
+    if (!user) return { isExpired: false, isExpiringSoon: false, daysRemaining: null };
+    return getTierExpirationStatus(user.tierExpiresAt);
+  }, [user?.tierExpiresAt]);
+
   // Memoize context value to prevent unnecessary re-renders
   const value = useMemo(() => ({
     user,
@@ -213,8 +238,9 @@ export function AuthProvider({ children }) {
     logout,
     refreshUser,
     refreshToken,
-    updateCreditBalance
-  }), [user, isLoading, isAuthenticated, error, login, logout, refreshUser, refreshToken, updateCreditBalance]);
+    updateCreditBalance,
+    tierExpiration
+  }), [user, isLoading, isAuthenticated, error, login, logout, refreshUser, refreshToken, updateCreditBalance, tierExpiration]);
 
   return (
     <AuthContext.Provider value={value}>

@@ -12,3 +12,4 @@ export { EffectiveRatePreview } from './EffectiveRatePreview';
 export { ResetToDefaultButton } from './ResetToDefaultButton';
 export { HealthConfigPanel } from './HealthConfigPanel';
 export { TierLimitsConfig } from './TierLimitsConfig';
+export { MaintenanceControls } from './MaintenanceControls';

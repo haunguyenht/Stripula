@@ -8,6 +8,10 @@ import { SocksProxyAgent } from 'socks-proxy-agent';
 export class ProxyAgentFactory {
     /**
      * Create a proxy agent from proxy configuration
+     * 
+     * IMPORTANT: For rotating residential proxies, we disable keepAlive
+     * to ensure each request creates a fresh TCP connection and gets a new IP
+     * 
      * @param {Object|Proxy} proxy - Proxy config {type, host, port, username?, password?}
      * @returns {HttpsProxyAgent|SocksProxyAgent|null}
      */
@@ -16,10 +20,13 @@ export class ProxyAgentFactory {
 
         const url = this.buildUrl(proxy);
         
+        // Disable keepAlive to force new connection per request (new IP from rotating proxy)
+        const agentOptions = { keepAlive: false };
+        
         if (this.isSocksProxy(proxy.type)) {
-            return new SocksProxyAgent(url);
+            return new SocksProxyAgent(url, agentOptions);
         }
-        return new HttpsProxyAgent(url);
+        return new HttpsProxyAgent(url, agentOptions);
     }
 
     /**

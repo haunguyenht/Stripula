@@ -20,12 +20,8 @@ export const GATEWAY_IDS = {
     CHARGE_2: 'charge-2',
     CHARGE_3: 'charge-3',
     
-    // Shopify Charge gateways ($1-$5)
-    SHOPIFY_1: 'shopify-1',
-    SHOPIFY_2: 'shopify-2',
-    SHOPIFY_3: 'shopify-3',
-    SHOPIFY_4: 'shopify-4',
-    SHOPIFY_5: 'shopify-5',
+    // Auto Shopify API gateway (external API - charge type)
+    AUTO_SHOPIFY_1: 'auto-shopify-1',
     
     // SK-Based Auth gateway (SetupIntent $0 auth with backend SK/PK keys)
     SKBASED_AUTH_1: 'skbased-auth-1',
@@ -72,7 +68,7 @@ export const GATEWAY_IDS = {
 export const DEFAULT_GATEWAY_IDS = {
     AUTH: GATEWAY_IDS.AUTH_1,
     CHARGE: GATEWAY_IDS.CHARGE_1,
-    SHOPIFY: GATEWAY_IDS.SHOPIFY_1,
+    AUTO_SHOPIFY: GATEWAY_IDS.AUTO_SHOPIFY_1,
     SKBASED_AUTH: GATEWAY_IDS.SKBASED_AUTH_1,
     SKBASED_CHARGE: GATEWAY_IDS.SKBASED_CHARGE_1,
     BRAINTREE_AUTH: GATEWAY_IDS.BRAINTREE_AUTH_1,
@@ -188,7 +184,7 @@ export const AUTH_METHODS = {
  *     └── (amount-based checkout validation)
  * 
  * To add a new gateway:
- *   1. Add config to AUTH_SITES, CHARGE_SITES, or SHOPIFY_SITES below
+ *   1. Add config to AUTH_SITES, CHARGE_SITES, or AUTO_SHOPIFY_API below
  *   2. Gateway auto-registers on startup via GatewayManagerService
  *   3. Pricing inherits from type defaults (can override per-gateway in admin)
  */
@@ -370,42 +366,14 @@ export const AUTH_SITES = {
 // Default auth site
 export const DEFAULT_AUTH_SITE = AUTH_SITES.AUTH_1;
 
-// Shopify site configurations for checkout validation
-// Just set prodUrl - domain & prodId are auto-derived!
-export const SHOPIFY_SITES = {
-    SHOPIFY_1: {
-        id: GATEWAY_IDS.SHOPIFY_1,
-        label: 'Shopify 1$',
-        prodUrl: 'https://funscreations.com/products/stocking-stuffer-toys',
-    },
-    SHOPIFY_2: {
-        id: GATEWAY_IDS.SHOPIFY_2,
-        label: 'Shopify 2$',
-        prodUrl: '',
-    },
-    SHOPIFY_3: {
-        id: GATEWAY_IDS.SHOPIFY_3,
-        label: 'Shopify 3$',
-        prodUrl: '',
-    },
-    SHOPIFY_4: {
-        id: GATEWAY_IDS.SHOPIFY_4,
-        label: 'Shopify 4$',
-        prodUrl: '',
-    },
-    SHOPIFY_5: {
-        id: GATEWAY_IDS.SHOPIFY_5,
-        label: 'Shopify 5$',
-        prodUrl: '',
-    },
-};
-
-// Default Shopify site
-export const DEFAULT_SHOPIFY_SITE = SHOPIFY_SITES.SHOPIFY_1;
-
-// Shopify API endpoints
-export const SHOPIFY_API = {
-    CARD_SESSION: 'https://deposit.us.shopifycs.com/sessions',
+// Auto Shopify API configuration
+// Uses external API: https://autoshopi.up.railway.app/?cc=cc&url=site&proxy=proxy
+// User provides Shopify URL via frontend
+export const AUTO_SHOPIFY_API = {
+    BASE_URL: 'https://autoshopi.up.railway.app/',
+    GATEWAY_ID: GATEWAY_IDS.AUTO_SHOPIFY_1,
+    LABEL: 'Auto Shopify',
+    DESCRIPTION: 'External Auto Shopify API - charge validation',
 };
 
 // Charge site configurations for donation-based validation
@@ -689,5 +657,61 @@ export const TARGET_CHARGE_SITES = {
 
 // Default Target charge site
 export const DEFAULT_TARGET_CHARGE_SITE = TARGET_CHARGE_SITES.TARGET_CHARGE_1;
+
+// ═══════════════════════════════════════════════════════════════
+// GATEWAY LABELS - Friendly display names for gateway IDs
+// ═══════════════════════════════════════════════════════════════
+
+export const GATEWAY_LABELS = {
+    // Auth gateways
+    'auth-1': 'Auth 1',
+    'auth-2': 'Auth 2',
+    'auth-3': 'Auth 3',
+    // Charge gateways
+    'charge-1': 'Charge 1',
+    'charge-2': 'Charge 2',
+    'charge-3': 'Charge 3',
+    // SK-Based gateways
+    'skbased-auth-1': 'SK Auth 1',
+    'skbased-auth': 'SK Auth',
+    'skbased-1': 'SK Charge 1',
+    // Auto Shopify
+    'auto-shopify-1': 'Auto Shopify',
+    // Braintree gateways
+    'braintree-auth-1': 'BT Auth 1',
+    'braintree-auth-2': 'BT Auth 2',
+    'braintree-auth-3': 'BT Auth 3',
+    'braintree-charge-1': 'BT Charge 1',
+    'braintree-charge-2': 'BT Charge 2',
+    'braintree-charge-3': 'BT Charge 3',
+    // PayPal gateways
+    'paypal-charge-1': 'PayPal 1',
+    'paypal-charge-2': 'PayPal 2',
+    'paypal-charge-3': 'PayPal 3',
+    // Other gateways
+    'charge-avs-1': 'AVS Charge 1',
+    'square-charge-1': 'Square 1',
+    // Adyen gateways
+    'adyen-auth-1': 'Adyen Auth 1',
+    'adyen-auth-2': 'Adyen Auth 2',
+    'adyen-auth-3': 'Adyen Auth 3',
+    'adyen-charge-1': 'Adyen Charge 1',
+    'adyen-charge-2': 'Adyen Charge 2',
+    'adyen-charge-3': 'Adyen Charge 3',
+    // Target gateways
+    'target-charge-1': 'Target 1',
+    'target-charge-2': 'Target 2',
+    'target-charge-3': 'Target 3',
+};
+
+/**
+ * Get friendly label for a gateway ID
+ * @param {string} gatewayId - The gateway ID
+ * @returns {string} Friendly label or the original ID if not found
+ */
+export function getGatewayLabel(gatewayId) {
+    if (!gatewayId) return '';
+    return GATEWAY_LABELS[gatewayId] || gatewayId;
+}
 
 

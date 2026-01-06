@@ -14,13 +14,16 @@ export function toTitleCase(str) {
 
 /**
  * Get badge variant based on card validation status
+ * Supports SK-based charger statuses: Charged, Live, Declined
  */
 export function getStatusVariant(status) {
-  if (status === 'APPROVED') return 'approved';
-  if (status === 'LIVE') return 'live';
-  if (status === 'DIE' || status === 'DEAD') return 'dead';
-  if (status === 'DECLINED') return 'declined';
-  if (status === 'ERROR' || status === 'RETRY') return 'error';
+  const s = status?.toUpperCase();
+  if (s === 'APPROVED' || s === 'CHARGED') return 'approved';
+  if (s === 'LIVE') return 'live';
+  if (s === 'DIE' || s === 'DEAD') return 'dead';
+  if (s === 'DECLINED') return 'declined';
+  if (s === 'ERROR' || s === 'RETRY' || s === 'CAPTCHA') return 'error';
+  if (s === '3DS' || s === '3DS_REQUIRED') return 'warning';
   return 'secondary';
 }
 
@@ -34,22 +37,53 @@ export function formatDuration(ms) {
 
 /**
  * Format card result message for display
+ * Supports SK-based charger response format
  */
 export function formatCardMessage(result) {
-  if (!result || !result.message) return null;
+  if (!result) return null;
+  
+  const status = result.status?.toUpperCase();
   const message = result.message || '';
   
-  if (result.status === 'APPROVED') {
-    return result.chargeAmountFormatted 
-      ? `Charged ${result.chargeAmountFormatted}` 
-      : 'Payment successful';
+  // For charged/approved cards, show charge amount if available
+  if (status === 'APPROVED' || status === 'CHARGED') {
+    if (result.chargeAmountFormatted) {
+      return `Charged ${result.chargeAmountFormatted}`;
+    }
+    if (result.amount) {
+      // Convert cents to dollars if amount > 100
+      const displayAmount = result.amount > 100 ? (result.amount / 100).toFixed(2) : result.amount.toFixed(2);
+      const currency = result.currency?.toUpperCase() || 'USD';
+      return `Charged $${displayAmount} ${currency}`;
+    }
+    return message || 'Payment successful';
   }
   
-  if (result.status === 'DIE') {
-    return message.replace(/^Declined:\s*/i, '').replace(/_/g, ' ');
+  // For live cards (3DS passed)
+  if (status === 'LIVE') {
+    if (result.threeDs === 'passed') {
+      return message || '3DS authenticated';
+    }
+    return message || 'Card is live';
   }
   
-  return message.replace(/^(Error:|Tokenization failed:)\s*/i, '');
+  if (status === 'DIE' || status === 'DEAD') {
+    return message.replace(/^Declined:\s*/i, '').replace(/_/g, ' ') || 'Card declined';
+  }
+  
+  if (status === 'DECLINED') {
+    return message.replace(/^Declined:\s*/i, '').replace(/_/g, ' ') || 'Card declined';
+  }
+  
+  // Clean up error messages - remove redundant "Error" prefix
+  let cleanedMessage = message.replace(/^(Error:|Tokenization failed:)\s*/i, '');
+  
+  // If message is just "Error" (redundant with status badge), return a more descriptive message
+  if (cleanedMessage.toLowerCase() === 'error' || cleanedMessage.trim() === '') {
+    return 'Validation failed';
+  }
+  
+  return cleanedMessage;
 }
 
 /**

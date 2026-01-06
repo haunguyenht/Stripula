@@ -49,11 +49,11 @@ export function TelegramContactButton({
   return (
     <div 
       className={cn(
-        "fixed bottom-6 z-50",
-        isRight ? "right-6" : "left-6"
+        "fixed bottom-4 sm:bottom-6 z-50",
+        isRight ? "right-4 sm:right-6" : "left-4 sm:left-6"
       )}
     >
-      {/* Tooltip - Refined design */}
+      {/* Tooltip - Refined design with vintage certificate styling */}
       <AnimatePresence>
         {showTooltip && (
           <motion.div
@@ -63,33 +63,40 @@ export function TelegramContactButton({
             transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
             className={cn(
               "absolute bottom-full mb-3 px-4 py-2 rounded-xl whitespace-nowrap",
-              "text-sm font-medium",
-              // Light mode: Warm elegant tooltip
-              "bg-white text-foreground",
-              "shadow-[0_4px_20px_rgba(0,0,0,0.12),0_0_0_1px_rgba(0,0,0,0.05)]",
-              // Dark mode: Glass tooltip
-              "dark:bg-white/[0.08] dark:text-white",
-              "dark:backdrop-blur-xl dark:border dark:border-white/[0.12]",
+              "text-sm font-medium font-serif",
+              // Light mode: Vintage Banking - cream parchment with double-line certificate border
+              "bg-gradient-to-b from-[hsl(42,50%,98%)] to-[hsl(40,45%,96%)]",
+              "text-[hsl(25,35%,18%)]",
+              "border border-[hsl(30,25%,82%)]",
+              "shadow-[0_4px_20px_hsl(25,35%,25%,0.12),0_0_0_1px_hsl(30,25%,85%),0_0_0_3px_hsl(42,45%,97%),0_0_0_4px_hsl(30,20%,80%)]",
+              // Dark mode: Glass tooltip (bg-none resets light gradient)
+              "dark:bg-none dark:bg-white/[0.08] dark:text-white dark:border-white/[0.12]",
+              "dark:backdrop-blur-xl",
               "dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)]",
               isRight ? "right-0" : "left-0"
             )}
           >
             <div className="flex items-center gap-2">
               <SendIcon className="w-3.5 h-3.5 opacity-70" />
-              <span>Contact Admin</span>
+              <span className={cn(
+                "[text-shadow:0_1px_0_rgba(255,255,255,0.6),0_-1px_0_rgba(101,67,33,0.08)] dark:[text-shadow:none]"
+              )}>
+                Contact Admin
+              </span>
             </div>
             {/* Tooltip arrow */}
             <div className={cn(
               "absolute -bottom-1.5 w-3 h-3 rotate-45",
-              "bg-white dark:bg-white/[0.08]",
-              "dark:border-b dark:border-r dark:border-white/[0.12]",
+              // Light: matches cream parchment (no gradient - no fix needed)
+              "bg-[hsl(40,45%,97%)] border-b border-r border-[hsl(30,25%,82%)]",
+              "dark:bg-white/[0.08] dark:border-white/[0.12]",
               isRight ? "right-5" : "left-5"
             )} />
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Main Button */}
+      {/* Main Button - Vintage wax seal / copper coin styling */}
       <motion.button
         onClick={handleClick}
         onMouseEnter={() => {
@@ -102,19 +109,21 @@ export function TelegramContactButton({
         }}
         className={cn(
           "relative flex items-center justify-center",
-          "w-14 h-14 rounded-2xl",
-          // Light mode: Warm, soft design with orange tint
-          "bg-gradient-to-br from-[#0088cc] via-[#0099dd] to-[#00aaee]",
-          "shadow-[0_4px_20px_rgba(0,136,204,0.35),0_8px_40px_rgba(0,136,204,0.2)]",
+          "w-11 h-11 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl",
+          // Light mode: Vintage Banking - copper coin with wax seal embossing
+          "bg-gradient-to-br from-[hsl(25,65%,48%)] via-[hsl(28,60%,52%)] to-[hsl(32,55%,55%)]",
+          // Wax seal / embossed coin shadow effect
+          "shadow-[0_4px_20px_hsl(25,50%,35%,0.35),0_8px_40px_hsl(25,45%,30%,0.2),inset_0_2px_0_hsl(38,65%,65%,0.4),inset_0_-2px_0_hsl(20,60%,35%,0.4)]",
+          "border border-[hsl(25,50%,60%)]/30",
           // Dark mode: Glass morphism with Telegram blue
           "dark:bg-gradient-to-br dark:from-[#0088cc]/90 dark:via-[#0099dd]/80 dark:to-[#00aaee]/70",
-          "dark:backdrop-blur-xl dark:border dark:border-white/[0.15]",
+          "dark:backdrop-blur-xl dark:border-white/[0.15]",
           "dark:shadow-[0_8px_32px_rgba(0,136,204,0.3),inset_0_1px_0_rgba(255,255,255,0.1)]",
           // Text color
           "text-white",
           // Focus state
-          "focus:outline-none focus:ring-2 focus:ring-[#0088cc]/50 focus:ring-offset-2",
-          "dark:focus:ring-offset-[hsl(201,44%,14%)]",
+          "focus:outline-none focus:ring-2 focus:ring-[hsl(25,60%,50%)]/50 focus:ring-offset-2",
+          "dark:focus:ring-[#0088cc]/50 dark:focus:ring-offset-[hsl(201,44%,14%)]",
           // Transition
           "transition-shadow duration-300"
         )}
@@ -166,7 +175,9 @@ export function TelegramContactButton({
         <motion.div
           className={cn(
             "absolute -inset-1 rounded-[20px] -z-10",
-            "bg-gradient-to-br from-[#0088cc] to-[#00aaee]",
+            // Light: copper glow | Dark: telegram blue glow
+            "bg-gradient-to-br from-[hsl(25,60%,45%)] to-[hsl(32,50%,50%)]",
+            "dark:from-[#0088cc] dark:to-[#00aaee]",
             "opacity-0 blur-lg"
           )}
           animate={{
@@ -176,12 +187,13 @@ export function TelegramContactButton({
           transition={{ duration: 0.3 }}
         />
 
-        {/* Subtle pulse ring - only in dark mode */}
+        {/* Subtle pulse ring */}
         <motion.div
           className={cn(
             "absolute inset-0 rounded-2xl",
-            "hidden dark:block",
-            "border-2 border-[#0088cc]/50"
+            // Light: copper pulse | Dark: telegram blue pulse
+            "border-2 border-[hsl(25,60%,50%)]/50",
+            "dark:border-[#0088cc]/50"
           )}
           animate={{
             scale: [1, 1.3, 1.3],
@@ -210,17 +222,17 @@ export function TelegramContactButton({
             ease: "easeInOut",
           }}
         >
-          <TelegramIcon className="w-7 h-7 drop-shadow-sm" />
+          <TelegramIcon className="w-5 h-5 sm:w-7 sm:h-7 drop-shadow-sm" />
         </motion.div>
 
         {/* Inner highlight for depth */}
         <div className="absolute inset-[2px] rounded-[14px] bg-gradient-to-b from-white/20 to-transparent pointer-events-none" />
       </motion.button>
 
-      {/* Floating dots decoration - visible only in dark mode */}
-      <div className="hidden dark:block">
+      {/* Floating dots decoration */}
+      <div>
         <motion.div
-          className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-[#0088cc]/60"
+          className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-[hsl(25,60%,50%)]/60 dark:bg-[#0088cc]/60"
           animate={{
             y: [0, -4, 0],
             opacity: [0.6, 1, 0.6],
@@ -232,7 +244,7 @@ export function TelegramContactButton({
           }}
         />
         <motion.div
-          className="absolute -bottom-1 -left-1 w-1.5 h-1.5 rounded-full bg-[#00aaee]/50"
+          className="absolute -bottom-1 -left-1 w-1.5 h-1.5 rounded-full bg-[hsl(32,55%,55%)]/50 dark:bg-[#00aaee]/50"
           animate={{
             y: [0, -3, 0],
             opacity: [0.5, 0.8, 0.5],

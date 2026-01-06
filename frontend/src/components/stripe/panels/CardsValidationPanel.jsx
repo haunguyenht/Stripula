@@ -1,9 +1,12 @@
 import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
-import { CreditCard, Trash2, Copy, Check, Key, Loader2, ShieldCheck, ShieldX, ShieldAlert, Clock, Building2, Circle, Mail } from 'lucide-react';
+import { CreditCard, Trash2, Key, Loader2, Circle, Mail, AlertTriangle } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useToast } from '@/hooks/useToast';
 import { useCardFilters } from '@/hooks/useCardFilters';
-import { processCardInput, getProcessingToastMessage } from '@/lib/utils/card-parser';
+import { useCardInputLimits } from '@/hooks/useCardInputLimits';
+import { useCredits } from '@/hooks/useCredits';
+import { useGatewayCreditRates } from '@/hooks/useGatewayCreditRates';
+import { processCardInput, getProcessingToastMessage, getTierLimitExceededMessage, validateForSubmission, getGeneratedCardsErrorMessage } from '@/lib/utils/card-parser';
 
 // Layout
 import { TwoPanelLayout } from '../../layout/TwoPanelLayout';
@@ -15,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { SpeedBadge } from '@/components/ui/TierSpeedControl';
 import { useSpeedConfig } from '@/hooks/useSpeedConfig';
 import { useAuth } from '@/contexts/AuthContext';
@@ -40,20 +44,22 @@ import {
 import { 
   BINDataDisplay, 
   SecurityIndicators,
-  DurationDisplay, 
+  DurationDisplay,
+  ThreeDSIndicator,
+  AmountDisplay,
+  CreditsBadge,
   CopyButton,
   CardNumber,
+  GatewayBadge,
 } from '@/components/ui/result-card-parts';
-import { BrandIcon } from '@/components/ui/brand-icons';
 import { cn } from '@/lib/utils';
 
 // Utils
 import { parseProxy } from '@/utils/proxy';
 import { handleCreditError, showCreditErrorToast } from '@/utils/creditErrors';
+import { GatewayMessageFormatter } from '@/utils/gatewayMessage';
 import {
-  toTitleCase,
   getStatusVariant,
-  formatDuration,
   formatCardMessage,
   formatCardForCopy
 } from '@/lib/utils/card-helpers';
@@ -69,6 +75,7 @@ export function CardsValidationPanel({
   setCardResults,
   cardStats,
   setCardStats,
+  setCardStatsImmediate,
   settings,
   onSettingsChange,
   keyResults = [],
@@ -91,8 +98,6 @@ export function CardsValidationPanel({
   const [pageSize, setPageSize] = useState(10);
   const [isFetchingPk, setIsFetchingPk] = useState(false);
   const [isCheckingProxy, setIsCheckingProxy] = useState(false);
-  const [isCheckingConversion, setIsCheckingConversion] = useState(false);
-  const [conversionResult, setConversionResult] = useState(null);
   const pkFetchTimeoutRef = useRef(null);
   const proxyInputRef = useRef(null);
   const { success, error: toastError, info, warning } = useToast();
@@ -110,6 +115,30 @@ export function CardsValidationPanel({
   const userTier = user?.tier || 'free';
   const { config: chargeSpeedConfig } = useSpeedConfig('charge', userTier);
 
+  // Card input limits based on user tier - Requirements: 1.1, 1.2, 1.3
+  const { getLimitStatus } = useCardInputLimits();
+  
+  // Credit management for SK-based charge
+  const {
+    setBalance,
+    refresh: refreshCredits
+  } = useCredits({ gatewayId: 'skbased-1' });
+  
+  // Get pricing from database
+  const { getPricing } = useGatewayCreditRates();
+  const pricing = getPricing('skbased-1');
+  
+  // Track card count and limit status for validation
+  const cardCount = useMemo(() => {
+    if (!cards || typeof cards !== 'string') return 0;
+    const result = processCardInput(cards);
+    return result.validCount || 0;
+  }, [cards]);
+  
+  const limitStatus = useMemo(() => {
+    return getLimitStatus(cardCount);
+  }, [getLimitStatus, cardCount]);
+
   // Check if SK key is valid (either from manual input or selected from list)
   const hasValidKey = useMemo(() => {
     const skKey = settings?.skKey?.trim() || '';
@@ -120,8 +149,9 @@ export function CardsValidationPanel({
   const canCheck = useMemo(() => {
     const hasCards = typeof cards === 'string' && cards.trim().length > 0;
     const hasProxy = settings?.proxy?.trim()?.length > 0;
-    return hasValidKey && hasCards && hasProxy;
-  }, [hasValidKey, cards, settings?.proxy]);
+    const withinTierLimit = limitStatus.isWithinLimit;
+    return hasValidKey && hasCards && hasProxy && withinTierLimit;
+  }, [hasValidKey, cards, settings?.proxy, limitStatus.isWithinLimit]);
 
   // Cleanup on unmount - abort client request AND stop backend processing
   useEffect(() => {
@@ -138,10 +168,16 @@ export function CardsValidationPanel({
   }, [abortControllerRef]);
 
   const clearResults = useCallback(() => {
+    // useBoundedResults.setResults([]) already uses immediate write internally
     setCardResults([]);
-    setCardStats({ approved: 0, live: 0, die: 0, error: 0, total: 0 });
+    // Use immediate setter for stats to bypass debounce
+    if (setCardStatsImmediate) {
+      setCardStatsImmediate({ approved: 0, live: 0, die: 0, error: 0, total: 0 });
+    } else {
+      setCardStats({ approved: 0, live: 0, die: 0, error: 0, total: 0 });
+    }
     setPage(1);
-  }, [setCardResults, setCardStats]);
+  }, [setCardResults, setCardStats, setCardStatsImmediate]);
 
   const clearCards = useCallback(() => {
     setCards('');
@@ -209,53 +245,6 @@ export function CardsValidationPanel({
     }
   }, [handleSettingChange, fetchPkForSk]);
 
-  // Check currency conversion rate
-  const handleCheckConversion = useCallback(async () => {
-    const currency = settings?.currency || 'USD';
-    const amount = parseFloat(settings?.chargeAmount) || 1;
-
-    if (currency === 'USD') {
-      setConversionResult({
-        from: currency,
-        to: 'USD',
-        amount,
-        converted: amount,
-        rate: 1
-      });
-      return;
-    }
-
-    setIsCheckingConversion(true);
-    try {
-      // Use free exchange rate API
-      const response = await fetch(`https://api.exchangerate-api.com/v4/latest/${currency}`);
-      if (!response.ok) throw new Error('Failed to fetch exchange rate');
-
-      const data = await response.json();
-      const rate = data.rates?.USD || 1;
-      const converted = amount * rate;
-
-      setConversionResult({
-        from: currency,
-        to: 'USD',
-        amount,
-        converted: converted.toFixed(2),
-        rate
-      });
-      success(`${amount} ${currency} = ${converted.toFixed(2)} USD`);
-    } catch (err) {
-      toastError('Failed to fetch exchange rate');
-      setConversionResult(null);
-    } finally {
-      setIsCheckingConversion(false);
-    }
-  }, [settings?.currency, settings?.chargeAmount, success, toastError]);
-
-  // Clear conversion result when currency or amount changes
-  useEffect(() => {
-    setConversionResult(null);
-  }, [settings?.currency, settings?.chargeAmount]);
-
   const handleCheckCards = async () => {
     if (isLoading || isCheckingProxy) return;
 
@@ -309,15 +298,35 @@ export function CardsValidationPanel({
       return;
     }
 
+    // Process and validate cards before submission
     const parseResult = processCardInput(cardList);
-    if (parseResult.validCount === 0) {
-      toastError('No valid cards found. Use format: number|mm|yy|cvv');
+    const validation = validateForSubmission(parseResult);
+
+    // Block if no valid cards
+    if (!validation.canSubmit && validation.errorType === 'no_valid_cards') {
+      warning(validation.reason || 'No valid cards to process');
+      return;
+    }
+
+    // Block if generated cards detected
+    if (!validation.canSubmit && validation.errorType === 'generated_cards') {
+      const genError = getGeneratedCardsErrorMessage(parseResult.generatedDetection);
+      toastError(genError?.message || 'Generated cards not allowed');
+      return;
+    }
+
+    const totalCards = parseResult.validCount;
+
+    // Check tier limit before starting validation - Requirements: 1.2, 1.3
+    if (!limitStatus.isWithinLimit) {
+      const tierLimitMsg = getTierLimitExceededMessage(totalCards, limitStatus.limit, userTier);
+      toastError(tierLimitMsg.message);
       return;
     }
 
     setIsLoading(true);
     abortRef.current = false;
-    setProgress({ current: 0, total: parseResult.validCount });
+    setProgress({ current: 0, total: totalCards });
 
     setCurrentItem(`Starting validation...`);
     info(`Starting validation for ${parseResult.validCount} cards`);
@@ -331,9 +340,11 @@ export function CardsValidationPanel({
       abortControllerRef.current = new AbortController();
 
       const proxyObj = parseProxy(settings.proxy);
-      const chargeAmountCents = settings.chargeAmount
-        ? Math.round(parseFloat(settings.chargeAmount) * 100)
-        : null;
+      const amount = parseFloat(settings.chargeAmount) || 1;
+      const currency = settings.currency || 'usd';
+      
+      // Convert amount to cents
+      const chargeAmountCents = Math.round(amount * 100);
 
       const response = await fetch('/api/skbased/validate', {
         method: 'POST',
@@ -342,11 +353,11 @@ export function CardsValidationPanel({
         },
         body: JSON.stringify({
           skKey: settings.skKey.trim(),
-          pkKey: settings.pkKey?.trim() || null, // Pass PK to avoid re-fetching
+          pkKey: settings.pkKey?.trim() || null,
           cards: cardList.split('\n').map(l => l.trim()).filter(l => l && l.includes('|')),
           proxy: proxyObj,
           chargeAmount: chargeAmountCents,
-          currency: (settings.currency || 'USD').toLowerCase()
+          currency
         }),
         signal: abortControllerRef.current.signal
       });
@@ -466,22 +477,30 @@ export function CardsValidationPanel({
             // Add to pending batch instead of immediate UI update
             pendingResultsRef.current.unshift(resultToAdd);
 
-            // Process side effects immediately (celebration)
-            if (r.status === 'APPROVED') celebrate();
+            // Process side effects immediately (celebration + balance update)
+            if (r.status === 'APPROVED' || r.status === 'Charged') celebrate();
+            
+            // Update balance if provided in result
+            if (typeof r.newBalance === 'number') {
+              setBalance(r.newBalance);
+            }
 
-            // Remove card from input
-            if (typeof cardInfo === 'object' && cardInfo.number) {
-              const cardNumber = cardInfo.number;
-              currentCards = currentCards
-                .split('\n')
-                .filter(line => {
-                  const trimmed = line.trim();
-                  if (!trimmed) return false;
-                  const lineCardNumber = trimmed.split(/[|,\s]/)[0];
-                  return lineCardNumber !== cardNumber;
-                })
-                .join('\n');
-              setCards(currentCards);
+            // Remove processed card from input
+            // Use fullCard which contains the complete card number
+            if (fullCard && fullCard !== 'Unknown card') {
+              const cardNumber = fullCard.split(/[|,\s]/)[0]; // Get just the card number part
+              if (cardNumber && cardNumber.length >= 13) {
+                currentCards = currentCards
+                  .split('\n')
+                  .filter(line => {
+                    const trimmed = line.trim();
+                    if (!trimmed) return false;
+                    const lineCardNumber = trimmed.split(/[|,\s]/)[0];
+                    return lineCardNumber !== cardNumber;
+                  })
+                  .join('\n');
+                setCards(currentCards);
+              }
             }
 
             // Batch UI updates - flush when batch is full (10) or timeout (50ms)
@@ -510,6 +529,9 @@ export function CardsValidationPanel({
     setIsLoading(false);
     setCurrentItem(null);
     abortControllerRef.current = null;
+
+    // Refresh credits to get updated balance from server
+    refreshCredits().catch(() => { });
 
     if (!abortRef.current) {
       // Use batchStats from this run (not accumulated cardStats)
@@ -549,11 +571,6 @@ export function CardsValidationPanel({
     setPageSize(size);
     setPage(1);
   }, []);
-
-  const cardCount = useMemo(() => {
-    const cardStr = typeof cards === 'string' ? cards : '';
-    return cardStr.split('\n').filter(l => l.trim()).length;
-  }, [cards]);
 
   // Process cards on blur - remove duplicates and expired cards
   const handleCardsBlur = useCallback(() => {
@@ -635,13 +652,19 @@ export function CardsValidationPanel({
 
         {/* Action bar below textarea */}
         <div className="flex items-center justify-between px-3 py-2 border-t border-[rgb(230,225,223)] bg-[rgb(250,249,249)] dark:border-white/10 dark:bg-white/5">
-          {/* Card count badge */}
+          {/* Card count badge with tier limit */}
           <div className="flex items-center gap-2">
-            {cardCount > 0 && (
-              <Badge variant="secondary" className="text-[10px] h-6">
-                {cardCount} cards
-              </Badge>
-            )}
+            <Badge
+              variant={limitStatus.isError ? "destructive" : limitStatus.isWarning ? "warning" : "secondary"}
+              className={cn(
+                "text-[10px] h-6",
+                limitStatus.isError && "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20",
+                limitStatus.isWarning && "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
+              )}
+            >
+              {cardCount}/{limitStatus.limit} cards
+              {limitStatus.isWarning && <AlertTriangle className="w-3 h-3 ml-1" />}
+            </Badge>
           </div>
 
           {/* Action buttons */}
@@ -671,7 +694,9 @@ export function CardsValidationPanel({
                     ? 'Enter a valid SK key (sk_live_...)'
                     : !settings?.proxy?.trim()
                       ? 'Proxy is required'
-                      : undefined
+                      : limitStatus.isError
+                        ? `Exceeds ${userTier} tier limit of ${limitStatus.limit} cards`
+                        : undefined
                 }
               >
                 {isCheckingProxy && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
@@ -681,6 +706,17 @@ export function CardsValidationPanel({
           </div>
         </div>
       </div>
+
+      {/* Tier limit exceeded warning */}
+      {limitStatus.isError && (
+        <Alert variant="destructive" className="text-xs py-2.5">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            You have {cardCount} cards but your {userTier} tier limit is {limitStatus.limit}.
+            Please remove {limitStatus.excess} card{limitStatus.excess > 1 ? 's' : ''} to continue.
+          </AlertDescription>
+        </Alert>
+      )}
 
       <AnimatePresence mode="wait">
         {isLoading && progress.total > 0 && (
@@ -695,7 +731,13 @@ export function CardsValidationPanel({
             <Key className="h-4 w-4 text-muted-foreground" />
             <Label className="text-xs font-medium">API Keys</Label>
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2">
+            {/* Credit Cost Display - from database */}
+            <div className="flex items-center gap-1.5 text-[10px] font-medium text-muted-foreground">
+              <span className="text-emerald-600 dark:text-emerald-400">Approved {pricing?.approved ?? 5}</span>
+              <span>|</span>
+              <span className="text-blue-600 dark:text-blue-400">Live {pricing?.live ?? 3}</span>
+            </div>
             <SpeedBadge gatewayId="charge" config={chargeSpeedConfig} disabled={isLoading} />
           </div>
         </div>
@@ -714,7 +756,7 @@ export function CardsValidationPanel({
               info('Switched to manual input');
             }
           }}
-          disabled={isLoading}
+          disabled={isLoading || isCheckingProxy}
         >
           <SelectTrigger className="h-8 text-xs">
             <SelectValue placeholder="Select key or manual input">
@@ -786,42 +828,14 @@ export function CardsValidationPanel({
         />
       </div>
 
-      {/* Settings Section - Currency & Amount */}
+      {/* Settings Section - Charge Amount & Currency */}
       <div className="space-y-3 pt-4 border-t border-[rgb(230,225,223)] dark:border-white/10">
-        <div className="flex items-center gap-2">
-          <Label className="text-xs font-medium">💰 Currency & Amount</Label>
-        </div>
+        <Label className="text-xs font-medium flex items-center gap-1.5">
+          <span className="text-base">💰</span>
+          Charge Amount
+        </Label>
 
-        {/* Currency Selection */}
-        <div className="flex items-center gap-2">
-          <Label className="text-xs w-16">Currency</Label>
-          <Select
-            value={settings?.currency || 'USD'}
-            onValueChange={(val) => handleSettingChange('currency', val)}
-            disabled={isLoading}
-          >
-            <SelectTrigger className="flex-1 h-8 text-xs">
-              <SelectValue placeholder="Select currency" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="USD">USD - US Dollar</SelectItem>
-              <SelectItem value="EUR">EUR - Euro</SelectItem>
-              <SelectItem value="GBP">GBP - British Pound</SelectItem>
-              <SelectItem value="AUD">AUD - Australian Dollar</SelectItem>
-              <SelectItem value="CAD">CAD - Canadian Dollar</SelectItem>
-              <SelectItem value="SGD">SGD - Singapore Dollar</SelectItem>
-              <SelectItem value="INR">INR - Indian Rupee</SelectItem>
-              <SelectItem value="BRL">BRL - Brazilian Real</SelectItem>
-              <SelectItem value="CHF">CHF - Swiss Franc</SelectItem>
-              <SelectItem value="MYR">MYR - Malaysian Ringgit</SelectItem>
-              <SelectItem value="JPY">JPY - Japanese Yen</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Amount Input with Check Button */}
-        <div className="flex items-center gap-2">
-          <Label htmlFor="charge-amount" className="text-xs w-16">Amount</Label>
+        <div className="flex gap-2">
           <Input
             id="charge-amount"
             name="charge-amount"
@@ -831,47 +845,38 @@ export function CardsValidationPanel({
             step="0.01"
             value={settings?.chargeAmount || ''}
             onChange={(e) => handleSettingChange('chargeAmount', e.target.value)}
-            placeholder="1"
+            placeholder="1.00"
             disabled={isLoading}
-            className="flex-1 h-8 text-xs"
+            className="h-9 text-xs font-mono flex-1"
           />
-          <Button
-            size="sm"
-            variant="secondary"
-            className="h-8 text-xs px-3"
-            onClick={handleCheckConversion}
-            disabled={isLoading || isCheckingConversion}
+          <Select
+            value={settings?.currency || 'usd'}
+            onValueChange={(val) => handleSettingChange('currency', val)}
+            disabled={isLoading}
           >
-            {isCheckingConversion ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Check'}
-          </Button>
-        </div>
-
-        {/* Conversion Result Display */}
-        {conversionResult && (
-          <div className="relative rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3">
-            <button
-              className="absolute top-2 right-2 text-muted-foreground hover:text-foreground"
-              onClick={() => setConversionResult(null)}
-            >
-              ×
-            </button>
-            <div className="flex items-center gap-2 text-xs font-medium text-emerald-600 dark:text-emerald-400">
-              <Check className="h-4 w-4" />
-              Conversion Result
-            </div>
-            <div className="mt-2 text-sm font-semibold">
-              {conversionResult.amount} {conversionResult.from} → <span className="text-emerald-600 dark:text-emerald-400">{conversionResult.converted} USD</span>
-            </div>
-            <div className="text-xs text-muted-foreground mt-1">
-              Rate: 1 {conversionResult.from} = {conversionResult.rate} USD
-            </div>
-          </div>
-        )}
-
-        {/* Tip about currency matching */}
-        <div className="flex items-center gap-2 text-[10px] text-muted-foreground bg-muted/50 rounded-md p-2">
-          <span>💡</span>
-          <span>Match currency to SK account's default to reduce Radar risk</span>
+            <SelectTrigger className="h-9 w-24 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="usd">USD $</SelectItem>
+              <SelectItem value="gbp">GBP £</SelectItem>
+              <SelectItem value="eur">EUR €</SelectItem>
+              <SelectItem value="cad">CAD $</SelectItem>
+              <SelectItem value="aud">AUD $</SelectItem>
+              <SelectItem value="jpy">JPY ¥</SelectItem>
+              <SelectItem value="chf">CHF</SelectItem>
+              <SelectItem value="sek">SEK</SelectItem>
+              <SelectItem value="nok">NOK</SelectItem>
+              <SelectItem value="dkk">DKK</SelectItem>
+              <SelectItem value="pln">PLN</SelectItem>
+              <SelectItem value="inr">INR ₹</SelectItem>
+              <SelectItem value="sgd">SGD $</SelectItem>
+              <SelectItem value="hkd">HKD $</SelectItem>
+              <SelectItem value="nzd">NZD $</SelectItem>
+              <SelectItem value="mxn">MXN $</SelectItem>
+              <SelectItem value="brl">BRL R$</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
     </div>
@@ -939,44 +944,96 @@ export function CardsValidationPanel({
 }
 
 /**
+ * Standardize decline messages for better readability
+ */
+/**
  * CardResultCard - Individual card result using ResultCard component
+ * Supports SK-based charger response format:
+ * { success, status, card, amount, risk_level, avs_check, cvc_check, brand, funding, country, threeDs, pm_id, pi_id, time_taken }
  */
 const CardResultCard = React.memo(function CardResultCard({ result, copiedCard, onCopy }) {
-  const isFullView = result.status === 'LIVE' || result.status === 'APPROVED';
-  const resultId = result.id || result.card;
+  // Normalize status - SK-based returns "Charged", "Live", "Declined"
+  const normalizedStatus = useMemo(() => {
+    const s = result.status?.toUpperCase();
+    if (s === 'CHARGED') return 'APPROVED';
+    return s || 'UNKNOWN';
+  }, [result.status]);
+  
+  const isFullView = normalizedStatus === 'LIVE' || normalizedStatus === 'APPROVED';
+  const isDeclined = normalizedStatus === 'DECLINED' || normalizedStatus === 'DIE' || normalizedStatus === 'DEAD';
+  const resultId = result.id || result.fullCard || result.card;
   const isCopied = copiedCard === resultId;
+  
+  // Always use fullCard (unmasked) for display, fallback to card if not available
+  const displayCard = result.fullCard || result.card;
 
   const handleCopy = useCallback(() => {
     onCopy(result);
   }, [onCopy, result]);
 
-  const message = formatCardMessage(result);
-
   // Check for BIN data (supports both nested and flat fields)
-  const hasBinData = result.binData || result.brand || result.type || result.country;
+  // SK-based returns: brand, funding, country
+  const hasBinData = result.binData || result.brand || result.type || result.country || result.funding;
   
-  // Check for security data
-  const hasSecurityData = isFullView && (
-    (result.riskLevel && result.riskLevel !== 'unknown') ||
-    (result.avsCheck && result.avsCheck !== 'unknown') ||
-    (result.cvcCheck && result.cvcCheck !== 'unknown')
+  // Check for security data - show for live/approved AND declined
+  // SK-based returns: risk_level, avs_check, cvc_check (snake_case)
+  const riskLevel = result.riskLevel || result.risk_level;
+  const avsCheck = result.avsCheck || result.avs_check;
+  const cvcCheck = result.cvcCheck || result.cvc_check;
+  const threeDs = result.threeDs || result.three_ds;
+  
+  // Show security data for live/approved or declined with risk info
+  const hasSecurityData = (isFullView || isDeclined) && (
+    (riskLevel && riskLevel !== 'unknown') ||
+    (avsCheck && avsCheck !== 'unknown') ||
+    (cvcCheck && cvcCheck !== 'unknown') ||
+    (threeDs && threeDs !== 'unknown' && threeDs !== 'none')
   );
 
+  // Duration - SK-based returns time_taken in seconds - show for ALL results
+  const duration = result.duration || (result.time_taken ? result.time_taken * 1000 : null);
+  
+  // Format message using centralized GatewayMessageFormatter
+  const displayMessage = useMemo(() => {
+    const declineCode = result.declineCode || result.decline_code || result.code;
+    if (isDeclined || normalizedStatus === 'ERROR') {
+      const formatted = GatewayMessageFormatter.format({
+        status: normalizedStatus,
+        message: result.message,
+        declineCode
+      });
+      return formatted.message;
+    }
+    return formatCardMessage(result);
+  }, [result, isDeclined, normalizedStatus]);
+
   return (
-    <ResultCard status={result.status} interactive>
+    <ResultCard status={normalizedStatus} interactive>
       <ResultCardContent>
-        {/* Zone 1: Header - Status + Card Number + Actions */}
+        {/* Zone 1: Header - Status + Card Number + Duration + Actions */}
         <ResultCardHeader>
           <div className="flex items-center gap-3 min-w-0 flex-1">
-            <Badge variant={getStatusVariant(result.status)} className="text-[10px] font-semibold shrink-0">
-              {result.status}
+            <Badge variant={getStatusVariant(normalizedStatus)} className="text-[10px] font-semibold shrink-0">
+              {normalizedStatus}
             </Badge>
-            <CardNumber card={result.card} />
+            <CardNumber card={displayCard} />
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <DurationDisplay duration={result.duration} />
+            {/* Show amount for charged cards */}
+            {isFullView && result.amount && (
+              <AmountDisplay 
+                amount={result.amount} 
+                currency={result.currency}
+              />
+            )}
+            {/* Show credits deducted for charged cards */}
+            {isFullView && result.creditsDeducted > 0 && (
+              <CreditsBadge credits={result.creditsDeducted} />
+            )}
+            {/* Show duration for ALL results */}
+            <DurationDisplay duration={duration} />
             <CopyButton 
-              value={result.card}
+              value={displayCard}
               isCopied={isCopied}
               onCopy={handleCopy}
               title="Copy card"
@@ -995,37 +1052,41 @@ const CardResultCard = React.memo(function CardResultCard({ result, copiedCard, 
               country={result.country}
               countryFlag={result.countryFlag}
               bank={result.bank}
+              funding={result.funding}
             />
           </ResultCardDataZone>
         )}
 
-        {/* Zone 3: Response - Message (for LIVE/APPROVED or errors) */}
-        {(isFullView && result.message) && (
+        {/* Zone 3: Response - Message + Gateway (for LIVE/APPROVED) */}
+        {isFullView && displayMessage && (
           <ResultCardResponseZone>
-            <ResultCardMessage status={result.status} className="truncate flex-1">
-              {result.message}
+            <ResultCardMessage status={normalizedStatus} className="sm:truncate flex-1">
+              {displayMessage}
             </ResultCardMessage>
+            <GatewayBadge gateway={result.gateway} site={result.site} />
           </ResultCardResponseZone>
         )}
 
-        {/* Zone 4: Security - Risk, CVC, AVS checks (only for LIVE/APPROVED with data) */}
+        {/* Zone 4: Security - Risk, CVC, AVS, 3DS checks (for LIVE/APPROVED and DECLINED with data) */}
         {hasSecurityData && (
           <ResultCardSecurityZone>
             <SecurityIndicators
-              riskLevel={result.riskLevel}
-              riskScore={result.riskScore}
-              cvcCheck={result.cvcCheck}
-              avsCheck={result.avsCheck}
+              riskLevel={riskLevel}
+              riskScore={result.riskScore || result.risk_score}
+              cvcCheck={cvcCheck}
+              avsCheck={avsCheck}
             />
+            {isFullView && <ThreeDSIndicator threeDs={threeDs} />}
           </ResultCardSecurityZone>
         )}
 
-        {/* Error/Declined message (non-live cards) */}
-        {!isFullView && message && (
+        {/* Declined/Error message (non-live cards) */}
+        {!isFullView && displayMessage && (
           <ResultCardResponseZone>
-            <ResultCardMessage status={result.status} className="truncate">
-              {message.length > 80 ? message.substring(0, 80) + '...' : message}
+            <ResultCardMessage status={normalizedStatus} className="sm:truncate flex-1">
+              {displayMessage}
             </ResultCardMessage>
+            <GatewayBadge gateway={result.gateway} site={result.site} />
           </ResultCardResponseZone>
         )}
       </ResultCardContent>

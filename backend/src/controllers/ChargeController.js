@@ -172,6 +172,9 @@ export class ChargeController {
         let totalCreditsDeducted = 0;
         let currentBalance = req.creditInfo?.currentBalance || 0;
         let creditExhausted = false;
+        let approvedCount = 0;
+        let liveCount = 0;
+        let processedCards = 0;
         
         try {
             const result = await this.chargeService.processBatch(
@@ -180,9 +183,12 @@ export class ChargeController {
                     concurrency: Math.min(concurrency, 3),
                     delayBetweenCards: 3000,
                     tier, // Pass tier for speed limiting (Requirement 3.1)
+                    userId, // Pass userId for statistics tracking (Requirements 8.1, 8.2)
                     onProgress: (progress) => sendEvent('progress', progress),
                     onResult: async (result) => {
                         if (streamClosed || creditExhausted) return;
+                        
+                        processedCards++;
                         
                         // Check if this is a billable result (APPROVED or LIVE 3DS/decline)
                         const isLiveDecline = result.status === 'DECLINED' && result.isLive === true;
@@ -191,6 +197,13 @@ export class ChargeController {
                         if (isBillable && userId && this.creditManagerService) {
                             // Charge uses pricing_approved for APPROVED, pricing_live for 3DS/live declines
                             const statusType = result.status === 'APPROVED' ? 'approved' : 'live';
+                            
+                            // Track counts for transaction history
+                            if (statusType === 'approved') {
+                                approvedCount++;
+                            } else {
+                                liveCount++;
+                            }
                             
                             const deductResult = await this.creditManagerService.deductSingleCardCredit(
                                 userId,
@@ -237,17 +250,35 @@ export class ChargeController {
                 }
             );
 
-            const approvedCount = result.stats?.approved || 0;
-
-            // Credits already deducted per-card in real-time, no batch deduction needed
-            if (totalCreditsDeducted > 0) {
-
+            // Determine stop reason (null for normal completion per DB constraint)
+            const wasUserStopped = result.aborted === true;
+            const wasStopped = creditExhausted || wasUserStopped;
+            let stopReason = null; // null = completed normally
+            if (creditExhausted) stopReason = 'credit_exhausted';
+            else if (wasUserStopped) stopReason = 'user_cancelled';
+            
+            // Record batch transaction to history (only when credits were deducted)
+            if (userId && this.creditManagerService && totalCreditsDeducted > 0) {
+                try {
+                    await this.creditManagerService.recordBatchTransaction(userId, gatewayId, {
+                        totalCreditsDeducted,
+                        approvedCount,
+                        liveCount,
+                        totalCards: cardArray.length,
+                        processedCards,
+                        currentBalance,
+                        wasStopped,
+                        stopReason
+                    });
+                } catch (err) {
+                    console.error('[ChargeController] Failed to record batch transaction:', err.message);
+                }
             }
 
             // Release operation lock
             if (userId && this.creditManagerService) {
                 try {
-                    await this.creditManagerService.releaseOperationLockByUser(userId, creditExhausted ? 'credit_exhausted' : 'completed');
+                    await this.creditManagerService.releaseOperationLockByUser(userId, stopReason);
                 } catch {}
             }
 
@@ -258,6 +289,22 @@ export class ChargeController {
                 creditExhausted
             });
         } catch (error) {
+            // Record transaction on error if any credits were deducted
+            if (userId && this.creditManagerService && totalCreditsDeducted > 0) {
+                try {
+                    await this.creditManagerService.recordBatchTransaction(userId, gatewayId, {
+                        totalCreditsDeducted,
+                        approvedCount,
+                        liveCount,
+                        totalCards: cardArray.length,
+                        processedCards,
+                        currentBalance,
+                        wasStopped: true,
+                        stopReason: 'error'
+                    });
+                } catch {}
+            }
+            
             // Release lock on error
             if (userId && this.creditManagerService) {
                 try {

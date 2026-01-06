@@ -39,12 +39,15 @@ export class SKBasedResult {
         this.countryFlag = data.countryFlag || null;  // Flag emoji (Requirement 9.29)
 
         // Metadata (Requirements 9.30-9.32)
-        this.chargeAmount = data.chargeAmount || null; // Amount charged (e.g., "$1")
+        this.chargeAmount = data.chargeAmount || null; // Amount charged in cents
+        this.currency = data.currency || null;         // Currency code (e.g., 'gbp', 'usd')
         this.duration = data.duration || null;         // Time taken in ms
+        this.timeTaken = data.timeTaken || null;       // Time taken in seconds (from Playwright)
         this.gateway = data.gateway || 'skbased';      // Gateway identifier
         this.chargeId = data.chargeId || null;         // Stripe charge ID
         // refundId removed - no refund for performance
         this.sourceId = data.sourceId || null;         // Stripe source ID
+        this.threeDs = data.threeDs || null;           // 3DS status
 
         // RK-based flow fields
         this.paymentIntentId = data.paymentIntentId || null;  // Stripe PaymentIntent ID
@@ -113,10 +116,14 @@ export class SKBasedResult {
             card: cardObj,
             declineCode: this.declineCode,
             riskLevel: this.riskLevel,
+            risk_level: this.riskLevel, // snake_case alias for FE compatibility
             avsCheck: this.avsCheck,
+            avs_check: this.avsCheck,   // snake_case alias
             cvcCheck: this.cvcCheck,
+            cvc_check: this.cvcCheck,   // snake_case alias
             networkStatus: this.networkStatus,
             vbvStatus: this.vbvStatus,
+            threeDs: this.threeDs,
             brand: this.brand,
             type: this.type,
             category: this.category,
@@ -124,8 +131,11 @@ export class SKBasedResult {
             bank: this.bank,
             country: this.country,
             countryFlag: this.countryFlag,
+            amount: this.chargeAmount,      // Amount in cents
             chargeAmount: this.chargeAmount,
-            duration: this.duration,
+            currency: this.currency,
+            duration: this.duration || (this.timeTaken ? this.timeTaken * 1000 : null),
+            time_taken: this.timeTaken,     // Time in seconds
             gateway: this.gateway
         };
 
@@ -143,8 +153,9 @@ export class SKBasedResult {
 
         // Include optional IDs if present
         if (this.chargeId) json.chargeId = this.chargeId;
-        // refundId removed - no refund for performance
         if (this.sourceId) json.sourceId = this.sourceId;
+        if (this.paymentIntentId) json.pi_id = this.paymentIntentId;
+        if (this.paymentMethodId) json.pm_id = this.paymentMethodId;
 
         return json;
     }

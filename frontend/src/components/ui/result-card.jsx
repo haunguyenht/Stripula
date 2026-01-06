@@ -21,93 +21,101 @@ import { cn } from "@/lib/utils";
  * @param {boolean} animate - Whether to use motion animations (default: true)
  */
 
-// Premium status configuration with enhanced glow effects
+// Premium status configuration with transparent glass morphism
+// Light Theme: Vintage Banking / Cream Paper + Copper Foil
+// Dark Theme: Liquid Aurora Design System
 const STATUS_CONFIG = {
   live: {
-    // Light mode - premium emerald
-    lightBg: 'bg-gradient-to-br from-emerald-50/90 via-white/95 to-white',
-    lightBorder: 'border-emerald-200/60',
-    lightAccent: 'before:bg-gradient-to-b before:from-emerald-400 before:to-emerald-500',
-    lightShadow: 'shadow-[0_4px_20px_-4px_rgba(16,185,129,0.15),0_2px_8px_-2px_rgba(0,0,0,0.06)]',
-    lightHoverShadow: 'hover:shadow-[0_8px_30px_-4px_rgba(16,185,129,0.25),0_4px_12px_-2px_rgba(0,0,0,0.08)]',
-    // Dark mode - premium glass with emerald glow
-    darkBg: 'dark:bg-gradient-to-br dark:from-emerald-500/[0.08] dark:via-[rgba(40,40,44,0.85)] dark:to-[rgba(32,32,36,0.9)]',
-    darkBorder: 'dark:border-emerald-500/20',
+    // Light mode - vintage emerald ink on aged paper
+    lightBg: 'bg-[hsl(38,35%,97%)]',
+    lightBorder: 'border-[hsl(145,35%,65%)]',
+    lightAccent: 'before:bg-gradient-to-b before:from-[hsl(145,45%,42%)] before:to-[hsl(155,40%,35%)]',
+    lightShadow: 'shadow-[0_2px_12px_rgba(34,120,80,0.08),0_1px_3px_rgba(139,90,43,0.04)]',
+    lightHoverShadow: 'hover:shadow-[0_4px_20px_rgba(34,120,80,0.12),0_2px_6px_rgba(139,90,43,0.06)]',
+    // Dark mode - transparent glass with emerald accent glow
+    darkBg: 'dark:bg-emerald-500/[0.03]',
+    darkBorder: 'dark:border-emerald-400/20',
     darkAccent: 'dark:before:bg-gradient-to-b dark:before:from-emerald-400 dark:before:to-emerald-500',
-    darkGlow: 'dark:shadow-[0_0_30px_-5px_rgba(52,211,153,0.2),0_8px_25px_-5px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.05)]',
-    darkHoverGlow: 'dark:hover:shadow-[0_0_40px_-5px_rgba(52,211,153,0.3),0_12px_35px_-5px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.08)]',
+    darkGlow: 'dark:shadow-[0_0_40px_-10px_rgba(52,211,153,0.25),0_8px_32px_rgba(0,0,0,0.4),inset_0_0.5px_0_rgba(255,255,255,0.1)]',
+    darkHoverGlow: 'dark:hover:shadow-[0_0_60px_-10px_rgba(52,211,153,0.35),0_12px_48px_rgba(0,0,0,0.5),inset_0_0.5px_0_rgba(255,255,255,0.15)]',
   },
   approved: {
-    lightBg: 'bg-gradient-to-br from-emerald-50/90 via-white/95 to-white',
-    lightBorder: 'border-emerald-200/60',
-    lightAccent: 'before:bg-gradient-to-b before:from-emerald-400 before:to-emerald-500',
-    lightShadow: 'shadow-[0_4px_20px_-4px_rgba(16,185,129,0.15),0_2px_8px_-2px_rgba(0,0,0,0.06)]',
-    lightHoverShadow: 'hover:shadow-[0_8px_30px_-4px_rgba(16,185,129,0.25),0_4px_12px_-2px_rgba(0,0,0,0.08)]',
-    darkBg: 'dark:bg-gradient-to-br dark:from-emerald-500/[0.08] dark:via-[rgba(40,40,44,0.85)] dark:to-[rgba(32,32,36,0.9)]',
-    darkBorder: 'dark:border-emerald-500/20',
+    // Light mode - antique green seal on parchment
+    lightBg: 'bg-[hsl(40,38%,97%)]',
+    lightBorder: 'border-[hsl(150,30%,60%)]',
+    lightAccent: 'before:bg-gradient-to-b before:from-[hsl(145,45%,42%)] before:to-[hsl(155,40%,35%)]',
+    lightShadow: 'shadow-[0_2px_12px_rgba(34,120,80,0.08),0_1px_3px_rgba(139,90,43,0.04)]',
+    lightHoverShadow: 'hover:shadow-[0_4px_20px_rgba(34,120,80,0.12),0_2px_6px_rgba(139,90,43,0.06)]',
+    darkBg: 'dark:bg-emerald-500/[0.03]',
+    darkBorder: 'dark:border-emerald-400/20',
     darkAccent: 'dark:before:bg-gradient-to-b dark:before:from-emerald-400 dark:before:to-emerald-500',
-    darkGlow: 'dark:shadow-[0_0_30px_-5px_rgba(52,211,153,0.2),0_8px_25px_-5px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.05)]',
-    darkHoverGlow: 'dark:hover:shadow-[0_0_40px_-5px_rgba(52,211,153,0.3),0_12px_35px_-5px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.08)]',
+    darkGlow: 'dark:shadow-[0_0_40px_-10px_rgba(52,211,153,0.25),0_8px_32px_rgba(0,0,0,0.4),inset_0_0.5px_0_rgba(255,255,255,0.1)]',
+    darkHoverGlow: 'dark:hover:shadow-[0_0_60px_-10px_rgba(52,211,153,0.35),0_12px_48px_rgba(0,0,0,0.5),inset_0_0.5px_0_rgba(255,255,255,0.15)]',
   },
   '3ds': {
-    lightBg: 'bg-gradient-to-br from-orange-50/90 via-white/95 to-white',
-    lightBorder: 'border-orange-200/60',
-    lightAccent: 'before:bg-gradient-to-b before:from-orange-400 before:to-orange-500',
-    lightShadow: 'shadow-[0_4px_20px_-4px_rgba(249,115,22,0.15),0_2px_8px_-2px_rgba(0,0,0,0.06)]',
-    lightHoverShadow: 'hover:shadow-[0_8px_30px_-4px_rgba(249,115,22,0.25),0_4px_12px_-2px_rgba(0,0,0,0.08)]',
-    darkBg: 'dark:bg-gradient-to-br dark:from-orange-500/[0.08] dark:via-[rgba(40,40,44,0.85)] dark:to-[rgba(32,32,36,0.9)]',
-    darkBorder: 'dark:border-orange-500/20',
+    // Light mode - copper/bronze warning tint
+    lightBg: 'bg-[hsl(38,40%,97%)]',
+    lightBorder: 'border-[hsl(25,55%,60%)]',
+    lightAccent: 'before:bg-gradient-to-b before:from-[hsl(25,70%,48%)] before:to-[hsl(20,65%,40%)]',
+    lightShadow: 'shadow-[0_2px_12px_rgba(180,100,50,0.1),0_1px_3px_rgba(139,90,43,0.04)]',
+    lightHoverShadow: 'hover:shadow-[0_4px_20px_rgba(180,100,50,0.15),0_2px_6px_rgba(139,90,43,0.06)]',
+    darkBg: 'dark:bg-orange-500/[0.03]',
+    darkBorder: 'dark:border-orange-400/20',
     darkAccent: 'dark:before:bg-gradient-to-b dark:before:from-orange-400 dark:before:to-orange-500',
-    darkGlow: 'dark:shadow-[0_0_30px_-5px_rgba(251,146,60,0.2),0_8px_25px_-5px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.05)]',
-    darkHoverGlow: 'dark:hover:shadow-[0_0_40px_-5px_rgba(251,146,60,0.3),0_12px_35px_-5px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.08)]',
+    darkGlow: 'dark:shadow-[0_0_40px_-10px_rgba(251,146,60,0.25),0_8px_32px_rgba(0,0,0,0.4),inset_0_0.5px_0_rgba(255,255,255,0.1)]',
+    darkHoverGlow: 'dark:hover:shadow-[0_0_60px_-10px_rgba(251,146,60,0.35),0_12px_48px_rgba(0,0,0,0.5),inset_0_0.5px_0_rgba(255,255,255,0.15)]',
   },
   dead: {
-    lightBg: 'bg-gradient-to-br from-rose-50/70 via-white/95 to-white',
-    lightBorder: 'border-rose-200/50',
-    lightAccent: 'before:bg-gradient-to-b before:from-rose-400 before:to-rose-500',
-    lightShadow: 'shadow-[0_4px_16px_-4px_rgba(244,63,94,0.1),0_2px_6px_-2px_rgba(0,0,0,0.05)]',
-    lightHoverShadow: 'hover:shadow-[0_6px_24px_-4px_rgba(244,63,94,0.15),0_4px_10px_-2px_rgba(0,0,0,0.06)]',
-    darkBg: 'dark:bg-gradient-to-br dark:from-rose-500/[0.05] dark:via-[rgba(40,40,44,0.85)] dark:to-[rgba(32,32,36,0.9)]',
-    darkBorder: 'dark:border-rose-500/15',
+    // Light mode - faded burgundy ink on aged paper
+    lightBg: 'bg-[hsl(38,25%,96%)]',
+    lightBorder: 'border-[hsl(0,25%,72%)]',
+    lightAccent: 'before:bg-gradient-to-b before:from-[hsl(355,40%,50%)] before:to-[hsl(350,35%,42%)]',
+    lightShadow: 'shadow-[0_1px_8px_rgba(139,90,43,0.04)]',
+    lightHoverShadow: 'hover:shadow-[0_2px_12px_rgba(139,90,43,0.06)]',
+    darkBg: 'dark:bg-rose-500/[0.02]',
+    darkBorder: 'dark:border-rose-400/15',
     darkAccent: 'dark:before:bg-gradient-to-b dark:before:from-rose-400 dark:before:to-rose-500',
-    darkGlow: 'dark:shadow-[0_0_20px_-5px_rgba(251,113,133,0.1),0_8px_25px_-5px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.05)]',
-    darkHoverGlow: 'dark:hover:shadow-[0_0_25px_-5px_rgba(251,113,133,0.15),0_10px_30px_-5px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.06)]',
+    darkGlow: 'dark:shadow-[0_0_30px_-10px_rgba(251,113,133,0.15),0_8px_32px_rgba(0,0,0,0.4),inset_0_0.5px_0_rgba(255,255,255,0.08)]',
+    darkHoverGlow: 'dark:hover:shadow-[0_0_40px_-10px_rgba(251,113,133,0.2),0_10px_40px_rgba(0,0,0,0.45),inset_0_0.5px_0_rgba(255,255,255,0.1)]',
   },
   declined: {
-    lightBg: 'bg-gradient-to-br from-rose-50/70 via-white/95 to-white',
-    lightBorder: 'border-rose-200/50',
-    lightAccent: 'before:bg-gradient-to-b before:from-rose-400 before:to-rose-500',
-    lightShadow: 'shadow-[0_4px_16px_-4px_rgba(244,63,94,0.1),0_2px_6px_-2px_rgba(0,0,0,0.05)]',
-    lightHoverShadow: 'hover:shadow-[0_6px_24px_-4px_rgba(244,63,94,0.15),0_4px_10px_-2px_rgba(0,0,0,0.06)]',
-    darkBg: 'dark:bg-gradient-to-br dark:from-rose-500/[0.05] dark:via-[rgba(40,40,44,0.85)] dark:to-[rgba(32,32,36,0.9)]',
-    darkBorder: 'dark:border-rose-500/15',
+    // Light mode - muted burgundy seal
+    lightBg: 'bg-[hsl(38,25%,96%)]',
+    lightBorder: 'border-[hsl(355,25%,70%)]',
+    lightAccent: 'before:bg-gradient-to-b before:from-[hsl(355,40%,50%)] before:to-[hsl(350,35%,42%)]',
+    lightShadow: 'shadow-[0_1px_8px_rgba(139,90,43,0.04)]',
+    lightHoverShadow: 'hover:shadow-[0_2px_12px_rgba(139,90,43,0.06)]',
+    darkBg: 'dark:bg-rose-500/[0.02]',
+    darkBorder: 'dark:border-rose-400/15',
     darkAccent: 'dark:before:bg-gradient-to-b dark:before:from-rose-400 dark:before:to-rose-500',
-    darkGlow: 'dark:shadow-[0_0_20px_-5px_rgba(251,113,133,0.1),0_8px_25px_-5px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.05)]',
-    darkHoverGlow: 'dark:hover:shadow-[0_0_25px_-5px_rgba(251,113,133,0.15),0_10px_30px_-5px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.06)]',
+    darkGlow: 'dark:shadow-[0_0_30px_-10px_rgba(251,113,133,0.15),0_8px_32px_rgba(0,0,0,0.4),inset_0_0.5px_0_rgba(255,255,255,0.08)]',
+    darkHoverGlow: 'dark:hover:shadow-[0_0_40px_-10px_rgba(251,113,133,0.2),0_10px_40px_rgba(0,0,0,0.45),inset_0_0.5px_0_rgba(255,255,255,0.1)]',
   },
   error: {
-    lightBg: 'bg-gradient-to-br from-amber-50/70 via-white/95 to-white',
-    lightBorder: 'border-amber-200/50',
-    lightAccent: 'before:bg-gradient-to-b before:from-amber-400 before:to-amber-500',
-    lightShadow: 'shadow-[0_4px_16px_-4px_rgba(245,158,11,0.1),0_2px_6px_-2px_rgba(0,0,0,0.05)]',
-    lightHoverShadow: 'hover:shadow-[0_6px_24px_-4px_rgba(245,158,11,0.15),0_4px_10px_-2px_rgba(0,0,0,0.06)]',
-    darkBg: 'dark:bg-gradient-to-br dark:from-amber-500/[0.05] dark:via-[rgba(40,40,44,0.85)] dark:to-[rgba(32,32,36,0.9)]',
-    darkBorder: 'dark:border-amber-500/15',
+    // Light mode - aged amber/ochre warning
+    lightBg: 'bg-[hsl(40,35%,96%)]',
+    lightBorder: 'border-[hsl(35,45%,65%)]',
+    lightAccent: 'before:bg-gradient-to-b before:from-[hsl(38,60%,48%)] before:to-[hsl(30,55%,40%)]',
+    lightShadow: 'shadow-[0_1px_8px_rgba(180,120,50,0.06)]',
+    lightHoverShadow: 'hover:shadow-[0_2px_12px_rgba(180,120,50,0.1)]',
+    darkBg: 'dark:bg-amber-500/[0.02]',
+    darkBorder: 'dark:border-amber-400/15',
     darkAccent: 'dark:before:bg-gradient-to-b dark:before:from-amber-400 dark:before:to-amber-500',
-    darkGlow: 'dark:shadow-[0_0_20px_-5px_rgba(251,191,36,0.1),0_8px_25px_-5px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.05)]',
-    darkHoverGlow: 'dark:hover:shadow-[0_0_25px_-5px_rgba(251,191,36,0.15),0_10px_30px_-5px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.06)]',
+    darkGlow: 'dark:shadow-[0_0_30px_-10px_rgba(251,191,36,0.15),0_8px_32px_rgba(0,0,0,0.4),inset_0_0.5px_0_rgba(255,255,255,0.08)]',
+    darkHoverGlow: 'dark:hover:shadow-[0_0_40px_-10px_rgba(251,191,36,0.2),0_10px_40px_rgba(0,0,0,0.45),inset_0_0.5px_0_rgba(255,255,255,0.1)]',
   },
   none: {
-    lightBg: 'bg-white/95',
-    lightBorder: 'border-neutral-200/60',
-    lightAccent: 'before:bg-gradient-to-b before:from-neutral-300 before:to-neutral-400',
-    lightShadow: 'shadow-[0_2px_12px_-4px_rgba(0,0,0,0.08)]',
-    lightHoverShadow: 'hover:shadow-[0_4px_20px_-4px_rgba(0,0,0,0.12)]',
-    darkBg: 'dark:bg-gradient-to-br dark:from-[rgba(45,45,50,0.85)] dark:via-[rgba(40,40,44,0.85)] dark:to-[rgba(32,32,36,0.9)]',
-    darkBorder: 'dark:border-white/10',
+    // Light mode - clean vintage parchment
+    lightBg: 'bg-[hsl(40,35%,97%)]',
+    lightBorder: 'border-[hsl(30,25%,82%)]',
+    lightAccent: 'before:bg-gradient-to-b before:from-[hsl(30,20%,65%)] before:to-[hsl(25,18%,55%)]',
+    lightShadow: 'shadow-[0_1px_6px_rgba(139,90,43,0.04)]',
+    lightHoverShadow: 'hover:shadow-[0_2px_12px_rgba(139,90,43,0.08)]',
+    darkBg: 'dark:bg-white/[0.02]',
+    darkBorder: 'dark:border-white/[0.08]',
     darkAccent: 'dark:before:bg-gradient-to-b dark:before:from-neutral-500 dark:before:to-neutral-600',
-    darkGlow: 'dark:shadow-[0_8px_25px_-5px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.05)]',
-    darkHoverGlow: 'dark:hover:shadow-[0_10px_30px_-5px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.06)]',
+    darkGlow: 'dark:shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_0.5px_0_rgba(255,255,255,0.08)]',
+    darkHoverGlow: 'dark:hover:shadow-[0_12px_48px_rgba(0,0,0,0.5),inset_0_0.5px_0_rgba(255,255,255,0.12)]',
   },
 };
 
@@ -134,7 +142,7 @@ const ResultCardBase = forwardRef(
       if (statusLower === '3ds' || statusLower === '3ds_required') return '3ds';
       if (statusLower === 'die' || statusLower === 'dead') return 'dead';
       if (statusLower === 'declined') return 'declined';
-      if (statusLower === 'error' || statusLower === 'retry') return 'error';
+      if (statusLower === 'error' || statusLower === 'retry' || statusLower === 'captcha') return 'error';
       return 'none';
     }, [status]);
 
@@ -151,7 +159,7 @@ const ResultCardBase = forwardRef(
           
           // Premium left accent bar
           "before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1",
-          "before:rounded-l-2xl",
+          "before:rounded-l-2xl before:z-20",
           config.lightAccent,
           config.darkAccent,
           
@@ -160,48 +168,103 @@ const ResultCardBase = forwardRef(
           config.lightBorder,
           config.darkBorder,
           
-          // Light mode - premium white
+          // Light mode backgrounds (reset gradient in dark mode)
           config.lightBg,
+          "dark:from-transparent dark:via-transparent dark:to-transparent",
           config.lightShadow,
           
-          // Dark mode - premium glass
+          // Dark mode - transparent frosted glass
           config.darkBg,
-          "dark:backdrop-blur-xl dark:backdrop-saturate-150",
+          "dark:backdrop-blur-2xl dark:backdrop-saturate-[1.5]",
           config.darkGlow,
+          
+          // Transition for all states
+          "transition-all duration-300 ease-out",
           
           // Hover states
           isInteractive && [
             "cursor-pointer",
-            "transition-all duration-300 ease-out",
             config.lightHoverShadow,
             config.darkHoverGlow,
-            "hover:translate-y-[-1px]",
-            "hover:border-opacity-80",
+            "hover:translate-y-[-2px]",
+            "dark:hover:bg-white/[0.04]",
+            "dark:hover:border-white/[0.12]",
           ],
           
-          // Selected state
+          // Selected state - Premium copper foil selection glow
           isSelected && [
-            "ring-2 ring-primary/40 border-primary/50",
-            "dark:ring-primary/50 dark:border-primary/60",
-            "translate-y-[-1px]",
+            // Light mode - copper foil selection with vintage feel
+            "ring-2 ring-[hsl(25,70%,50%)]/50 border-[hsl(25,65%,55%)]",
+            "shadow-[0_4px_20px_-4px_rgba(180,100,50,0.25),0_0_0_1px_rgba(180,100,50,0.15)]",
+            "bg-[hsl(40,40%,96%)]",
+            // Dark mode - electric cyan/gold selection aura
+            "dark:ring-[#00d4ff]/50 dark:border-[#00d4ff]/60",
+            "dark:shadow-[0_0_40px_-8px_rgba(0,212,255,0.5),0_0_80px_-12px_rgba(0,212,255,0.3),0_12px_40px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.15)]",
+            "dark:bg-[#00d4ff]/[0.06]",
+            // Shared - lift and scale
+            "translate-y-[-3px] scale-[1.01]",
+            // Pulsing border animation for selected state
+            "after:absolute after:inset-0 after:rounded-2xl after:pointer-events-none",
+            "after:shadow-[inset_0_0_0_2px_rgba(180,100,50,0.2)]",
+            "dark:after:shadow-[inset_0_0_0_2px_rgba(0,212,255,0.25)]",
+            "after:animate-[pulse_2s_ease-in-out_infinite]",
           ],
           
           // Loading state
-          isLoading && "opacity-60 pointer-events-none",
+          isLoading && "opacity-50 pointer-events-none",
           
           className
         )}
         {...props}
       >
-        {/* Noise texture overlay for dark mode */}
+        {/* Glass highlight edge - top */}
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 dark:opacity-100 pointer-events-none rounded-t-2xl" />
+        
+        {/* Selection indicator badge - top right corner */}
+        {isSelected && (
+          <div className="absolute -top-1 -right-1 z-30 flex items-center justify-center">
+            <div className={cn(
+              "w-6 h-6 rounded-full flex items-center justify-center",
+              // Light mode - copper foil badge
+              "bg-gradient-to-br from-[hsl(25,70%,50%)] to-[hsl(20,65%,42%)] shadow-[0_2px_8px_rgba(180,100,50,0.4)]",
+              // Dark mode - electric cyan badge
+              "dark:from-[#00d4ff] dark:to-[#00a8cc] dark:shadow-[0_0_16px_rgba(0,212,255,0.6)]",
+              // Subtle pulse animation
+              "animate-[bounce_1s_ease-in-out]"
+            )}>
+              <svg 
+                className="w-3.5 h-3.5 text-white dark:text-slate-900" 
+                fill="none" 
+                viewBox="0 0 24 24" 
+                stroke="currentColor" 
+                strokeWidth={3}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+          </div>
+        )}
+        
+        {/* Tile pattern overlay for dark mode - matches body background */}
         <div className="absolute inset-0 opacity-0 dark:opacity-100 pointer-events-none rounded-2xl overflow-hidden">
           <div 
             className="absolute inset-0"
             style={{
-              backgroundImage: 'var(--noise-pattern-subtle)',
-              backgroundSize: '128px 128px',
-              opacity: 0.4,
-              mixBlendMode: 'soft-light',
+              backgroundImage: 'url(/bg-tile.webp)',
+              backgroundSize: '200px 200px',
+              backgroundRepeat: 'repeat',
+              opacity: 0.04,
+              mixBlendMode: 'overlay',
+            }}
+          />
+        </div>
+        
+        {/* Top gradient sheen for glass effect */}
+        <div className="absolute inset-0 opacity-0 dark:opacity-100 pointer-events-none rounded-2xl overflow-hidden">
+          <div 
+            className="absolute inset-0"
+            style={{
+              background: 'linear-gradient(180deg, rgba(255,255,255,0.06) 0%, transparent 40%)',
             }}
           />
         </div>
@@ -286,7 +349,7 @@ const ResultCardHeader = memo(forwardRef(
     <div 
       ref={ref} 
       className={cn(
-        "flex items-center justify-between gap-3",
+        "flex flex-wrap items-center justify-between gap-2 sm:gap-3",
         className
       )} 
       {...props} 
@@ -341,7 +404,7 @@ const ResultCardResponseZone = memo(forwardRef(
     <div 
       ref={ref} 
       className={cn(
-        "flex items-center justify-between gap-2 mt-2.5",
+        "flex flex-wrap items-center justify-between gap-2 mt-2.5",
         className
       )} 
       {...props} 
@@ -402,7 +465,7 @@ const ResultCardLoadingOverlay = memo(forwardRef(
       ref={ref} 
       className={cn(
         "absolute inset-0 flex items-center justify-center",
-        "bg-white/70 dark:bg-black/50",
+        "bg-[hsl(40,35%,97%)]/80 dark:bg-black/50",
         "backdrop-blur-sm",
         "rounded-2xl z-20",
         className
@@ -434,7 +497,7 @@ const ResultCardStatus = memo(forwardRef(
       if (statusLower === 'declined' || statusLower === 'dead' || statusLower === 'die') {
         return "bg-rose-500/10 text-rose-600 dark:bg-rose-500/15 dark:text-rose-400 border-rose-500/20 dark:border-rose-500/25";
       }
-      if (statusLower === 'error' || statusLower === 'retry') {
+      if (statusLower === 'error' || statusLower === 'retry' || statusLower === 'captcha') {
         return "bg-amber-500/10 text-amber-600 dark:bg-amber-500/15 dark:text-amber-400 border-amber-500/20 dark:border-amber-500/25";
       }
       return "bg-neutral-100 text-neutral-600 dark:bg-white/10 dark:text-white/60 border-neutral-200/50 dark:border-white/10";
@@ -520,7 +583,7 @@ const ResultCardMessage = memo(forwardRef(
       if (statusLower === 'declined' || statusLower === 'dead' || statusLower === 'die') {
         return "text-rose-500 dark:text-rose-400";
       }
-      if (statusLower === 'error' || statusLower === 'retry') {
+      if (statusLower === 'error' || statusLower === 'retry' || statusLower === 'captcha') {
         return "text-amber-600 dark:text-amber-400";
       }
       return "text-neutral-500 dark:text-white/60";

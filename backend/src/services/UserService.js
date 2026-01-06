@@ -461,6 +461,260 @@ export class UserService {
     }
 
     /**
+     * Check if a user's tier has expired and reset to free if so
+     * 
+     * @param {string} userId - User UUID
+     * @returns {Promise<Object>} Object with expired status and user data
+     */
+    async checkAndResetExpiredTier(userId) {
+        if (!isSupabaseConfigured()) {
+            throw new Error('Database not configured');
+        }
+
+        const user = await this.getUser(userId);
+        if (!user) {
+            return { expired: false, user: null };
+        }
+
+        // Check if tier has expired
+        if (user.tier !== 'free' && user.tier_expires_at) {
+            const expiresAt = new Date(user.tier_expires_at);
+            if (expiresAt <= new Date()) {
+                // Tier has expired - reset to free
+                const previousTier = user.tier;
+                const { data: updatedUser, error } = await supabase
+                    .from('users')
+                    .update({
+                        tier: 'free',
+                        tier_expires_at: null,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', userId)
+                    .select()
+                    .single();
+
+                if (error) {
+                    throw new Error(`Failed to reset expired tier: ${error.message}`);
+                }
+
+                // Log the expiration
+                await supabase.from('audit_logs').insert({
+                    user_id: userId,
+                    action: 'tier_expired',
+                    details: { 
+                        previous_tier: previousTier,
+                        expired_at: user.tier_expires_at
+                    }
+                });
+
+                return { expired: true, previousTier, user: updatedUser };
+            }
+        }
+
+        return { expired: false, user };
+    }
+
+    /**
+     * Set tier with optional expiration date
+     * 
+     * Requirements: 1.4, 5.2, 5.3, 8.1, 8.2, 8.3
+     * 
+     * @param {string} userId - User UUID
+     * @param {string} tier - Target tier
+     * @param {number|null} durationDays - Duration in days (null/0 for permanent, 1-365 for timed)
+     * @returns {Promise<Object>} Updated user
+     */
+    async setTierWithDuration(userId, tier, durationDays = null) {
+        if (!isSupabaseConfigured()) {
+            throw new Error('Database not configured');
+        }
+
+        if (!userId) {
+            throw new Error('User ID required');
+        }
+
+        if (!tier || !USER_TIERS[tier]) {
+            throw new Error(`Invalid tier: ${tier}. Must be one of: ${Object.keys(USER_TIERS).join(', ')}`);
+        }
+
+        // Validate durationDays (Requirement 8.1, 8.2, 8.3)
+        if (durationDays !== null && durationDays !== undefined && durationDays !== 0) {
+            if (!Number.isInteger(durationDays)) {
+                throw new Error('Duration must be a positive integer');
+            }
+            if (durationDays < 1) {
+                throw new Error('Duration must be a positive number');
+            }
+            if (durationDays > 365) {
+                throw new Error('Duration cannot exceed 365 days');
+            }
+        }
+
+        // Calculate tier_expires_at (Requirement 5.2, 5.3)
+        let tierExpiresAt = null;
+        
+        // Free tier always has null tier_expires_at (Requirement 1.5)
+        if (tier === 'free') {
+            tierExpiresAt = null;
+        } else if (durationDays && durationDays > 0) {
+            // Timed tier: calculate expiration from current date (Requirement 1.4)
+            const expiresAt = new Date();
+            expiresAt.setDate(expiresAt.getDate() + durationDays);
+            tierExpiresAt = expiresAt.toISOString();
+        }
+        // If durationDays is null/0/undefined for non-free tier, tierExpiresAt stays null (permanent)
+
+        const { data: updatedUser, error } = await supabase
+            .from('users')
+            .update({
+                tier,
+                tier_expires_at: tierExpiresAt,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', userId)
+            .select()
+            .single();
+
+        if (error) {
+            throw new Error(`Failed to set tier: ${error.message}`);
+        }
+
+        return updatedUser;
+    }
+
+    /**
+     * Extend current tier duration
+     * 
+     * Requirements: 5.6, 5.7, 8.4
+     * 
+     * @param {string} userId - User UUID
+     * @param {number} additionalDays - Days to add (must be positive integer, 1-365)
+     * @returns {Promise<Object>} Updated user with previousExpiresAt info
+     */
+    async extendTierDuration(userId, additionalDays) {
+        if (!isSupabaseConfigured()) {
+            throw new Error('Database not configured');
+        }
+
+        if (!userId) {
+            throw new Error('User ID required');
+        }
+
+        // Validate additionalDays
+        if (!Number.isInteger(additionalDays)) {
+            throw new Error('Additional days must be a positive integer');
+        }
+        if (additionalDays < 1) {
+            throw new Error('Additional days must be a positive number');
+        }
+        if (additionalDays > 365) {
+            throw new Error('Additional days cannot exceed 365');
+        }
+
+        const user = await this.getUser(userId);
+        if (!user) {
+            throw new Error('User not found');
+        }
+
+        // Reject extension for free tier (Requirement 8.4)
+        if (user.tier === 'free') {
+            throw new Error('Cannot extend duration for free tier');
+        }
+
+        const previousExpiresAt = user.tier_expires_at;
+        let newExpiresAt;
+        const now = new Date();
+
+        if (user.tier_expires_at) {
+            const currentExpiration = new Date(user.tier_expires_at);
+            
+            // Check if tier has already expired (Requirement 5.7)
+            if (currentExpiration <= now) {
+                // Tier expired - calculate from today
+                newExpiresAt = new Date(now);
+            } else {
+                // Tier still active - add to current expiration (Requirement 5.6)
+                newExpiresAt = new Date(currentExpiration);
+            }
+        } else {
+            // Permanent tier (no expiration) - extend from now
+            newExpiresAt = new Date(now);
+        }
+        
+        newExpiresAt.setDate(newExpiresAt.getDate() + additionalDays);
+
+        const { data: updatedUser, error } = await supabase
+            .from('users')
+            .update({
+                tier_expires_at: newExpiresAt.toISOString(),
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', userId)
+            .select()
+            .single();
+
+        if (error) {
+            throw new Error(`Failed to extend tier duration: ${error.message}`);
+        }
+
+        // Return user with extension info
+        return {
+            ...updatedUser,
+            previousExpiresAt,
+            daysAdded: additionalDays
+        };
+    }
+
+    /**
+     * Get all users with expired tiers that need to be reset
+     * 
+     * @returns {Promise<Array>} List of users with expired tiers
+     */
+    async getExpiredTierUsers() {
+        if (!isSupabaseConfigured()) {
+            throw new Error('Database not configured');
+        }
+
+        const { data: users, error } = await supabase
+            .from('users')
+            .select('id, tier, tier_expires_at, username, first_name')
+            .neq('tier', 'free')
+            .not('tier_expires_at', 'is', null)
+            .lte('tier_expires_at', new Date().toISOString());
+
+        if (error) {
+            throw new Error(`Failed to get expired tier users: ${error.message}`);
+        }
+
+        return users || [];
+    }
+
+    /**
+     * Reset all expired tiers (called by cron job)
+     * 
+     * @returns {Promise<number>} Number of users reset
+     */
+    async resetAllExpiredTiers() {
+        if (!isSupabaseConfigured()) {
+            throw new Error('Database not configured');
+        }
+
+        const expiredUsers = await this.getExpiredTierUsers();
+        let resetCount = 0;
+
+        for (const user of expiredUsers) {
+            try {
+                await this.checkAndResetExpiredTier(user.id);
+                resetCount++;
+            } catch (err) {
+                // Continue with other users
+            }
+        }
+
+        return resetCount;
+    }
+
+    /**
      * Reset daily usage for all users (called by cron job at midnight UTC)
      * 
      * Requirement: 6.7

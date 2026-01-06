@@ -1,38 +1,28 @@
-import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
-import { Trash2, Copy, Check, ShoppingBag, Globe, Building2, CreditCard, AlertTriangle, ShieldX } from 'lucide-react';
-import { AnimatePresence } from 'motion/react';
+import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
+import { ShoppingBag, Globe, Link, Zap, Timer } from 'lucide-react';
 import { useToast } from '@/hooks/useToast';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useSessionStorage } from '@/hooks/useSessionStorage';
 import { useBoundedResults } from '@/hooks/useBoundedStorage';
 import { useCredits } from '@/hooks/useCredits';
 import { useGatewayStatus } from '@/hooks/useGatewayStatus';
-import { useGatewayCreditRates } from '@/hooks/useGatewayCreditRates';
 import { useCardInputLimits } from '@/hooks/useCardInputLimits';
 import { useValidation } from '@/contexts/ValidationContext';
 import { useDebouncedValue } from '@/hooks/useDebouncedFilter';
 import { processCardInput, getProcessingToastMessage, getTierLimitExceededMessage, validateForSubmission, getGeneratedCardsErrorMessage } from '@/lib/utils/card-parser';
 import { handleCreditError, showCreditErrorToast, handleBackendError, handleTimeoutError } from '@/utils/creditErrors';
-import { SpeedBadge } from '@/components/ui/TierSpeedControl';
+
 import { useSpeedConfig } from '@/hooks/useSpeedConfig';
-import { GatewayStatusIndicator, GatewayUnavailableMessage } from '@/components/ui/GatewayStatusIndicator';
-import { GatewayInfoSummary } from '@/components/ui/GatewayInfoSummary';
-import { ImportButton } from '@/components/ui/ImportButton';
+import { GatewayUnavailableMessage, GatewayStatusIndicator } from '@/components/ui/GatewayStatusIndicator';
 import { ExportButton } from '@/components/ui/ExportButton';
+import { CardInputSection } from '@/components/ui/CardInputSection';
 
 import { TwoPanelLayout } from '../../layout/TwoPanelLayout';
 import { ResultsPanel, ResultItem, ProgressBar } from '../../stripe/ResultsPanel';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { ProxyInput } from '@/components/ui/ProxyInput';
+import { parseProxy } from '@/utils/proxy';
 import { Celebration, useCelebration } from '@/components/ui/Celebration';
 import { 
   ResultCard, 
@@ -41,7 +31,6 @@ import {
   ResultCardDataZone,
   ResultCardResponseZone,
   ResultCardMessage,
-  ResultCardPill,
 } from '@/components/ui/result-card';
 import { 
   BINDataDisplay, 
@@ -50,25 +39,22 @@ import {
   CardNumber,
   GatewayBadge,
 } from '@/components/ui/result-card-parts';
-import { BrandIcon } from '@/components/ui/brand-icons';
-import { CreditInfo, CreditSummary, EffectiveRateBadge, BatchConfirmDialog, BATCH_CONFIRM_THRESHOLD } from '@/components/credits';
+import { CreditSummary, BatchConfirmDialog, BATCH_CONFIRM_THRESHOLD, EffectiveRateBadge } from '@/components/credits';
+import { useGatewayCreditRates } from '@/hooks/useGatewayCreditRates';
 import { cn } from '@/lib/utils';
-import { toTitleCase } from '@/lib/utils/card-helpers';
 
 export function ShopifyChargePanel({
   drawerOpen,
   onDrawerOpenChange,
 }) {
   const [cards, setCards] = useLocalStorage('shopifyChargeCards', '');
-  const [sites, setSites] = useState([]);
-  const [selectedSite, setSelectedSite] = useLocalStorage('shopifyChargeSelectedSite', 'shopify-1');
-  // Results use bounded storage - survives refresh/crash, clears on browser close
-  // FIFO limit of 5000 results to prevent memory bloat (Requirements: 4.1, 4.2)
+  const [shopifyUrl, setShopifyUrl] = useLocalStorage('shopifyChargeUrl', '');
+  const [proxyString, setProxyString] = useLocalStorage('shopifyChargeProxy', '');
   const { 
     results: cardResults, 
     setResults: setCardResults 
   } = useBoundedResults('session_shopifyResults', []);
-  const [cardStats, setCardStats] = useSessionStorage('session_shopifyStats', { approved: 0, declined: 0, error: 0, total: 0 });
+  const [cardStats, setCardStats, setCardStatsImmediate] = useSessionStorage('session_shopifyStats', { approved: 0, declined: 0, error: 0, total: 0 });
   const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [currentItem, setCurrentItem] = useState(null);
@@ -77,22 +63,20 @@ export function ShopifyChargePanel({
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [batchComplete, setBatchComplete] = useState(false);
-  // Batch confirmation dialog state - Requirements: 13.1, 13.2, 13.3, 13.4, 13.5
   const [showBatchConfirm, setShowBatchConfirm] = useState(false);
   const [batchConfirmResolve, setBatchConfirmResolve] = useState(null);
   const [pendingBatchInfo, setPendingBatchInfo] = useState(null);
 
   const abortRef = useRef(false);
   const abortControllerRef = useRef(null);
+  const proxyInputRef = useRef(null);
+  const [isCheckingProxy, setIsCheckingProxy] = useState(false);
   const { success, error: toastError, info, warning } = useToast();
   const { trigger: celebrationTrigger, celebrate } = useCelebration();
 
-  // Credit management - Requirements: 4.3, 4.4, 4.6, 11.1, 11.2, 11.3
   const {
     balance,
     effectiveRate,
-    baseRate,
-    isCustomRate,
     isAuthenticated,
     creditsConsumed,
     liveCardsCount,
@@ -100,53 +84,39 @@ export function ShopifyChargePanel({
     resetTracking,
     setBalance,
     refresh: refreshCredits
-  } = useCredits({ gatewayId: selectedSite });
+  } = useCredits({ gatewayId: 'auto-shopify-1' });
 
-  // Gateway credit rates for displaying in selector - Requirements: 11.1, 14.2
-  const { getPricing } = useGatewayCreditRates();
-
-  // Get pricing config for selected gateway
-  const pricing = useMemo(() => getPricing(selectedSite), [getPricing, selectedSite]);
-
-  // Gateway status - Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 7.1
-  const {
-    getGateway,
-    getGatewaysByType,
-    isGatewayAvailable,
-    areAllUnavailable
-  } = useGatewayStatus();
-
-  // Tier-based card input limits - Requirements: 1.1, 1.2, 1.3, 1.4, 5.1, 5.2, 5.3, 5.4
+  const { getGateway, isGatewayAvailable } = useGatewayStatus();
   const { getLimitStatus, userTier, getCurrentUserLimit } = useCardInputLimits();
+  const { config: shopifySpeedConfig } = useSpeedConfig('charge', userTier);
+  
+  // Gateway credit rates for displaying pricing
+  const { getPricing } = useGatewayCreditRates();
+  const pricing = useMemo(() => getPricing('auto-shopify-1'), [getPricing]);
 
-  // Pre-fetch speed config once at panel level to avoid re-fetching on dropdown open
-  const { config: shopifySpeedConfig } = useSpeedConfig('shopify', userTier);
+  const gatewayStatus = useMemo(() => getGateway('auto-shopify-1'), [getGateway]);
+  const isGatewayReady = gatewayStatus?.isAvailable !== false;
 
-  // Get gateway status for selected site
-  const selectedGatewayStatus = useMemo(() => {
-    return getGateway(selectedSite);
-  }, [getGateway, selectedSite]);
-
-  // Check if all shopify gateways are unavailable
-  const allShopifyGatewaysUnavailable = useMemo(() => {
-    return areAllUnavailable('shopify');
-  }, [areAllUnavailable]);
-
-  // Validation context for app-level navigation blocking
   const validationContext = useValidation();
 
-  // Abort callback for ValidationContext
   const handleAbort = useCallback(() => {
     abortRef.current = true;
     if (abortControllerRef.current) abortControllerRef.current.abort();
-    fetch('/api/shopify/stop', {
-      method: 'POST'
-    }).catch(() => { });
+    fetch('/api/shopify/stop', { method: 'POST' }).catch(() => {});
     setIsLoading(false);
     setCurrentItem(null);
   }, []);
 
-  // Register/unregister with ValidationContext when loading state changes
+  // Cleanup on unmount - abort client request AND stop backend processing
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef?.current) {
+        abortControllerRef.current.abort();
+        fetch('/api/shopify/stop', { method: 'POST' }).catch(() => {});
+      }
+    };
+  }, []);
+
   useEffect(() => {
     if (isLoading && validationContext) {
       validationContext.startValidation('shopify', handleAbort);
@@ -155,77 +125,89 @@ export function ShopifyChargePanel({
     }
   }, [isLoading, validationContext, handleAbort]);
 
-  useEffect(() => {
-    fetch('/api/shopify/all-sites')
-      .then(res => res.json())
-      .then(data => {
-        if (data.sites) setSites(data.sites);
-      })
-      .catch(() => { });
-  }, []);
+  const handleStop = useCallback(() => {
+    handleAbort();
+    info('Validation stopped');
+  }, [handleAbort, info]);
 
-  // Cleanup on unmount - abort client request AND stop backend processing
-  useEffect(() => {
-    return () => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-        // Stop backend processing when component unmounts during loading
-        fetch('/api/shopify/stop', {
-          method: 'POST'
-        }).catch(() => { });
-      }
-    };
-  }, []);
-
-  const handleSiteChange = async (siteId) => {
-    setSelectedSite(siteId);
-    try {
-      await fetch('/api/shopify/site', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ siteId })
-      });
-      info(`Switched to ${sites.find(s => s.id === siteId)?.label || siteId}`);
-    } catch {
-      toastError('Failed to switch site');
-    }
-  };
+  const clearCards = useCallback(() => {
+    setCards('');
+  }, [setCards]);
 
   const clearResults = useCallback(() => {
     setCardResults([]);
-    setCardStats({ approved: 0, declined: 0, error: 0, total: 0 });
-    setPage(1);
+    setCardStatsImmediate({ approved: 0, declined: 0, error: 0, total: 0 });
     setBatchComplete(false);
     resetTracking();
-  }, [setCardResults, setCardStats, resetTracking]);
+    refreshCredits();
+  }, [setCardResults, setCardStatsImmediate, resetTracking, refreshCredits]);
 
-  // Helper to check if batch confirmation is needed - Requirements: 13.1
-  const needsBatchConfirmation = useCallback((count) => {
-    return count > BATCH_CONFIRM_THRESHOLD;
+  // Sync stats with actual results on mount (fixes stale stats after refresh)
+  useEffect(() => {
+    if (cardResults.length > 0 && !isLoading) {
+      const recalculatedStats = cardResults.reduce((acc, r) => {
+        const status = r.status?.toUpperCase();
+        if (status === 'APPROVED') acc.approved++;
+        else if (status === 'DECLINED') acc.declined++;
+        else acc.error++;
+        acc.total++;
+        return acc;
+      }, { approved: 0, declined: 0, error: 0, total: 0 });
+
+      if (recalculatedStats.total !== cardStats.total ||
+        recalculatedStats.approved !== cardStats.approved) {
+        setCardStats(recalculatedStats);
+      }
+    }
   }, []);
 
-  // Handle batch confirmation dialog confirm - Requirements: 13.4
+  const handleCopyCard = useCallback((card) => {
+    navigator.clipboard.writeText(card);
+    setCopiedCard(card);
+    setTimeout(() => setCopiedCard(null), 2000);
+  }, []);
+
+  const handleFilterChange = useCallback((f) => {
+    setFilter(f);
+    setPage(1);
+  }, []);
+
+  const needsBatchConfirmation = useCallback((count) => count > BATCH_CONFIRM_THRESHOLD, []);
+
   const handleBatchConfirm = useCallback(() => {
-    if (batchConfirmResolve) {
-      batchConfirmResolve(true);
-    }
+    if (batchConfirmResolve) batchConfirmResolve(true);
     setShowBatchConfirm(false);
     setBatchConfirmResolve(null);
     setPendingBatchInfo(null);
   }, [batchConfirmResolve]);
 
-  // Handle batch confirmation dialog cancel - Requirements: 13.5
   const handleBatchCancel = useCallback(() => {
-    if (batchConfirmResolve) {
-      batchConfirmResolve(false);
-    }
+    if (batchConfirmResolve) batchConfirmResolve(false);
     setShowBatchConfirm(false);
     setBatchConfirmResolve(null);
     setPendingBatchInfo(null);
   }, [batchConfirmResolve]);
+
+  // Validate Shopify URL
+  const isValidShopifyUrl = useMemo(() => {
+    if (!shopifyUrl.trim()) return false;
+    try {
+      const url = new URL(shopifyUrl);
+      return url.protocol === 'http:' || url.protocol === 'https:';
+    } catch {
+      return false;
+    }
+  }, [shopifyUrl]);
+
+  // Validate proxy (required) - check format with parseProxy
+  const hasValidProxy = useMemo(() => {
+    if (!proxyString.trim()) return false;
+    const parsed = parseProxy(proxyString);
+    return parsed !== null;
+  }, [proxyString]);
 
   const handleCheckCards = async () => {
-    if (isLoading) return;
+    if (isLoading || isCheckingProxy) return;
 
     const cardList = cards.trim();
     if (!cardList) {
@@ -233,17 +215,41 @@ export function ShopifyChargePanel({
       return;
     }
 
-    // Process and validate cards before submission
+    if (!isValidShopifyUrl) {
+      warning('Enter a valid Shopify URL');
+      return;
+    }
+
+    if (!hasValidProxy) {
+      warning('Proxy is required for Auto Shopify API');
+      return;
+    }
+
+    // Check proxy before validation (same as SKBased)
+    if (proxyInputRef.current) {
+      setIsCheckingProxy(true);
+      try {
+        const proxyResult = await proxyInputRef.current.checkProxy(true);
+        if (!proxyResult.valid) {
+          return;
+        }
+
+        if (proxyResult.isStatic) {
+          warning('Static IP detected - results may be affected. Rotating proxy recommended.');
+        }
+      } finally {
+        setIsCheckingProxy(false);
+      }
+    }
+
     const processResult = processCardInput(cardList);
     const validation = validateForSubmission(processResult);
 
-    // Block if no valid cards
     if (!validation.canSubmit && validation.errorType === 'no_valid_cards') {
       warning(validation.reason || 'No valid cards to process');
       return;
     }
 
-    // Block if generated cards detected
     if (!validation.canSubmit && validation.errorType === 'generated_cards') {
       const genError = getGeneratedCardsErrorMessage(processResult.generatedDetection);
       toastError(genError?.message || 'Generated cards not allowed');
@@ -252,68 +258,60 @@ export function ShopifyChargePanel({
 
     const totalCards = processResult.validCount;
 
-    // Check tier limit before starting validation - Requirements: 1.2, 1.3, 8.7
     if (!limitStatus.isWithinLimit) {
       const tierLimitMsg = getTierLimitExceededMessage(totalCards, limitStatus.limit, userTier);
       toastError(tierLimitMsg.message);
       return;
     }
 
-    // Show batch confirmation dialog for large batches - Requirements: 13.1, 13.4, 13.5
     if (isAuthenticated && needsBatchConfirmation(totalCards)) {
-      const gatewayLabel = sites.find(s => s.id === selectedSite)?.label || selectedSite;
-
-      // Show dialog and wait for user response
       const confirmed = await new Promise((resolve) => {
         setPendingBatchInfo({
           cardCount: totalCards,
           balance,
           effectiveRate,
-          gatewayName: gatewayLabel
+          gatewayName: 'Auto Shopify'
         });
         setBatchConfirmResolve(() => resolve);
         setShowBatchConfirm(true);
       });
 
-      if (!confirmed) {
-        return; // User cancelled
-      }
+      if (!confirmed) return;
     }
 
     setIsLoading(true);
     setBatchComplete(false);
-    resetTracking(); // Reset credit tracking for new batch
+    resetTracking();
     abortRef.current = false;
     setProgress({ current: 0, total: totalCards });
     setCurrentItem('Starting Shopify validation...');
     info(`Starting Shopify validation for ${totalCards} cards`);
 
-    let currentCards = cards;
-    let stats = {
+    // Track batch stats for this run
+    let batchStats = { approved: 0, declined: 0, error: 0, total: 0 };
+    const initialStats = {
       approved: cardStats.approved || 0,
       declined: cardStats.declined || 0,
       error: cardStats.error || 0,
       total: cardStats.total || 0
     };
+    let currentCards = cards;
 
     try {
       abortControllerRef.current = new AbortController();
 
       const response = await fetch('/api/shopify/batch-stream', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           cardList,
           concurrency: 1,
-          siteId: selectedSite
+          shopifyUrl: shopifyUrl.trim(),
+          proxy: proxyString.trim()
         }),
         signal: abortControllerRef.current.signal
       });
 
-      // Handle credit-related errors (429, 402, 409) and backend errors (413, 500, 504)
-      // Requirements: 6.1, 6.2, 6.5
       if (!response.ok) {
         const creditError = await handleCreditError(response);
         if (creditError) {
@@ -323,20 +321,14 @@ export function ShopifyChargePanel({
           return;
         }
 
-        // Handle backend batch processing errors (413, 500, 504)
         const backendError = await handleBackendError(response);
         if (backendError) {
           showCreditErrorToast({ error: toastError, warning, info }, backendError);
           setIsLoading(false);
           setCurrentItem(null);
-          // For 500 errors, preserve any results that were already processed
-          if (!backendError.preserveResults) {
-            // Only clear results for non-recoverable errors
-          }
           return;
         }
 
-        // For other errors, try to get error message
         try {
           const errorData = await response.json();
           toastError(errorData.message || `Request failed: ${response.status}`);
@@ -352,10 +344,32 @@ export function ShopifyChargePanel({
       const decoder = new TextDecoder();
       let buffer = '';
       let newResults = [...cardResults];
+      // Use refs for batched processing (same as Auth panel)
+      const pendingResultsRef = { current: [] };
+      let lastUIUpdate = Date.now();
+      const UI_UPDATE_INTERVAL = 50; // ms - batch UI updates
 
-      for (; ;) {
+      // Helper to flush pending results to UI
+      const flushPendingResults = () => {
+        if (pendingResultsRef.current.length > 0) {
+          newResults = [...pendingResultsRef.current, ...newResults];
+          pendingResultsRef.current = [];
+          setCardResults([...newResults]);
+          setCardStats({
+            approved: initialStats.approved + batchStats.approved,
+            declined: initialStats.declined + batchStats.declined,
+            error: initialStats.error + batchStats.error,
+            total: initialStats.total + batchStats.total
+          });
+        }
+      };
+
+      for (;;) {
         const { done, value } = await reader.read();
-        if (done) break;
+        if (done) {
+          flushPendingResults();
+          break;
+        }
 
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split('\n\n');
@@ -380,31 +394,56 @@ export function ShopifyChargePanel({
             setCurrentItem(`${data.processed}/${data.total}`);
           } else if (event === 'result') {
             const r = data;
-            const resultId = `${r.card}-${Date.now()}-${newResults.length}`;
-            newResults.unshift({
+            const resultId = `${r.card}-${Date.now()}-${newResults.length + pendingResultsRef.current.length}`;
+            const resultObj = {
               ...r,
               id: resultId,
               fullCard: r.card
-            });
-            setCardResults([...newResults]);
+            };
+            
+            // Add to pending batch instead of immediate UI update
+            pendingResultsRef.current.unshift(resultObj);
 
+            // Process side effects immediately (celebration, stats, credit tracking)
             if (r.status === 'APPROVED') {
               celebrate();
-              stats.approved++;
-              // Track credit consumption with pricing_live cost (Shopify Auth gateways bill for LIVE)
-              trackLiveCard(pricing?.live || effectiveRate);
-              // Live update balance if newBalance is provided (reconciliation from server)
+              batchStats.approved++;
+              trackLiveCard(pricing?.approved || effectiveRate);
               if (typeof r.newBalance === 'number') {
                 setBalance(r.newBalance);
               }
             } else if (r.status === 'DECLINED') {
-              stats.declined++;
+              batchStats.declined++;
+            } else if (r.status === 'SITE_DEAD') {
+              batchStats.error++;
+              // Show site dead warning once per batch and stop message
+              if (!batchStats.siteDeadWarningShown) {
+                batchStats.siteDeadWarningShown = true;
+                toastError('Site is dead or blocked. Batch stopped - please change to a different Shopify site URL.');
+              }
+            } else if (r.status === 'CAPTCHA') {
+              batchStats.error++;
+              // Show captcha warning once per batch and stop message
+              if (!batchStats.captchaWarningShown) {
+                batchStats.captchaWarningShown = true;
+                toastError('CAPTCHA detected after 3 retries. Batch stopped - please change site or use different proxies.');
+              }
             } else {
-              stats.error++;
+              batchStats.error++;
+              // Show error message once per batch
+              if (!batchStats.errorWarningShown) {
+                batchStats.errorWarningShown = true;
+                const errorMsg = r.message || 'Validation error';
+                if (errorMsg.toLowerCase().includes('timeout')) {
+                  toastError('Request timeout. Site may be slow or down - try a different site.');
+                } else {
+                  toastError(`Error: ${errorMsg}`);
+                }
+              }
             }
-            stats.total++;
-            setCardStats({ ...stats });
+            batchStats.total++;
 
+            // Remove processed card from input
             if (r.card) {
               const cardNumber = r.card.split(/[|:,\s]/)[0];
               currentCards = currentCards
@@ -418,42 +457,52 @@ export function ShopifyChargePanel({
                 .join('\n');
               setCards(currentCards);
             }
-          } else if (event === 'complete') {
-            setCardStats({ ...stats });
-            setBatchComplete(true);
-            // Update balance from complete event if provided
-            if (typeof data.newBalance === 'number') {
-              setBalance(data.newBalance);
-            } else {
-              // Fallback: Refresh credits to get updated balance from server
-              refreshCredits().catch(() => {});
-            }
-            // Show warning if batch was stopped due to credit exhaustion
-            if (data.creditExhausted) {
-              warning('Batch stopped early due to insufficient credits');
+
+            // Batch UI updates - flush when batch is full (10) or timeout (50ms)
+            const now = Date.now();
+            if (pendingResultsRef.current.length >= 10 || (now - lastUIUpdate) >= UI_UPDATE_INTERVAL) {
+              flushPendingResults();
+              lastUIUpdate = now;
             }
           } else if (event === 'credit_exhausted') {
-            // Credits exhausted - batch stopped
-            setCardStats({ ...stats });
+            flushPendingResults();
+            setCardStats({
+              approved: initialStats.approved + batchStats.approved,
+              declined: initialStats.declined + batchStats.declined,
+              error: initialStats.error + batchStats.error,
+              total: initialStats.total + batchStats.total
+            });
             setBatchComplete(true);
             setIsLoading(false);
             if (typeof data.balance === 'number') {
               setBalance(data.balance);
             }
             warning(`Credits exhausted! Processed ${data.processed}/${data.total} cards. Add credits to continue.`);
+          } else if (event === 'complete') {
+            flushPendingResults();
+            setCardStats({
+              approved: initialStats.approved + batchStats.approved,
+              declined: initialStats.declined + batchStats.declined,
+              error: initialStats.error + batchStats.error,
+              total: initialStats.total + batchStats.total
+            });
+            setBatchComplete(true);
+            if (typeof data.newBalance === 'number') {
+              setBalance(data.newBalance);
+            }
+          } else if (event === 'error') {
+            flushPendingResults();
+            toastError(data.message || 'Validation error');
           }
         }
       }
     } catch (err) {
       if (err.name !== 'AbortError') {
-        // Handle timeout and connection errors - Requirements: 6.5
         const timeoutError = handleTimeoutError(err);
         if (timeoutError) {
           showCreditErrorToast({ error: toastError, warning, info }, timeoutError);
-          // Preserve any results that were processed before the error
         } else {
-          setCurrentItem(`Error: ${err.message}`);
-          toastError(`Validation error: ${err.message}`);
+          toastError(err.message || 'Connection error');
         }
       }
     }
@@ -463,46 +512,18 @@ export function ShopifyChargePanel({
     abortControllerRef.current = null;
 
     if (!abortRef.current) {
-      success(`Shopify complete: ${stats.approved} approved, ${stats.declined} declined, ${stats.error} errors`);
+      const { approved = 0, declined = 0, error: errCount = 0 } = batchStats;
+      success(`Shopify complete: ${approved} approved, ${declined} declined, ${errCount} errors`);
       setBatchComplete(true);
-      // Show credit deduction toast if there were live cards - Requirements: 12.4
-      if (isAuthenticated && stats.approved > 0) {
-        const creditsUsed = Math.ceil(stats.approved * effectiveRate);
-        info(`${creditsUsed} credits deducted for ${stats.approved} live card${stats.approved > 1 ? 's' : ''}`);
+      // Show credit deduction toast if there were live cards
+      if (isAuthenticated && approved > 0) {
+        const creditsUsed = Math.ceil(approved * effectiveRate);
+        info(`${creditsUsed} credits deducted for ${approved} live card${approved > 1 ? 's' : ''}`);
       }
       refreshCredits().catch(() => {});
     }
   };
 
-  const handleStop = async () => {
-    abortRef.current = true;
-    if (abortControllerRef.current) abortControllerRef.current.abort();
-    await fetch('/api/shopify/stop', {
-      method: 'POST'
-    });
-    setIsLoading(false);
-    setCurrentItem('Stopped');
-    warning('Shopify validation stopped');
-  };
-
-  const handleCopyCard = useCallback((result) => {
-    const formatted = result.fullCard || result.card;
-    navigator.clipboard.writeText(formatted);
-    setCopiedCard(result.id);
-    setTimeout(() => setCopiedCard(null), 2000);
-  }, []);
-
-  const handleFilterChange = useCallback((id) => {
-    setFilter(id);
-    setPage(1);
-  }, []);
-
-  const handlePageSizeChange = useCallback((size) => {
-    setPageSize(size);
-    setPage(1);
-  }, []);
-
-  // Process cards to get valid count and generation detection
   const cardValidation = useMemo(() => {
     if (!cards.trim()) {
       return { validCount: 0, isGenerated: false, generatedDetection: null };
@@ -516,12 +537,7 @@ export function ShopifyChargePanel({
   }, [cards]);
 
   const cardCount = cardValidation.validCount;
-
-  // Get tier limit status for current card count - Requirements: 1.2, 1.3, 5.3, 5.4
-  const limitStatus = useMemo(() => 
-    getLimitStatus(cardCount),
-    [getLimitStatus, cardCount]
-  );
+  const limitStatus = useMemo(() => getLimitStatus(cardCount), [getLimitStatus, cardCount]);
 
   const handleCardsBlur = useCallback(() => {
     if (!cards.trim() || isLoading) return;
@@ -530,21 +546,15 @@ export function ShopifyChargePanel({
     if (result.hasChanges) {
       setCards(result.cleanedInput);
       const toastMsg = getProcessingToastMessage(result);
-      if (toastMsg) {
-        info(toastMsg.message);
-      }
+      if (toastMsg) info(toastMsg.message);
     }
   }, [cards, isLoading, setCards, info]);
 
-  // Handle import from file - Requirements: 1.4
   const handleImport = useCallback((importedCards, stats, rawInput) => {
-    // Populate textarea with imported cards
     setCards(rawInput);
-    // Clear previous results when importing new cards
     clearResults();
   }, [setCards, clearResults]);
 
-  // Debounce filter value for performance (Requirements 3.5)
   const debouncedFilter = useDebouncedValue(filter);
 
   const filteredResults = useMemo(() => {
@@ -596,224 +606,227 @@ export function ShopifyChargePanel({
       <div className="flex items-center gap-2 pb-2">
         <ShoppingBag className="h-5 w-5 text-green-600 dark:text-green-400" />
         <div>
-          <h2 className="text-sm font-semibold text-[rgb(37,27,24)] dark:text-white">Shopify Checkout</h2>
-          <p className="text-[11px] text-muted-foreground">Validate cards via Shopify stores</p>
+          <h2 className="text-sm font-semibold text-[rgb(37,27,24)] dark:text-white">Shopify Charge</h2>
+          <p className="text-[11px] text-muted-foreground">Auto Shopify API validation</p>
         </div>
+      </div>
+
+      {/* Shopify URL Input */}
+      <div className="space-y-2">
+        <Label htmlFor="shopify-url" className="text-xs font-medium flex items-center gap-1.5">
+          <Link className="h-3.5 w-3.5" />
+          Shopify Site URL
+        </Label>
+        <Input
+          id="shopify-url"
+          type="url"
+          placeholder="https://example.myshopify.com"
+          value={shopifyUrl}
+          onChange={(e) => setShopifyUrl(e.target.value)}
+          disabled={isLoading}
+          className={cn(
+            "font-mono text-xs h-9",
+            !isValidShopifyUrl && shopifyUrl.trim() && "border-red-500/50"
+          )}
+        />
+        {!isValidShopifyUrl && shopifyUrl.trim() && (
+          <p className="text-[10px] text-red-500">Enter a valid URL (https://...)</p>
+        )}
+      </div>
+
+      {/* Proxy Input (Required) - Same as SKBased */}
+      <div className="space-y-2">
+        <Label htmlFor="proxy-input" className="text-xs font-medium flex items-center gap-1.5">
+          <Globe className="h-3.5 w-3.5" />
+          Proxy <span className="text-red-500">*</span>
+        </Label>
+        <ProxyInput
+          ref={proxyInputRef}
+          value={proxyString}
+          onChange={(e) => setProxyString(e.target.value)}
+          disabled={isLoading || isCheckingProxy}
+          placeholder="host:port:user:pass"
+          className={cn(
+            "h-9",
+            !hasValidProxy && proxyString.trim() && "border-red-500/50"
+          )}
+        />
+        {!hasValidProxy && proxyString.trim() && (
+          <p className="text-[10px] text-red-500">Invalid proxy format. Use: host:port:user:pass</p>
+        )}
       </div>
 
       {/* Card Input */}
-      <div className={cn(
-        "rounded-xl overflow-hidden transition-all duration-200",
-        "bg-white border border-[rgb(230,225,223)] shadow-sm",
-        "focus-within:border-green-500/40 focus-within:ring-2 focus-within:ring-green-500/10",
-        "dark:bg-white/5 dark:border-white/10 dark:shadow-none",
-        "dark:focus-within:border-white/20 dark:focus-within:ring-green-500/20"
-      )}>
-        <Textarea
-          id="shopify-cards-input"
-          name="shopify-cards-input"
-          className={cn(
-            "font-mono text-xs min-h-[80px] resize-none border-0 rounded-none focus-visible:ring-0 focus-visible:ring-offset-0",
-            "bg-transparent",
-            isLoading && "opacity-50"
-          )}
-          placeholder="Enter cards (one per line)&#10;4111111111111111|01|25|123"
-          value={cards}
-          onChange={(e) => setCards(e.target.value)}
-          onBlur={handleCardsBlur}
-          disabled={isLoading}
-        />
-
-        <div className="flex items-center justify-between px-3 py-2 border-t border-[rgb(237,234,233)] dark:border-white/10 bg-[rgb(250,249,249)] dark:bg-white/5">
-          <div className="flex items-center gap-2">
-            {/* Card count with tier limit - Requirements: 1.4, 5.1, 5.2, 5.3, 5.4 */}
-            <Badge 
-              variant={limitStatus.isError ? "destructive" : limitStatus.isWarning ? "warning" : "secondary"} 
-              className={cn(
-                "text-[10px] h-6",
-                limitStatus.isError && "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20",
-                limitStatus.isWarning && "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
-              )}
-            >
-              {cardCount}/{limitStatus.limit} cards
-              {limitStatus.isWarning && <AlertTriangle className="w-3 h-3 ml-1" />}
-            </Badge>
-          </div>
-
-          <div className="flex items-center gap-1.5">
-            {/* Import Button - Requirements: 1.1, 1.4 */}
-            <ImportButton
-              onImport={handleImport}
-              disabled={isLoading}
-              variant="ghost"
-              size="icon"
-              showLabel={false}
-              className="h-8 w-8"
-            />
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={clearResults}
-              disabled={isLoading}
-              title="Clear all"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </Button>
-            {isLoading ? (
-              <Button variant="destructive" size="sm" className="h-8" onClick={handleStop}>
-                Stop
-              </Button>
-            ) : (
-              <Button 
-                size="sm" 
-                className="h-8" 
-                onClick={handleCheckCards}
-                disabled={limitStatus.isError || cardCount === 0 || cardValidation.isGenerated || !selectedGatewayStatus?.isAvailable}
-                title={
-                  !selectedGatewayStatus?.isAvailable
-                    ? 'Gateway is unavailable'
-                    : cardValidation.isGenerated 
-                      ? 'Generated cards not allowed' 
-                      : limitStatus.isError 
-                        ? `Exceeds ${userTier} tier limit of ${limitStatus.limit} cards` 
-                        : undefined
-                }
-              >
-                Start Check
-              </Button>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Generated cards warning */}
-      {cardValidation.isGenerated && (
-        <div className="flex items-center gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-xs">
-          <ShieldX className="w-4 h-4 flex-shrink-0" />
-          <span>
-            Generated cards detected ({cardValidation.generatedDetection?.confidence}% confidence). 
-            BIN-generated cards are not allowed.
-          </span>
-        </div>
-      )}
-
-      {/* Tier limit exceeded warning - Requirements: 1.2, 1.3 */}
-      {limitStatus.isError && !cardValidation.isGenerated && (
-        <div className="flex items-center gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-xs">
-          <AlertTriangle className="w-4 h-4 flex-shrink-0" />
-          <span>
-            You have {cardCount} cards but your {userTier} tier limit is {limitStatus.limit}. 
-            Please remove {limitStatus.excess} card{limitStatus.excess > 1 ? 's' : ''} to continue.
-          </span>
-        </div>
-      )}
-
-      <AnimatePresence mode="wait">
-        {isLoading && progress.total > 0 && (
+      <CardInputSection
+        cards={cards}
+        onCardsChange={setCards}
+        onCardsBlur={handleCardsBlur}
+        onImport={handleImport}
+        onClear={clearCards}
+        onStart={handleCheckCards}
+        onStop={handleStop}
+        isLoading={isLoading}
+        cardCount={cardCount}
+        limitStatus={limitStatus}
+        cardValidation={cardValidation}
+        userTier={userTier}
+        isGatewayAvailable={isGatewayReady}
+        isStartDisabled={isCheckingProxy || limitStatus.isError || cardCount === 0 || cardValidation.isGenerated || !isValidShopifyUrl || !hasValidProxy || !isGatewayReady}
+        startButtonTitle={
+          !isValidShopifyUrl
+            ? 'Enter a valid Shopify URL'
+            : !hasValidProxy
+              ? 'Proxy is required'
+              : !isGatewayReady
+                ? 'Gateway is unavailable'
+                : cardValidation.isGenerated 
+                  ? 'Generated cards not allowed' 
+                  : limitStatus.isError 
+                    ? `Exceeds ${userTier} tier limit of ${limitStatus.limit} cards` 
+                    : undefined
+        }
+        startButtonLabel="Start Check"
+        progressBar={isLoading && progress.total > 0 && (
           <ProgressBar key="progress" current={progress.current} total={progress.total} />
         )}
-      </AnimatePresence>
+      />
 
-      {/* Store Selection */}
-      {sites.length > 0 && (
-        <div className="space-y-3 pt-4 border-t border-[rgb(230,225,223)] dark:border-white/10">
-          <Label className="text-xs font-medium flex items-center gap-1.5">
-            <ShoppingBag className="w-3.5 h-3.5" />
-            Shopify Store
-          </Label>
+      {/* Gateway unavailable warning */}
+      {gatewayStatus && !gatewayStatus.isAvailable && (
+        <GatewayUnavailableMessage gateway={gatewayStatus} />
+      )}
 
-          {/* Show warning if all gateways unavailable - Requirement: 5.5 */}
-          {allShopifyGatewaysUnavailable && (
-            <GatewayUnavailableMessage allUnavailable={true} />
-          )}
+      {/* Unified Gateway + Cost Card (same as Auth panel) */}
+      {batchComplete && liveCardsCount > 0 ? (
+        <CreditSummary
+          liveCardsCount={liveCardsCount}
+          creditsConsumed={creditsConsumed}
+          newBalance={balance}
+        />
+      ) : (
+        <div className={cn(
+          "rounded-xl overflow-hidden",
+          "bg-gray-50 border border-gray-100",
+          "dark:bg-white/[0.02] dark:border-white/[0.06]"
+        )}>
+          {/* Gateway Section */}
+          <div className="p-3 border-b border-gray-100 dark:border-white/[0.06]">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[10px] font-medium text-gray-400 dark:text-white/40 uppercase tracking-wide">
+                Gateway
+              </span>
+              {gatewayStatus && (
+                <GatewayStatusIndicator
+                  state={gatewayStatus.state}
+                  healthStatus={gatewayStatus.healthStatus}
+                  reason={gatewayStatus.maintenanceReason}
+                  size="sm"
+                />
+              )}
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <span className="text-[13px] font-medium text-gray-700 dark:text-white/80">
+                Auto Shopify
+              </span>
+              {pricing && (
+                <EffectiveRateBadge 
+                  pricing={{ approved: pricing.approved, live: null }} 
+                  gatewayId="auto-shopify-1"
+                  showTooltip={true}
+                />
+              )}
+            </div>
 
-          {/* Show warning for selected unavailable gateway - Requirement: 5.4 */}
-          {selectedGatewayStatus && !selectedGatewayStatus.isAvailable && !allShopifyGatewaysUnavailable && (
-            <GatewayUnavailableMessage gateway={selectedGatewayStatus} />
-          )}
-
-          <div className="flex items-center gap-2">
-            <Select value={selectedSite} onValueChange={handleSiteChange} disabled={isLoading}>
-              <SelectTrigger className="h-9 flex-1">
-                <SelectValue placeholder="Select store" />
-              </SelectTrigger>
-              <SelectContent>
-                {sites.map(site => {
-                  const gatewayStatus = getGateway(site.id);
-                  const isAvailable = gatewayStatus?.isAvailable ?? true;
-                  const sitePricing = getPricing(site.id);
-
-                  return (
-                    <SelectItem
-                      key={site.id}
-                      value={site.id}
-                      className={cn(!isAvailable && "opacity-60")}
-                    >
-                      <div className="flex items-center gap-2">
-                        {/* Status indicator - Requirement: 5.1, 5.3 */}
-                        {gatewayStatus && (
-                          <GatewayStatusIndicator
-                            state={gatewayStatus.state}
-                            healthStatus={gatewayStatus.healthStatus}
-                            reason={gatewayStatus.maintenanceReason}
-                            size="sm"
-                          />
-                        )}
-                        <span>{site.label}</span>
-                        {site.configured ? (
-                          <span className="text-muted-foreground ml-1 text-xs">({site.domain})</span>
-                        ) : (
-                          <span className="text-amber-500 ml-1 text-xs">(not configured)</span>
-                        )}
-                        {/* Show maintenance indicator - Requirement: 5.2 */}
-                        {gatewayStatus?.state === 'maintenance' && (
-                          <span className="text-amber-500 text-xs">(maintenance)</span>
-                        )}
-                        {gatewayStatus?.healthStatus === 'offline' && gatewayStatus?.state !== 'maintenance' && (
-                          <span className="text-red-500 text-xs">(offline)</span>
-                        )}
-                      </div>
-                    </SelectItem>
-                  );
-                })}
-              </SelectContent>
-            </Select>
+            {/* Speed info - Auto Shopify is always 1 parallel, ~5.5s per request */}
+            <div className="flex items-center gap-3 mt-2 text-[10px] text-gray-400 dark:text-white/40">
+              <span className="flex items-center gap-1">
+                <Zap className="w-3 h-3 text-amber-500" />
+                1 parallel
+              </span>
+              <span className="flex items-center gap-1">
+                <Timer className="w-3 h-3 text-sky-500" />
+                ~5.5s/card
+              </span>
+            </div>
           </div>
-          
-          {/* Gateway speed info summary */}
-          <GatewayInfoSummary 
-            speedConfig={shopifySpeedConfig} 
-            className="mt-2"
-          />
+
+          {/* Cost Section - Only show if authenticated and has cards */}
+          {isAuthenticated && cardCount > 0 && (() => {
+            // Shopify only has APPROVED status (no LIVE distinction)
+            const approvedRate = pricing?.approved || effectiveRate;
+            const estimatedCost = Math.ceil(cardCount * approvedRate);
+            const hasSufficientCredits = balance >= estimatedCost;
+            const shortfall = hasSufficientCredits ? 0 : estimatedCost - balance;
+            const percentage = estimatedCost > 0 ? Math.min((balance / estimatedCost) * 100, 100) : 100;
+
+            return (
+              <div className="p-3">
+                {/* Stats row */}
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-4">
+                    <div>
+                      <p className="text-[10px] text-gray-400 dark:text-white/40 uppercase tracking-wide">Cost</p>
+                      <p className="text-sm font-bold tabular-nums text-gray-900 dark:text-white">
+                        {estimatedCost.toLocaleString()}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-gray-400 dark:text-white/40 uppercase tracking-wide">Balance</p>
+                      <p className={cn(
+                        "text-sm font-bold tabular-nums",
+                        hasSufficientCredits ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"
+                      )}>
+                        {balance.toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                  {/* Status badge */}
+                  <div className={cn(
+                    "px-2 py-0.5 rounded text-[10px] font-medium",
+                    hasSufficientCredits 
+                      ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" 
+                      : "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                  )}>
+                    {hasSufficientCredits ? "Ready" : `-${shortfall.toLocaleString()}`}
+                  </div>
+                </div>
+
+                {/* Progress bar */}
+                <div className="h-1 rounded-full bg-gray-200 dark:bg-white/[0.08] overflow-hidden mb-2">
+                  <div 
+                    className={cn(
+                      "h-full rounded-full transition-all duration-500",
+                      hasSufficientCredits ? "bg-emerald-500" : "bg-amber-500"
+                    )}
+                    style={{ width: `${percentage}%` }}
+                  />
+                </div>
+
+                {/* Footer */}
+                <div className="flex items-center justify-between text-[10px]">
+                  <div className="flex items-center gap-2 text-gray-400 dark:text-white/40">
+                    <span className="flex items-center gap-1">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                      Appr: {approvedRate}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <span className="h-1.5 w-1.5 rounded-full bg-gray-300 dark:bg-white/20" />
+                      Dead: 0
+                    </span>
+                  </div>
+                  {!hasSufficientCredits && (
+                    <span className="text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                      <AlertTriangle className="h-3 w-3" />
+                      May stop early
+                    </span>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
         </div>
       )}
-
-      {/* Credit Info - Requirements: 4.3, 4.4, 4.6, 11.1, 11.2 */}
-      {isAuthenticated && (
-        <div className="pt-4 border-t border-[rgb(230,225,223)] dark:border-white/10">
-          {batchComplete && liveCardsCount > 0 ? (
-            <CreditSummary
-              liveCardsCount={liveCardsCount}
-              creditsConsumed={creditsConsumed}
-              newBalance={balance}
-            />
-          ) : (
-            <CreditInfo
-              cardCount={cardCount}
-              balance={balance}
-              effectiveRate={effectiveRate}
-              creditsConsumed={creditsConsumed}
-              liveCardsCount={liveCardsCount}
-              isLoading={isLoading}
-              showConsumed={false}
-              pricing={pricing}
-              gatewayType="shopify"
-            />
-          )}
-        </div>
-      )}
-
     </div>
   );
 
@@ -838,12 +851,11 @@ export function ShopifyChargePanel({
       totalPages={totalPages}
       onPageChange={setPage}
       pageSize={pageSize}
-      onPageSizeChange={handlePageSizeChange}
+      onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
       onCopyAll={filteredResults.length > 0 ? handleCopyAllCards : undefined}
       onClear={clearResults}
       isLoading={isLoading}
       isEmpty={paginatedResults.length === 0}
-      // Export Button - Requirements: 3.1, 3.6
       headerActions={
         <ExportButton
           results={cardResults}
@@ -872,14 +884,13 @@ export function ShopifyChargePanel({
   return (
     <>
       <Celebration trigger={celebrationTrigger} />
-      {/* Batch Confirmation Dialog - Requirements: 13.1, 13.2, 13.3, 13.4, 13.5 */}
       <BatchConfirmDialog
         open={showBatchConfirm}
         onOpenChange={setShowBatchConfirm}
         cardCount={pendingBatchInfo?.cardCount || 0}
         balance={pendingBatchInfo?.balance || balance}
         effectiveRate={pendingBatchInfo?.effectiveRate || effectiveRate}
-        gatewayName={pendingBatchInfo?.gatewayName || 'Gateway'}
+        gatewayName={pendingBatchInfo?.gatewayName || 'Auto Shopify'}
         onConfirm={handleBatchConfirm}
         onCancel={handleBatchCancel}
       />
@@ -893,121 +904,81 @@ export function ShopifyChargePanel({
   );
 }
 
-function formatShopifyMessage(result) {
+function ShopifyResultItem({ result, index, copiedCard, onCopy }) {
   const status = result.status?.toUpperCase();
-  const rawMessage = result.message || '';
-
-  if (status === 'APPROVED') {
-    return 'Card accepted';
-  }
-
-  if (status === 'DECLINED') {
-    if (rawMessage.includes('insufficient_funds')) return 'Insufficient funds';
-    if (rawMessage.includes('lost_card')) return 'Card reported lost';
-    if (rawMessage.includes('stolen_card')) return 'Card reported stolen';
-    if (rawMessage.includes('expired_card')) return 'Card expired';
-    if (rawMessage.includes('incorrect_cvc')) return 'Invalid security code';
-    if (rawMessage.includes('do_not_honor')) return 'Do not honor';
-    if (rawMessage.includes('card_declined')) return 'Card declined';
-    return rawMessage || 'Card declined';
-  }
-
-  if (status === 'ERROR') {
-    if (rawMessage.includes('not configured')) return 'Site not configured';
-    if (rawMessage.includes('Product ID')) return 'Product not found';
-    if (rawMessage.includes('out of stock')) return 'Item out of stock';
-    if (rawMessage.includes('Access denied')) return 'Access denied';
-    return rawMessage || 'Validation error';
-  }
-
-  return rawMessage || status || 'Unknown';
-}
-
-const ShopifyResultItem = React.memo(function ShopifyResultItem({ result, index, copiedCard, onCopy }) {
-  const status = result.status?.toUpperCase() || 'UNKNOWN';
   const isApproved = status === 'APPROVED';
   const isDeclined = status === 'DECLINED';
   const isError = status === 'ERROR';
 
-  const cardDisplay = result.fullCard || result.card || 'Unknown';
-  const friendlyMessage = formatShopifyMessage(result);
-  const binData = result.binData;
-  const supportedBrands = result.supportedBrands || [];
-  const isCopied = copiedCard === result.id;
+  const statusVariant = isApproved ? 'live' : isDeclined ? 'declined' : 'error';
+  const badgeVariant = isApproved ? 'live' : isDeclined ? 'dead' : 'error';
 
-  const handleCopy = useCallback(() => {
-    onCopy(result);
-  }, [onCopy, result]);
-
-  const getBadgeVariant = () => {
-    if (isApproved) return 'live';
-    if (isDeclined) return 'declined';
-    return 'error';
+  const formatMessage = (r) => {
+    const rawMessage = r.message || '';
+    if (isApproved) return rawMessage || 'Order completed';
+    if (isDeclined) {
+      if (rawMessage.includes('insufficient_funds')) return 'Insufficient funds';
+      if (rawMessage.includes('lost_card')) return 'Card reported lost';
+      if (rawMessage.includes('stolen_card')) return 'Card reported stolen';
+      if (rawMessage.includes('expired_card')) return 'Card expired';
+      if (rawMessage.includes('incorrect_cvc')) return 'Invalid security code';
+      if (rawMessage.includes('do_not_honor')) return 'Do not honor';
+      if (rawMessage.includes('CARD_DECLINED')) return 'Card declined';
+      return rawMessage || 'Card declined';
+    }
+    // Handle redundant "Error" message
+    if (rawMessage.toLowerCase() === 'error' || rawMessage.trim() === '') {
+      return 'Validation failed';
+    }
+    return rawMessage || 'Validation error';
   };
 
-  const getEffectiveStatus = () => {
-    if (isApproved) return 'approved';
-    if (isDeclined) return 'declined';
-    return 'error';
-  };
+  const cardDisplay = result.fullCard || result.card;
+  const hasBinData = result.binData && (result.binData.brand || result.binData.type || result.binData.country);
 
   return (
-    <ResultCard status={getEffectiveStatus()} interactive>
+    <ResultCard status={statusVariant}>
       <ResultCardContent>
-        {/* Zone 1: Header - Status + Card Number + Actions */}
+        {/* Zone 1: Header - Status Badge + Card Number + Duration + Copy */}
         <ResultCardHeader>
           <div className="flex items-center gap-3 min-w-0 flex-1">
-            <Badge variant={getBadgeVariant()} className="text-[10px] font-semibold shrink-0">
+            <Badge variant={badgeVariant} className="text-[10px] font-semibold shrink-0">
               {status}
             </Badge>
             <CardNumber card={cardDisplay} />
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <DurationDisplay duration={result.duration} />
+            {result.duration && <DurationDisplay duration={result.duration} />}
             <CopyButton 
-              value={cardDisplay}
-              isCopied={isCopied}
-              onCopy={handleCopy}
-              title="Copy card"
+              value={cardDisplay} 
+              onCopy={onCopy}
+              isCopied={copiedCard === cardDisplay}
             />
           </div>
         </ResultCardHeader>
 
-        {/* Zone 2: Rich Data - BIN info (only for approved) */}
-        {isApproved && binData && (
+        {/* Zone 2: Rich Data - BIN info (only when available) */}
+        {hasBinData && (
           <ResultCardDataZone>
-            <BINDataDisplay binData={binData} />
+            <BINDataDisplay binData={result.binData} />
           </ResultCardDataZone>
         )}
 
-        {/* Supported brands for approved */}
-        {isApproved && supportedBrands.length > 0 && (
-          <div className="flex flex-wrap items-center gap-1.5 mt-2.5">
-            <CreditCard className="h-3 w-3 text-neutral-400 dark:text-white/40" />
-            {supportedBrands.map((brand, i) => (
-              <ResultCardPill key={i}>
-                {brand}
-              </ResultCardPill>
-            ))}
-          </div>
-        )}
-
-        {/* Zone 3: Response - Message + Domain/Price */}
+        {/* Zone 3: Response - Message + Price + Gateway */}
         <ResultCardResponseZone>
-          <ResultCardMessage status={status} className="truncate flex-1">
-            {friendlyMessage}
+          <ResultCardMessage status={statusVariant} className="flex-1 sm:truncate">
+            {formatMessage(result)}
           </ResultCardMessage>
-          {(result.domain || result.price) && (
-            <span className="text-[10px] font-medium text-neutral-400 dark:text-white/40 shrink-0">
-              {result.domain && result.domain}
-              {result.domain && result.price && ' • '}
-              {result.price && result.price}
-            </span>
+          {result.price && (
+            <Badge variant="outline" className="text-[10px] h-5 shrink-0">
+              ${result.price}
+            </Badge>
+          )}
+          {result.gateway && (
+            <GatewayBadge gateway={result.gateway} />
           )}
         </ResultCardResponseZone>
       </ResultCardContent>
     </ResultCard>
   );
-});
-
-export default ShopifyChargePanel;
+}

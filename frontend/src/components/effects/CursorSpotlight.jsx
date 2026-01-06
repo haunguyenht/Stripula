@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, memo } from 'react';
+import { useState, useEffect, useCallback, useRef, memo } from 'react';
 import { cn } from '@/lib/utils';
 import { prefersReducedMotion } from '@/lib/motion';
 
@@ -6,7 +6,7 @@ import { prefersReducedMotion } from '@/lib/motion';
  * CursorSpotlight - Cursor-following radial gradient spotlight effect
  * 
  * Creates an immersive lighting effect that follows the cursor position.
- * Uses requestAnimationFrame for smooth 60fps tracking.
+ * Uses CSS custom properties for smooth tracking without React re-renders.
  * 
  * @param {string} className - Additional CSS classes
  * @param {string} color - Spotlight color (CSS color value)
@@ -22,18 +22,28 @@ const CursorSpotlight = memo(function CursorSpotlight({
   opacity = 0.2,
   breathe = true,
 }) {
-  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const containerRef = useRef(null);
+  const rafRef = useRef(null);
   const [isVisible, setIsVisible] = useState(false);
   const reducedMotion = prefersReducedMotion();
 
   const handleMouseMove = useCallback((e) => {
-    if (reducedMotion) return;
+    if (reducedMotion || !containerRef.current) return;
     
-    // Use requestAnimationFrame for smooth updates
-    requestAnimationFrame(() => {
-      setPosition({ x: e.clientX, y: e.clientY });
-      if (!isVisible) setIsVisible(true);
+    // Cancel any pending animation frame
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+    }
+    
+    // Use RAF to batch DOM updates, but update CSS variables directly (no React state)
+    rafRef.current = requestAnimationFrame(() => {
+      if (containerRef.current) {
+        containerRef.current.style.setProperty('--spotlight-x', `${e.clientX}px`);
+        containerRef.current.style.setProperty('--spotlight-y', `${e.clientY}px`);
+      }
     });
+    
+    if (!isVisible) setIsVisible(true);
   }, [reducedMotion, isVisible]);
 
   const handleMouseLeave = useCallback(() => {
@@ -57,48 +67,56 @@ const CursorSpotlight = memo(function CursorSpotlight({
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseleave', handleMouseLeave);
       window.removeEventListener('mouseenter', handleMouseEnter);
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+      }
     };
   }, [handleMouseMove, handleMouseLeave, handleMouseEnter, reducedMotion]);
 
   if (reducedMotion) return null;
 
+  const halfSize = size / 2;
+
   return (
     <div
+      ref={containerRef}
       className={cn(
         "fixed inset-0 pointer-events-none z-0 transition-opacity duration-500",
         breathe && "animate-spotlight-breathe",
         isVisible ? "opacity-100" : "opacity-0",
         className
       )}
+      style={{
+        '--spotlight-x': '50vw',
+        '--spotlight-y': '50vh',
+      }}
       aria-hidden="true"
     >
-      {/* Light mode spotlight */}
+      {/* Light mode spotlight - uses CSS variables for position */}
       <div
-        className="absolute dark:hidden"
+        className="absolute dark:hidden will-change-transform"
         style={{
-          left: position.x - size / 2,
-          top: position.y - size / 2,
+          left: `calc(var(--spotlight-x) - ${halfSize}px)`,
+          top: `calc(var(--spotlight-y) - ${halfSize}px)`,
           width: size,
           height: size,
           background: `radial-gradient(circle, ${color} 0%, transparent 70%)`,
           opacity: opacity,
           transform: 'translateZ(0)',
-          transition: 'left 0.15s ease-out, top 0.15s ease-out',
         }}
       />
       
-      {/* Dark mode spotlight */}
+      {/* Dark mode spotlight - uses CSS variables for position */}
       <div
-        className="absolute hidden dark:block"
+        className="absolute hidden dark:block will-change-transform"
         style={{
-          left: position.x - size / 2,
-          top: position.y - size / 2,
+          left: `calc(var(--spotlight-x) - ${halfSize}px)`,
+          top: `calc(var(--spotlight-y) - ${halfSize}px)`,
           width: size,
           height: size,
           background: `radial-gradient(circle, ${darkColor} 0%, transparent 70%)`,
           opacity: opacity,
           transform: 'translateZ(0)',
-          transition: 'left 0.15s ease-out, top 0.15s ease-out',
         }}
       />
     </div>

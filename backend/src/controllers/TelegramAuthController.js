@@ -72,6 +72,7 @@ export class TelegramAuthController {
                     lastName: safeUser.last_name,
                     photoUrl: safeUser.photo_url,
                     tier: safeUser.tier,
+                    tierExpiresAt: safeUser.tier_expires_at || null,
                     creditBalance: credit_balance,
                     referralCode: safeUser.referral_code,
                     isAdmin: safeUser.is_admin || false
@@ -176,6 +177,7 @@ export class TelegramAuthController {
                     lastName: freshUser.last_name,
                     photoUrl: freshUser.photo_url,
                     tier: freshUser.tier,
+                    tierExpiresAt: freshUser.tier_expires_at || null,
                     creditBalance: freshUser.credit_balance,
                     dailyCardsUsed: freshUser.daily_cards_used,
                     referralCode: freshUser.referral_code,

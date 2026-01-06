@@ -1,6 +1,7 @@
 import { supabase, isSupabaseConfigured } from '../infrastructure/database/SupabaseClient.js';
 import { USER_TIERS } from './UserService.js';
 import { GatewayConfigCache } from '../infrastructure/cache/GatewayConfigCache.js';
+import { getGatewayLabel } from '../utils/constants.js';
 
 /**
  * Transaction types for credit operations
@@ -344,6 +345,19 @@ export class CreditManagerService {
         // Calculate total credits: (approved × pricing_approved) + (live × pricing_live)
         const creditsToDeduct = calculateBatchCreditCost(pricing, { approved: approvedCount, live: liveCount });
 
+        // Skip DB insert if no credits to deduct
+        if (creditsToDeduct === 0) {
+            return {
+                success: true,
+                creditsDeducted: 0,
+                newBalance: currentBalance,
+                approvedCount,
+                liveCount,
+                pricing,
+                skipped: true
+            };
+        }
+
         // Check if sufficient balance (Requirement 3.1 - non-negative balance)
         if (currentBalance < creditsToDeduct) {
             return {
@@ -373,7 +387,7 @@ export class CreditManagerService {
 
         // Create transaction record (negative amount for deduction)
         const txDescription = description ||
-            `${approvedCount} APPROVED + ${liveCount} LIVE via ${gatewayId} (${creditsToDeduct} credits)`;
+            `${approvedCount} APPROVED + ${liveCount} LIVE via ${getGatewayLabel(gatewayId)} (${creditsToDeduct} credits)`;
 
         const { data: transaction, error: txError } = await supabase
             .from('credit_transactions')
@@ -501,6 +515,98 @@ export class CreditManagerService {
             statusType,
             shouldStop: false
         };
+    }
+
+    /**
+     * Record a batch transaction summary to credit_transactions table
+     * Called after batch completion (success, stopped, or credit exhausted)
+     * 
+     * This is used when deductSingleCardCredit is used for real-time deduction
+     * to ensure transaction history is recorded.
+     * 
+     * @param {string} userId - User UUID
+     * @param {string} gatewayId - Gateway ID
+     * @param {Object} batchStats - Batch statistics
+     * @param {number} batchStats.totalCreditsDeducted - Total credits deducted during batch
+     * @param {number} batchStats.approvedCount - Number of approved cards
+     * @param {number} batchStats.liveCount - Number of live cards (3DS, live declines)
+     * @param {number} batchStats.totalCards - Total cards in batch
+     * @param {number} batchStats.processedCards - Cards actually processed
+     * @param {number} batchStats.currentBalance - Final balance after batch
+     * @param {boolean} batchStats.wasStopped - Whether batch was stopped early
+     * @param {string} batchStats.stopReason - Reason for stopping (user_cancelled, credit_exhausted, error, completed)
+     * @returns {Promise<Object>} Transaction record result
+     */
+    async recordBatchTransaction(userId, gatewayId, batchStats) {
+        if (!isSupabaseConfigured()) {
+            return { success: false, error: 'Database not configured' };
+        }
+
+        if (!userId || !gatewayId) {
+            return { success: false, error: 'User ID and Gateway ID required' };
+        }
+
+        const {
+            totalCreditsDeducted = 0,
+            approvedCount = 0,
+            liveCount = 0,
+            totalCards = 0,
+            processedCards = 0,
+            currentBalance = 0,
+            wasStopped = false,
+            stopReason = 'completed'
+        } = batchStats;
+
+        try {
+            // Skip recording if no credits were deducted (0 billable cards)
+            if (totalCreditsDeducted === 0) {
+                return {
+                    success: true,
+                    transactionId: null,
+                    creditsDeducted: 0,
+                    description: 'No billable cards - transaction not recorded',
+                    skipped: true
+                };
+            }
+
+            // Build compact description: "X APPROVED + Y LIVE (Z cards) via Gateway"
+            // Stopped batches show processed/total cards
+            const gatewayLabel = getGatewayLabel(gatewayId);
+            const cardsInfo = wasStopped ? `${processedCards}/${totalCards}` : `${processedCards}`;
+            const description = `${approvedCount} APPROVED + ${liveCount} LIVE (${cardsInfo} cards) via ${gatewayLabel}`;
+
+            const { data: transaction, error } = await supabase
+                .from('credit_transactions')
+                .insert({
+                    user_id: userId,
+                    amount: -totalCreditsDeducted,
+                    balance_after: currentBalance,
+                    type: TRANSACTION_TYPES.USAGE,
+                    gateway_id: gatewayId,
+                    description,
+                    total_cards: totalCards,
+                    processed_cards: processedCards,
+                    was_stopped: wasStopped,
+                    stop_reason: stopReason
+                })
+                .select('id')
+                .single();
+
+            if (error) {
+                console.error('[CreditManagerService] Failed to record batch transaction:', error.message);
+                return { success: false, error: error.message };
+            }
+
+            return {
+                success: true,
+                transactionId: transaction.id,
+                creditsDeducted: totalCreditsDeducted,
+                description
+            };
+        } catch (error) {
+            console.error('[CreditManagerService] Error recording batch transaction:', error.message);
+            return { success: false, error: error.message };
+        }
     }
 
     /**

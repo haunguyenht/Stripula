@@ -126,6 +126,11 @@ const TEXT_PATTERNS = [
     // CVC patterns
     { pattern: /incorrect[_\s]?cvc/i, code: 'incorrect_cvc' },
     { pattern: /invalid[_\s]?cvc/i, code: 'invalid_cvc' },
+    { pattern: /security[_\s]?code[_\s]?(is[_\s]?)?invalid/i, code: 'incorrect_cvc' },
+    { pattern: /invalid[_\s]?security[_\s]?code/i, code: 'incorrect_cvc' },
+    { pattern: /card'?s?[_\s]?security[_\s]?code/i, code: 'incorrect_cvc' },
+    { pattern: /cvv[_\s]?(is[_\s]?)?invalid/i, code: 'incorrect_cvc' },
+    { pattern: /cvc[_\s]?(is[_\s]?)?invalid/i, code: 'incorrect_cvc' },
     
     // Number patterns
     { pattern: /invalid[_\s]?number/i, code: 'invalid_number' },

@@ -15,12 +15,12 @@ export const tierConfig = {
     // Text colors
     color: 'text-violet-600 dark:text-violet-400',
     
-    // Background colors
-    bgColor: 'bg-violet-500/10',
+    // Background colors (explicit dark mode variants)
+    bgColor: 'bg-violet-500/10 dark:bg-violet-500/20',
     bgGradient: 'from-violet-500/20 via-purple-500/10 to-fuchsia-500/20',
     
     // Border & ring colors
-    borderColor: 'ring-violet-500/40',
+    borderColor: 'ring-violet-500/40 dark:ring-violet-400/50',
     ringColor: 'ring-violet-500/50',
     
     // Shadow/glow effects
@@ -58,9 +58,9 @@ export const tierConfig = {
     icon: Shield, 
     label: 'Bronze',
     color: 'text-amber-600 dark:text-amber-400',
-    bgColor: 'bg-amber-500/10',
+    bgColor: 'bg-amber-500/10 dark:bg-amber-500/20',
     bgGradient: 'from-amber-500/20 via-orange-500/10 to-yellow-500/20',
-    borderColor: 'ring-amber-500/40',
+    borderColor: 'ring-amber-500/40 dark:ring-amber-400/50',
     ringColor: 'ring-amber-500/50',
     glowColor: 'shadow-amber-500/30',
     headerGradient: 'from-amber-100/80 via-orange-50/50 to-white dark:from-amber-500/15 dark:via-orange-500/5 dark:to-transparent',
@@ -86,9 +86,9 @@ export const tierConfig = {
     icon: Award, 
     label: 'Silver',
     color: 'text-slate-500 dark:text-slate-300',
-    bgColor: 'bg-slate-500/10',
+    bgColor: 'bg-slate-500/10 dark:bg-slate-400/20',
     bgGradient: 'from-slate-400/20 via-gray-400/10 to-zinc-400/20',
-    borderColor: 'ring-slate-400/40',
+    borderColor: 'ring-slate-400/40 dark:ring-slate-300/50',
     ringColor: 'ring-slate-400/50',
     glowColor: 'shadow-slate-400/30',
     headerGradient: 'from-slate-200/80 via-gray-100/50 to-white dark:from-slate-400/15 dark:via-slate-400/5 dark:to-transparent',
@@ -114,9 +114,9 @@ export const tierConfig = {
     icon: Crown, 
     label: 'Gold',
     color: 'text-yellow-600 dark:text-yellow-400',
-    bgColor: 'bg-yellow-500/10',
+    bgColor: 'bg-yellow-500/10 dark:bg-yellow-500/20',
     bgGradient: 'from-yellow-500/20 via-amber-400/10 to-orange-400/20',
-    borderColor: 'ring-yellow-500/40',
+    borderColor: 'ring-yellow-500/40 dark:ring-yellow-400/50',
     ringColor: 'ring-yellow-500/50',
     glowColor: 'shadow-yellow-500/40',
     headerGradient: 'from-yellow-100/80 via-amber-50/50 to-white dark:from-yellow-500/15 dark:via-amber-500/5 dark:to-transparent',
@@ -142,9 +142,9 @@ export const tierConfig = {
     icon: Gem, 
     label: 'Diamond',
     color: 'text-cyan-600 dark:text-cyan-400',
-    bgColor: 'bg-cyan-500/10',
+    bgColor: 'bg-cyan-500/10 dark:bg-cyan-500/20',
     bgGradient: 'from-cyan-500/20 via-sky-400/10 to-blue-500/20',
-    borderColor: 'ring-cyan-500/40',
+    borderColor: 'ring-cyan-500/40 dark:ring-cyan-400/50',
     ringColor: 'ring-cyan-500/50',
     glowColor: 'shadow-cyan-500/50',
     headerGradient: 'from-cyan-100/80 via-sky-50/50 to-white dark:from-cyan-500/15 dark:via-sky-500/5 dark:to-transparent',

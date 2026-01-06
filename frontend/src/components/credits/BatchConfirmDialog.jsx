@@ -1,27 +1,22 @@
 import * as React from "react";
 import { useMemo } from "react";
-import { AlertTriangle, Coins, Calculator, CreditCard, Loader2, Zap, ChevronRight, Wallet, Sparkles } from "lucide-react";
+import { AlertTriangle, CreditCard, Loader2, ChevronRight, Wallet, Zap, Check } from "lucide-react";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
-  DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
 
 /**
- * BatchConfirmDialog Component - Redesigned for OrangeAI/OPUX
+ * BatchConfirmDialog Component - Clean Redesign
  * 
- * Modern confirmation dialog for batch validation with:
- * - Glass morphism cards for cost breakdown
- * - Visual cost calculator with formula display
- * - Clear balance indicators with tier theming
- * - Improved typography throughout
- * 
- * Requirements: 13.1, 13.2, 13.3, 13.4, 13.5
+ * Light mode: Minimal, warm shadows, clean cards
+ * Dark mode: OPUX glass with subtle glows
  */
 export function BatchConfirmDialog({
   open,
@@ -34,37 +29,16 @@ export function BatchConfirmDialog({
   onCancel,
   isLoading = false,
 }) {
-  // Calculate estimated max cost (worst case: all cards LIVE)
-  const estimatedCost = useMemo(() => {
-    return Math.ceil(cardCount * effectiveRate);
-  }, [cardCount, effectiveRate]);
+  const estimatedCost = useMemo(() => Math.ceil(cardCount * effectiveRate), [cardCount, effectiveRate]);
+  const hasSufficientCredits = useMemo(() => balance >= estimatedCost, [balance, estimatedCost]);
+  const shortfall = useMemo(() => hasSufficientCredits ? 0 : estimatedCost - balance, [hasSufficientCredits, estimatedCost, balance]);
 
-  // Check if sufficient credits
-  const hasSufficientCredits = useMemo(() => {
-    return balance >= estimatedCost;
-  }, [balance, estimatedCost]);
-
-  // Calculate shortfall
-  const shortfall = useMemo(() => {
-    if (hasSufficientCredits) return 0;
-    return estimatedCost - balance;
-  }, [hasSufficientCredits, estimatedCost, balance]);
-
-  // Calculate remaining after
-  const remainingAfter = useMemo(() => {
-    return Math.max(0, balance - estimatedCost);
-  }, [balance, estimatedCost]);
-
-  const handleConfirm = () => {
-    onConfirm?.();
-  };
-
+  const handleConfirm = () => onConfirm?.();
   const handleCancel = () => {
     if (isLoading) return;
     onCancel?.();
     onOpenChange?.(false);
   };
-
   const handleOpenChange = (newOpen) => {
     if (isLoading && !newOpen) return;
     onOpenChange?.(newOpen);
@@ -72,215 +46,170 @@ export function BatchConfirmDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-[440px]">
-        {/* Header with icon */}
-        <DialogHeader>
-          <div className="flex items-start gap-4">
+      <DialogContent 
+        className={cn(
+          "sm:max-w-[400px] p-0 gap-0 overflow-hidden",
+          // Light mode
+          "bg-white border-gray-200/80",
+          "shadow-[0_25px_50px_-12px_rgba(0,0,0,0.15)]",
+          // Dark mode - glass
+          "dark:bg-[#161a1f]/90 dark:border-white/10",
+          "dark:shadow-[0_0_0_1px_rgba(255,255,255,0.05),0_25px_60px_-15px_rgba(0,0,0,0.5)]",
+          "dark:backdrop-blur-xl"
+        )}
+      >
+        {/* Accessibility: Hidden title and description for screen readers */}
+        <VisuallyHidden.Root>
+          <DialogTitle>Confirm Validation</DialogTitle>
+          <DialogDescription>
+            Confirm validation of {cardCount} cards using {gatewayName}. Estimated cost: {Math.ceil(cardCount * effectiveRate)} credits.
+          </DialogDescription>
+        </VisuallyHidden.Root>
+        {/* Header */}
+        <div className={cn(
+          "px-5 pt-5 pb-4",
+          "border-b border-gray-100 dark:border-white/[0.06]"
+        )}>
+          <div className="flex items-center gap-3">
             <div className={cn(
-              "shrink-0 p-2.5 rounded-xl ring-1",
-              "bg-primary/10 dark:bg-primary/15",
-              "ring-primary/20 dark:ring-primary/25"
+              "flex items-center justify-center w-10 h-10 rounded-xl",
+              // Light
+              "bg-gradient-to-br from-orange-500 to-red-500",
+              "shadow-[0_4px_12px_-2px_rgba(255,64,23,0.4)]",
+              // Dark - terracotta glow
+              "dark:from-[#AB726F] dark:to-[#8B5A57]",
+              "dark:shadow-[0_4px_16px_-2px_rgba(171,114,111,0.5)]"
             )}>
-              <CreditCard className="h-5 w-5 text-primary" />
+              <CreditCard className="h-5 w-5 text-white" />
             </div>
-            <div className="flex-1 min-w-0 space-y-1.5 pt-0.5">
-              <DialogTitle>Confirm Batch Validation</DialogTitle>
-              <DialogDescription>
-                Review the details before starting validation.
-              </DialogDescription>
+            <div>
+              <h2 className="text-[15px] font-semibold text-gray-900 dark:text-white">
+                Confirm Validation
+              </h2>
+              <p className="text-[13px] text-gray-500 dark:text-white/50">
+                {cardCount.toLocaleString()} cards • {gatewayName}
+              </p>
             </div>
           </div>
-        </DialogHeader>
-        
-        <div className="space-y-3">
-          {/* Batch Summary Card */}
-          <div className={cn(
-            "rounded-xl p-4",
-            "bg-neutral-50 dark:bg-white/[0.03]",
-            "border border-neutral-200/60 dark:border-white/[0.06]"
-          )}>
-            <div className="space-y-3">
-              {/* Card Count - Prominent */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <div className={cn(
-                    "flex items-center justify-center w-8 h-8 rounded-lg",
-                    "bg-gradient-to-br from-primary/15 to-primary/5",
-                    "dark:from-primary/20 dark:to-primary/10",
-                    "border border-primary/10 dark:border-primary/20"
-                  )}>
-                    <Sparkles className="h-4 w-4 text-primary" />
-                  </div>
-                  <span className="text-[13px] font-medium text-neutral-600 dark:text-white/70">
-                    Cards to validate
-                  </span>
-                </div>
-                <span className="text-xl font-bold text-neutral-900 dark:text-white font-mono tabular-nums">
-                  {cardCount.toLocaleString()}
+        </div>
+
+        {/* Body */}
+        <div className="px-5 py-4 space-y-4">
+          {/* Stats Grid */}
+          <div className="grid grid-cols-2 gap-3">
+            {/* Card Count */}
+            <div className={cn(
+              "p-3 rounded-xl",
+              "bg-gray-50 dark:bg-white/[0.03]",
+              "border border-gray-100 dark:border-white/[0.06]"
+            )}>
+              <div className="flex items-center gap-2 mb-1">
+                <Zap className="h-3.5 w-3.5 text-gray-400 dark:text-white/40" />
+                <span className="text-[11px] uppercase tracking-wide text-gray-400 dark:text-white/40">
+                  Cards
                 </span>
               </div>
+              <p className="text-lg font-bold font-mono text-gray-900 dark:text-white">
+                {cardCount.toLocaleString()}
+              </p>
+            </div>
 
-              {/* Divider */}
-              <div className="h-px bg-neutral-200/60 dark:bg-white/[0.06]" />
-
-              {/* Gateway & Rate */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-[11px] uppercase tracking-wider text-neutral-400 dark:text-white/40 mb-1">
-                    Gateway
-                  </p>
-                  <p className="text-[13px] font-medium text-neutral-700 dark:text-white/80">
-                    {gatewayName}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-[11px] uppercase tracking-wider text-neutral-400 dark:text-white/40 mb-1">
-                    Rate/LIVE
-                  </p>
-                  <p className="text-[13px] font-medium text-neutral-700 dark:text-white/80 font-mono">
-                    {effectiveRate.toFixed(2)} cr
-                  </p>
-                </div>
+            {/* Rate */}
+            <div className={cn(
+              "p-3 rounded-xl",
+              "bg-gray-50 dark:bg-white/[0.03]",
+              "border border-gray-100 dark:border-white/[0.06]"
+            )}>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-[11px] uppercase tracking-wide text-gray-400 dark:text-white/40">
+                  Rate/Live
+                </span>
               </div>
+              <p className="text-lg font-bold font-mono text-gray-900 dark:text-white">
+                {effectiveRate.toFixed(2)}
+              </p>
             </div>
           </div>
 
-          {/* Cost Calculator Card */}
+          {/* Cost Calculation */}
           <div className={cn(
-            "rounded-xl overflow-hidden",
-            hasSufficientCredits
-              ? "bg-neutral-50 dark:bg-white/[0.03] border border-neutral-200/60 dark:border-white/[0.06]"
-              : "bg-amber-50 dark:bg-amber-500/[0.08] border border-amber-200/80 dark:border-amber-500/20"
+            "p-4 rounded-xl",
+            hasSufficientCredits 
+              ? "bg-emerald-50 dark:bg-emerald-500/[0.08] border border-emerald-200/60 dark:border-emerald-500/20"
+              : "bg-amber-50 dark:bg-amber-500/[0.08] border border-amber-200/60 dark:border-amber-500/20"
           )}>
-            {/* Calculator Header */}
-            <div className={cn(
-              "flex items-center gap-2 px-4 py-2.5",
-              hasSufficientCredits
-                ? "bg-neutral-100/50 dark:bg-white/[0.02] border-b border-neutral-200/40 dark:border-white/[0.04]"
-                : "bg-amber-100/50 dark:bg-amber-500/10 border-b border-amber-200/60 dark:border-amber-500/20"
-            )}>
-              <Calculator className={cn(
-                "h-4 w-4",
-                hasSufficientCredits 
-                  ? "text-neutral-500 dark:text-white/50" 
-                  : "text-amber-600 dark:text-amber-400"
-              )} />
+            {/* Formula */}
+            <div className="flex items-center justify-center gap-2 mb-3">
+              <span className="text-sm font-mono text-gray-600 dark:text-white/60">{cardCount}</span>
+              <span className="text-gray-400 dark:text-white/30">×</span>
+              <span className="text-sm font-mono text-gray-600 dark:text-white/60">{effectiveRate.toFixed(2)}</span>
+              <span className="text-gray-400 dark:text-white/30">=</span>
               <span className={cn(
-                "text-[13px] font-semibold",
-                hasSufficientCredits
-                  ? "text-neutral-700 dark:text-white/80"
-                  : "text-amber-700 dark:text-amber-300"
+                "text-xl font-bold font-mono",
+                hasSufficientCredits 
+                  ? "text-emerald-600 dark:text-emerald-400" 
+                  : "text-amber-600 dark:text-amber-400"
               )}>
-                Cost Estimate
+                {estimatedCost.toLocaleString()}
+              </span>
+              <span className="text-[10px] text-gray-400 dark:text-white/40">max</span>
+            </div>
+
+            {/* Balance */}
+            <div className={cn(
+              "flex items-center justify-between py-2 px-3 rounded-lg",
+              "bg-white/60 dark:bg-black/20"
+            )}>
+              <div className="flex items-center gap-2">
+                <Wallet className={cn(
+                  "h-4 w-4",
+                  hasSufficientCredits ? "text-emerald-500" : "text-amber-500"
+                )} />
+                <span className="text-[13px] text-gray-600 dark:text-white/60">Balance</span>
+              </div>
+              <span className={cn(
+                "font-bold font-mono",
+                hasSufficientCredits 
+                  ? "text-emerald-600 dark:text-emerald-400" 
+                  : "text-amber-600 dark:text-amber-400"
+              )}>
+                {balance.toLocaleString()}
               </span>
             </div>
 
-            <div className="p-4 space-y-3">
-              {/* Formula Display */}
-              <div className={cn(
-                "flex items-center justify-center gap-2 py-3 px-4 rounded-lg",
-                "bg-white dark:bg-black/20",
-                "border border-neutral-200/60 dark:border-white/[0.04]"
-              )}>
-                <span className="text-sm font-mono font-medium text-neutral-600 dark:text-white/60">
-                  {cardCount}
-                </span>
-                <span className="text-neutral-400 dark:text-white/30">×</span>
-                <span className="text-sm font-mono font-medium text-neutral-600 dark:text-white/60">
-                  {effectiveRate.toFixed(2)}
-                </span>
-                <span className="text-neutral-400 dark:text-white/30">=</span>
-                <span className={cn(
-                  "text-lg font-bold font-mono",
-                  hasSufficientCredits 
-                    ? "text-neutral-900 dark:text-white" 
-                    : "text-amber-700 dark:text-amber-300"
-                )}>
-                  {estimatedCost}
-                </span>
-                <span className="text-[11px] text-neutral-400 dark:text-white/40 ml-0.5">max</span>
+            {/* Status */}
+            {hasSufficientCredits ? (
+              <div className="flex items-center justify-center gap-1.5 mt-3 text-emerald-600 dark:text-emerald-400">
+                <Check className="h-4 w-4" />
+                <span className="text-[12px] font-medium">Sufficient credits</span>
               </div>
-
-              {/* Balance Row */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Wallet className={cn(
-                    "h-4 w-4",
-                    hasSufficientCredits 
-                      ? "text-emerald-500 dark:text-emerald-400" 
-                      : "text-amber-500 dark:text-amber-400"
-                  )} />
-                  <span className="text-[13px] text-neutral-600 dark:text-white/60">
-                    Your balance
-                  </span>
-                </div>
-                <div className="flex items-baseline gap-1">
-                  <span className={cn(
-                    "text-[15px] font-bold font-mono tabular-nums",
-                    hasSufficientCredits 
-                      ? "text-emerald-600 dark:text-emerald-400" 
-                      : "text-amber-600 dark:text-amber-400"
-                  )}>
-                    {balance.toLocaleString()}
-                  </span>
-                  <span className="text-[11px] text-neutral-400 dark:text-white/40">credits</span>
-                </div>
+            ) : (
+              <div className="flex items-center gap-2 mt-3 p-2 rounded-lg bg-amber-100/50 dark:bg-amber-500/10">
+                <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                <p className="text-[11px] text-amber-700 dark:text-amber-300">
+                  May need <span className="font-semibold">{shortfall.toLocaleString()}</span> more credits if all LIVE
+                </p>
               </div>
-
-              {/* After estimate (only if sufficient) */}
-              {hasSufficientCredits && (
-                <div className="flex items-center justify-between pt-2 border-t border-neutral-200/60 dark:border-white/[0.06]">
-                  <span className="text-[12px] text-neutral-500 dark:text-white/50">
-                    Remaining after (est.)
-                  </span>
-                  <span className="text-[13px] font-medium font-mono text-neutral-600 dark:text-white/60">
-                    ~{remainingAfter.toLocaleString()}
-                  </span>
-                </div>
-              )}
-            </div>
+            )}
           </div>
 
-          {/* Warning for insufficient credits */}
-          {!hasSufficientCredits && (
-            <div className={cn(
-              "rounded-xl p-3",
-              "bg-amber-50 dark:bg-amber-500/[0.08]",
-              "border border-amber-200/80 dark:border-amber-500/20"
-            )}>
-              <div className="flex items-start gap-2.5">
-                <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-                <div className="space-y-0.5">
-                  <p className="text-[13px] font-semibold text-amber-700 dark:text-amber-300">
-                    Insufficient Credits
-                  </p>
-                  <p className="text-[12px] leading-relaxed text-amber-600/90 dark:text-amber-400/80">
-                    You may be <span className="font-semibold">{shortfall}</span> credits short if all cards are LIVE. 
-                    You can still proceed — only LIVE cards are charged.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Info note */}
-          <p className="text-[11px] text-center text-neutral-400 dark:text-white/40">
-            Credits are only charged for LIVE/approved cards, not declined ones.
+          {/* Note */}
+          <p className="text-[11px] text-center text-gray-400 dark:text-white/40">
+            Only LIVE cards are charged. Declined cards are free.
           </p>
         </div>
-        
-        <DialogFooter>
+
+        {/* Footer */}
+        <DialogFooter className={cn(
+          "px-5 py-4 gap-2",
+          "border-t border-gray-100 dark:border-white/[0.06]",
+          "bg-gray-50/50 dark:bg-white/[0.02]"
+        )}>
           <Button 
-            variant="outline" 
+            variant="ghost" 
             onClick={handleCancel}
             disabled={isLoading}
-            className={cn(
-              "h-10 font-medium text-[14px]",
-              "border-neutral-200 text-neutral-700",
-              "hover:bg-neutral-100 hover:border-neutral-300",
-              "dark:border-white/10 dark:text-white/70",
-              "dark:hover:bg-white/[0.06] dark:hover:border-white/20"
-            )}
+            className="h-9 px-4 text-[13px] text-gray-600 hover:text-gray-900 dark:text-white/60 dark:hover:text-white"
           >
             Cancel
           </Button>
@@ -288,19 +217,21 @@ export function BatchConfirmDialog({
             onClick={handleConfirm}
             disabled={isLoading}
             className={cn(
-              "h-10 font-medium text-[14px] min-w-[140px] gap-1.5",
-              !hasSufficientCredits && "bg-amber-600 hover:bg-amber-700 dark:bg-amber-600 dark:hover:bg-amber-500"
+              "h-9 px-5 text-[13px] font-medium gap-1.5",
+              hasSufficientCredits
+                ? "bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 dark:from-[#AB726F] dark:to-[#9d5e5b] dark:hover:from-[#b4817e] dark:hover:to-[#a86b68]"
+                : "bg-amber-500 hover:bg-amber-600 dark:bg-amber-600 dark:hover:bg-amber-500"
             )}
           >
             {isLoading ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 Starting...
               </>
             ) : (
               <>
-                {!hasSufficientCredits ? "Proceed Anyway" : "Start Validation"}
-                <ChevronRight className="h-4 w-4" />
+                {hasSufficientCredits ? "Start" : "Proceed"}
+                <ChevronRight className="h-3.5 w-3.5" />
               </>
             )}
           </Button>

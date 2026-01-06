@@ -1,7 +1,7 @@
 import { EventEmitter } from 'events';
 import { GatewayState } from '../domain/GatewayState.js';
 import { HealthMetrics } from '../domain/HealthMetrics.js';
-import { AUTH_SITES, SHOPIFY_SITES, CHARGE_SITES, SKBASED_AUTH_SITES, SKBASED_CHARGE_SITES, getGatewayTypeInfo } from '../utils/constants.js';
+import { AUTH_SITES, CHARGE_SITES, SKBASED_AUTH_SITES, SKBASED_CHARGE_SITES, AUTO_SHOPIFY_API, getGatewayTypeInfo } from '../utils/constants.js';
 import { classifyFailure } from '../utils/failureClassifier.js';
 
 /**
@@ -29,10 +29,15 @@ export class GatewayManagerService extends EventEmitter {
     constructor(options = {}) {
         super();
         this.supabase = options.supabase || null;
+        this.telegramBotService = options.telegramBotService || null;
         this.registry = new Map();  // gateway_id -> GatewayState
         this.healthMetrics = new Map();  // gateway_id -> HealthMetrics
         this.sseClients = new Set();  // Connected SSE response objects
         this.initialized = false;
+        
+        // Alert state tracking for manual health control (Requirements 2.6, 7.1)
+        this.alertState = new Map();  // gateway_id -> { inAlert: boolean, lastAlertAt: number, alertCount: number }
+        this.alertCooldown = 5 * 60 * 1000;  // 5 minutes cooldown between alerts
     }
 
     /**
@@ -87,10 +92,12 @@ export class GatewayManagerService extends EventEmitter {
             addGateway(site, 'charge');
         }
 
-        // Add shopify gateways (Shopify parent, no sub-type)
-        for (const site of Object.values(SHOPIFY_SITES)) {
-            addGateway(site, 'shopify');
-        }
+        // Add Auto Shopify gateway (charge type)
+        const autoShopifySite = {
+            id: AUTO_SHOPIFY_API.GATEWAY_ID,
+            label: AUTO_SHOPIFY_API.LABEL
+        };
+        addGateway(autoShopifySite, 'shopify');
 
         // Add SK-based auth gateways (Stripe -> skbased-auth)
         for (const site of Object.values(SKBASED_AUTH_SITES)) {
@@ -403,7 +410,8 @@ export class GatewayManagerService extends EventEmitter {
     /**
      * Record a successful request for a gateway
      * 
-     * Requirements: 4.1, 4.5
+     * Requirements: 1.3, 2.3, 4.1
+     * NOTE: No longer automatically changes health status - only tracks metrics and sends recovery notifications
      * 
      * @param {string} gatewayId - Gateway ID
      * @param {number} latencyMs - Response time in milliseconds
@@ -414,18 +422,18 @@ export class GatewayManagerService extends EventEmitter {
             return;
         }
 
-        const oldHealth = metrics.getHealthStatus();
+        // Record success in metrics (no automatic status change - Requirement 1.3)
         metrics.recordSuccess(latencyMs);
-        const newHealth = metrics.getHealthStatus();
 
-        // Update gateway health status if changed
-        this._updateHealthStatus(gatewayId, oldHealth, newHealth);
+        // Check recovery threshold and send notification if needed (no auto status change)
+        this._checkAndSendRecovery(gatewayId, metrics);
     }
 
     /**
      * Record a failed request for a gateway
      * 
-     * Requirements: 4.1, 4.2, 4.3, 6.1
+     * Requirements: 1.1, 1.2, 4.1, 6.1
+     * NOTE: No longer automatically changes health status - only tracks metrics and sends alerts
      * 
      * @param {string} gatewayId - Gateway ID
      * @param {string|Error|Object} errorType - Type of error or error object
@@ -440,12 +448,11 @@ export class GatewayManagerService extends EventEmitter {
         // Auto-classify if category not provided (Requirement 6.1)
         const failureCategory = category || classifyFailure(errorType);
 
-        const oldHealth = metrics.getHealthStatus();
+        // Record failure in metrics (no automatic status change - Requirement 1.1, 1.2)
         metrics.recordFailure(errorType, failureCategory);
-        const newHealth = metrics.getHealthStatus();
 
-        // Update gateway health status if changed
-        this._updateHealthStatus(gatewayId, oldHealth, newHealth);
+        // Check alert thresholds and send notification if needed (no auto status change)
+        this._checkAndSendAlert(gatewayId, metrics);
     }
 
     /**
@@ -476,12 +483,161 @@ export class GatewayManagerService extends EventEmitter {
         // Broadcast to SSE clients using dedicated health change method
         this.broadcastHealthChange(gatewayId, oldHealth, newHealth, gateway.toJSON());
 
-        // Log significant health changes
-        if (newHealth === HealthMetrics.HEALTH.OFFLINE) {
-
-        } else if (oldHealth === HealthMetrics.HEALTH.OFFLINE && newHealth === HealthMetrics.HEALTH.ONLINE) {
-
+        // Send Telegram notification for significant health changes (Requirements 7.1, 7.2, 7.3)
+        if (this.telegramBotService) {
+            const timestamp = new Date().toISOString();
+            
+            if (newHealth === HealthMetrics.HEALTH.OFFLINE || newHealth === HealthMetrics.HEALTH.DEGRADED) {
+                // Notify on offline or degraded status (Requirements 7.1, 7.2)
+                this.telegramBotService.notifyGatewayHealth({
+                    gatewayId,
+                    gatewayLabel: gateway.label,
+                    previousStatus: oldHealth,
+                    newStatus: newHealth,
+                    timestamp,
+                    isRecovery: false
+                }).catch(err => {
+                    console.error(`[GatewayManager] Failed to send health notification for ${gatewayId}:`, err.message);
+                });
+            } else if (oldHealth !== HealthMetrics.HEALTH.ONLINE && newHealth === HealthMetrics.HEALTH.ONLINE) {
+                // Recovery notification (Requirement 7.3)
+                this.telegramBotService.notifyGatewayHealth({
+                    gatewayId,
+                    gatewayLabel: gateway.label,
+                    previousStatus: oldHealth,
+                    newStatus: newHealth,
+                    timestamp,
+                    isRecovery: true
+                }).catch(err => {
+                    console.error(`[GatewayManager] Failed to send recovery notification for ${gatewayId}:`, err.message);
+                });
+            }
         }
+    }
+
+    /**
+     * Check alert thresholds and send Telegram alert with inline buttons if conditions met
+     * Does NOT automatically change health status - only sends notification
+     * 
+     * Requirements: 2.1, 2.2, 2.6, 7.1
+     * 
+     * @private
+     * @param {string} gatewayId - Gateway ID
+     * @param {HealthMetrics} metrics - Health metrics for the gateway
+     */
+    async _checkAndSendAlert(gatewayId, metrics) {
+        // Check if alert thresholds are exceeded
+        const alertInfo = metrics.shouldTriggerAlert();
+        if (!alertInfo.shouldAlert) {
+            return;
+        }
+
+        // Check cooldown (Requirement 2.6)
+        const alertState = this.alertState.get(gatewayId) || { inAlert: false, lastAlertAt: 0, alertCount: 0 };
+        const now = Date.now();
+        
+        if (now - alertState.lastAlertAt < this.alertCooldown) {
+            // Still in cooldown period, don't send another alert
+            return;
+        }
+
+        // Send alert with inline buttons via Telegram
+        if (this.telegramBotService && typeof this.telegramBotService.sendHealthAlert === 'function') {
+            const gateway = this.registry.get(gatewayId);
+            
+            try {
+                await this.telegramBotService.sendHealthAlert({
+                    gatewayId,
+                    gatewayLabel: gateway?.label || gatewayId,
+                    currentStatus: gateway?.healthStatus || 'unknown',
+                    metrics: alertInfo.metrics,
+                    reason: alertInfo.reason
+                });
+            } catch (err) {
+                console.error(`[GatewayManager] Failed to send health alert for ${gatewayId}:`, err.message);
+            }
+        }
+
+        // Update alert state (Requirement 7.1)
+        this.alertState.set(gatewayId, {
+            inAlert: true,
+            lastAlertAt: now,
+            alertCount: alertState.alertCount + 1
+        });
+    }
+
+    /**
+     * Check if gateway has recovered and send recovery notification
+     * Does NOT automatically change health status - only sends notification
+     * 
+     * Requirements: 2.3, 7.2, 7.3
+     * 
+     * @private
+     * @param {string} gatewayId - Gateway ID
+     * @param {HealthMetrics} metrics - Health metrics for the gateway
+     */
+    async _checkAndSendRecovery(gatewayId, metrics) {
+        // Check if gateway is in alert state
+        const alertState = this.alertState.get(gatewayId);
+        if (!alertState?.inAlert) {
+            return;
+        }
+
+        // Check if recovery threshold is met (5 consecutive successes)
+        if (!metrics.shouldTriggerRecovery()) {
+            return;
+        }
+
+        // Send recovery notification via Telegram
+        if (this.telegramBotService && typeof this.telegramBotService.sendRecoveryNotification === 'function') {
+            const gateway = this.registry.get(gatewayId);
+            
+            try {
+                await this.telegramBotService.sendRecoveryNotification({
+                    gatewayId,
+                    gatewayLabel: gateway?.label || gatewayId,
+                    currentStatus: gateway?.healthStatus || 'online'
+                });
+            } catch (err) {
+                console.error(`[GatewayManager] Failed to send recovery notification for ${gatewayId}:`, err.message);
+            }
+        }
+
+        // Clear alert state (Requirement 7.3)
+        this.alertState.delete(gatewayId);
+    }
+
+    /**
+     * Clear alert state for a gateway
+     * Called when admin dismisses alert or changes status via Telegram button
+     * 
+     * Requirements: 3.4, 7.4
+     * 
+     * @param {string} gatewayId - Gateway ID
+     */
+    clearAlertState(gatewayId) {
+        this.alertState.delete(gatewayId);
+    }
+
+    /**
+     * Get alert state for a gateway
+     * 
+     * @param {string} gatewayId - Gateway ID
+     * @returns {Object|null} Alert state or null if not in alert
+     */
+    getAlertState(gatewayId) {
+        return this.alertState.get(gatewayId) || null;
+    }
+
+    /**
+     * Check if a gateway is currently in alert state
+     * 
+     * @param {string} gatewayId - Gateway ID
+     * @returns {boolean} True if gateway is in alert state
+     */
+    isInAlertState(gatewayId) {
+        const alertState = this.alertState.get(gatewayId);
+        return alertState?.inAlert === true;
     }
 
     /**
@@ -544,35 +700,114 @@ export class GatewayManagerService extends EventEmitter {
     }
 
     /**
-     * Get current health thresholds
-     * @returns {Object} Current thresholds
+     * Manually set gateway health status
+     * 
+     * Requirements: 1.4, 3.2, 3.3, 4.2, 4.5, 4.6
+     * 
+     * @param {string} gatewayId - Gateway ID
+     * @param {string} status - New health status (online, degraded, offline)
+     * @param {Object} options - Additional options
+     * @param {string} options.adminId - Admin user ID making the change
+     * @param {string} options.reason - Reason for status change
+     * @returns {Promise<Object>} Result with old and new health status
+     * @throws {Error} If gateway not found or status invalid
      */
-    getHealthThresholds() {
-        return { ...HealthMetrics.THRESHOLDS };
+    async setManualHealthStatus(gatewayId, status, options = {}) {
+        const gateway = this.registry.get(gatewayId);
+        if (!gateway) {
+            throw new Error(`Gateway not found: ${gatewayId}`);
+        }
+
+        // Validate status (Requirement 4.3)
+        const validStatuses = ['online', 'degraded', 'offline'];
+        if (!validStatuses.includes(status)) {
+            throw new Error(`Invalid health status: ${status}. Must be one of: ${validStatuses.join(', ')}`);
+        }
+
+        const oldHealth = gateway.healthStatus;
+        
+        // Update gateway health status
+        gateway.setHealthStatus(status);
+        
+        // Update metrics stored health status as well
+        const metrics = this.healthMetrics.get(gatewayId);
+        if (metrics) {
+            metrics.setHealthStatus(status);
+        }
+
+        // Clear alert state for this gateway (Requirement 7.4)
+        this.alertState.delete(gatewayId);
+
+        // Persist to database (Requirement 4.5)
+        await this._persistGatewayState(gateway);
+
+        // Log audit entry (Requirement 4.5)
+        await this._logAuditEntry(
+            gatewayId, 
+            oldHealth, 
+            status, 
+            options.adminId, 
+            options.reason || `Manual health status change to ${status}`
+        );
+
+        // Broadcast SSE update (Requirement 4.6)
+        this.broadcastHealthChange(gatewayId, oldHealth, status, gateway.toJSON());
+
+        // Emit health change event
+        this.emit('healthChange', {
+            gatewayId,
+            oldHealth,
+            newHealth: status,
+            gateway: gateway.toJSON(),
+            manual: true,
+            adminId: options.adminId,
+            timestamp: new Date().toISOString()
+        });
+
+        return { 
+            gatewayId, 
+            oldHealth, 
+            newHealth: status 
+        };
     }
 
     /**
-     * Update health thresholds (runtime only, not persisted)
+     * Get current alert thresholds (for notifications, not auto status changes)
+     * @returns {Object} Current alert thresholds
+     */
+    getHealthThresholds() {
+        return { ...HealthMetrics.ALERT_THRESHOLDS };
+    }
+
+    /**
+     * Update alert thresholds (runtime only, not persisted)
+     * NOTE: These thresholds are for ALERTS only, not automatic status changes
      * @param {Object} thresholds - New thresholds
      * @returns {Object} Updated thresholds
      */
     setHealthThresholds(thresholds) {
-        if (thresholds.DEGRADED_SUCCESS_RATE !== undefined) {
-            const rate = parseInt(thresholds.DEGRADED_SUCCESS_RATE, 10);
-            if (rate >= 0 && rate <= 100) {
-                HealthMetrics.THRESHOLDS.DEGRADED_SUCCESS_RATE = rate;
+        if (thresholds.CONSECUTIVE_FAILURES !== undefined) {
+            const failures = parseInt(thresholds.CONSECUTIVE_FAILURES, 10);
+            if (failures >= 1 && failures <= 100) {
+                HealthMetrics.ALERT_THRESHOLDS.CONSECUTIVE_FAILURES = failures;
             }
         }
-        if (thresholds.OFFLINE_CONSECUTIVE_FAILURES !== undefined) {
-            const failures = parseInt(thresholds.OFFLINE_CONSECUTIVE_FAILURES, 10);
-            if (failures >= 1 && failures <= 100) {
-                HealthMetrics.THRESHOLDS.OFFLINE_CONSECUTIVE_FAILURES = failures;
+        if (thresholds.SUCCESS_RATE_PERCENT !== undefined) {
+            const rate = parseInt(thresholds.SUCCESS_RATE_PERCENT, 10);
+            if (rate >= 0 && rate <= 100) {
+                HealthMetrics.ALERT_THRESHOLDS.SUCCESS_RATE_PERCENT = rate;
             }
         }
         if (thresholds.ROLLING_WINDOW_SIZE !== undefined) {
             const size = parseInt(thresholds.ROLLING_WINDOW_SIZE, 10);
             if (size >= 1 && size <= 100) {
-                HealthMetrics.THRESHOLDS.ROLLING_WINDOW_SIZE = size;
+                HealthMetrics.ALERT_THRESHOLDS.ROLLING_WINDOW_SIZE = size;
+            }
+        }
+        if (thresholds.RECOVERY_CONSECUTIVE !== undefined) {
+            const recovery = parseInt(thresholds.RECOVERY_CONSECUTIVE, 10);
+            if (recovery >= 1 && recovery <= 50) {
+                HealthMetrics.ALERT_THRESHOLDS.RECOVERY_CONSECUTIVE = recovery;
             }
         }
 

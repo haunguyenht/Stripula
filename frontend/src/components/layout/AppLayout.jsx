@@ -1,43 +1,65 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Zap, TreeDeciduous, HelpCircle, Wallet, ShoppingBag, Target, Layers, Key, MapPin, SquareStack } from 'lucide-react';
+import { Zap, TreeDeciduous, HelpCircle, Wallet, Target, MapPin, SquareStack } from 'lucide-react';
 import { TopTabBar } from '../navigation/TopTabBar';
-import StripeOwn from '../StripeOwn';
-import { StripeAuthPanel } from '../stripe/panels/StripeAuthPanel';
-import { StripeChargePanel } from '../stripe/panels/StripeChargePanel';
-import { ShopifyChargePanel } from '../shopify/panels/ShopifyChargePanel';
-import { ProfilePage } from '@/pages/ProfilePage';
-import { LoginPage } from '@/pages/LoginPage';
-import { AdminPage } from '@/pages/AdminPage';
 import { AppBackground } from '../background/AppBackground';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ConfirmDialog } from '@/components/ui/alert-dialog';
-import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
+import { GlobalErrorBoundary } from '@/components/ui/GlobalErrorBoundary';
 import { TelegramContactButton } from '@/components/ui/TelegramContactButton';
 import { DailyClaimModal } from '@/components/credits/DailyClaimModal';
 import { PageLoader } from '@/components/ui/loading-overlay';
 import { transition, variants } from '@/lib/motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { useValidation, ValidationProvider } from '@/contexts/ValidationContext';
+import { useTierExpirationWarning } from '@/hooks/useTierExpirationWarning';
+import { useMaintenanceStatus } from '@/hooks/useMaintenanceStatus';
+
+// Lazy-loaded route components for code splitting
+const StripeOwn = lazy(() => import('../StripeOwn'));
+const StripeAuthPanel = lazy(() => import('../stripe/panels/StripeAuthPanel').then(m => ({ default: m.StripeAuthPanel })));
+const StripeChargePanel = lazy(() => import('../stripe/panels/StripeChargePanel').then(m => ({ default: m.StripeChargePanel })));
+const ShopifyChargePanel = lazy(() => import('../shopify/panels/ShopifyChargePanel').then(m => ({ default: m.ShopifyChargePanel })));
+const ProfilePage = lazy(() => import('@/pages/ProfilePage').then(m => ({ default: m.ProfilePage })));
+const LoginPage = lazy(() => import('@/pages/LoginPage').then(m => ({ default: m.LoginPage })));
+const AdminPage = lazy(() => import('@/pages/AdminPage').then(m => ({ default: m.AdminPage })));
+const DashboardPage = lazy(() => import('@/pages/DashboardPage').then(m => ({ default: m.DashboardPage })));
+const MaintenancePage = lazy(() => import('@/pages/MaintenancePage').then(m => ({ default: m.MaintenancePage })));
+const NotFoundPage = lazy(() => import('@/pages/NotFoundPage').then(m => ({ default: m.NotFoundPage })));
 
 /**
  * AppLayout - Main application layout with shadcn/ui components
  * Protected by authentication - shows login page when not authenticated
+ * Wrapped with GlobalErrorBoundary for top-level error handling
+ * 
+ * Requirements: 6.1, 6.2 - Global error handling with ErrorPage
  */
 export function AppLayout() {
   return (
-    <ValidationProvider>
-      <AppLayoutInner />
-    </ValidationProvider>
+    <GlobalErrorBoundary>
+      <ValidationProvider>
+        <AppLayoutInner />
+      </ValidationProvider>
+    </GlobalErrorBoundary>
   );
 }
 
 function AppLayoutInner() {
   const { isAuthenticated, isLoading, user: authUser } = useAuth();
   const { isValidating, stopValidation } = useValidation();
+  const tierExpirationInfo = useTierExpirationWarning();
+  
+  // Maintenance mode status (Requirements: 1.3, 1.4, 2.1)
+  const { 
+    isMaintenanceMode, 
+    reason: maintenanceReason, 
+    estimatedEndTime: maintenanceEndTime 
+  } = useMaintenanceStatus();
+  
+  // Use saved route from localStorage, default to dashboard
   const [activeRoute, setActiveRoute] = useState(() => 
-    localStorage.getItem('appActiveRoute') || 'profile'
+    localStorage.getItem('appActiveRoute') || 'dashboard'
   );
   
   // Confirmation dialog state for route switching during validation
@@ -81,75 +103,98 @@ function AppLayoutInner() {
     setPendingRoute(null);
   }, []);
 
+  // Handle maintenance mode end - redirect to dashboard
+  // Requirement 2.5: Automatically redirect users when maintenance ends
+  const handleMaintenanceEnd = useCallback(() => {
+    // Refresh the page to restore normal access
+    window.location.reload();
+  }, []);
+
+  // Handle navigation to dashboard (for 404 page)
+  // Requirement 3.1: Show NotFoundPage for invalid routes
+  const handleNavigateHome = useCallback(() => {
+    setActiveRoute('dashboard');
+    localStorage.setItem('appActiveRoute', 'dashboard');
+  }, []);
+
+  // Valid routes list for 404 detection
+  // Requirement 3.1: Display 404 error page for non-existent routes
+  const validRoutes = [
+    'dashboard',
+    'stripe-auth',
+    'stripe-charge',
+    'stripe-skbased',
+    'braintree-auth',
+    'braintree-charge',
+    'paypal-charge',
+    'adyen-auth',
+    'adyen-charge',
+    'shopify-charge',
+    'target-charge',
+    'other-sk-key-check',
+    'other-charge-avs',
+    'other-square-charge',
+    'profile',
+    'admin',
+    'help'
+  ];
+
   const renderContent = () => {
-    switch (activeRoute) {
-      case 'stripe-auth':
-        return (
-          <ErrorBoundary fallbackMessage="Error loading Stripe Auth panel. Your input has been preserved.">
-            <StripeAuthPanel />
-          </ErrorBoundary>
-        );
-      case 'stripe-charge':
-        return (
-          <ErrorBoundary fallbackMessage="Error loading Stripe Charge panel. Your input has been preserved.">
-            <StripeChargePanel />
-          </ErrorBoundary>
-        );
-      case 'stripe-skbased':
-        return (
-          <ErrorBoundary fallbackMessage="Error loading SK-Based panel. Your input has been preserved.">
-            <StripeOwn />
-          </ErrorBoundary>
-        );
-      case 'braintree-auth':
-        return <PlaceholderPage title="Braintree Auth" description="Braintree authentication with 3 gateways" Icon={TreeDeciduous} />;
-      case 'braintree-charge':
-        return <PlaceholderPage title="Braintree Charge" description="Braintree payment check with 3 gateways" Icon={TreeDeciduous} />;
-      case 'paypal-charge':
-        return <PlaceholderPage title="PayPal Charge" description="PayPal payment check with 3 gateways" Icon={Wallet} />;
-      case 'adyen-auth':
-        return <PlaceholderPage title="Adyen Auth" description="Adyen authentication with 3 gateways" Icon={Wallet} />;
-      case 'adyen-charge':
-        return <PlaceholderPage title="Adyen Charge" description="Adyen payment check with 3 gateways" Icon={Zap} />;
-      case 'shopify-charge':
-        return (
-          <ErrorBoundary fallbackMessage="Error loading Shopify Charge panel. Your input has been preserved.">
-            <ShopifyChargePanel />
-          </ErrorBoundary>
-        );
-      case 'target-charge':
-        return <PlaceholderPage title="Target Charge" description="Target payment check with 3 gateways" Icon={Target} />;
-      case 'other-sk-key-check':
-        return (
-          <ErrorBoundary fallbackMessage="Error loading SK Key Check panel. Your input has been preserved.">
-            <StripeOwn initialTab="keys" />
-          </ErrorBoundary>
-        );
-      case 'other-charge-avs':
-        return <PlaceholderPage title="Charge AVS" description="Address verification service validation" Icon={MapPin} />;
-      case 'other-square-charge':
-        return <PlaceholderPage title="Square Charge" description="Square payment validation" Icon={SquareStack} />;
-      case 'profile':
-        return (
-          <ErrorBoundary fallbackMessage="Error loading Profile page.">
-            <ProfilePage />
-          </ErrorBoundary>
-        );
-      case 'admin':
-        return (
-          <ErrorBoundary fallbackMessage="Error loading Admin page.">
-            <AdminPage />
-          </ErrorBoundary>
-        );
-      case 'help':
-        return <PlaceholderPage title="Help" description="Documentation and support" Icon={HelpCircle} />;
-      default:
-        return (
-          <ErrorBoundary fallbackMessage="Error loading SK-Based panel. Your input has been preserved.">
-            <StripeOwn />
-          </ErrorBoundary>
-        );
+    // Check if route is valid - show 404 for unknown routes
+    // Requirement 3.1: WHEN a user accesses a route that does not exist, THE System SHALL display the 404 error page
+    if (!validRoutes.includes(activeRoute)) {
+      return (
+        <NotFoundPage onNavigateHome={handleNavigateHome} />
+      );
     }
+
+    const content = (() => {
+      switch (activeRoute) {
+        case 'dashboard':
+          return <DashboardPage />;
+        case 'stripe-auth':
+          return <StripeAuthPanel />;
+        case 'stripe-charge':
+          return <StripeChargePanel />;
+        case 'stripe-skbased':
+          return <StripeOwn />;
+        case 'braintree-auth':
+          return <PlaceholderPage title="Braintree Auth" description="Braintree authentication with 3 gateways" Icon={TreeDeciduous} />;
+        case 'braintree-charge':
+          return <PlaceholderPage title="Braintree Charge" description="Braintree payment check with 3 gateways" Icon={TreeDeciduous} />;
+        case 'paypal-charge':
+          return <PlaceholderPage title="PayPal Charge" description="PayPal payment check with 3 gateways" Icon={Wallet} />;
+        case 'adyen-auth':
+          return <PlaceholderPage title="Adyen Auth" description="Adyen authentication with 3 gateways" Icon={Wallet} />;
+        case 'adyen-charge':
+          return <PlaceholderPage title="Adyen Charge" description="Adyen payment check with 3 gateways" Icon={Zap} />;
+        case 'shopify-charge':
+          return <ShopifyChargePanel />;
+        case 'target-charge':
+          return <PlaceholderPage title="Target Charge" description="Target payment check with 3 gateways" Icon={Target} />;
+        case 'other-sk-key-check':
+          return <StripeOwn initialTab="keys" />;
+        case 'other-charge-avs':
+          return <PlaceholderPage title="Charge AVS" description="Address verification service validation" Icon={MapPin} />;
+        case 'other-square-charge':
+          return <PlaceholderPage title="Square Charge" description="Square payment validation" Icon={SquareStack} />;
+        case 'profile':
+          return <ProfilePage />;
+        case 'admin':
+          return <AdminPage />;
+        case 'help':
+          return <PlaceholderPage title="Help" description="Documentation and support" Icon={HelpCircle} />;
+        default:
+          // Fallback to dashboard (should not reach here due to validRoutes check)
+          return <DashboardPage />;
+      }
+    })();
+    
+    return (
+      <Suspense fallback={<PageLoader label="Loading..." sublabel="Please wait" variant="orbit" />}>
+        {content}
+      </Suspense>
+    );
   };
 
   // Show loading spinner while checking auth
@@ -160,18 +205,37 @@ function AppLayoutInner() {
   // Show login page when not authenticated
   if (!isAuthenticated) {
     return (
-      <div className="h-screen w-screen overflow-hidden flex flex-col bg-[rgb(248,247,247)] dark:bg-transparent">
+      <div className="h-screen w-screen overflow-hidden flex flex-col bg-transparent">
         <AppBackground />
         <main className="flex-1 flex flex-col overflow-hidden relative z-0">
-          <LoginPage />
+          <Suspense fallback={<PageLoader label="Loading..." sublabel="Please wait" variant="orbit" />}>
+            <LoginPage />
+          </Suspense>
         </main>
       </div>
     );
   }
 
+  // Check if user is admin for maintenance bypass
+  const isAdmin = navUser?.isAdmin || false;
+
+  // Show maintenance page when maintenance mode is active for non-admin users
+  // Requirements: 1.3, 1.4, 2.1 - Admin users can bypass maintenance mode
+  if (isMaintenanceMode && !isAdmin) {
+    return (
+      <Suspense fallback={<PageLoader label="Loading..." sublabel="Please wait" variant="orbit" />}>
+        <MaintenancePage 
+          reason={maintenanceReason}
+          estimatedEndTime={maintenanceEndTime}
+          onMaintenanceEnd={handleMaintenanceEnd}
+        />
+      </Suspense>
+    );
+  }
+
   // Authenticated - show main app
   return (
-    <div className="h-screen w-screen overflow-hidden flex flex-col bg-[rgb(248,247,247)] dark:bg-transparent">
+    <div className="h-screen w-screen overflow-hidden flex flex-col bg-transparent">
       {/* Daily claim modal - auto shows when available */}
       <DailyClaimModal autoShow />
       
@@ -197,18 +261,16 @@ function AppLayoutInner() {
       />
       
       <main className="flex-1 flex flex-col overflow-hidden relative z-0">
-        <ErrorBoundary>
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeRoute}
-              className="h-full"
-              {...variants.fadeIn}
-              transition={transition.fast}
-            >
-              {renderContent()}
-            </motion.div>
-          </AnimatePresence>
-        </ErrorBoundary>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeRoute}
+            className="h-full"
+            {...variants.fadeIn}
+            transition={transition.fast}
+          >
+            {renderContent()}
+          </motion.div>
+        </AnimatePresence>
       </main>
       
       {/* Floating Telegram contact button */}

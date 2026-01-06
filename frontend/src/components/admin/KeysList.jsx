@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, forwardRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Key, 
@@ -12,6 +12,7 @@ import {
   Trash2,
   RefreshCw,
   Clock,
+  Infinity,
   AlertCircle,
   CheckCircle,
   XCircle,
@@ -124,13 +125,14 @@ function FilterChip({ label, isActive, onClick, icon: Icon, color }) {
 /**
  * Key Card Component
  */
-function KeyCard({ keyItem, index, onCopy, onRevoke, copiedCode, isRevoking }) {
+const KeyCard = forwardRef(function KeyCard({ keyItem, index, onCopy, onRevoke, copiedCode, isRevoking }, ref) {
   const { status, label, icon: StatusIcon, color } = getKeyStatus(keyItem);
   const isActive = status === 'active';
   const isCredits = keyItem.type === 'credits';
 
   return (
     <motion.div
+      ref={ref}
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
@@ -182,6 +184,25 @@ function KeyCard({ keyItem, index, onCopy, onRevoke, copiedCode, isRevoking }) {
             <Badge variant="secondary" className="text-[10px] h-5">
               {isCredits ? `${keyItem.value} credits` : keyItem.value}
             </Badge>
+
+            {/* Duration Badge (Tier keys only) */}
+            {!isCredits && (
+              <Badge 
+                variant="outline" 
+                className={cn(
+                  "text-[10px] h-5",
+                  keyItem.durationDays || keyItem.duration_days
+                    ? "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20"
+                    : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                )}
+              >
+                {keyItem.durationDays || keyItem.duration_days ? (
+                  <><Clock className="h-3 w-3 mr-1" />{keyItem.durationDays || keyItem.duration_days}d</>
+                ) : (
+                  <><Infinity className="h-3 w-3 mr-1" />Lifetime</>
+                )}
+              </Badge>
+            )}
 
             {/* Status Badge */}
             <Badge 
@@ -253,7 +274,7 @@ function KeyCard({ keyItem, index, onCopy, onRevoke, copiedCode, isRevoking }) {
       )}
     </motion.div>
   );
-}
+});
 
 export function KeysList({ refreshTrigger }) {
   const [keys, setKeys] = useState([]);

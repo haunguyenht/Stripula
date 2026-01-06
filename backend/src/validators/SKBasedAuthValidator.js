@@ -323,14 +323,25 @@ export class SKBasedAuthValidator {
                     });
                 }
 
-                // 3DS bypass failed - card is LIVE but requires 3DS
+                // 3DS bypass failed - return exact 3DS status
                 const duration = Date.now() - startTime;
-                this._log('⚠️ 3DS bypass failed - card is LIVE');
+                this._log('⚠️ 3DS bypass failed - requires authentication');
 
-                return SKBasedAuthResult.live({
+                // Determine exact 3DS message
+                let message = '3DS Authentication Required';
+                if (bypassResult.challengeRequired) {
+                    message = '3DS Challenge Required';
+                } else if (bypassResult.error) {
+                    message = bypassResult.error;
+                } else if (bypassResult.reason) {
+                    message = bypassResult.reason;
+                }
+
+                return new SKBasedAuthResult({
                     ...baseData,
                     ...binData,
-                    message: '3DS Required (Card Valid)',
+                    status: '3DS',
+                    message,
                     cvcCheck: siResult.cvcCheck,
                     avsLine1Check: siResult.avsLine1Check,
                     avsPostalCheck: siResult.avsPostalCheck,
