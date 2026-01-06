@@ -110,15 +110,11 @@ export class StripePaymentMethodClient {
         const { proxy, billingCountry = 'US' } = options;
         let lastError = null;
 
-        console.log(`[StripePaymentMethodClient] createPaymentMethod START - card: ${card.number.substring(0, 6)}...`);
-
         // Retry loop - generate FRESH fingerprints AND get FRESH proxy on each attempt
         for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
             try {
-                console.log(`[StripePaymentMethodClient] Attempt ${attempt}/${this.maxRetries}`);
                 // Get FRESH proxy for each attempt (critical for proxy rotation)
                 const proxyAgent = await this.getProxyAgent();
-                console.log(`[StripePaymentMethodClient] Using proxy: ${proxyAgent ? 'YES' : 'NO'}`);
 
                 // Generate FRESH fingerprint for each attempt (critical for 492 bypass)
                 const fingerprint = fingerprintGenerator.generateFingerprint();
@@ -194,19 +190,15 @@ export class StripePaymentMethodClient {
                     ...(proxyAgent && { agent: { https: proxyAgent, http: proxyAgent } })
                 });
 
-                console.log(`[StripePaymentMethodClient] Stripe API response status: ${response.statusCode}`);
-
                 let responseData;
                 try {
                     responseData = JSON.parse(response.body);
                 } catch {
-                    console.log('[StripePaymentMethodClient] FAILED - Invalid JSON response');
                     return { success: false, error: 'Invalid JSON response' };
                 }
 
                 // Handle HTTP 492 - Stripe fingerprint blocking - RETRY
                 if (response.statusCode === 492) {
-                    console.log(`[StripePaymentMethodClient] HTTP 492 - Fingerprint blocked, ${attempt < this.maxRetries ? 'retrying...' : 'exhausted'}`);
                     if (attempt < this.maxRetries) {
 
                         await this._sleep(2000);
@@ -223,7 +215,6 @@ export class StripePaymentMethodClient {
 
                 // Handle HTTP 429 - Rate Limited - RETRY
                 if (response.statusCode === 429) {
-                    console.log(`[StripePaymentMethodClient] HTTP 429 - Rate limited, ${attempt < this.maxRetries ? 'retrying...' : 'exhausted'}`);
                     const retryAfter = parseInt(response.headers['retry-after'] || '5', 10) * 1000;
                     if (attempt < this.maxRetries) {
 
@@ -241,7 +232,6 @@ export class StripePaymentMethodClient {
 
                 // Handle Stripe API errors - don't retry
                 if (response.statusCode !== 200) {
-                    console.log(`[StripePaymentMethodClient] Stripe error: ${responseData.error?.message || 'Unknown'} (code: ${responseData.error?.code})`);
                     return {
                         success: false,
                         error: responseData.error?.message || 'Unknown Stripe error',
@@ -251,7 +241,6 @@ export class StripePaymentMethodClient {
                 }
 
                 if (responseData.id) {
-                    console.log(`[StripePaymentMethodClient] SUCCESS - PaymentMethod created: ${responseData.id}`);
                     return {
                         success: true,
                         pmId: responseData.id,
@@ -265,23 +254,19 @@ export class StripePaymentMethodClient {
                     };
                 }
 
-                console.log(`[StripePaymentMethodClient] FAILED - No PM ID in response`);
                 return {
                     success: false,
                     error: responseData.error?.message || 'Unknown Stripe error'
                 };
             } catch (error) {
-                console.log(`[StripePaymentMethodClient] Exception: ${error.message} (code: ${error.code})`);
                 lastError = error;
 
                 // Check if error is retryable
                 const isRetryable = this._isRetryableError(error);
 
                 if (isRetryable && attempt < this.maxRetries) {
-                    console.log(`[StripePaymentMethodClient] Retryable error, will retry...`);
                     // Return immediately with needsRetry flag - don't block the worker
                     // The service can requeue this card for retry
-
                     return {
                         success: false,
                         error: error.message,
@@ -295,8 +280,6 @@ export class StripePaymentMethodClient {
         }
 
         // All retries exhausted
-        console.log(`[StripePaymentMethodClient] All retries exhausted`);
-
         return {
             success: false,
             error: lastError?.message || 'Network error after retries',

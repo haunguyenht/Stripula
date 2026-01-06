@@ -45,22 +45,16 @@ export class AuthValidator {
         const startTime = Date.now();
         const fullCard = `${cardInfo.number}|${cardInfo.expMonth}|${cardInfo.expYear}|${cardInfo.cvc}`;
 
-        console.log(`[AuthValidator] validate START - site: ${this.site.label}, type: ${this.site.type}`);
-
         try {
             // Route to appropriate validation method based on site type
             if (this.site.type === 'setupintent' || this.site.type === 'setupintent-login') {
-                console.log('[AuthValidator] Routing to validateSetupIntent');
                 return await this.validateSetupIntent(cardInfo, fullCard, startTime);
             } else if (this.site.type === 'woocommerce-login') {
-                console.log('[AuthValidator] Routing to validateWooCommerceLogin');
                 return await this.validateWooCommerceLogin(cardInfo, fullCard, startTime);
             } else {
-                console.log('[AuthValidator] Routing to validateWooCommerce');
                 return await this.validateWooCommerce(cardInfo, fullCard, startTime);
             }
         } catch (error) {
-            console.log(`[AuthValidator] validate ERROR: ${error.message}`);
             return AuthResult.error(error.message, {
                 card: fullCard,
                 site: this.site.label,
@@ -73,30 +67,25 @@ export class AuthValidator {
      * WooCommerce flow: Register -> Create PM -> Submit SetupIntent via AJAX
      */
     async validateWooCommerce(cardInfo, fullCard, startTime) {
-        console.log('[AuthValidator] validateWooCommerce - Step 1: Register and get nonces');
         const registration = await this.wooClient.registerAndGetNonces();
 
         if (!registration.success) {
-            console.log(`[AuthValidator] Registration FAILED: ${registration.error}`);
             return AuthResult.error(`REG_FAIL: ${registration.error}`, {
                 card: fullCard,
                 site: this.site.label,
                 duration: Date.now() - startTime
             });
         }
-        console.log('[AuthValidator] Registration SUCCESS');
 
         // Use pkKey from registration result (extracted from page) or site config
         const pkKey = registration.pkKey || this.site.pkKey;
         if (!pkKey) {
-            console.log('[AuthValidator] PK_KEY_NOT_FOUND');
             return AuthResult.error('PK_KEY_NOT_FOUND', {
                 card: fullCard,
                 site: this.site.label,
                 duration: Date.now() - startTime
             });
         }
-        console.log(`[AuthValidator] Step 2: Creating PaymentMethod with PK: ${pkKey.substring(0, 20)}...`);
 
         const pmResult = await this.pmClient.createPaymentMethod(
             cardInfo,
@@ -106,7 +95,6 @@ export class AuthValidator {
         );
 
         if (!pmResult.success) {
-            console.log(`[AuthValidator] PaymentMethod creation FAILED: ${pmResult.error}`);
             const parsed = GatewayMessageFormatter.parseDeclineFromText(pmResult.error);
             return AuthResult.declined(parsed.message, {
                 card: fullCard,
@@ -116,13 +104,9 @@ export class AuthValidator {
             });
         }
 
-        console.log(`[AuthValidator] PaymentMethod created: ${pmResult.pmId}`);
-        console.log('[AuthValidator] Step 3: Submitting SetupIntent');
-
         const authResult = await this.wooClient.submitSetupIntent(pmResult.pmId, registration);
 
         if (!authResult.success) {
-            console.log(`[AuthValidator] SetupIntent DECLINED: ${authResult.message || authResult.error}`);
             const errorMsg = authResult.message || authResult.error || 'Card declined';
             const parsed = GatewayMessageFormatter.parseDeclineFromText(errorMsg);
             return AuthResult.declined(parsed.message, {
@@ -133,7 +117,6 @@ export class AuthValidator {
             });
         }
 
-        console.log('[AuthValidator] SetupIntent APPROVED!');
         return AuthResult.approved('APPROVED', {
             card: fullCard,
             site: this.site.label,

@@ -94,82 +94,137 @@ export function LoginPage() {
 }
 
 /**
- * Dark Mode: Premium Black Card with Gold Embossing
+ * Dark Mode: Obsidian Aurora Crystalline Card
+ * 
+ * Features liquid glass morphism, animated aurora gradients,
+ * prismatic borders, and floating particle effects
  */
 function DarkCard({ onSuccess, onError }) {
   return (
     <div className="relative group">
-      {/* Ambient glow */}
-      <div className="absolute -inset-8 bg-gradient-to-b from-amber-500/10 via-transparent to-amber-500/5 rounded-[40px] blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+      {/* Animated aurora ambient glow */}
+      <motion.div 
+        className="absolute -inset-12 rounded-[60px] blur-3xl opacity-60"
+        style={{
+          background: 'conic-gradient(from 0deg, rgba(34,211,238,0.15), rgba(139,92,246,0.2), rgba(236,72,153,0.15), rgba(34,211,238,0.15))',
+        }}
+        animate={{ rotate: [0, 360] }}
+        transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+      />
+      
+      {/* Secondary pulse glow */}
+      <motion.div 
+        className="absolute -inset-8 rounded-[50px] blur-2xl"
+        style={{
+          background: 'radial-gradient(ellipse at center, rgba(139,92,246,0.2) 0%, transparent 70%)',
+        }}
+        animate={{ opacity: [0.3, 0.6, 0.3], scale: [0.95, 1.05, 0.95] }}
+        transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+      />
       
       {/* Card shadow layers */}
-      <div className="absolute inset-0 rounded-3xl bg-black/40 translate-y-4 blur-xl" />
-      <div className="absolute inset-0 rounded-3xl bg-amber-900/10 translate-y-2 blur-md" />
+      <div className="absolute inset-0 rounded-3xl bg-black/60 translate-y-6 blur-2xl" />
+      <div className="absolute inset-0 rounded-3xl bg-violet-900/20 translate-y-3 blur-xl" />
       
-      {/* Main card */}
+      {/* Main card with prismatic border */}
       <div className={cn(
         "relative rounded-3xl overflow-hidden",
-        "bg-gradient-to-br from-zinc-900 via-neutral-900 to-zinc-950",
-        "border border-amber-500/10",
-        "shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
+        "bg-[rgba(6,8,16,0.92)]",
+        "backdrop-blur-[80px] backdrop-saturate-[200%]",
+        // Prismatic aurora border
+        "border-2 border-transparent",
+        "[background-image:linear-gradient(to_bottom,rgba(6,8,16,0.92),rgba(10,12,22,0.92)),linear-gradient(135deg,rgba(34,211,238,0.5),rgba(139,92,246,0.4),rgba(236,72,153,0.4),rgba(34,211,238,0.5))]",
+        "[background-origin:border-box] [background-clip:padding-box,border-box]",
+        // Multi-layered aurora shadow
+        "shadow-[0_30px_80px_-15px_rgba(0,0,0,0.9),0_0_100px_-25px_rgba(139,92,246,0.4),0_0_60px_-20px_rgba(34,211,238,0.3),0_0_40px_-12px_rgba(236,72,153,0.25),inset_0_1px_0_rgba(255,255,255,0.1)]"
       )}>
-        {/* Holographic shimmer stripe */}
-        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-amber-400/60 to-transparent" 
-          style={{ 
-            animation: 'shimmer 3s ease-in-out infinite',
+        {/* Animated aurora top stripe */}
+        <motion.div 
+          className="absolute top-0 left-0 right-0 h-1"
+          style={{
+            background: 'linear-gradient(90deg, transparent 0%, rgba(34,211,238,0.8) 25%, rgba(139,92,246,0.8) 50%, rgba(236,72,153,0.8) 75%, transparent 100%)',
           }}
+          animate={{ 
+            backgroundPosition: ['0% 0%', '200% 0%'],
+          }}
+          transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
+        />
+
+        {/* Floating shimmer effect */}
+        <motion.div
+          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.04] to-transparent pointer-events-none"
+          animate={{ translateX: ['-100%', '200%'] }}
+          transition={{ duration: 4, repeat: Infinity, ease: 'linear', repeatDelay: 3 }}
         />
 
         {/* Noise texture overlay */}
         <div 
-          className="absolute inset-0 opacity-[0.03] pointer-events-none mix-blend-overlay"
+          className="absolute inset-0 opacity-[0.04] pointer-events-none mix-blend-overlay"
           style={{ backgroundImage: 'var(--noise-pattern)' }}
         />
 
-        {/* Embossed pattern - subtle diagonal lines */}
-        <div 
-          className="absolute inset-0 opacity-[0.02] pointer-events-none"
-          style={{
-            backgroundImage: 'repeating-linear-gradient(135deg, transparent, transparent 10px, rgba(255,255,255,0.03) 10px, rgba(255,255,255,0.03) 11px)',
-          }}
-        />
+        {/* Aurora glow spots */}
+        <div className="absolute top-0 left-1/4 w-32 h-32 bg-cyan-500/10 blur-3xl rounded-full pointer-events-none" />
+        <div className="absolute bottom-0 right-1/4 w-32 h-32 bg-violet-500/10 blur-3xl rounded-full pointer-events-none" />
+        <div className="absolute top-1/2 right-0 w-24 h-24 bg-pink-500/8 blur-2xl rounded-full pointer-events-none" />
 
         <div className="relative p-8 pt-10">
-          {/* Top decorative line */}
+          {/* Top decorative aurora line */}
           <motion.div 
             className="flex items-center gap-4 mb-10"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3, duration: 0.5 }}
           >
-            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-amber-500/30 to-transparent" />
-            <CreditCard className="w-5 h-5 text-amber-500/50" strokeWidth={1} />
-            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-amber-500/30 to-transparent" />
+            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-cyan-400/40 to-transparent" />
+            <motion.div
+              animate={{ rotate: [0, 180, 360], scale: [1, 1.1, 1] }}
+              transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
+            >
+              <CreditCard className="w-5 h-5 text-cyan-400/70 drop-shadow-[0_0_8px_rgba(34,211,238,0.5)]" strokeWidth={1.5} />
+            </motion.div>
+            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-violet-400/40 to-transparent" />
           </motion.div>
 
-          {/* Brand */}
+          {/* Brand with aurora text effect */}
           <motion.div 
             className="text-center mb-10"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4, duration: 0.5 }}
           >
-            <h1 
-              className="text-4xl font-serif tracking-tight text-transparent bg-clip-text bg-gradient-to-b from-amber-200 via-amber-400 to-amber-600"
-              style={{ fontFamily: 'Playfair Display, serif' }}
+            <motion.h1 
+              className="text-5xl font-bold tracking-tight text-transparent bg-clip-text"
+              style={{ 
+                fontFamily: 'Playfair Display, serif',
+                backgroundImage: 'linear-gradient(135deg, #22d3ee 0%, #a78bfa 35%, #ec4899 65%, #22d3ee 100%)',
+                backgroundSize: '200% 200%',
+              }}
+              animate={{ backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'] }}
+              transition={{ duration: 6, repeat: Infinity, ease: 'linear' }}
             >
               Stripula
-            </h1>
-            <div className="flex items-center justify-center gap-3 mt-3">
-              <div className="w-12 h-px bg-gradient-to-r from-transparent to-amber-500/30" />
-              <p className="text-[10px] tracking-[0.25em] uppercase text-amber-500/40 font-mono">
+            </motion.h1>
+            <div className="flex items-center justify-center gap-3 mt-4">
+              <motion.div 
+                className="w-16 h-px"
+                style={{ background: 'linear-gradient(90deg, transparent, rgba(34,211,238,0.5))' }}
+                animate={{ opacity: [0.5, 1, 0.5] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              />
+              <p className="text-[10px] tracking-[0.3em] uppercase text-violet-300/60 font-mono">
                 Premium Validation
               </p>
-              <div className="w-12 h-px bg-gradient-to-l from-transparent to-amber-500/30" />
+              <motion.div 
+                className="w-16 h-px"
+                style={{ background: 'linear-gradient(90deg, rgba(236,72,153,0.5), transparent)' }}
+                animate={{ opacity: [0.5, 1, 0.5] }}
+                transition={{ duration: 2, repeat: Infinity, delay: 1 }}
+              />
             </div>
           </motion.div>
 
-          {/* Login area */}
+          {/* Login area - crystalline glass container */}
           <motion.div
             className="mb-8"
             initial={{ opacity: 0, scale: 0.95 }}
@@ -177,24 +232,44 @@ function DarkCard({ onSuccess, onError }) {
             transition={{ delay: 0.5, duration: 0.5 }}
           >
             <div className={cn(
-              "relative p-5 rounded-2xl",
-              "bg-black/40 backdrop-blur-sm",
-              "border border-amber-500/10",
-              "shadow-[inset_0_2px_4px_rgba(0,0,0,0.3)]"
+              "relative p-6 rounded-2xl",
+              "bg-white/[0.03] backdrop-blur-xl",
+              // Prismatic inner border
+              "border border-transparent",
+              "[background-image:linear-gradient(to_bottom,rgba(255,255,255,0.03),rgba(255,255,255,0.01)),linear-gradient(135deg,rgba(34,211,238,0.3),rgba(139,92,246,0.25),rgba(236,72,153,0.25),rgba(34,211,238,0.3))]",
+              "[background-origin:border-box] [background-clip:padding-box,border-box]",
+              "shadow-[inset_0_2px_4px_rgba(0,0,0,0.4),0_0_30px_-8px_rgba(139,92,246,0.3)]"
             )}>
-              {/* Corner accents */}
-              <div className="absolute top-2 left-2 w-3 h-3 border-l border-t border-amber-500/20 rounded-tl" />
-              <div className="absolute top-2 right-2 w-3 h-3 border-r border-t border-amber-500/20 rounded-tr" />
-              <div className="absolute bottom-2 left-2 w-3 h-3 border-l border-b border-amber-500/20 rounded-bl" />
-              <div className="absolute bottom-2 right-2 w-3 h-3 border-r border-b border-amber-500/20 rounded-br" />
+              {/* Animated corner aurora accents */}
+              <motion.div 
+                className="absolute top-2 left-2 w-4 h-4 border-l-2 border-t-2 border-cyan-400/40 rounded-tl-lg"
+                animate={{ opacity: [0.4, 0.8, 0.4] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              />
+              <motion.div 
+                className="absolute top-2 right-2 w-4 h-4 border-r-2 border-t-2 border-violet-400/40 rounded-tr-lg"
+                animate={{ opacity: [0.4, 0.8, 0.4] }}
+                transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
+              />
+              <motion.div 
+                className="absolute bottom-2 left-2 w-4 h-4 border-l-2 border-b-2 border-violet-400/40 rounded-bl-lg"
+                animate={{ opacity: [0.4, 0.8, 0.4] }}
+                transition={{ duration: 2, repeat: Infinity, delay: 1 }}
+              />
+              <motion.div 
+                className="absolute bottom-2 right-2 w-4 h-4 border-r-2 border-b-2 border-pink-400/40 rounded-br-lg"
+                animate={{ opacity: [0.4, 0.8, 0.4] }}
+                transition={{ duration: 2, repeat: Infinity, delay: 1.5 }}
+              />
 
-              <p className="text-[9px] text-amber-500/50 tracking-[0.2em] uppercase text-center mb-4 font-mono">
+              <p className="text-[9px] text-cyan-300/60 tracking-[0.25em] uppercase text-center mb-4 font-mono flex items-center justify-center gap-2">
+                <Shield className="w-3 h-3" />
                 Secure Access
               </p>
               <div className="flex justify-center">
                 <TelegramLoginButton
                   buttonSize="large"
-                  cornerRadius={12}
+                  cornerRadius={14}
                   onSuccess={onSuccess}
                   onError={onError}
                 />
@@ -202,29 +277,42 @@ function DarkCard({ onSuccess, onError }) {
             </div>
           </motion.div>
 
-          {/* Benefits row */}
+          {/* Benefits row with aurora pills */}
           <motion.div
             className="grid grid-cols-3 gap-3"
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6, duration: 0.4 }}
           >
-            <FeaturePill icon={Sparkles} value="25" label="Free" />
-            <FeaturePill icon={Clock} value="10" label="Daily" />
-            <FeaturePill icon={Zap} value="0" label="Dead Fee" />
+            <AuroraFeaturePill icon={Sparkles} value="25" label="Free" color="cyan" delay={0} />
+            <AuroraFeaturePill icon={Clock} value="10" label="Daily" color="violet" delay={0.1} />
+            <AuroraFeaturePill icon={Zap} value="0" label="Dead Fee" color="pink" delay={0.2} />
           </motion.div>
         </div>
 
-        {/* Bottom bar */}
-        <div className="px-8 py-4 bg-black/30 border-t border-amber-500/5">
-          <div className="flex items-center justify-between text-[9px] text-amber-500/30 font-mono tracking-wider">
-            <span>MEMBER ACCESS</span>
-            <div className="flex gap-1">
+        {/* Bottom bar with aurora gradient */}
+        <div className="relative px-8 py-4 bg-black/40 border-t border-white/[0.06]">
+          {/* Subtle aurora line */}
+          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-500/20 to-transparent" />
+          
+          <div className="flex items-center justify-between text-[9px] font-mono tracking-wider">
+            <span className="text-cyan-400/40">MEMBER ACCESS</span>
+            <div className="flex gap-1.5">
               {[...Array(4)].map((_, i) => (
-                <div key={i} className="w-1 h-1 rounded-full bg-amber-500/30" />
+                <motion.div 
+                  key={i} 
+                  className="w-1.5 h-1.5 rounded-full"
+                  style={{
+                    background: i === 0 ? 'rgba(34,211,238,0.5)' : 
+                               i === 1 ? 'rgba(139,92,246,0.5)' : 
+                               i === 2 ? 'rgba(236,72,153,0.5)' : 'rgba(34,211,238,0.5)'
+                  }}
+                  animate={{ opacity: [0.3, 0.8, 0.3] }}
+                  transition={{ duration: 2, repeat: Infinity, delay: i * 0.3 }}
+                />
               ))}
             </div>
-            <span>ENCRYPTED</span>
+            <span className="text-violet-400/40">ENCRYPTED</span>
           </div>
         </div>
       </div>
@@ -232,20 +320,67 @@ function DarkCard({ onSuccess, onError }) {
   );
 }
 
-function FeaturePill({ icon: Icon, value, label }) {
+/**
+ * AuroraFeaturePill - Crystalline benefit pills with aurora glow
+ */
+function AuroraFeaturePill({ icon: Icon, value, label, color = 'cyan', delay = 0 }) {
+  const colors = {
+    cyan: {
+      border: 'rgba(34,211,238,0.25)',
+      glow: 'rgba(34,211,238,0.15)',
+      icon: 'text-cyan-400',
+      shadow: '0_0_20px_-4px_rgba(34,211,238,0.4)'
+    },
+    violet: {
+      border: 'rgba(139,92,246,0.25)',
+      glow: 'rgba(139,92,246,0.15)',
+      icon: 'text-violet-400',
+      shadow: '0_0_20px_-4px_rgba(139,92,246,0.4)'
+    },
+    pink: {
+      border: 'rgba(236,72,153,0.25)',
+      glow: 'rgba(236,72,153,0.15)',
+      icon: 'text-pink-400',
+      shadow: '0_0_20px_-4px_rgba(236,72,153,0.4)'
+    }
+  };
+  
+  const c = colors[color];
+  
   return (
-    <div className={cn(
-      "relative text-center py-3 px-2 rounded-xl",
-      "bg-gradient-to-b from-amber-500/5 to-transparent",
-      "border border-amber-500/10",
-      "group/pill hover:border-amber-500/20 transition-colors duration-300"
-    )}>
-      <Icon className="w-4 h-4 mx-auto mb-1.5 text-amber-500/50 group-hover/pill:text-amber-500/70 transition-colors" />
-      <div className="text-lg font-light text-amber-100/90" style={{ fontFamily: 'Playfair Display, serif' }}>
+    <motion.div 
+      className={cn(
+        "relative text-center py-4 px-3 rounded-xl",
+        "bg-white/[0.02] backdrop-blur-sm",
+        "border border-white/[0.08]",
+        "group/pill hover:bg-white/[0.05] transition-all duration-300"
+      )}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.6 + delay }}
+      whileHover={{ 
+        scale: 1.03,
+        borderColor: c.border,
+        boxShadow: c.shadow
+      }}
+    >
+      {/* Glow on hover */}
+      <div 
+        className="absolute inset-0 rounded-xl opacity-0 group-hover/pill:opacity-100 transition-opacity duration-300 pointer-events-none"
+        style={{ background: `radial-gradient(ellipse at center, ${c.glow}, transparent 70%)` }}
+      />
+      
+      <motion.div
+        animate={{ y: [0, -2, 0] }}
+        transition={{ duration: 3, repeat: Infinity, delay: delay }}
+      >
+        <Icon className={cn("w-4 h-4 mx-auto mb-2", c.icon, "drop-shadow-[0_0_6px_currentColor]")} />
+      </motion.div>
+      <div className="text-xl font-light text-white/90" style={{ fontFamily: 'Playfair Display, serif' }}>
         {value}
       </div>
-      <div className="text-[8px] uppercase tracking-widest text-amber-500/40 font-mono">{label}</div>
-    </div>
+      <div className="text-[8px] uppercase tracking-widest text-white/40 font-mono mt-1">{label}</div>
+    </motion.div>
   );
 }
 
@@ -528,39 +663,85 @@ function VintageBadge({ icon: Icon, value, label }) {
 }
 
 /**
- * Dark Background - Deep black with subtle golden dust
+ * Dark Background - Obsidian Aurora with animated nebula effects
  */
 function DarkBackground() {
   return (
     <>
-      {/* Base gradient */}
+      {/* Base cosmic gradient */}
       <div 
         className="fixed inset-0 -z-20"
         style={{
-          background: 'radial-gradient(ellipse at 50% 0%, #1a1814 0%, #0d0c0a 40%, #000 100%)',
+          background: 'radial-gradient(ellipse at 50% 0%, #0a0c14 0%, #060810 40%, #020204 100%)',
         }}
       />
       
-      {/* Golden dust particles - CSS only */}
+      {/* Animated aurora nebula layers */}
+      <motion.div 
+        className="fixed inset-0 -z-18 opacity-30"
+        style={{
+          background: 'radial-gradient(ellipse at 20% 20%, rgba(34,211,238,0.15) 0%, transparent 50%)',
+        }}
+        animate={{ 
+          opacity: [0.2, 0.35, 0.2],
+          scale: [1, 1.1, 1],
+        }}
+        transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
+      />
+      <motion.div 
+        className="fixed inset-0 -z-18 opacity-25"
+        style={{
+          background: 'radial-gradient(ellipse at 80% 30%, rgba(139,92,246,0.15) 0%, transparent 50%)',
+        }}
+        animate={{ 
+          opacity: [0.15, 0.3, 0.15],
+          scale: [1, 1.15, 1],
+        }}
+        transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
+      />
+      <motion.div 
+        className="fixed inset-0 -z-18 opacity-20"
+        style={{
+          background: 'radial-gradient(ellipse at 60% 80%, rgba(236,72,153,0.12) 0%, transparent 50%)',
+        }}
+        animate={{ 
+          opacity: [0.1, 0.25, 0.1],
+          scale: [1, 1.08, 1],
+        }}
+        transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut', delay: 4 }}
+      />
+      
+      {/* Aurora star particles */}
       <div 
-        className="fixed inset-0 -z-15 opacity-40"
+        className="fixed inset-0 -z-15 opacity-50"
         style={{
           backgroundImage: `
-            radial-gradient(1px 1px at 20% 30%, rgba(251,191,36,0.3) 0%, transparent 100%),
-            radial-gradient(1px 1px at 80% 20%, rgba(251,191,36,0.2) 0%, transparent 100%),
-            radial-gradient(1px 1px at 40% 70%, rgba(251,191,36,0.25) 0%, transparent 100%),
-            radial-gradient(1px 1px at 70% 60%, rgba(251,191,36,0.15) 0%, transparent 100%),
-            radial-gradient(1px 1px at 10% 80%, rgba(251,191,36,0.2) 0%, transparent 100%),
-            radial-gradient(1px 1px at 90% 90%, rgba(251,191,36,0.25) 0%, transparent 100%)
+            radial-gradient(1px 1px at 15% 25%, rgba(34,211,238,0.4) 0%, transparent 100%),
+            radial-gradient(1px 1px at 85% 15%, rgba(139,92,246,0.35) 0%, transparent 100%),
+            radial-gradient(1.5px 1.5px at 45% 65%, rgba(236,72,153,0.3) 0%, transparent 100%),
+            radial-gradient(1px 1px at 75% 55%, rgba(34,211,238,0.35) 0%, transparent 100%),
+            radial-gradient(1px 1px at 25% 75%, rgba(139,92,246,0.3) 0%, transparent 100%),
+            radial-gradient(1.5px 1.5px at 55% 35%, rgba(236,72,153,0.25) 0%, transparent 100%),
+            radial-gradient(1px 1px at 95% 85%, rgba(34,211,238,0.3) 0%, transparent 100%),
+            radial-gradient(1px 1px at 5% 45%, rgba(139,92,246,0.35) 0%, transparent 100%)
           `,
         }}
       />
 
-      {/* Subtle vignette */}
+      {/* Subtle hex grid pattern */}
+      <div 
+        className="fixed inset-0 -z-14 opacity-[0.03]"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0l25.98 15v30L30 60 4.02 45V15z' fill='none' stroke='%238b5cf6' stroke-width='0.5'/%3E%3C/svg%3E")`,
+          backgroundSize: '60px 60px',
+        }}
+      />
+
+      {/* Deep vignette */}
       <div 
         className="fixed inset-0 -z-10 pointer-events-none"
         style={{
-          background: 'radial-gradient(ellipse at center, transparent 0%, rgba(0,0,0,0.4) 100%)',
+          background: 'radial-gradient(ellipse at center, transparent 0%, rgba(0,0,0,0.6) 100%)',
         }}
       />
     </>

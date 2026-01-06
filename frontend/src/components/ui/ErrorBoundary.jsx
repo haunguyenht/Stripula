@@ -37,10 +37,6 @@ export class ErrorBoundary extends Component {
   }
   
   componentDidCatch(error, errorInfo) {
-    // Log error with component stack
-    console.error('Error caught by boundary:', error);
-    console.error('Component stack:', errorInfo.componentStack);
-    
     // Store error info for display
     this.setState({ errorInfo });
     
@@ -74,7 +70,6 @@ export class ErrorBoundary extends Component {
       }
     } catch (e) {
       // Silently fail if localStorage is not available
-      console.warn('Failed to preserve input:', e);
     }
   }
   
@@ -184,7 +179,7 @@ export function getPreservedInput() {
       localStorage.removeItem(PRESERVED_INPUT_KEY);
     }
   } catch (e) {
-    console.warn('Failed to retrieve preserved input:', e);
+    // Silently fail
   }
   return null;
 }
@@ -197,7 +192,7 @@ export function clearPreservedInput() {
   try {
     localStorage.removeItem(PRESERVED_INPUT_KEY);
   } catch (e) {
-    console.warn('Failed to clear preserved input:', e);
+    // Silently fail
   }
 }
 

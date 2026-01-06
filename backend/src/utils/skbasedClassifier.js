@@ -29,14 +29,14 @@ export const DECLINE_CLASSIFICATION = {
     // LIVE status - Card is valid but declined for specific reasons
     // (Requirements 9.4, 9.6-9.7, 9.12-9.13)
     // ═══════════════════════════════════════════════════════════════════════════
-    
+
     // 3DS Required (Requirement 9.4)
     '3ds_required': { status: 'LIVE', message: '3DS Required' },
     'authentication_required': { status: 'LIVE', message: '3DS Required' },
-    
+
     // Insufficient Funds (Requirement 9.6)
     'insufficient_funds': { status: 'LIVE', message: 'Insufficient Funds (CVV Valid)' },
-    
+
     // CVC Issues (Requirements 9.12-9.13) - Card number is valid
     'incorrect_cvc': { status: 'LIVE', message: 'CCN (Incorrect CVC)' },
     'invalid_cvc': { status: 'LIVE', message: 'CCN (Invalid CVC)' },
@@ -45,42 +45,42 @@ export const DECLINE_CLASSIFICATION = {
     // DECLINED status - Card is invalid or blocked
     // (Requirements 9.5, 9.8-9.11, 9.14-9.22)
     // ═══════════════════════════════════════════════════════════════════════════
-    
+
     // Generic Decline (Requirement 9.5)
     'generic_decline': { status: 'DECLINED', message: 'Generic Decline' },
     'card_declined': { status: 'DECLINED', message: 'Card Declined' },
-    
+
     // Do Not Honor (Requirement 9.8)
     'do_not_honor': { status: 'DECLINED', message: 'Do Not Honor' },
-    
+
     // Lost Card (Requirement 9.9)
     'lost_card': { status: 'DECLINED', message: 'Lost Card' },
-    
+
     // Stolen Card (Requirement 9.10)
     'stolen_card': { status: 'DECLINED', message: 'Stolen Card' },
-    
+
     // Pickup Card (Requirement 9.11)
     'pickup_card': { status: 'DECLINED', message: 'Pickup Card (Reported Stolen/Lost)' },
-    
+
     // Expired Card (Requirement 9.14)
     'expired_card': { status: 'DECLINED', message: 'Expired Card' },
-    
+
     // Incorrect Number (Requirement 9.16)
     'incorrect_number': { status: 'DECLINED', message: 'Incorrect Card Number' },
     'invalid_number': { status: 'DECLINED', message: 'Invalid Card Number' },
-    
+
     // Service Not Allowed (Requirement 9.17)
     'service_not_allowed': { status: 'DECLINED', message: 'Service Not Allowed' },
-    
+
     // Transaction Not Allowed (Requirement 9.18)
     'transaction_not_allowed': { status: 'DECLINED', message: 'Transaction Not Allowed' },
-    
+
     // Invalid Account (Requirement 9.19)
     'invalid_account': { status: 'DECLINED', message: 'Invalid Account' },
-    
+
     // CVC Check Failed (Requirement 9.21)
     'cvc_fail': { status: 'DECLINED', message: 'CVC Check Failed' },
-    
+
     // CVC Check Unavailable (Requirement 9.22)
     'cvc_unavailable': { status: 'DECLINED', message: 'CVC Check Unavailable' },
 
@@ -99,13 +99,13 @@ export const DECLINE_CLASSIFICATION = {
     // ERROR status - Processing or system errors
     // (Requirements 9.15, 9.20, 9.23)
     // ═══════════════════════════════════════════════════════════════════════════
-    
+
     // Processing Error (Requirement 9.15)
     'processing_error': { status: 'ERROR', message: 'Processing Error' },
-    
+
     // CVC Unchecked - Proxy Error (Requirement 9.20)
     'cvc_unchecked': { status: 'ERROR', message: 'CVC Unchecked (Proxy Error)' },
-    
+
     // Network/Proxy errors (Requirement 9.23)
     'network_error': { status: 'ERROR', message: 'Network Error' },
     'proxy_error': { status: 'ERROR', message: 'Proxy Connection Error' },
@@ -143,12 +143,12 @@ export function classifyDecline(declineCode, cvcCheck = null, chargeOutcome = nu
         if (cvcCheck === 'unavailable') {
             return { status: 'DECLINED', message: 'CVC Check Unavailable' };
         }
-        
+
         // Check network status from charge outcome
         if (chargeOutcome?.network_status === 'not_sent_to_network') {
             return { status: 'DECLINED', message: 'Blocked by Radar' };
         }
-        
+
         return { status: 'ERROR', message: 'Unknown Error' };
     }
 
@@ -177,9 +177,9 @@ export function classifyDecline(declineCode, cvcCheck = null, chargeOutcome = nu
     }
 
     // Default to DECLINED with humanized message
-    return { 
-        status: 'DECLINED', 
-        message: humanize(declineCode) 
+    return {
+        status: 'DECLINED',
+        message: humanize(declineCode)
     };
 }
 

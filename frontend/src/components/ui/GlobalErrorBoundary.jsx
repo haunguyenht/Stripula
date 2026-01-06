@@ -30,12 +30,6 @@ export class GlobalErrorBoundary extends Component {
   }
   
   componentDidCatch(error, errorInfo) {
-    // Log error for debugging (development only)
-    if (process.env.NODE_ENV === 'development') {
-      console.error('Global error caught:', error);
-      console.error('Component stack:', errorInfo.componentStack);
-    }
-    
     // Report error to backend
     // Requirements: 6.3, 6.4 - Report errors with unique ID
     this.reportError(error, errorInfo);
@@ -76,10 +70,6 @@ export class GlobalErrorBoundary extends Component {
       // Generate a client-side error ID as fallback
       const fallbackId = `ERR-${Date.now().toString(36).toUpperCase()}`;
       this.setState({ errorId: fallbackId });
-      
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Failed to report error:', reportError);
-      }
     }
   }
   

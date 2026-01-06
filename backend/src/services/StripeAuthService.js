@@ -138,18 +138,13 @@ export class StripeAuthService extends EventEmitter {
         const gatewayId = this.site?.id || 'auth-1';
         const startTime = Date.now();
 
-        console.log(`[StripeAuthService] processCard START - gateway: ${gatewayId}, card: ${cardLine.substring(0, 10)}...`);
-
         if (!cardInfo) {
-            console.log('[StripeAuthService] INVALID_FORMAT - card parsing failed');
             // Format errors should NOT be recorded as gateway failures (Requirement 4.3)
             return AuthResult.error('INVALID_FORMAT', { card: cardLine });
         }
 
         try {
-            console.log('[StripeAuthService] Calling validator.validate()...');
             const result = await this.validator.validate(cardInfo);
-            console.log(`[StripeAuthService] Validator returned: ${result.status} - ${result.message || 'no message'}`);
             const latencyMs = Date.now() - startTime;
 
             // Record success/failure for health tracking (Requirements 4.1, 4.2)
@@ -178,7 +173,6 @@ export class StripeAuthService extends EventEmitter {
 
             return result;
         } catch (error) {
-            console.log(`[StripeAuthService] processCard ERROR: ${error.message}`);
             // Record failure with proper classification for health tracking (Requirement 4.2)
             if (this.gatewayManager) {
                 const category = classifyFailure(error);

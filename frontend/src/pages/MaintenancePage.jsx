@@ -53,7 +53,7 @@ export function MaintenancePage({
         onMaintenanceEnd();
       }
     } catch (error) {
-      console.error('Failed to check maintenance status:', error);
+      // Silently fail - auto-refresh will retry
     } finally {
       setIsRefreshing(false);
       setLastChecked(new Date());

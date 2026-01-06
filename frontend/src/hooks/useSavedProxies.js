@@ -32,7 +32,6 @@ export function useSavedProxies() {
         setSavedProxies(data.proxies || []);
       }
     } catch (err) {
-      console.error('Failed to fetch saved proxies:', err);
       setError(err.message);
       setSavedProxies([]);
     } finally {
@@ -99,7 +98,6 @@ export function useSavedProxies() {
       }
       return null;
     } catch (err) {
-      console.error('Failed to save proxy:', err);
       throw err;
     }
   }, [fetchProxies]);
@@ -126,7 +124,6 @@ export function useSavedProxies() {
       await fetchProxies();
       return true;
     } catch (err) {
-      console.error('Failed to delete proxy:', err);
       throw err;
     }
   }, [fetchProxies]);

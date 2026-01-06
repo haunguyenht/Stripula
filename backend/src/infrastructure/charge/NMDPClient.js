@@ -127,9 +127,7 @@ export class NMDPClient {
     }
 
     _log(step, message) {
-        if (this.debug) {
-            console.log(`[${new Date().toISOString().slice(11, 23)}][${step}] ${message}`);
-        }
+        // No-op: debug logging disabled
     }
 
     generateFakeUser() {

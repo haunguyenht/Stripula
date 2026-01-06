@@ -206,69 +206,113 @@ export function UserPill({ user, onNavigate }) {
         <DropdownMenuContent 
           align="end" 
           className={cn(
-            "w-48 p-2 overflow-hidden",
+            "w-52 p-2.5 overflow-hidden relative",
             // Light mode: Vintage Banking
             "bg-gradient-to-b from-[hsl(40,50%,97%)] to-[hsl(38,45%,95%)]",
             "border-[hsl(30,35%,75%)]/50",
             "shadow-[0_8px_32px_rgba(101,67,33,0.12)]",
             // ═══════════════════════════════════════════════════════════
-            // DARK MODE: Obsidian Aurora Dropdown
+            // DARK MODE: Obsidian Aurora Crystalline Dropdown
             // ═══════════════════════════════════════════════════════════
-            "dark:bg-gradient-to-b dark:from-[rgba(8,10,18,0.98)] dark:to-[rgba(12,14,24,0.98)]",
-            "dark:backdrop-blur-[60px] dark:backdrop-saturate-[180%]",
-            // Aurora prismatic border
-            "dark:border dark:border-transparent",
-            "dark:[background-image:linear-gradient(to_bottom,rgba(8,10,18,0.98),rgba(12,14,24,0.98)),linear-gradient(135deg,rgba(34,211,238,0.3),rgba(139,92,246,0.25),rgba(236,72,153,0.25),rgba(34,211,238,0.3))]",
+            "dark:bg-[rgba(6,8,16,0.96)]",
+            "dark:backdrop-blur-[80px] dark:backdrop-saturate-[200%]",
+            // Premium prismatic animated border
+            "dark:border-2 dark:border-transparent dark:rounded-2xl",
+            "dark:[background-image:linear-gradient(to_bottom,rgba(6,8,16,0.96),rgba(10,12,22,0.96)),linear-gradient(135deg,rgba(34,211,238,0.5),rgba(139,92,246,0.4),rgba(236,72,153,0.4),rgba(34,211,238,0.5))]",
             "dark:[background-origin:border-box] dark:[background-clip:padding-box,border-box]",
-            // Layered aurora glow
-            "dark:shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8),0_0_50px_-15px_rgba(139,92,246,0.25),0_0_30px_-10px_rgba(34,211,238,0.2),inset_0_1px_0_rgba(255,255,255,0.06)]"
+            // Multi-layered deep aurora glow
+            "dark:shadow-[0_25px_60px_-12px_rgba(0,0,0,0.9),0_0_80px_-20px_rgba(139,92,246,0.35),0_0_50px_-15px_rgba(34,211,238,0.25),0_0_30px_-8px_rgba(236,72,153,0.2),inset_0_1px_0_rgba(255,255,255,0.08),inset_0_-1px_0_rgba(139,92,246,0.1)]"
           )}
         >
+          {/* Inner aurora shimmer effect */}
+          <div className="absolute inset-0 hidden dark:block overflow-hidden rounded-xl pointer-events-none">
+            <motion.div
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.03] to-transparent -translate-x-full"
+              animate={{ translateX: ['0%', '200%'] }}
+              transition={{ duration: 3, repeat: Infinity, ease: 'linear', repeatDelay: 2 }}
+            />
+            {/* Subtle aurora glow spots */}
+            <div className="absolute top-0 left-1/4 w-16 h-16 bg-cyan-500/10 blur-2xl rounded-full" />
+            <div className="absolute bottom-0 right-1/4 w-16 h-16 bg-violet-500/10 blur-2xl rounded-full" />
+          </div>
+
           {isAdmin && (
             <DropdownMenuItem 
               onClick={handleAdminClick}
               className={cn(
-                "gap-3 py-2.5 px-3 rounded-xl cursor-pointer transition-all duration-200",
+                "gap-3 py-3 px-3.5 rounded-xl cursor-pointer transition-all duration-300 relative",
                 "hover:bg-[hsl(38,40%,92%)]",
-                // Dark mode: Aurora hover
-                "dark:hover:bg-gradient-to-r dark:hover:from-cyan-500/[0.1] dark:hover:to-violet-500/[0.08]",
-                "dark:hover:shadow-[0_0_16px_-6px_rgba(34,211,238,0.4)]"
+                // Dark mode: Enhanced aurora hover with glow
+                "dark:hover:bg-gradient-to-r dark:hover:from-cyan-500/[0.15] dark:hover:via-violet-500/[0.1] dark:hover:to-transparent",
+                "dark:hover:shadow-[0_0_24px_-6px_rgba(34,211,238,0.5),inset_0_0_0_1px_rgba(34,211,238,0.2)]",
+                "group"
               )}
             >
-              <div className={cn(
-                "flex h-8 w-8 items-center justify-center rounded-xl",
-                "bg-[hsl(38,35%,90%)]",
-                // Dark mode: Aurora icon container
-                "dark:bg-gradient-to-br dark:from-cyan-500/20 dark:to-violet-500/20",
-                "dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]"
+              <motion.div 
+                className={cn(
+                  "flex h-9 w-9 items-center justify-center rounded-xl relative",
+                  "bg-[hsl(38,35%,90%)]",
+                  // Dark mode: Crystalline icon container with aurora gradient
+                  "dark:bg-gradient-to-br dark:from-cyan-500/25 dark:via-violet-500/20 dark:to-cyan-500/25",
+                  "dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.15),0_0_20px_-4px_rgba(34,211,238,0.4)]",
+                  "dark:ring-1 dark:ring-cyan-400/20"
+                )}
+                whileHover={{ scale: 1.08, rotate: 3 }}
+                transition={{ type: "spring", stiffness: 400, damping: 17 }}
+              >
+                <ShieldCheck className="h-4.5 w-4.5 text-[hsl(25,40%,40%)] dark:text-cyan-400 dark:drop-shadow-[0_0_6px_rgba(34,211,238,0.6)]" />
+              </motion.div>
+              <span className={cn(
+                "text-sm font-semibold text-[hsl(25,35%,25%)]",
+                "dark:text-white/95 dark:group-hover:text-cyan-100",
+                "transition-colors duration-200"
               )}>
-                <ShieldCheck className="h-4 w-4 text-[hsl(25,40%,40%)] dark:text-cyan-400" />
-              </div>
-              <span className="text-sm font-medium text-[hsl(25,35%,25%)] dark:text-white/90">Admin</span>
+                Admin
+              </span>
+              {/* Hover arrow indicator */}
+              <motion.div 
+                className="ml-auto opacity-0 dark:group-hover:opacity-100 transition-opacity duration-200"
+                initial={{ x: -4 }}
+                whileHover={{ x: 0 }}
+              >
+                <Sparkles className="h-3.5 w-3.5 text-cyan-400/70" />
+              </motion.div>
             </DropdownMenuItem>
           )}
           
           <DropdownMenuItem 
             onClick={handleLogout}
             className={cn(
-              "gap-3 py-2.5 px-3 rounded-xl cursor-pointer transition-all duration-200",
+              "gap-3 py-3 px-3.5 rounded-xl cursor-pointer transition-all duration-300 relative mt-1",
               "text-[hsl(0,55%,45%)] hover:bg-[hsl(0,50%,95%)]",
-              // Dark mode: Rose aurora hover
+              // Dark mode: Rose aurora hover with pulsing glow
               "dark:text-rose-400",
-              "dark:hover:bg-gradient-to-r dark:hover:from-rose-500/[0.12] dark:hover:to-pink-500/[0.08]",
-              "dark:hover:shadow-[0_0_16px_-6px_rgba(244,63,94,0.5)]"
+              "dark:hover:bg-gradient-to-r dark:hover:from-rose-500/[0.18] dark:hover:via-pink-500/[0.12] dark:hover:to-transparent",
+              "dark:hover:shadow-[0_0_24px_-6px_rgba(244,63,94,0.6),inset_0_0_0_1px_rgba(244,63,94,0.25)]",
+              "group"
             )}
           >
-            <div className={cn(
-              "flex h-8 w-8 items-center justify-center rounded-xl",
-              "bg-[hsl(0,45%,92%)]",
-              // Dark mode: Rose glow container
-              "dark:bg-rose-500/15",
-              "dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]"
+            <motion.div 
+              className={cn(
+                "flex h-9 w-9 items-center justify-center rounded-xl relative",
+                "bg-[hsl(0,45%,92%)]",
+                // Dark mode: Rose crystalline container
+                "dark:bg-gradient-to-br dark:from-rose-500/25 dark:via-pink-500/20 dark:to-rose-500/25",
+                "dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.1),0_0_20px_-4px_rgba(244,63,94,0.4)]",
+                "dark:ring-1 dark:ring-rose-400/20"
+              )}
+              whileHover={{ scale: 1.08, rotate: -3 }}
+              transition={{ type: "spring", stiffness: 400, damping: 17 }}
+            >
+              <LogOut className="h-4.5 w-4.5 dark:drop-shadow-[0_0_6px_rgba(244,63,94,0.6)]" />
+            </motion.div>
+            <span className={cn(
+              "text-sm font-semibold",
+              "dark:group-hover:text-rose-300",
+              "transition-colors duration-200"
             )}>
-              <LogOut className="h-4 w-4" />
-            </div>
-            <span className="text-sm font-medium">Sign out</span>
+              Sign out
+            </span>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

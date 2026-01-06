@@ -27,9 +27,7 @@ export class PlaywrightValidator {
     }
 
     _log(message, data = null) {
-        if (this.debug) {
-            console.log(`[PlaywrightValidator] ${message}`, data ? JSON.stringify(data) : '');
-        }
+        // Debug logging disabled - kept for API compatibility
     }
 
     getName() {

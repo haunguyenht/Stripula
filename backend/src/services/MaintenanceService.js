@@ -255,7 +255,6 @@ export class MaintenanceService extends EventEmitter {
             if (error) {
                 if (error.code === 'PGRST116') {
                     // No row found, use defaults
-                    console.log('[MaintenanceService] No maintenance state found, using defaults');
                     return;
                 }
                 console.error('[MaintenanceService] Error loading state:', error.message);
@@ -270,7 +269,6 @@ export class MaintenanceService extends EventEmitter {
                     enabledAt: data.value.enabledAt || null,
                     enabledBy: data.value.enabledBy || null
                 };
-                console.log('[MaintenanceService] Loaded state from database:', this.state.enabled ? 'ENABLED' : 'DISABLED');
             }
         } catch (err) {
             console.error('[MaintenanceService] Failed to load state:', err.message);

@@ -55,7 +55,6 @@ export class TelegramBotService {
             // Wait if we're rate limited
             if (this.retryAfter > 0) {
                 const waitTime = this.retryAfter * 1000;
-                console.log(`[TelegramBot] Rate limited, waiting ${this.retryAfter}s (${this.messageQueue.length} messages queued)`);
                 await this._sleep(waitTime);
                 this.retryAfter = 0;
             }
@@ -1073,7 +1072,6 @@ ${details.split('\n').map(line => `│ ${line}`).join('\n')}
         
         // Requirement 8.5: Ignore commands from non-admin users
         if (!isAdmin) {
-            console.log(`[TelegramBot] Maintenance command from non-admin user ${fromUserId} ignored`);
             return { 
                 success: false, 
                 message: 'Unauthorized: Only administrators can execute maintenance commands.' 
@@ -1391,7 +1389,6 @@ ${statusEmoji} Maintenance mode is now <b>${statusText}</b>`;
             if (error) {
                 if (error.code === 'PGRST116') {
                     // No user found with this telegram_id
-                    console.log(`[TelegramBot] No user found with telegram_id: ${telegramId}`);
                     return false;
                 }
                 console.error('[TelegramBot] Error checking admin status:', error.message);
