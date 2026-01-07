@@ -407,8 +407,8 @@ function EmptyState() {
         "bg-gradient-to-br from-[hsl(38,40%,94%)] to-[hsl(35,35%,90%)]",
         "border border-[hsl(30,30%,82%)]",
         "shadow-[inset_0_2px_4px_rgba(255,255,255,0.5),0_2px_8px_rgba(101,67,33,0.1)]",
-        // Dark: Aurora glass
-        "dark:bg-white/[0.04] dark:border-white/[0.08]"
+        // Dark: Aurora glass (bg-none resets light gradient)
+        "dark:bg-none dark:bg-white/[0.04] dark:border-white/[0.08]"
       )}>
         <BookOpen className="w-5 h-5 sm:w-7 sm:h-7 text-[hsl(25,25%,55%)] dark:text-white/30" />
       </div>

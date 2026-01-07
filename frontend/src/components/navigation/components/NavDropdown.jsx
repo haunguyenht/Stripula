@@ -44,17 +44,17 @@ export function NavDropdown({ item, activeRoute, onNavigate, isActive, index = 0
             "font-medium text-xs md:text-sm relative overflow-hidden",
             // Mobile-first: icon-only until md breakpoint
             "gap-0 md:gap-1.5 h-7 md:h-8 px-2 md:px-3.5 min-w-[32px] md:min-w-0",
-            // Light mode: Vintage Banking
+            // Light mode: Vintage Banking (bg-none resets light gradient in dark active state)
             isActive 
               ? "bg-gradient-to-r from-[hsl(25,70%,48%)] to-[hsl(22,65%,40%)] text-[hsl(40,50%,96%)] shadow-sm" 
               : "bg-transparent hover:bg-[hsl(38,40%,92%)] text-[hsl(25,35%,25%)] hover:text-[hsl(25,75%,45%)]",
             // ═══════════════════════════════════════════════════════════
-            // DARK MODE: PREMIUM Liquid Aurora with enhanced glow
+            // DARK MODE: PREMIUM Liquid Aurora with enhanced glow (bg-none resets light gradient)
             // ═══════════════════════════════════════════════════════════
             isActive
-              // Active: Aurora gradient with neon glow - KEEP gradient on hover
+              // Active: Aurora gradient with neon glow - KEEP gradient on hover (bg-none resets light gradient)
               ? [
-                  "dark:bg-gradient-to-r dark:from-violet-600 dark:to-cyan-500",
+                  "dark:bg-none dark:bg-gradient-to-r dark:from-violet-600 dark:to-cyan-500",
                   "dark:text-white dark:font-semibold",
                   "dark:border-0",
                   "dark:shadow-[0_0_20px_rgba(139,92,246,0.4),0_0_40px_-10px_rgba(34,211,238,0.3)]",
@@ -103,14 +103,14 @@ export function NavDropdown({ item, activeRoute, onNavigate, isActive, index = 0
               "font-medium text-xs md:text-sm relative overflow-hidden",
               // Mobile-first: icon + chevron only until md breakpoint
               "gap-0.5 md:gap-1.5 h-7 md:h-8 px-2 md:px-3.5 min-w-[40px] md:min-w-0",
-              // Light mode: Vintage Banking
+              // Light mode: Vintage Banking (bg-none resets light gradient in dark active state)
               isActive 
                 ? "bg-gradient-to-r from-[hsl(25,70%,48%)] to-[hsl(22,65%,40%)] text-[hsl(40,50%,96%)] shadow-sm" 
                 : "bg-transparent hover:bg-[hsl(38,40%,92%)] text-[hsl(25,35%,25%)] hover:text-[hsl(25,75%,45%)]",
-              // Dark mode: PREMIUM Liquid Aurora with enhanced glow
+              // Dark mode: PREMIUM Liquid Aurora with enhanced glow (bg-none resets light gradient)
               isActive
                 ? [
-                      "dark:bg-gradient-to-r dark:from-violet-600 dark:to-cyan-500",
+                      "dark:bg-none dark:bg-gradient-to-r dark:from-violet-600 dark:to-cyan-500",
                       "dark:text-white dark:font-semibold",
                       "dark:border-0",
                       "dark:shadow-[0_0_20px_rgba(139,92,246,0.4),0_0_40px_-10px_rgba(34,211,238,0.3)]",
@@ -148,11 +148,11 @@ export function NavDropdown({ item, activeRoute, onNavigate, isActive, index = 0
           align="center" 
           className={cn(
             "w-56 p-2",
-            // Light mode: Vintage Banking
+            // Light mode: Vintage Banking (bg-none resets light gradient)
             "bg-gradient-to-b from-[hsl(40,50%,97%)] to-[hsl(38,45%,95%)]",
             "border-[hsl(30,35%,75%)]/50 rounded-xl",
             "shadow-[0_8px_32px_rgba(101,67,33,0.12)]",
-            // Dark mode: PREMIUM Liquid Aurora panel
+            // Dark mode: PREMIUM Liquid Aurora panel (bg-none resets light gradient)
             "dark:bg-none dark:bg-[rgba(12,14,22,0.96)]",
             "dark:backdrop-blur-[80px] dark:backdrop-saturate-[220%]",
             "dark:border dark:border-[rgba(139,92,246,0.15)]",
@@ -186,11 +186,11 @@ export function NavDropdown({ item, activeRoute, onNavigate, isActive, index = 0
                   {/* Icon container */}
                   <div className={cn(
                     "flex h-8 w-8 items-center justify-center rounded-lg transition-all duration-150",
-                    // Light mode
+                    // Light mode (bg-none resets light gradient in dark active state)
                     isChildActive 
                       ? "bg-gradient-to-br from-[hsl(25,70%,48%)] to-[hsl(22,65%,40%)] text-[hsl(40,50%,96%)]" 
                       : "bg-[hsl(38,35%,90%)] text-[hsl(25,30%,50%)]",
-                    // Dark mode: PREMIUM Aurora icon container (reset gradient first)
+                    // Dark mode: PREMIUM Aurora icon container (bg-none resets light gradient)
                     isChildActive
                       ? "dark:bg-none dark:bg-gradient-to-br dark:from-[hsl(250,90%,60%)] dark:to-[hsl(210,100%,60%)] dark:text-white dark:shadow-[0_0_12px_rgba(139,92,246,0.4)]"
                       : "dark:bg-white/[0.08] dark:text-white/70"

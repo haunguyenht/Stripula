@@ -65,6 +65,7 @@ const NavPillButton = React.forwardRef(
           "text-xs md:text-sm font-semibold",
           // Light mode: Vintage Banking - sepia text, copper hover
           "rounded-lg md:rounded-xl bg-transparent",
+          // Hover gradient in light mode - dark mode overrides are separate (no reset needed for hover-only)
           "text-[hsl(25,35%,25%)] hover:text-[hsl(25,70%,40%)]",
           "hover:bg-gradient-to-b hover:from-[hsl(38,45%,94%)] hover:to-[hsl(38,40%,91%)]",
           "[text-shadow:0_1px_0_rgba(255,255,255,0.3)] dark:[text-shadow:none]",
@@ -118,16 +119,16 @@ const NavPillNav = React.forwardRef(
           "px-1 xs:px-1.5 md:px-2",
           "py-0.5 xs:py-1 md:py-1.5",
           "rounded-lg xs:rounded-xl md:rounded-2xl",
-          // Light mode: Floating cream paper with copper border
+          // Light mode: Floating cream paper with copper border (bg-none resets light gradient)
           "bg-gradient-to-b from-[hsl(40,50%,97%)]/95 to-[hsl(38,45%,94%)]/90",
           "backdrop-blur-md",
           "border border-[hsl(30,35%,75%)]/50",
           "shadow-[0_4px_20px_rgba(101,67,33,0.1),inset_0_1px_0_rgba(255,255,255,0.7)]",
           // ═══════════════════════════════════════════════════════════
-          // DARK MODE: PREMIUM Liquid Aurora Glass
+          // DARK MODE: PREMIUM Liquid Aurora Glass (bg-none resets light gradient)
           // ═══════════════════════════════════════════════════════════
           "dark:rounded-lg xs:dark:rounded-xl md:dark:rounded-2xl",
-          // Enhanced liquid glass background
+          // Enhanced liquid glass background (bg-none resets light gradient)
           "dark:bg-none dark:bg-[rgba(12,14,22,0.85)]",
           "dark:backdrop-blur-[80px] dark:backdrop-saturate-[200%]",
           // Aurora-tinted border

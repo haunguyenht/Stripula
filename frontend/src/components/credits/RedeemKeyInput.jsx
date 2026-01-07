@@ -128,12 +128,13 @@ export function RedeemKeyInput({ onSuccess, className }) {
         "transition-all duration-300 ease-out",
         
         // ===== LIGHT MODE (Vintage Banking Voucher) =====
+        // Light mode: Vintage Banking Voucher
         "bg-gradient-to-b from-[hsl(40,50%,97%)] via-[hsl(38,45%,95%)] to-[hsl(35,40%,93%)]",
         "border-2 border-[hsl(30,35%,75%)]",
         "shadow-[inset_0_0_0_3px_hsl(38,45%,96%),inset_0_0_0_4px_hsl(30,30%,80%),0_8px_32px_rgba(101,67,33,0.12)]",
         
-        // ===== DARK MODE (Obsidian Aurora Crystal) =====
-        "dark:bg-gradient-to-br dark:from-[rgba(12,14,22,0.95)] dark:via-[rgba(16,20,30,0.9)] dark:to-[rgba(12,14,22,0.95)]",
+        // ===== DARK MODE (Obsidian Aurora Crystal) ===== (bg-none resets light gradient)
+        "dark:bg-none dark:bg-gradient-to-br dark:from-[rgba(12,14,22,0.95)] dark:via-[rgba(16,20,30,0.9)] dark:to-[rgba(12,14,22,0.95)]",
         "dark:backdrop-blur-[60px] dark:backdrop-saturate-[1.8]",
         // Prismatic emerald/cyan border for key redemption
         "dark:border dark:border-transparent",
@@ -174,9 +175,10 @@ export function RedeemKeyInput({ onSuccess, className }) {
       {/* Accent line - copper foil gradient for light, emerald aurora for dark */}
       <div className={cn(
         "absolute top-0 left-0 right-0 h-1 z-10",
+        // Light: copper foil accent (bg-none resets light gradient)
         "bg-gradient-to-r from-[hsl(25,70%,50%)] via-[hsl(35,75%,55%)] to-[hsl(30,65%,45%)]",
         "shadow-[0_2px_8px_rgba(101,67,33,0.2)]",
-        "dark:from-emerald-400 dark:via-cyan-400 dark:to-teal-400",
+        "dark:bg-none dark:bg-gradient-to-r dark:from-emerald-400 dark:via-cyan-400 dark:to-teal-400",
         "dark:shadow-[0_0_15px_-3px_rgba(52,211,153,0.6)]"
       )} />
       
@@ -202,8 +204,8 @@ export function RedeemKeyInput({ onSuccess, className }) {
               "bg-gradient-to-br from-[hsl(30,60%,88%)] via-[hsl(25,50%,82%)] to-[hsl(35,55%,78%)]",
               "border border-[hsl(30,40%,70%)]/60",
               "shadow-[inset_0_1px_0_rgba(255,255,255,0.5),0_2px_6px_rgba(101,67,33,0.15)]",
-              // Dark: Holographic emerald crystal
-              "dark:bg-gradient-to-br dark:from-[rgba(20,24,35,0.9)] dark:to-[rgba(15,18,28,0.95)]",
+              // Dark: Holographic emerald crystal (bg-none resets light gradient)
+              "dark:bg-none dark:bg-gradient-to-br dark:from-[rgba(20,24,35,0.9)] dark:to-[rgba(15,18,28,0.95)]",
               "dark:border dark:border-transparent",
               "dark:[background-image:linear-gradient(135deg,rgba(20,24,35,0.9),rgba(15,18,28,0.95)),linear-gradient(135deg,rgba(52,211,153,0.5),rgba(34,211,238,0.4),rgba(52,211,153,0.5))]",
               "dark:[background-origin:border-box] dark:[background-clip:padding-box,border-box]",
@@ -271,8 +273,8 @@ export function RedeemKeyInput({ onSuccess, className }) {
                 "shadow-[inset_0_2px_4px_rgba(101,67,33,0.08)]",
                 "focus:border-[hsl(25,65%,50%)] focus:ring-[hsl(25,65%,50%)]/20",
                 "placeholder:tracking-normal placeholder:normal-case placeholder:text-[hsl(30,20%,65%)]",
-                // Dark mode: Holographic input
-                "dark:bg-gradient-to-b dark:from-[rgba(15,18,28,0.6)] dark:to-[rgba(10,12,20,0.8)]",
+                // Dark mode: Holographic input (bg-none resets light gradient)
+                "dark:bg-none dark:bg-gradient-to-b dark:from-[rgba(15,18,28,0.6)] dark:to-[rgba(10,12,20,0.8)]",
                 "dark:border-white/[0.08] dark:text-white",
                 "dark:shadow-[inset_0_0_20px_-10px_rgba(52,211,153,0.1)]",
                 "dark:focus:border-emerald-400/40 dark:focus:ring-emerald-400/20",
@@ -300,7 +302,7 @@ export function RedeemKeyInput({ onSuccess, className }) {
                 >
                   <div className={cn(
                     "w-6 h-6 rounded-full flex items-center justify-center",
-                    "bg-gradient-to-br from-emerald-400 to-teal-500",
+                    "bg-gradient-to-br from-emerald-400 to-teal-500", // Same in light/dark, no reset needed
                     "shadow-[0_0_12px_-2px_rgba(52,211,153,0.6)]"
                   )}>
                     <Check className="w-3.5 h-3.5 text-white" />

@@ -451,6 +451,13 @@ function createApp(container) {
     });
 
     // ═══════════════════════════════════════════════════════════════
+    // Online User Tracker - Global activity tracking for all API routes
+    // Updates last_active_at for authenticated users on any API request
+    // Requirement: 6.5, 8.3 - Track user activity for online status
+    // ═══════════════════════════════════════════════════════════════
+    app.use('/api', onlineUserTracker.middleware());
+
+    // ═══════════════════════════════════════════════════════════════
     // Telegram Auth routes - SSO authentication
     // Rate limit login attempts to 5/min per IP (Requirement 11.1)
     // ═══════════════════════════════════════════════════════════════
@@ -479,27 +486,24 @@ function createApp(container) {
 
     // ═══════════════════════════════════════════════════════════════
     // Dashboard routes - Dashboard stats, leaderboard, online users
-    // All routes require authentication and track user activity
+    // All routes require authentication
     // Requirements: 1.1, 1.2, 2.1, 2.2, 3.1, 3.2, 5.1, 6.1, 8.3
+    // Note: Online tracking is now handled globally via app.use('/api', onlineUserTracker.middleware())
     // ═══════════════════════════════════════════════════════════════
     app.get('/api/dashboard/stats',
         authMiddleware.authenticate(),
-        onlineUserTracker.middleware(),
         dashboardRoutes.getStats
     );
     app.get('/api/dashboard/stats/stream',
         authMiddleware.authenticate(),
-        onlineUserTracker.middleware(),
         dashboardRoutes.streamStats
     );
     app.get('/api/dashboard/leaderboard',
         authMiddleware.authenticate(),
-        onlineUserTracker.middleware(),
         dashboardRoutes.getLeaderboard
     );
     app.get('/api/dashboard/online-users',
         authMiddleware.authenticate(),
-        onlineUserTracker.middleware(),
         dashboardRoutes.getOnlineUsers
     );
 

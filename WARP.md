@@ -152,15 +152,19 @@ frontend/src/
 - Forget `dark:bg-none` when overriding light mode gradients in dark mode
 
 ### Critical: Gradient Reset Pattern
-When light mode uses `bg-gradient-to-*` and dark mode needs a solid color:
+When light mode uses `bg-gradient-to-*` and dark mode needs a solid color or different gradient:
 ```jsx
 // ❌ WRONG - gradient shows through (background-image > background-color)
 className="bg-gradient-to-b from-cream to-paper dark:bg-[rgba(15,18,25,0.92)]"
 
 // ✅ CORRECT - reset gradient first, then set color
 className="bg-gradient-to-b from-cream to-paper dark:bg-none dark:bg-[rgba(15,18,25,0.92)]"
+
+// ✅ CORRECT - gradient to gradient
+className="bg-gradient-to-b from-X to-Y dark:bg-none dark:bg-gradient-to-b dark:from-A dark:to-B"
 ```
-The `dark:bg-none` resets `background-image` so `background-color` takes effect.
+The `dark:bg-none` sets `background-image: none` so `background-color` takes effect.
+This is required because CSS specificity: `background-image` > `background-color`.
 
 ## Auth Validation Architecture
 

@@ -89,8 +89,8 @@ export function BatchConfirmDialog({
                 "bg-gradient-to-br from-amber-100 via-yellow-50 to-orange-50",
                 "ring-amber-200/60",
                 "shadow-[inset_0_-2px_4px_rgba(0,0,0,0.03)]",
-                // Dark: Aurora gradient with glow
-                "dark:from-violet-500/20 dark:via-cyan-500/15 dark:to-violet-500/10",
+                // Dark: Aurora gradient with glow (bg-none resets light gradient)
+                "dark:bg-none dark:bg-gradient-to-br dark:from-violet-500/20 dark:via-cyan-500/15 dark:to-violet-500/10",
                 "dark:ring-violet-500/30",
                 "dark:shadow-[0_0_24px_-4px_rgba(139,92,246,0.5)]"
               )}
@@ -137,8 +137,8 @@ export function BatchConfirmDialog({
                   "bg-gradient-to-br from-amber-200/80 to-yellow-100/60",
                   "ring-1 ring-amber-300/50",
                   "shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]",
-                  // Dark: Aurora glow
-                  "dark:from-violet-500/30 dark:to-cyan-500/20",
+                  // Dark: Aurora glow (bg-none resets light gradient)
+                  "dark:bg-none dark:bg-gradient-to-br dark:from-violet-500/30 dark:to-cyan-500/20",
                   "dark:ring-violet-400/30",
                   "dark:shadow-[0_0_16px_-4px_rgba(139,92,246,0.4)]"
                 )}>
@@ -186,16 +186,16 @@ export function BatchConfirmDialog({
                     // Light: Amber warning
                     "bg-gradient-to-br from-amber-50 to-yellow-50/80",
                     "ring-1 ring-inset ring-amber-300/50",
-                    // Dark: Amber aurora
-                    "dark:from-amber-500/[0.1] dark:to-amber-500/[0.05]",
+                    // Dark: Amber aurora (bg-none resets light gradient)
+                    "dark:bg-none dark:bg-gradient-to-br dark:from-amber-500/[0.1] dark:to-amber-500/[0.05]",
                     "dark:ring-amber-500/25"
                   ]
                 : [
                     // Light: Neutral panel
                     "bg-gradient-to-br from-[hsl(40,30%,96%)] to-[hsl(38,25%,94%)]",
                     "ring-1 ring-inset ring-[hsl(38,25%,85%)]",
-                    // Dark: Subtle glass
-                    "dark:from-white/[0.03] dark:to-white/[0.02]",
+                    // Dark: Subtle glass (bg-none resets light gradient)
+                    "dark:bg-none dark:bg-gradient-to-br dark:from-white/[0.03] dark:to-white/[0.02]",
                     "dark:ring-white/[0.08]"
                   ]
             )}
@@ -327,8 +327,8 @@ export function BatchConfirmDialog({
               "bg-gradient-to-b from-[hsl(42,45%,97%)] to-[hsl(40,40%,93%)]",
               "border-[hsl(42,40%,75%)] text-[hsl(35,35%,30%)]",
               "hover:from-[hsl(42,50%,95%)] hover:to-[hsl(40,45%,90%)]",
-              // Dark mode
-              "dark:bg-transparent dark:from-transparent dark:to-transparent",
+              // Dark mode (bg-none resets light gradient)
+              "dark:bg-none dark:bg-transparent dark:from-transparent dark:to-transparent",
               "dark:border-white/[0.1] dark:text-white/70",
               "dark:hover:bg-white/[0.06] dark:hover:text-white"
             )}
@@ -344,19 +344,19 @@ export function BatchConfirmDialog({
               "text-[13px] xs:text-[14px] font-medium gap-1 xs:gap-1.5",
               hasInsufficientCredits 
                 ? [
-                    // Amber warning button
+                    // Amber warning button (bg-none resets light gradient)
                     "bg-gradient-to-b from-[hsl(40,85%,52%)] via-[hsl(38,80%,48%)] to-[hsl(35,75%,42%)]",
                     "border border-[hsl(35,70%,35%)]/30 text-white",
                     "shadow-[inset_0_1px_0_rgba(255,255,255,0.2),0_4px_16px_-2px_rgba(180,120,30,0.3)]",
-                    "dark:from-amber-600 dark:via-amber-600 dark:to-amber-700",
+                    "dark:bg-none dark:bg-gradient-to-b dark:from-amber-600 dark:via-amber-600 dark:to-amber-700",
                     "dark:shadow-[0_0_30px_-6px_rgba(251,191,36,0.6)]"
                   ]
                 : [
-                    // Primary button
+                    // Primary button (bg-none resets light gradient)
                     "bg-gradient-to-b from-[hsl(38,65%,50%)] via-[hsl(35,60%,46%)] to-[hsl(32,55%,40%)]",
                     "border border-[hsl(32,50%,35%)]/30 text-white",
                     "shadow-[inset_0_1px_0_rgba(255,255,255,0.2),0_4px_16px_-2px_rgba(160,110,50,0.3)]",
-                    "dark:from-violet-600 dark:via-violet-600 dark:to-violet-700",
+                    "dark:bg-none dark:bg-gradient-to-b dark:from-violet-600 dark:via-violet-600 dark:to-violet-700",
                     "dark:shadow-[0_0_30px_-6px_rgba(139,92,246,0.6)]"
                   ]
             )}

@@ -213,29 +213,33 @@ function HeroSection({ user, personalStats, globalStats, isConnected, onReconnec
       
       <div className="relative">
         {/* Header row */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-          <div className="flex items-center gap-3">
-            <div>
-              <p className={cn(
-                "text-xs font-medium text-muted-foreground",
-                "[text-shadow:0_1px_0_rgba(255,255,255,0.5)] dark:[text-shadow:none]"
-              )}>{greeting}</p>
+        <div className="flex items-start justify-between gap-4 mb-6">
+          <div>
+            <p className={cn(
+              "text-xs font-medium text-muted-foreground",
+              "[text-shadow:0_1px_0_rgba(255,255,255,0.5)] dark:[text-shadow:none]"
+            )}>{greeting}</p>
+            <div className="flex items-center gap-3">
               <h1 className={cn(
                 "text-2xl font-bold tracking-tight text-foreground",
                 // Light: letterpress embossed heading
                 "[text-shadow:0_1px_0_rgba(255,255,255,0.7),0_-1px_0_rgba(101,67,33,0.1)] dark:[text-shadow:none]"
               )}>{firstName}</h1>
+              <Badge 
+                variant="outline" 
+                className={cn(
+                  "gap-1 px-2 py-0.5 text-[10px] font-bold capitalize border-0",
+                  // Light mode: no border, just bg and text
+                  // Dark mode: add ring/border
+                  "dark:ring-1",
+                  tierConfig.color, tierConfig.bgColor,
+                  tierConfig.borderColor
+                )}
+              >
+                <TierIcon className="w-3 h-3" />
+                {tier}
+              </Badge>
             </div>
-            <Badge 
-              variant="outline" 
-              className={cn(
-                "gap-1 px-2 py-0.5 text-[10px] font-bold capitalize",
-                tierConfig.borderColor, tierConfig.bgColor, tierConfig.color
-              )}
-            >
-              <TierIcon className="w-3 h-3" />
-              {tier}
-            </Badge>
           </div>
           <LiveBadge isConnected={isConnected} onReconnect={onReconnect} />
         </div>

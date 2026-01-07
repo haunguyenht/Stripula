@@ -168,8 +168,8 @@ export function ReferralCard({ referral, className }) {
                 "bg-gradient-to-br from-[hsl(280,40%,92%)] via-[hsl(285,45%,88%)] to-[hsl(290,35%,85%)]",
                 "border border-[hsl(280,35%,75%)]",
                 "shadow-[0_4px_12px_hsl(280,40%,40%,0.15),inset_0_1px_0_rgba(255,255,255,0.5)]",
-                // Dark mode
-                "dark:from-violet-500/15 dark:via-purple-500/10 dark:to-fuchsia-500/15",
+                // Dark mode (bg-none resets light gradient)
+                "dark:bg-none dark:bg-gradient-to-br dark:from-violet-500/15 dark:via-purple-500/10 dark:to-fuchsia-500/15",
                 "dark:border-violet-400/20 dark:shadow-violet-500/5"
               )}
               initial={{ scale: 0, rotate: -15 }}
@@ -203,8 +203,8 @@ export function ReferralCard({ referral, className }) {
                 "bg-gradient-to-b from-[hsl(280,40%,95%)] to-[hsl(285,35%,92%)]",
                 "text-[hsl(280,45%,40%)]",
                 "border border-[hsl(280,35%,80%)]",
-                // Dark mode
-                "dark:from-violet-500/15 dark:to-purple-500/10",
+                // Dark mode (bg-none resets light gradient)
+                "dark:bg-none dark:bg-gradient-to-b dark:from-violet-500/15 dark:to-purple-500/10",
                 "dark:text-violet-400 dark:border-violet-500/25"
               )}
             >
@@ -235,8 +235,8 @@ export function ReferralCard({ referral, className }) {
               "bg-gradient-to-b from-[hsl(40,45%,98%)] via-[hsl(38,40%,96%)] to-[hsl(35,35%,94%)]",
               "border border-[hsl(30,30%,78%)]",
               "shadow-[inset_0_0_0_1px_hsl(38,45%,97%),inset_0_0_0_2px_hsl(30,25%,85%)]",
-              // Dark mode
-              "dark:from-white/[0.04] dark:via-white/[0.02] dark:to-white/[0.01]",
+              // Dark mode (bg-none resets light gradient)
+              "dark:bg-none dark:bg-gradient-to-b dark:from-white/[0.04] dark:via-white/[0.02] dark:to-white/[0.01]",
               "dark:border-white/[0.1]",
               // Hover
               "transition-all duration-300 ease-out",
@@ -247,7 +247,7 @@ export function ReferralCard({ referral, className }) {
               // Success state
               copied && cn(
                 "border-[hsl(150,40%,70%)] dark:border-emerald-400/40",
-                "bg-gradient-to-b from-[hsl(150,35%,97%)] to-[hsl(145,30%,95%)] dark:bg-emerald-500/5"
+                "bg-gradient-to-b from-[hsl(150,35%,97%)] to-[hsl(145,30%,95%)] dark:bg-none dark:bg-emerald-500/5"
               )
             )}
             whileTap={{ scale: 0.98 }}

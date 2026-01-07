@@ -268,8 +268,8 @@ export function TierInfoCard({ tier, className }) {
                 "text-[hsl(25,30%,40%)]",
                 "border border-[hsl(30,25%,80%)]",
                 "shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]",
-                // Dark mode
-                "dark:bg-white/[0.06] dark:text-white/60 dark:border-white/[0.08] dark:shadow-none"
+                // Dark mode (bg-none resets light gradient)
+                "dark:bg-none dark:bg-white/[0.06] dark:text-white/60 dark:border-white/[0.08] dark:shadow-none"
               )}>
                 <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                 Free

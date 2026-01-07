@@ -146,8 +146,8 @@ const buttonVariants = cva(
           "hover:from-[hsl(145,42%,90%)] hover:to-[hsl(145,38%,82%)]",
           "hover:border-[hsl(145,40%,60%)]",
           "active:shadow-[inset_0_2px_4px_rgba(45,100,70,0.15)]",
-          // Dark mode: PREMIUM Liquid glass with emerald neon accent
-          "dark:bg-[hsl(0_0%_100%/0.04)]",
+          // Dark mode: PREMIUM Liquid glass with emerald neon accent (bg-none resets light gradient)
+          "dark:bg-none dark:bg-[hsl(0_0%_100%/0.04)]",
           "dark:backdrop-blur-[60px] dark:backdrop-saturate-[200%]",
           "dark:border dark:border-emerald-500/40",
           "dark:text-emerald-400",
@@ -168,8 +168,8 @@ const buttonVariants = cva(
           "hover:from-[hsl(42,58%,90%)] hover:to-[hsl(38,48%,81%)]",
           "hover:border-[hsl(38,50%,60%)]",
           "active:shadow-[inset_0_2px_4px_rgba(140,100,40,0.15)]",
-          // Dark mode: PREMIUM Liquid glass with amber neon + pink aurora
-          "dark:bg-[hsl(0_0%_100%/0.04)]",
+          // Dark mode: PREMIUM Liquid glass with amber neon + pink aurora (bg-none resets light gradient)
+          "dark:bg-none dark:bg-[hsl(0_0%_100%/0.04)]",
           "dark:backdrop-blur-[60px] dark:backdrop-saturate-[200%]",
           "dark:border dark:border-amber-500/40",
           "dark:text-amber-400",
@@ -190,8 +190,8 @@ const buttonVariants = cva(
           "hover:from-[hsl(25,33%,26%)] hover:via-[hsl(25,28%,22%)] hover:to-[hsl(25,26%,18%)]",
           "hover:translate-y-[-1px]",
           "active:translate-y-[1px] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.3)]",
-          // Dark mode: Bright white with aurora shadow
-          "dark:bg-white dark:text-[hsl(220,18%,7%)]",
+          // Dark mode: Bright white with aurora shadow (bg-none resets light gradient)
+          "dark:bg-none dark:bg-white dark:text-[hsl(220,18%,7%)]",
           "dark:shadow-[0_0_20px_rgba(255,255,255,0.15),0_4px_16px_rgba(0,0,0,0.3)]",
           "dark:hover:shadow-[0_0_28px_rgba(255,255,255,0.2),0_6px_24px_rgba(0,0,0,0.4)]",
           "dark:hover:translate-y-[-1px]",
@@ -208,8 +208,8 @@ const buttonVariants = cva(
           "[text-shadow:0_1px_0_rgba(255,255,255,0.4)]",
           "hover:from-[hsl(40,52%,96%)]/95 hover:to-[hsl(38,48%,94%)]/90",
           "hover:border-[hsl(30,35%,68%)]",
-          // Dark mode: PREMIUM Pure liquid glass
-          "dark:bg-[hsl(0_0%_100%/0.04)] dark:text-white",
+          // Dark mode: PREMIUM Pure liquid glass (bg-none resets light gradient)
+          "dark:bg-none dark:bg-[hsl(0_0%_100%/0.04)] dark:text-white",
           "dark:backdrop-blur-[80px] dark:backdrop-saturate-[220%]",
           "dark:border dark:border-[hsl(0_0%_100%/0.12)]",
           "dark:shadow-[0_12px_40px_rgba(0,0,0,0.45),0_0_50px_-20px_rgba(139,92,246,0.15),inset_0_1px_0_rgba(255,255,255,0.1)]",

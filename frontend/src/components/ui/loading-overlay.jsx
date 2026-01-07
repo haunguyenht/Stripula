@@ -45,10 +45,10 @@ export function LoadingOverlay({
             transition={{ duration: 0.4, ease: 'easeOut' }}
             className={cn(
               'absolute inset-0 z-50 flex flex-col items-center justify-center',
-              // Light: Vintage parchment overlay
+              // Light: Vintage parchment overlay (bg-none resets light gradient)
               'bg-gradient-to-b from-[hsl(40,48%,97%)]/95 via-[hsl(38,45%,96%)]/93 to-[hsl(36,42%,95%)]/95',
-              // Dark: Liquid aurora glass
-              'dark:from-[hsl(220,18%,7%)]/95 dark:via-[hsl(220,18%,7%)]/93 dark:to-[hsl(220,18%,7%)]/95',
+              // Dark: Liquid aurora glass (bg-none resets light gradient)
+              'dark:bg-none dark:bg-gradient-to-b dark:from-[hsl(220,18%,7%)]/95 dark:via-[hsl(220,18%,7%)]/93 dark:to-[hsl(220,18%,7%)]/95',
               'backdrop-blur-xl dark:backdrop-blur-[60px] dark:backdrop-saturate-[180%]',
             )}
           >
@@ -271,11 +271,11 @@ function InitializingVisual() {
       <motion.div
         className={cn(
           "relative w-28 h-28 rounded-3xl flex items-center justify-center overflow-hidden",
-          // Light: Brass vault plate
+          // Light: Brass vault plate (bg-none resets light gradient)
           "bg-gradient-to-br from-[hsl(38,45%,94%)] via-[hsl(35,40%,90%)] to-[hsl(32,35%,86%)]",
           "border-2 border-[hsl(28,50%,60%)]",
           "shadow-[inset_0_2px_4px_rgba(255,255,255,0.5),inset_0_-3px_6px_rgba(101,67,33,0.15),0_8px_32px_rgba(101,67,33,0.2)]",
-          // Dark: Aurora glass terminal
+          // Dark: Aurora glass terminal (bg-none resets light gradient)
           "dark:bg-none dark:bg-[rgba(15,20,30,0.9)]",
           "dark:border dark:border-[rgba(139,92,246,0.25)]",
           "dark:shadow-[0_0_50px_rgba(139,92,246,0.15),inset_0_1px_0_rgba(255,255,255,0.08)]"

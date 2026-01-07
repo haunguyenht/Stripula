@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { Key, Trash2, Copy, Check, RefreshCw, BadgeCheck } from 'lucide-react';
+import { Key, Trash2, RefreshCw, BadgeCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useToast } from '@/hooks/useToast';
 import { useKeyFilters } from '@/hooks/useKeyFilters';
@@ -9,7 +9,6 @@ import { TwoPanelLayout } from '../../layout/TwoPanelLayout';
 
 // Components
 import { ResultsPanel, ResultItem, ProgressBar } from '../ResultsPanel';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { 
@@ -370,14 +369,29 @@ export function KeysValidationPanel({
         />
         
         {/* Action bar below textarea */}
-        <div className="flex items-center justify-between px-2 py-1.5 sm:px-3 sm:py-2 border-t border-[rgb(230,225,223)] dark:border-white/10 bg-[rgb(250,249,249)] dark:bg-white/5">
-          {/* Key count badge */}
-          <div className="flex items-center gap-1 sm:gap-2">
-            {keyCount > 0 && (
-              <Badge variant="secondary" className="text-[9px] sm:text-[10px] h-5 sm:h-6 px-1.5 sm:px-2">
-                {keyCount}
-              </Badge>
-            )}
+        <div className="flex items-center justify-between px-2 py-1.5 sm:px-3 sm:py-2 border-t border-[rgb(230,225,223)] dark:border-white/10 bg-[rgb(250,249,249)] dark:bg-white/[0.02]">
+          {/* Liquid Glass Counter Badge */}
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <div
+              className={cn(
+                "inline-flex items-center gap-1",
+                "text-[10px] sm:text-[11px] font-medium font-mono tracking-wide",
+                "h-6 sm:h-7 px-2.5 sm:px-3 rounded-lg",
+                // Light mode: Vintage parchment style
+                "bg-gradient-to-b from-[hsl(38,30%,94%)] to-[hsl(35,25%,90%)]",
+                "border border-[hsl(30,25%,78%)]",
+                "text-[hsl(25,40%,35%)]",
+                "shadow-[inset_0_1px_0_rgba(255,255,255,0.7),0_1px_2px_rgba(101,67,33,0.08)]",
+                // Dark mode: Reset gradient, apply liquid glass
+                "dark:bg-none dark:from-transparent dark:to-transparent",
+                "dark:bg-[rgba(255,255,255,0.04)] dark:backdrop-blur-xl",
+                "dark:border dark:border-white/[0.08]",
+                "dark:text-white/80",
+                "dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_4px_12px_rgba(0,0,0,0.3)]"
+              )}
+            >
+              <span className="tabular-nums">{keyCount}</span>
+            </div>
           </div>
           
           {/* Action buttons */}

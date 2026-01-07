@@ -631,80 +631,87 @@
     }
   }
 
-  /* ===== LIQUID AURORA DARK MODE ===== */
+  /* ===== LIQUID AURORA DARK MODE (Cyberpunk Premium - Optimized) ===== */
+  /* Based on Material Design: #121212 (~8% lightness) for better readability */
   .dark {
-    /* Background: Deep cosmic blue (darker, richer) */
-    --background: 222 20% 6%;
-    --foreground: 0 0% 100%;
+    /* Background: Optimized dark with blue-violet tint (~8% lightness) */
+    --background: 230 18% 8%;
+    --foreground: 0 0% 98%;
     
-    /* Surfaces: Dark cosmic with slight blue tint */
-    --card: 222 22% 9%;
-    --card-foreground: 0 0% 100%;
-    --popover: 222 22% 9%;
-    --popover-foreground: 0 0% 100%;
+    /* Surfaces: Elevation system following Material Design */
+    --card: 230 16% 11%;
+    --card-foreground: 0 0% 98%;
+    --popover: 230 16% 11%;
+    --popover-foreground: 0 0% 98%;
     
-    /* Primary: Electric indigo accent - more saturated */
-    --primary: 252 95% 68%;
-    --primary-foreground: 0 0% 100%;
+    /* Primary: Electric cyan accent - cyberpunk signature */
+    --primary: 180 100% 50%;
+    --primary-foreground: 230 18% 8%;
+    
+    /* ===== CYBERPUNK NEON PALETTE ===== */
+    --cyber-cyan: 180 100% 50%;
+    --cyber-magenta: 330 100% 50%;
+    --cyber-violet: 270 100% 65%;
+    --cyber-blue: 210 100% 60%;
     
     /* ===== PREMIUM AURORA PALETTE (Enhanced Saturation) ===== */
-    --aurora-cyan: 185 100% 62%;
+    --aurora-cyan: 180 100% 50%;
     --aurora-purple: 272 100% 72%;
-    --aurora-pink: 322 100% 68%;
+    --aurora-pink: 330 100% 60%;
     --aurora-blue: 212 100% 68%;
     --aurora-indigo: 252 95% 68%;
     --aurora-emerald: 160 84% 52%;
     --aurora-amber: 38 100% 58%;
     --aurora-rose: 350 100% 65%;
     
-    /* Secondary/muted - updated for cosmic theme */
-    --secondary: 222 20% 11%;
-    --secondary-foreground: 0 0% 100%;
-    --muted: 222 20% 11%;
-    --muted-foreground: 222 12% 58%;
-    --accent: 252 95% 68%;
-    --accent-foreground: 0 0% 100%;
+    /* Secondary/muted - optimized for readability */
+    --secondary: 230 16% 14%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 230 14% 16%;
+    --muted-foreground: 220 10% 60%;
+    --accent: 180 100% 50%;
+    --accent-foreground: 230 18% 8%;
     
     /* Destructive */
     --destructive: 0 75% 52%;
     --destructive-foreground: 0 0% 100%;
     
-    /* Borders - subtle white with enhanced opacity for liquid glass */
-    --border: 0 0% 100% / 0.1;
-    --input: 222 20% 11%;
-    --ring: 252 95% 68%;
+    /* Borders - subtle cyan tint for cyberpunk feel */
+    --border: 180 30% 50% / 0.12;
+    --input: 230 16% 14%;
+    --ring: 180 100% 50%;
     
-    /* ===== PREMIUM LIQUID GLASS TOKENS (Enhanced) ===== */
+    /* ===== PREMIUM LIQUID GLASS TOKENS (Cyberpunk Enhanced) ===== */
     --glass-blur: 60px;
     --glass-blur-light: 40px;
     --glass-blur-heavy: 80px;
     --glass-saturation: 200%;
     --glass-brightness: 1.02;
-    --glass-bg: 0 0% 100% / 0.03;
+    --glass-bg: 180 30% 50% / 0.03;
     --glass-bg-subtle: 0 0% 100% / 0.02;
-    --glass-bg-elevated: 0 0% 100% / 0.05;
-    --glass-bg-intense: 0 0% 100% / 0.07;
-    --glass-border: 0 0% 100% / 0.08;
-    --glass-border-subtle: 0 0% 100% / 0.05;
-    --glass-border-intense: 0 0% 100% / 0.12;
-    --glass-specular: 0 0% 100% / 0.1;
-    --glass-specular-intense: 0 0% 100% / 0.15;
+    --glass-bg-elevated: 180 30% 50% / 0.05;
+    --glass-bg-intense: 0 0% 100% / 0.08;
+    --glass-border: 180 40% 50% / 0.1;
+    --glass-border-subtle: 0 0% 100% / 0.06;
+    --glass-border-intense: 180 100% 50% / 0.18;
+    --glass-specular: 0 0% 100% / 0.12;
+    --glass-specular-intense: 180 100% 50% / 0.15;
     
-    /* ===== PREMIUM GLOW TOKENS ===== */
+    /* ===== PREMIUM GLOW TOKENS (Cyberpunk) ===== */
     --glow-indigo: 0 0 30px rgba(139, 92, 246, 0.5), 0 0 60px rgba(139, 92, 246, 0.25), 0 0 100px rgba(139, 92, 246, 0.1);
-    --glow-cyan: 0 0 30px rgba(34, 211, 238, 0.5), 0 0 60px rgba(34, 211, 238, 0.25), 0 0 100px rgba(34, 211, 238, 0.1);
-    --glow-pink: 0 0 30px rgba(236, 72, 153, 0.5), 0 0 60px rgba(236, 72, 153, 0.25), 0 0 100px rgba(236, 72, 153, 0.1);
-    --glow-multi: 0 0 30px rgba(139, 92, 246, 0.4), 0 0 60px rgba(34, 211, 238, 0.2), 0 0 90px rgba(236, 72, 153, 0.15);
+    --glow-cyan: 0 0 30px rgba(0, 255, 255, 0.5), 0 0 60px rgba(0, 255, 255, 0.25), 0 0 100px rgba(0, 255, 255, 0.1);
+    --glow-pink: 0 0 30px rgba(255, 0, 128, 0.5), 0 0 60px rgba(255, 0, 128, 0.25), 0 0 100px rgba(255, 0, 128, 0.1);
+    --glow-multi: 0 0 30px rgba(0, 255, 255, 0.35), 0 0 60px rgba(255, 0, 128, 0.2), 0 0 90px rgba(139, 92, 246, 0.15);
     --glow-emerald: 0 0 25px rgba(16, 185, 129, 0.5), 0 0 50px rgba(16, 185, 129, 0.25);
     --glow-amber: 0 0 25px rgba(251, 191, 36, 0.5), 0 0 50px rgba(251, 191, 36, 0.25);
     --glow-rose: 0 0 25px rgba(244, 63, 94, 0.5), 0 0 50px rgba(244, 63, 94, 0.25);
     
-    /* ===== SEMANTIC SURFACE TOKENS (Dark) ===== */
-    /* Use these for consistent backgrounds */
-    --surface-primary: 220 20% 10%;          /* Main card bg */
-    --surface-secondary: 0 0% 100% / 0.03;   /* Subtle bg */
-    --surface-elevated: 0 0% 100% / 0.05;    /* Hover states */
-    --surface-overlay: 0 0% 0% / 0.6;        /* Modal backdrops */
+    /* ===== SEMANTIC SURFACE TOKENS (Dark - Elevation System) ===== */
+    /* Material Design elevation: lighter = higher */
+    --surface-primary: 230 16% 11%;          /* Cards, sheets */
+    --surface-secondary: 230 14% 14%;        /* App bars */
+    --surface-elevated: 230 12% 17%;         /* Dialogs, hover states */
+    --surface-overlay: 0 0% 0% / 0.65;       /* Modal backdrops */
     
     /* ===== STATUS SEMANTIC TOKENS (Dark) ===== */
     /* Online/Success - emerald glow */
@@ -739,12 +746,12 @@
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
 
-    /* ===== CHART/ACCENT COLORS (Dark) ===== */
-    --chart-1: 217 91% 60%;
+    /* ===== CHART/ACCENT COLORS (Dark - Cyberpunk) ===== */
+    --chart-1: 180 100% 50%;
     --chart-2: 142 71% 45%;
-    --chart-3: 3 26% 55%;
+    --chart-3: 330 100% 50%;
     --chart-4: 38 92% 50%;
-    --chart-5: 340 65% 55%;
+    --chart-5: 270 100% 65%;
 
     /* ===== OPUX TERRACOTTA ACCENT ===== */
     --terracotta: 3 26% 55%;
@@ -793,29 +800,33 @@
     color: hsl(var(--foreground));
   }
 
-  /* Liquid Aurora Dark mode body - cosmic blue with subtle texture */
+  /* Cyberpunk Premium Dark mode body - optimized ~8% lightness */
   /* WebP with PNG fallback using image-set */
   .dark body,
   body.dark {
-    background-color: hsl(220 18% 7%);
+    background-color: hsl(230 18% 8%);
     background-image: 
-      radial-gradient(ellipse 80% 50% at 50% -20%, rgba(139, 92, 246, 0.08) 0%, transparent 50%),
+      radial-gradient(ellipse 70% 50% at 50% 40%, rgba(100, 180, 255, 0.05) 0%, transparent 50%),
+      radial-gradient(ellipse 50% 40% at 80% 15%, rgba(0, 255, 255, 0.04) 0%, transparent 45%),
+      radial-gradient(ellipse 40% 40% at 20% 85%, rgba(255, 0, 128, 0.03) 0%, transparent 45%),
       url(/bg-tile.webp);
     background-image: 
-      radial-gradient(ellipse 80% 50% at 50% -20%, rgba(139, 92, 246, 0.08) 0%, transparent 50%),
+      radial-gradient(ellipse 70% 50% at 50% 40%, rgba(100, 180, 255, 0.05) 0%, transparent 50%),
+      radial-gradient(ellipse 50% 40% at 80% 15%, rgba(0, 255, 255, 0.04) 0%, transparent 45%),
+      radial-gradient(ellipse 40% 40% at 20% 85%, rgba(255, 0, 128, 0.03) 0%, transparent 45%),
       image-set(
         url(/bg-tile.webp) type("image/webp"),
         url(/bg-tile.png) type("image/png")
       );
-    background-size: 100% 100%, 200px 200px;
-    background-repeat: no-repeat, repeat;
+    background-size: 100% 100%, 100% 100%, 100% 100%, 200px 200px;
+    background-repeat: no-repeat, no-repeat, no-repeat, repeat;
     background-attachment: scroll;
     position: relative;
   }
 
-  /* Liquid Aurora Background utilities - WebP optimized */
+  /* Cyberpunk Background utilities - WebP optimized */
   .bg-opux-tile {
-    background-color: hsl(220 18% 7%);
+    background-color: hsl(230 18% 8%);
     background-image: url(/bg-tile.webp);
     background-image: image-set(
       url(/bg-tile.webp) type("image/webp"),
@@ -4971,5 +4982,502 @@
   .animate-divider-expand,
   .animate-benefit-slide {
     animation-duration: 0.01ms !important;
+  }
+}
+
+/* =========================================
+   CYBERPUNK PREMIUM DARK THEME UTILITIES
+   Subtle neon accents, circuit aesthetics
+   ========================================= */
+
+/* ===== CYBERPUNK GLOW UTILITIES ===== */
+.dark .cyber-glow-cyan {
+  box-shadow: 
+    0 0 20px rgba(0, 255, 255, 0.3),
+    0 0 40px rgba(0, 255, 255, 0.15),
+    0 0 60px rgba(0, 255, 255, 0.05);
+}
+
+.dark .cyber-glow-magenta {
+  box-shadow: 
+    0 0 20px rgba(255, 0, 128, 0.3),
+    0 0 40px rgba(255, 0, 128, 0.15),
+    0 0 60px rgba(255, 0, 128, 0.05);
+}
+
+.dark .cyber-glow-violet {
+  box-shadow: 
+    0 0 20px rgba(139, 92, 246, 0.35),
+    0 0 40px rgba(139, 92, 246, 0.18),
+    0 0 60px rgba(139, 92, 246, 0.08);
+}
+
+/* Subtle hover glow effect */
+.dark .cyber-hover-glow {
+  transition: box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.dark .cyber-hover-glow:hover {
+  box-shadow: 
+    0 0 15px rgba(0, 255, 255, 0.15),
+    0 0 30px rgba(0, 255, 255, 0.08);
+  border-color: rgba(0, 255, 255, 0.2);
+}
+
+/* ===== CYBERPUNK BORDER UTILITIES ===== */
+.dark .cyber-border {
+  border: 1px solid rgba(0, 255, 255, 0.1);
+  box-shadow: 
+    inset 0 1px 0 rgba(0, 255, 255, 0.05),
+    0 0 20px -10px rgba(0, 255, 255, 0.1);
+}
+
+.dark .cyber-border-magenta {
+  border: 1px solid rgba(255, 0, 128, 0.1);
+  box-shadow: 
+    inset 0 1px 0 rgba(255, 0, 128, 0.05),
+    0 0 20px -10px rgba(255, 0, 128, 0.1);
+}
+
+.dark .cyber-border-gradient {
+  border: 1px solid transparent;
+  background: 
+    linear-gradient(var(--background), var(--background)) padding-box,
+    linear-gradient(135deg, rgba(0, 255, 255, 0.2), rgba(255, 0, 128, 0.2)) border-box;
+}
+
+/* ===== CYBERPUNK TEXT EFFECTS ===== */
+.dark .text-cyber-cyan {
+  color: #00ffff;
+  text-shadow: 
+    0 0 10px rgba(0, 255, 255, 0.5),
+    0 0 20px rgba(0, 255, 255, 0.3);
+}
+
+.dark .text-cyber-magenta {
+  color: #ff0080;
+  text-shadow: 
+    0 0 10px rgba(255, 0, 128, 0.5),
+    0 0 20px rgba(255, 0, 128, 0.3);
+}
+
+.dark .text-cyber-gradient {
+  background: linear-gradient(135deg, #00ffff 0%, #ff0080 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* ===== CYBERPUNK CARD STYLES ===== */
+.dark .cyber-card {
+  background: rgba(10, 12, 20, 0.85);
+  backdrop-filter: blur(40px) saturate(150%);
+  -webkit-backdrop-filter: blur(40px) saturate(150%);
+  border: 1px solid rgba(0, 255, 255, 0.08);
+  box-shadow: 
+    inset 0 1px 0 rgba(0, 255, 255, 0.05),
+    inset 0 -1px 0 rgba(255, 0, 128, 0.03),
+    0 20px 60px rgba(0, 0, 0, 0.4);
+}
+
+.dark .cyber-card-elevated {
+  background: rgba(15, 18, 28, 0.9);
+  backdrop-filter: blur(60px) saturate(160%);
+  -webkit-backdrop-filter: blur(60px) saturate(160%);
+  border: 1px solid rgba(0, 255, 255, 0.1);
+  box-shadow: 
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 0 30px -10px rgba(0, 255, 255, 0.1),
+    0 0 30px -10px rgba(255, 0, 128, 0.08),
+    0 25px 70px rgba(0, 0, 0, 0.5);
+}
+
+/* ===== CYBERPUNK SCAN LINE EFFECT ===== */
+.dark .cyber-scanlines::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.03) 2px,
+    rgba(0, 0, 0, 0.03) 4px
+  );
+  opacity: 0.3;
+}
+
+/* ===== CYBERPUNK GRID OVERLAY ===== */
+.dark .cyber-grid {
+  position: relative;
+}
+
+.dark .cyber-grid::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: 
+    linear-gradient(rgba(0, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  mask-image: radial-gradient(ellipse 60% 60% at 50% 50%, black 20%, transparent 70%);
+  -webkit-mask-image: radial-gradient(ellipse 60% 60% at 50% 50%, black 20%, transparent 70%);
+}
+
+/* ===== CYBERPUNK PULSE ANIMATION ===== */
+@keyframes cyber-pulse {
+  0%, 100% {
+    box-shadow: 
+      0 0 15px rgba(0, 255, 255, 0.2),
+      0 0 30px rgba(0, 255, 255, 0.1);
+  }
+  50% {
+    box-shadow: 
+      0 0 25px rgba(0, 255, 255, 0.35),
+      0 0 50px rgba(0, 255, 255, 0.15);
+  }
+}
+
+.dark .animate-cyber-pulse {
+  animation: cyber-pulse 3s ease-in-out infinite;
+}
+
+/* ===== CYBERPUNK FLICKER ANIMATION ===== */
+@keyframes cyber-flicker {
+  0%, 100% { opacity: 1; }
+  92% { opacity: 1; }
+  93% { opacity: 0.8; }
+  94% { opacity: 1; }
+  96% { opacity: 0.9; }
+  97% { opacity: 1; }
+}
+
+.dark .animate-cyber-flicker {
+  animation: cyber-flicker 4s ease-in-out infinite;
+}
+
+/* ===== CYBERPUNK EDGE GLOW ===== */
+.dark .cyber-edge-top {
+  position: relative;
+}
+
+.dark .cyber-edge-top::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 10%;
+  right: 10%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0, 255, 255, 0.4), transparent);
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
+}
+
+.dark .cyber-edge-bottom {
+  position: relative;
+}
+
+.dark .cyber-edge-bottom::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 10%;
+  right: 10%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 0, 128, 0.3), transparent);
+  box-shadow: 0 0 10px rgba(255, 0, 128, 0.15);
+}
+
+/* ===== REDUCED MOTION FOR CYBERPUNK ===== */
+@media (prefers-reduced-motion: reduce) {
+  .dark .animate-cyber-pulse,
+  .dark .animate-cyber-flicker {
+    animation: none !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   NEON CYBERPUNK DROPDOWN VARIANT
+   Blade Runner meets arcade cabinet - sharp angles, hot neons, glitch effects
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Cyberpunk Color Variables */
+:root {
+  --neon-cyan: #00f0ff;
+  --neon-pink: #ff2d6a;
+  --neon-yellow: #f0ff00;
+  --neon-purple: #bf00ff;
+  --cyber-void: #0a0a0f;
+  --cyber-chrome: #12121a;
+  --cyber-grid: #1a1a2e;
+}
+
+/* ===== SCANLINE OVERLAY ===== */
+.cyberpunk-scanlines::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.15) 2px,
+    rgba(0, 0, 0, 0.15) 4px
+  );
+  pointer-events: none;
+  z-index: 50;
+  border-radius: inherit;
+}
+
+/* Animated scanline scroll effect */
+.cyberpunk-scanlines-animated::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 240, 255, 0.03) 2px,
+    rgba(0, 240, 255, 0.03) 4px
+  );
+  pointer-events: none;
+  z-index: 50;
+  animation: scanline-scroll 0.5s linear infinite;
+  border-radius: inherit;
+}
+
+@keyframes scanline-scroll {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(4px); }
+}
+
+/* ===== GLITCH TEXT EFFECT ===== */
+@keyframes glitch {
+  0%, 100% { 
+    transform: translateX(0); 
+    text-shadow: none; 
+  }
+  10% { 
+    transform: translateX(-2px); 
+    text-shadow: -2px 0 var(--neon-pink), 2px 0 var(--neon-cyan); 
+  }
+  20% { 
+    transform: translateX(2px); 
+    text-shadow: 2px 0 var(--neon-pink), -2px 0 var(--neon-cyan); 
+  }
+  30% { 
+    transform: translateX(-1px); 
+    text-shadow: -1px 0 var(--neon-pink), 1px 0 var(--neon-cyan); 
+  }
+  40%, 100% { 
+    transform: translateX(0); 
+    text-shadow: none; 
+  }
+}
+
+.glitch-text {
+  animation: glitch 3s ease-in-out infinite;
+}
+
+.glitch-text-hover:hover {
+  animation: glitch 0.3s ease-in-out;
+}
+
+/* ===== NEON PULSE BORDER ===== */
+@keyframes neon-pulse-cyan {
+  0%, 100% { 
+    box-shadow: 
+      0 0 5px var(--neon-cyan), 
+      0 0 20px rgba(0, 240, 255, 0.4), 
+      0 0 40px rgba(0, 240, 255, 0.2),
+      inset 0 0 20px rgba(0, 240, 255, 0.05); 
+  }
+  50% { 
+    box-shadow: 
+      0 0 10px var(--neon-cyan), 
+      0 0 30px rgba(0, 240, 255, 0.6), 
+      0 0 60px rgba(0, 240, 255, 0.3),
+      inset 0 0 30px rgba(0, 240, 255, 0.1); 
+  }
+}
+
+@keyframes neon-pulse-pink {
+  0%, 100% { 
+    box-shadow: 
+      0 0 5px var(--neon-pink), 
+      0 0 20px rgba(255, 45, 106, 0.4), 
+      0 0 40px rgba(255, 45, 106, 0.2),
+      inset 0 0 20px rgba(255, 45, 106, 0.05); 
+  }
+  50% { 
+    box-shadow: 
+      0 0 10px var(--neon-pink), 
+      0 0 30px rgba(255, 45, 106, 0.6), 
+      0 0 60px rgba(255, 45, 106, 0.3),
+      inset 0 0 30px rgba(255, 45, 106, 0.1); 
+  }
+}
+
+@keyframes neon-pulse-purple {
+  0%, 100% { 
+    box-shadow: 
+      0 0 5px var(--neon-purple), 
+      0 0 15px rgba(191, 0, 255, 0.4), 
+      0 0 30px rgba(191, 0, 255, 0.2); 
+  }
+  50% { 
+    box-shadow: 
+      0 0 8px var(--neon-purple), 
+      0 0 25px rgba(191, 0, 255, 0.6), 
+      0 0 45px rgba(191, 0, 255, 0.3); 
+  }
+}
+
+.neon-pulse-cyan {
+  animation: neon-pulse-cyan 2s ease-in-out infinite;
+}
+
+.neon-pulse-pink {
+  animation: neon-pulse-pink 2s ease-in-out infinite;
+}
+
+.neon-pulse-purple {
+  animation: neon-pulse-purple 2.5s ease-in-out infinite;
+}
+
+/* ===== NEON FLICKER (Power-on effect) ===== */
+@keyframes neon-flicker {
+  0% { opacity: 0; filter: brightness(0); }
+  10% { opacity: 1; filter: brightness(2); }
+  15% { opacity: 0.8; filter: brightness(1); }
+  20% { opacity: 1; filter: brightness(1.5); }
+  25% { opacity: 0.9; filter: brightness(1); }
+  100% { opacity: 1; filter: brightness(1); }
+}
+
+.neon-flicker-in {
+  animation: neon-flicker 0.4s ease-out forwards;
+}
+
+/* ===== NEON SWEEP (Animated underline) ===== */
+@keyframes neon-sweep {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.neon-sweep-line {
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--neon-cyan) 25%,
+    var(--neon-pink) 50%,
+    var(--neon-cyan) 75%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: neon-sweep 3s linear infinite;
+}
+
+/* ===== ANGULAR CLIP PATHS ===== */
+.clip-cyberpunk-card {
+  clip-path: polygon(
+    0 12px, 
+    12px 0, 
+    100% 0, 
+    100% calc(100% - 12px), 
+    calc(100% - 12px) 100%, 
+    0 100%
+  );
+}
+
+.clip-cyberpunk-button {
+  clip-path: polygon(
+    0 0, 
+    calc(100% - 8px) 0, 
+    100% 8px, 
+    100% 100%, 
+    8px 100%, 
+    0 calc(100% - 8px)
+  );
+}
+
+.clip-cyberpunk-avatar {
+  clip-path: polygon(
+    50% 0%, 
+    100% 25%, 
+    100% 75%, 
+    50% 100%, 
+    0% 75%, 
+    0% 25%
+  );
+}
+
+/* ===== CYBERPUNK GRID BACKGROUND ===== */
+.cyber-grid-bg {
+  background-image: 
+    linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* ===== CHROMATIC ABERRATION TEXT ===== */
+.chromatic-text:hover {
+  text-shadow: 
+    -2px 0 var(--neon-pink), 
+    2px 0 var(--neon-cyan);
+}
+
+/* ===== NEON TEXT GLOW ===== */
+.text-neon-cyan {
+  color: var(--neon-cyan);
+  text-shadow: 
+    0 0 5px var(--neon-cyan),
+    0 0 10px var(--neon-cyan),
+    0 0 20px rgba(0, 240, 255, 0.5);
+}
+
+.text-neon-pink {
+  color: var(--neon-pink);
+  text-shadow: 
+    0 0 5px var(--neon-pink),
+    0 0 10px var(--neon-pink),
+    0 0 20px rgba(255, 45, 106, 0.5);
+}
+
+.text-neon-purple {
+  color: var(--neon-purple);
+  text-shadow: 
+    0 0 5px var(--neon-purple),
+    0 0 10px var(--neon-purple),
+    0 0 20px rgba(191, 0, 255, 0.5);
+}
+
+/* ===== NEON ICON DROP SHADOW ===== */
+.icon-neon-cyan {
+  filter: drop-shadow(0 0 6px var(--neon-cyan)) drop-shadow(0 0 12px rgba(0, 240, 255, 0.5));
+}
+
+.icon-neon-pink {
+  filter: drop-shadow(0 0 6px var(--neon-pink)) drop-shadow(0 0 12px rgba(255, 45, 106, 0.5));
+}
+
+.icon-neon-purple {
+  filter: drop-shadow(0 0 6px var(--neon-purple)) drop-shadow(0 0 12px rgba(191, 0, 255, 0.5));
+}
+
+/* ===== REDUCED MOTION FOR NEON CYBERPUNK ===== */
+@media (prefers-reduced-motion: reduce) {
+  .glitch-text,
+  .glitch-text-hover:hover,
+  .neon-pulse-cyan,
+  .neon-pulse-pink,
+  .neon-pulse-purple,
+  .neon-flicker-in,
+  .neon-sweep-line,
+  .cyberpunk-scanlines-animated::before {
+    animation: none !important;
   }
 }

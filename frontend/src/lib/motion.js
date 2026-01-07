@@ -168,6 +168,54 @@ export const variants = {
     transition: { type: 'spring', stiffness: 300, damping: 25 },
   },
 
+  // ===== CYBERPUNK VARIANTS =====
+  
+  // Neon power-on flicker effect
+  cyberpunkPowerOn: {
+    initial: { 
+      opacity: 0, 
+      filter: 'brightness(0)',
+      scale: 0.95,
+    },
+    animate: { 
+      opacity: [0, 1, 0.8, 1, 0.9, 1],
+      filter: ['brightness(0)', 'brightness(2)', 'brightness(1)', 'brightness(1.5)', 'brightness(1)'],
+      scale: 1,
+    },
+    exit: { 
+      opacity: 0, 
+      filter: 'brightness(0)',
+      scale: 0.98,
+    },
+  },
+  
+  // Glitch text effect
+  cyberpunkGlitch: {
+    x: [0, -2, 2, -1, 0],
+    textShadow: [
+      '0 0 0 transparent',
+      '-2px 0 #ff2d6a, 2px 0 #00f0ff',
+      '2px 0 #ff2d6a, -2px 0 #00f0ff',
+      '-1px 0 #ff2d6a, 1px 0 #00f0ff',
+      '0 0 0 transparent'
+    ],
+  },
+  
+  // Electric surge hover for menu items
+  cyberpunkSurge: {
+    x: 4,
+    boxShadow: '0 0 20px currentColor, inset 0 0 20px rgba(0,240,255,0.1)',
+  },
+  
+  // Neon pulse for borders/containers
+  cyberpunkNeonPulse: {
+    boxShadow: [
+      '0 0 5px #00f0ff, 0 0 20px rgba(0,240,255,0.4), 0 0 40px rgba(0,240,255,0.2)',
+      '0 0 10px #00f0ff, 0 0 30px rgba(0,240,255,0.6), 0 0 60px rgba(0,240,255,0.3)',
+      '0 0 5px #00f0ff, 0 0 20px rgba(0,240,255,0.4), 0 0 40px rgba(0,240,255,0.2)',
+    ],
+  },
+
   // OPUX glass reveal - for modals/sheets
   glassReveal: {
     initial: { 

@@ -88,9 +88,10 @@ export function CreditDisplay({ className, compact = false }) {
     return (
       <div className={cn("flex items-center gap-2", className)}>
         <div className={cn(
+          // Credit badge (bg-none resets light gradient)
           "flex items-center gap-1.5 px-2.5 py-1 rounded-full",
           "bg-gradient-to-r from-amber-500/10 to-orange-500/10",
-          "dark:from-amber-500/20 dark:to-orange-500/20",
+          "dark:bg-none dark:bg-gradient-to-r dark:from-amber-500/20 dark:to-orange-500/20",
           "border border-amber-500/20 dark:border-amber-500/30"
         )}>
           <Coins className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />

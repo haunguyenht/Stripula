@@ -1,256 +1,219 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Gift, Clock, Check, Loader2, Coins, Sparkles } from 'lucide-react';
+import { useState, useEffect, useCallback, memo } from 'react';
+import { Gift, Clock, Check, Loader2, Coins, X, Star } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { useAuth } from '@/contexts/AuthContext';
 import { getTierConfig } from '@/components/navigation/config/tier-config';
 
 const API_BASE = '/api';
 
-/**
- * DailyClaimModal - Premium Daily Rewards Experience
- * 
- * Light Mode: Vintage Treasury Vault aesthetic
- * - Aged parchment with copper foil accents
- * - Wax seal icon containers
- * - Embossed typography with certificate borders
- * - Treasury coin motif decorations
- * 
- * Dark Mode: Liquid Aurora Glass aesthetic
- * - Deep cosmic glass with aurora gradients
- * - Prismatic light effects
- * - Floating particle animations
- * - Specular edge highlights
- */
+// Light mode: consistent copper/gold for vintage banking aesthetic
+const lightAccent = { primary: '#b8860b', secondary: '#d4a017', glow: 'rgba(184,134,11,0.4)' };
 
-// Tier-specific accent colors for visual differentiation
-const tierAccents = {
-  free: {
-    light: { primary: 'hsl(270,50%,55%)', secondary: 'hsl(280,45%,60%)' },
-    dark: { primary: '#8b5cf6', secondary: '#a78bfa' }
-  },
-  bronze: {
-    light: { primary: 'hsl(25,70%,50%)', secondary: 'hsl(30,65%,55%)' },
-    dark: { primary: '#d97706', secondary: '#f59e0b' }
-  },
-  silver: {
-    light: { primary: 'hsl(215,15%,50%)', secondary: 'hsl(210,10%,55%)' },
-    dark: { primary: '#94a3b8', secondary: '#cbd5e1' }
-  },
-  gold: {
-    light: { primary: 'hsl(45,85%,45%)', secondary: 'hsl(40,80%,50%)' },
-    dark: { primary: '#eab308', secondary: '#facc15' }
-  },
-  diamond: {
-    light: { primary: 'hsl(185,70%,45%)', secondary: 'hsl(200,80%,50%)' },
-    dark: { primary: '#22d3ee', secondary: '#67e8f9' }
-  }
+// Dark mode: tier-based aurora colors
+const darkTierAccents = {
+  free: { primary: '#8b5cf6', secondary: '#a78bfa', glow: 'rgba(139,92,246,0.4)' },
+  bronze: { primary: '#f59e0b', secondary: '#fbbf24', glow: 'rgba(245,158,11,0.4)' },
+  silver: { primary: '#94a3b8', secondary: '#cbd5e1', glow: 'rgba(148,163,184,0.4)' },
+  gold: { primary: '#facc15', secondary: '#fde047', glow: 'rgba(250,204,21,0.5)' },
+  diamond: { primary: '#22d3ee', secondary: '#67e8f9', glow: 'rgba(34,211,238,0.5)' }
 };
 
-const getAccent = (tier, mode) => tierAccents[tier]?.[mode] || tierAccents.free[mode];
+const getDarkAccent = (tier) => darkTierAccents[tier] || darkTierAccents.free;
 
-// Floating coin particles for celebration
-function FloatingCoins({ tier, count = 6 }) {
-  const accent = getAccent(tier, 'dark');
+function TreasureChest({ isOpen, tier }) {
+  const darkAccent = getDarkAccent(tier);
   return (
-    <div className="absolute inset-0 pointer-events-none overflow-hidden">
-      {[...Array(count)].map((_, i) => (
+    <motion.div className="relative">
+      {/* Glow ring - copper for light, tier aurora for dark */}
+      <motion.div
+        className="absolute -inset-4 rounded-full opacity-60 dark:hidden"
+        style={{ background: `radial-gradient(circle, ${lightAccent.glow} 0%, transparent 70%)` }}
+        animate={isOpen ? { scale: [1, 1.3, 1], opacity: [0.6, 0.9, 0.6] } : { scale: [1, 1.1, 1], opacity: [0.3, 0.5, 0.3] }}
+        transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+      />
+      <motion.div
+        className="absolute -inset-4 rounded-full opacity-60 hidden dark:block"
+        style={{ background: `radial-gradient(circle, ${darkAccent.glow} 0%, transparent 70%)` }}
+        animate={isOpen ? { scale: [1, 1.3, 1], opacity: [0.6, 0.9, 0.6] } : { scale: [1, 1.1, 1], opacity: [0.3, 0.5, 0.3] }}
+        transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+      />
+      <motion.div
+        className={cn(
+          "relative w-20 h-20 rounded-2xl flex items-center justify-center",
+          // Light: gold treasure chest (bg-none resets light gradient)
+          "bg-gradient-to-br from-[hsl(42,70%,75%)] via-[hsl(38,65%,65%)] to-[hsl(32,60%,50%)]",
+          "border-2 border-[hsl(35,60%,55%)]",
+          "shadow-[inset_0_4px_8px_rgba(255,255,255,0.4),inset_0_-4px_8px_rgba(0,0,0,0.15),0_8px_24px_rgba(101,67,33,0.3)]",
+          "dark:bg-none dark:bg-gradient-to-br dark:from-[rgba(139,92,246,0.3)] dark:via-[rgba(34,211,238,0.2)] dark:to-[rgba(236,72,153,0.2)]",
+          "dark:border-[rgba(139,92,246,0.4)]",
+          "dark:shadow-[0_0_40px_rgba(139,92,246,0.3),inset_0_2px_0_rgba(255,255,255,0.15)]"
+        )}
+        animate={isOpen ? { scale: [1, 1.1, 1], rotate: [0, -5, 5, 0] } : { scale: [1, 1.02, 1] }}
+        transition={{ duration: isOpen ? 0.6 : 2, repeat: isOpen ? 0 : Infinity, ease: 'easeInOut' }}
+      >
+        <div className="absolute inset-2 rounded-xl bg-gradient-to-br from-white/30 via-transparent to-transparent dark:from-white/10" />
+        <AnimatePresence mode="wait">
+          {isOpen ? (
+            <motion.div
+              key="check"
+              initial={{ scale: 0, rotate: -180 }}
+              animate={{ scale: 1, rotate: 0 }}
+              exit={{ scale: 0, rotate: 180 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+            >
+              <Check className="w-10 h-10 text-white drop-shadow-lg" />
+            </motion.div>
+          ) : (
+            <motion.div key="gift" initial={{ scale: 0.8 }} animate={{ scale: 1 }}>
+              <Gift className="w-10 h-10 text-white drop-shadow-lg" />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+
+function CelebrationParticles({ active, tier }) {
+  const darkAccent = getDarkAccent(tier);
+  if (!active) return null;
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      {/* Coins - copper for light, tier for dark */}
+      {[...Array(8)].map((_, i) => (
         <motion.div
-          key={i}
+          key={`coin-${i}`}
           className="absolute"
-          initial={{ 
-            x: Math.random() * 100 - 50, 
-            y: 120 + Math.random() * 40,
-            opacity: 0,
-            scale: 0.5,
-            rotate: Math.random() * 360
-          }}
-          animate={{ 
-            y: -60 - Math.random() * 60,
+          style={{ left: `${10 + i * 10}%`, bottom: '30%' }}
+          initial={{ y: 0, opacity: 0, scale: 0, rotate: 0 }}
+          animate={{
+            y: [-20, -120 - Math.random() * 60],
             opacity: [0, 1, 1, 0],
-            scale: [0.5, 1, 1, 0.8],
-            rotate: Math.random() * 720 - 360
+            scale: [0, 1, 1, 0.5],
+            rotate: [0, 360 + Math.random() * 360]
           }}
-          transition={{
-            duration: 2.5 + Math.random() * 1,
-            delay: i * 0.15,
-            ease: [0.25, 0.1, 0.25, 1]
-          }}
-          style={{ left: `${15 + i * 12}%` }}
+          transition={{ duration: 2 + Math.random() * 0.5, delay: i * 0.08, ease: [0.25, 0.1, 0.25, 1] }}
         >
-          <Coins 
-            className="w-5 h-5" 
-            style={{ 
-              color: accent.primary,
-              filter: `drop-shadow(0 0 8px ${accent.primary}40)`
-            }}
-          />
+          <Coins className="w-5 h-5 text-[hsl(35,70%,45%)] dark:text-current" style={{ '--tw-text-opacity': 1, color: undefined }} />
+          <Coins className="w-5 h-5 absolute inset-0 hidden dark:block" style={{ color: darkAccent.primary }} />
         </motion.div>
+      ))}
+      {/* Stars - copper for light, tier for dark */}
+      {[...Array(12)].map((_, i) => (
+        <motion.div
+          key={`star-${i}`}
+          className="absolute w-2 h-2 rounded-full"
+          style={{ 
+            left: `${5 + i * 8}%`, 
+            bottom: '40%', 
+            background: i % 2 === 0 ? lightAccent.primary : lightAccent.secondary 
+          }}
+          initial={{ y: 0, opacity: 0, scale: 0 }}
+          animate={{
+            y: [-10, -80 - Math.random() * 40],
+            x: [(Math.random() - 0.5) * 20, (Math.random() - 0.5) * 60],
+            opacity: [0, 1, 0],
+            scale: [0, 1.5, 0]
+          }}
+          transition={{ duration: 1.5 + Math.random() * 0.5, delay: 0.2 + i * 0.05, ease: 'easeOut' }}
+        />
+      ))}
+      {/* Dark mode stars overlay */}
+      {[...Array(12)].map((_, i) => (
+        <motion.div
+          key={`star-dark-${i}`}
+          className="absolute w-2 h-2 rounded-full hidden dark:block"
+          style={{ 
+            left: `${5 + i * 8}%`, 
+            bottom: '40%', 
+            background: i % 2 === 0 ? darkAccent.primary : darkAccent.secondary 
+          }}
+          initial={{ y: 0, opacity: 0, scale: 0 }}
+          animate={{
+            y: [-10, -80 - Math.random() * 40],
+            x: [(Math.random() - 0.5) * 20, (Math.random() - 0.5) * 60],
+            opacity: [0, 1, 0],
+            scale: [0, 1.5, 0]
+          }}
+          transition={{ duration: 1.5 + Math.random() * 0.5, delay: 0.2 + i * 0.05, ease: 'easeOut' }}
+        />
       ))}
     </div>
   );
 }
 
-// Radial shimmer effect
-function RadialShimmer({ active }) {
-  if (!active) return null;
+function RewardDisplay({ amount, tier, isSuccess }) {
+  const darkAccent = getDarkAccent(tier);
+  const tierConfig = getTierConfig(tier);
   return (
     <motion.div
-      initial={{ scale: 0.8, opacity: 0 }}
-      animate={{ scale: [0.8, 1.2, 0.8], opacity: [0, 0.15, 0] }}
-      transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-      className="absolute inset-0 pointer-events-none"
-      style={{
-        background: 'radial-gradient(circle at 50% 30%, rgba(255,255,255,0.4) 0%, transparent 60%)'
-      }}
-    />
-  );
-}
-
-// Treasury seal icon container
-function TreasurySeal({ children, tier, isSuccess, canClaim }) {
-  const tierConfig = getTierConfig(tier);
-  const accent = getAccent(tier, 'light');
-  const accentDark = getAccent(tier, 'dark');
-  
-  return (
-    <motion.div 
-      className="relative"
-      animate={canClaim && !isSuccess ? { 
-        scale: [1, 1.03, 1], 
-        rotate: [0, -2, 2, 0] 
-      } : {}}
-      transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.2, duration: 0.5 }}
+      className="text-center space-y-3"
     >
-      {/* Outer glow ring */}
-      {canClaim && !isSuccess && (
+      <div className="flex items-center justify-center gap-2">
         <motion.div
-          className="absolute -inset-2 rounded-2xl opacity-30 dark:opacity-40"
-          animate={{ scale: [1, 1.15, 1], opacity: [0.3, 0.5, 0.3] }}
-          transition={{ duration: 2, repeat: Infinity }}
-          style={{
-            background: `radial-gradient(circle, ${accent.primary}40 0%, transparent 70%)`
-          }}
-        />
-      )}
-      
-      {/* Main seal container */}
-      <div 
-        className={cn(
-          "relative flex items-center justify-center w-16 h-16 rounded-2xl",
-          // Light mode: Wax seal with copper embossing
-          "bg-gradient-to-b from-[hsl(38,45%,96%)] via-[hsl(35,40%,92%)] to-[hsl(32,35%,88%)]",
-          "border-2",
-          "shadow-[inset_0_2px_0_rgba(255,255,255,0.6),inset_0_-2px_4px_rgba(101,67,33,0.15),0_4px_12px_rgba(101,67,33,0.2)]",
-          // Dark mode: Aurora glass with gradient
-          "dark:bg-none dark:bg-gradient-to-b",
-          "dark:border dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.1),0_0_30px_rgba(139,92,246,0.15)]"
-        )}
-        style={{
-          borderColor: `${accent.primary}50`,
-          '--tw-gradient-from': `${accentDark.primary}30`,
-          '--tw-gradient-to': `${accentDark.secondary}15`,
-        }}
-      >
-        {/* Inner highlight */}
-        <div className="absolute inset-0 rounded-xl overflow-hidden pointer-events-none">
-          <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-transparent to-transparent dark:from-white/10" />
-        </div>
-        
-        {/* Icon */}
-        <AnimatePresence mode="wait">
-          {isSuccess ? (
-            <motion.div 
-              key="check"
-              initial={{ scale: 0, rotate: -180 }}
-              animate={{ scale: 1, rotate: 0 }}
-              exit={{ scale: 0, rotate: 180 }}
-              transition={{ type: "spring", stiffness: 300, damping: 20 }}
-            >
-              <Check 
-                className="h-7 w-7" 
-                style={{ color: accent.primary }}
-              />
-            </motion.div>
-          ) : (
-            <motion.div
-              key="gift"
-              initial={{ scale: 0.8 }}
-              animate={{ scale: 1 }}
-            >
-              <tierConfig.icon 
-                className="h-7 w-7" 
-                style={{ 
-                  color: accent.primary,
-                  filter: canClaim ? `drop-shadow(0 2px 4px ${accent.primary}40)` : 'none'
-                }}
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
+          initial={{ scale: 0, rotate: -180 }}
+          animate={{ scale: 1, rotate: 0 }}
+          transition={{ delay: 0.3, type: 'spring', stiffness: 200 }}
+        >
+          <Coins className="w-8 h-8 text-[hsl(35,70%,45%)] dark:hidden" />
+          <Coins className="w-8 h-8 hidden dark:block" style={{ color: darkAccent.primary }} />
+        </motion.div>
+        <motion.span
+          className="text-5xl font-black tracking-tight text-[hsl(35,70%,40%)] dark:hidden"
+          style={{ textShadow: `0 4px 12px ${lightAccent.glow}` }}
+          initial={{ scale: 0.5, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 0.4, type: 'spring', stiffness: 300 }}
+        >
+          +{amount}
+        </motion.span>
+        <motion.span
+          className="text-5xl font-black tracking-tight hidden dark:inline"
+          style={{ color: darkAccent.primary, textShadow: `0 4px 12px ${darkAccent.glow}` }}
+          initial={{ scale: 0.5, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 0.4, type: 'spring', stiffness: 300 }}
+        >
+          +{amount}
+        </motion.span>
       </div>
+      <motion.p
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.5 }}
+        className="text-sm font-medium text-[hsl(25,25%,45%)] dark:text-white/60"
+      >
+        {isSuccess ? 'Credits added to your balance!' : 'Credits waiting for you'}
+      </motion.p>
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.6 }}
+        className="flex justify-center"
+      >
+        <div className={cn(
+          "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border",
+          tierConfig.bgColor, tierConfig.color, tierConfig.borderColor
+        )}>
+          <tierConfig.icon className="w-3.5 h-3.5" />
+          {tierConfig.label} Bonus
+        </div>
+      </motion.div>
     </motion.div>
   );
 }
 
-// Countdown timer display
-function CountdownBadge({ tier }) {
-  const accent = getAccent(tier, 'light');
-  
-  return (
-    <div 
-      className={cn(
-        "flex items-center gap-1.5 px-3 py-1.5 rounded-lg",
-        // Light mode: Aged ledger paper
-        "bg-gradient-to-r from-[hsl(38,35%,94%)] to-[hsl(35,30%,92%)]",
-        "border border-[hsl(30,25%,78%)]",
-        "shadow-[inset_0_1px_0_rgba(255,255,255,0.5),0_1px_2px_rgba(101,67,33,0.1)]",
-        // Dark mode: Glass with aurora tint
-        "dark:bg-white/[0.05] dark:border-white/10"
-      )}
-    >
-      <Clock className="w-3.5 h-3.5 text-[hsl(25,30%,50%)] dark:text-white/50" />
-      <span className="text-xs font-medium text-[hsl(25,30%,45%)] dark:text-white/60">
-        Already claimed today
-      </span>
-    </div>
-  );
-}
 
-// Ready to claim badge
-function ReadyBadge() {
-  return (
-    <motion.div
-      initial={{ scale: 0.9, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      className={cn(
-        "flex items-center gap-1.5 px-3 py-1.5 rounded-lg",
-        // Light mode: Treasury seal green
-        "bg-gradient-to-r from-[hsl(145,45%,92%)] to-[hsl(155,40%,90%)]",
-        "border border-[hsl(145,40%,65%)]/50",
-        "shadow-[inset_0_1px_0_rgba(255,255,255,0.5),0_2px_8px_rgba(34,197,94,0.15)]",
-        // Dark mode: Emerald glow
-        "dark:bg-emerald-500/15 dark:border-emerald-400/30",
-        "dark:shadow-[0_0_20px_rgba(34,197,94,0.15)]"
-      )}
-    >
-      <Sparkles className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-      <span className="text-xs font-bold text-emerald-700 dark:text-emerald-300">
-        Ready
-      </span>
-    </motion.div>
-  );
-}
-
-// Main claim button with premium styling
-function ClaimButton({ onClick, isClaiming, claimAmount, tier }) {
-  const tierConfig = getTierConfig(tier);
-  const accent = getAccent(tier, 'light');
-  const accentDark = getAccent(tier, 'dark');
-  
+function ClaimButton({ onClick, isClaiming, amount, tier }) {
+  const darkAccent = getDarkAccent(tier);
   return (
     <Button
       onClick={onClick}
@@ -258,191 +221,81 @@ function ClaimButton({ onClick, isClaiming, claimAmount, tier }) {
       className={cn(
         "w-full h-14 text-base font-bold rounded-xl text-white relative overflow-hidden",
         "transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]",
-        // Light mode: Copper foil button
-        "shadow-[inset_0_1px_0_rgba(255,255,255,0.3),0_4px_16px_rgba(101,67,33,0.25),0_2px_4px_rgba(101,67,33,0.15)]",
-        "hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.4),0_6px_24px_rgba(101,67,33,0.3),0_3px_6px_rgba(101,67,33,0.2)]",
-        // Dark mode: Aurora glow button
-        "dark:shadow-[0_0_30px_rgba(139,92,246,0.2),0_4px_20px_rgba(0,0,0,0.4)]",
-        "dark:hover:shadow-[0_0_40px_rgba(139,92,246,0.3),0_6px_30px_rgba(0,0,0,0.5)]"
+        // Light: Copper foil button (bg-none resets light gradient)
+        "bg-gradient-to-br from-[hsl(35,70%,45%)] via-[hsl(38,65%,50%)] to-[hsl(30,60%,40%)]",
+        "shadow-[0_8px_32px_rgba(184,134,11,0.35),inset_0_1px_0_rgba(255,255,255,0.25)]",
+        "hover:shadow-[0_12px_40px_rgba(184,134,11,0.45),inset_0_1px_0_rgba(255,255,255,0.35)]",
+        // Dark: Override with tier color (bg-none resets light gradient)
+        "dark:bg-none dark:shadow-[0_8px_32px_var(--shadow-color),inset_0_1px_0_rgba(255,255,255,0.25)]",
+        "dark:hover:shadow-[0_12px_40px_var(--shadow-color),inset_0_1px_0_rgba(255,255,255,0.35)]"
       )}
       style={{
-        background: `linear-gradient(135deg, ${accent.primary} 0%, ${accent.secondary} 50%, ${accent.primary} 100%)`,
-        backgroundSize: '200% 100%'
+        '--shadow-color': darkAccent.glow
       }}
     >
-      {/* Shimmer overlay */}
+      {/* Dark mode background */}
+      <div 
+        className="absolute inset-0 hidden dark:block rounded-xl"
+        style={{ background: `linear-gradient(135deg, ${darkAccent.primary} 0%, ${darkAccent.secondary} 100%)` }}
+      />
       <motion.div
-        className="absolute inset-0 pointer-events-none"
+        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12"
         initial={{ x: '-100%' }}
         animate={{ x: '200%' }}
-        transition={{ repeat: Infinity, duration: 2.5, ease: 'linear' }}
-        style={{
-          background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent)',
-          width: '50%'
-        }}
+        transition={{ duration: 2, repeat: Infinity, ease: 'linear', repeatDelay: 1 }}
       />
-      
-      <span className="relative z-10 flex items-center justify-center gap-2">
+      <span className="relative flex items-center justify-center gap-2">
         {isClaiming ? (
-          <>
-            <Loader2 className="h-5 w-5 animate-spin" />
-            <span>Claiming...</span>
-          </>
+          <><Loader2 className="w-5 h-5 animate-spin" />Opening...</>
         ) : (
-          <>
-            <Gift className="h-5 w-5" />
-            <span>Claim {claimAmount} Credits</span>
-          </>
+          <><Star className="w-5 h-5" />Claim {amount} Credits</>
         )}
       </span>
     </Button>
   );
 }
 
-// Success celebration display - responsive layout
-function SuccessDisplay({ claimAmount, tier }) {
-  const accent = getAccent(tier, 'light');
-  const accentDark = getAccent(tier, 'dark');
-  const tierConfig = getTierConfig(tier);
-  
+function AlreadyClaimedState() {
   return (
-    <motion.div 
-      initial={{ opacity: 0, scale: 0.9 }}
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="py-5 px-2"
+      className="text-center py-4 space-y-4"
     >
-      {/* Success card container - responsive flex */}
-      <motion.div
-        initial={{ scale: 0, y: 20 }}
-        animate={{ scale: 1, y: 0 }}
-        transition={{ type: "spring", stiffness: 300, damping: 20, delay: 0.1 }}
-        className={cn(
-          "flex flex-col items-center gap-4 p-5 rounded-2xl",
-          // Light mode: Treasury certificate badge
-          "bg-gradient-to-b from-[hsl(38,45%,97%)] to-[hsl(35,40%,93%)]",
-          "border-2 border-[hsl(30,35%,75%)]",
-          "shadow-[inset_0_0_0_3px_hsl(38,45%,96%),inset_0_0_0_4px_hsl(30,30%,82%),0_4px_20px_rgba(101,67,33,0.15)]",
-          // Dark mode: Aurora glass
-          "dark:bg-none dark:bg-[rgba(255,255,255,0.04)]",
-          "dark:border dark:border-white/10",
-          "dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_0_40px_rgba(139,92,246,0.12)]"
-        )}
-      >
-        {/* Icon with celebration ring */}
-        <div className="relative">
-          {/* Pulsing ring */}
-          <motion.div
-            className="absolute -inset-3 rounded-full"
-            animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.1, 0.3] }}
-            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-            style={{ 
-              background: `radial-gradient(circle, ${accent.primary}30 0%, transparent 70%)` 
-            }}
-          />
-          {/* Icon container */}
-          <motion.div
-            initial={{ rotate: -180, scale: 0 }}
-            animate={{ rotate: 0, scale: 1 }}
-            transition={{ type: "spring", stiffness: 200, damping: 15, delay: 0.2 }}
-            className={cn(
-              "relative flex items-center justify-center w-14 h-14 rounded-xl",
-              // Light mode
-              "bg-gradient-to-b from-[hsl(145,50%,92%)] to-[hsl(150,45%,88%)]",
-              "border border-[hsl(145,40%,70%)]",
-              "shadow-[inset_0_1px_0_rgba(255,255,255,0.6),0_2px_8px_rgba(34,197,94,0.2)]",
-              // Dark mode
-              "dark:bg-gradient-to-b dark:from-emerald-500/20 dark:to-emerald-600/10",
-              "dark:border-emerald-400/30",
-              "dark:shadow-[0_0_20px_rgba(34,197,94,0.15)]"
-            )}
-          >
-            <Check className="w-7 h-7 text-emerald-600 dark:text-emerald-400" />
-          </motion.div>
-        </div>
-        
-        {/* Amount and label - stacked for responsiveness */}
-        <div className="flex flex-col items-center gap-1 text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="flex items-center gap-2"
-          >
-            <Coins 
-              className="w-6 h-6 shrink-0" 
-              style={{ color: accent.primary }}
-            />
-            <span 
-              className="text-3xl sm:text-4xl font-black tracking-tight"
-              style={{ 
-                color: accent.primary,
-                textShadow: `0 2px 4px ${accent.primary}20`
-              }}
-            >
-              +{claimAmount}
-            </span>
-          </motion.div>
-          
-          <motion.span
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.4 }}
-            className={cn(
-              "text-xs font-semibold uppercase tracking-wider",
-              "text-[hsl(25,30%,55%)] dark:text-white/50"
-            )}
-          >
-            Credits
-          </motion.span>
-        </div>
-        
-        {/* Confirmation message */}
-        <motion.p
-          initial={{ opacity: 0, y: 5 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-          className={cn(
-            "text-sm font-medium text-center leading-relaxed max-w-[200px]",
-            "text-[hsl(25,25%,45%)] dark:text-white/60"
-          )}
-        >
-          Added to your balance
-        </motion.p>
-      </motion.div>
-      
-      {/* Tier info badge */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.6 }}
-        className="flex justify-center mt-4"
-      >
-        <div 
-          className={cn(
-            "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg",
-            // Light mode
-            "bg-[hsl(38,35%,94%)] border border-[hsl(30,25%,80%)]",
-            // Dark mode
-            "dark:bg-white/[0.04] dark:border-white/10"
-          )}
-        >
-          <tierConfig.icon 
-            className="w-3.5 h-3.5" 
-            style={{ color: accent.primary }}
-          />
-          <span 
-            className="text-xs font-medium"
-            style={{ color: accent.primary }}
-          >
-            {tierConfig.label} Bonus
-          </span>
-        </div>
-      </motion.div>
+      <div className={cn(
+        // Light: clock container (bg-none resets light gradient)
+        "w-16 h-16 mx-auto rounded-2xl flex items-center justify-center",
+        "bg-gradient-to-br from-[hsl(38,40%,94%)] to-[hsl(35,35%,88%)]",
+        "border border-[hsl(30,30%,78%)]",
+        "shadow-[inset_0_2px_4px_rgba(255,255,255,0.5),0_4px_12px_rgba(101,67,33,0.1)]",
+        "dark:bg-none dark:bg-gradient-to-br dark:from-[rgba(255,255,255,0.05)] dark:to-[rgba(255,255,255,0.02)]",
+        "dark:border-white/10"
+      )}>
+        <Clock className="w-7 h-7 text-[hsl(25,30%,50%)] dark:text-white/40" />
+      </div>
+      <div className="space-y-1">
+        <p className="text-base font-semibold text-[hsl(25,30%,35%)] dark:text-white/70">
+          Already Claimed Today
+        </p>
+        <p className="text-sm text-[hsl(25,25%,50%)] dark:text-white/50">
+          Come back tomorrow for more rewards
+        </p>
+      </div>
     </motion.div>
   );
 }
 
-export function DailyClaimModal({ open, onOpenChange, onClaim, autoShow = false }) {
+function SuccessState({ amount, tier }) {
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-4">
+      <CelebrationParticles active={true} tier={tier} />
+      <RewardDisplay amount={amount} tier={tier} isSuccess={true} />
+    </motion.div>
+  );
+}
+
+
+function DailyClaimModalComponent({ open, onOpenChange, onClaim, autoShow = false }) {
   const { user, isAuthenticated, refreshUser } = useAuth();
   const [claimStatus, setClaimStatus] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -453,7 +306,7 @@ export function DailyClaimModal({ open, onOpenChange, onClaim, autoShow = false 
 
   const tier = user?.tier || 'free';
   const tierConfig = getTierConfig(tier);
-  const accent = getAccent(tier, 'light');
+  const darkAccent = getDarkAccent(tier);
   const claimAmount = claimStatus?.claimAmount || tierConfig.dailyClaim || 10;
 
   const isOpen = open !== undefined ? open : internalOpen;
@@ -477,7 +330,7 @@ export function DailyClaimModal({ open, onOpenChange, onClaim, autoShow = false 
           }
         }
       }
-    } catch (err) {
+    } catch {
       // Silent
     } finally {
       setIsLoading(false);
@@ -499,13 +352,18 @@ export function DailyClaimModal({ open, onOpenChange, onClaim, autoShow = false 
         setClaimStatus({ canClaim: false, claimAmount: data.amount });
         if (refreshUser) await refreshUser();
         if (onClaim) onClaim(data.amount);
-        setTimeout(() => { setIsOpen(false); setClaimSuccess(false); }, 2800);
+        setTimeout(() => { setIsOpen(false); setClaimSuccess(false); }, 3000);
       }
-    } catch (err) {
+    } catch {
       // Silent
     } finally {
       setIsClaiming(false);
     }
+  };
+
+  const handleDismiss = () => {
+    setDismissed(true);
+    setIsOpen(false);
   };
 
   useEffect(() => { fetchClaimStatus(); }, [fetchClaimStatus]);
@@ -531,175 +389,145 @@ export function DailyClaimModal({ open, onOpenChange, onClaim, autoShow = false 
 
   const canClaim = claimStatus?.canClaim;
 
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent 
-        className={cn(
-          "sm:max-w-[380px] p-0 overflow-hidden border-0",
-          // Remove default DialogContent styles - we'll handle them ourselves
-          "!bg-transparent !shadow-none !border-0"
-        )} 
+        className="sm:max-w-[400px] p-0 overflow-hidden border-0 !bg-transparent !shadow-none"
         hideCloseButton
         aria-describedby={undefined}
       >
         <VisuallyHidden>
-          <DialogTitle>Daily Bonus</DialogTitle>
+          <DialogTitle>Daily Bonus Reward</DialogTitle>
         </VisuallyHidden>
-        {/* Custom modal container */}
-        <div 
+        
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: 10 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 25 }}
           className={cn(
-            "relative rounded-2xl overflow-hidden",
-            // Light mode: Vintage treasury vault aesthetic
-            "bg-gradient-to-b from-[hsl(40,50%,97%)] via-[hsl(38,45%,95%)] to-[hsl(35,40%,92%)]",
-            "border-2 border-[hsl(30,35%,72%)]",
-            "shadow-[inset_0_0_0_3px_hsl(38,45%,96%),inset_0_0_0_4px_hsl(30,30%,78%),0_24px_80px_rgba(101,67,33,0.25),0_8px_32px_rgba(101,67,33,0.15)]",
-            // Dark mode: Liquid aurora glass
-            "dark:bg-none dark:bg-[rgba(12,15,22,0.95)]",
-            "dark:backdrop-blur-[60px] dark:backdrop-saturate-[180%]",
-            "dark:border dark:border-[rgba(139,92,246,0.15)]",
-            "dark:shadow-[0_0_0_1px_rgba(139,92,246,0.08),0_0_60px_rgba(139,92,246,0.1),0_0_100px_-20px_rgba(34,211,238,0.08),0_32px_100px_-20px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.08)]"
+            // Modal container (bg-none resets light gradient)
+            "relative rounded-3xl overflow-hidden",
+            "bg-gradient-to-b from-[hsl(42,60%,97%)] via-[hsl(40,55%,94%)] to-[hsl(38,50%,90%)]",
+            "border-2 border-[hsl(35,50%,70%)]",
+            "shadow-[inset_0_0_0_1px_hsl(42,55%,96%),0_32px_80px_rgba(101,67,33,0.25),0_16px_40px_rgba(101,67,33,0.15)]",
+            "dark:bg-none dark:bg-gradient-to-b dark:from-[rgba(20,25,45,0.98)] dark:via-[rgba(15,20,40,0.95)] dark:to-[rgba(10,15,30,0.98)]",
+            "dark:border dark:border-[rgba(139,92,246,0.25)]",
+            "dark:shadow-[0_0_100px_-20px_rgba(139,92,246,0.4),0_0_60px_-15px_rgba(34,211,238,0.3),0_40px_100px_-20px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.08)]"
           )}
         >
-          {/* Paper grain texture - light mode */}
-          <div 
-            className="absolute inset-0 pointer-events-none dark:hidden opacity-[0.03]"
-            style={{
-              backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
-              backgroundSize: '120px 120px'
-            }}
-          />
+          {/* Corner frames - light mode */}
+          <div className="absolute top-3 left-3 w-8 h-8 border-l-2 border-t-2 border-[hsl(35,55%,60%)] rounded-tl-lg dark:hidden" />
+          <div className="absolute top-3 right-3 w-8 h-8 border-r-2 border-t-2 border-[hsl(35,55%,60%)] rounded-tr-lg dark:hidden" />
+          <div className="absolute bottom-3 left-3 w-8 h-8 border-l-2 border-b-2 border-[hsl(35,55%,60%)] rounded-bl-lg dark:hidden" />
+          <div className="absolute bottom-3 right-3 w-8 h-8 border-r-2 border-b-2 border-[hsl(35,55%,60%)] rounded-br-lg dark:hidden" />
           
-          {/* Aurora gradient overlay - dark mode */}
-          <div className="absolute inset-0 pointer-events-none hidden dark:block">
-            <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] via-transparent to-transparent" />
-            <div className="absolute inset-0 bg-gradient-to-br from-[#8b5cf6]/[0.04] via-transparent to-[#22d3ee]/[0.03]" />
+          {/* Aurora - dark mode */}
+          <div className="hidden dark:block absolute inset-0 pointer-events-none overflow-hidden">
+            <motion.div
+              className="absolute -top-1/2 -left-1/2 w-full h-full rounded-full bg-gradient-to-br from-violet-500/30 via-transparent to-transparent blur-3xl"
+              animate={{ rotate: [0, 360] }}
+              transition={{ duration: 30, repeat: Infinity, ease: 'linear' }}
+            />
+            <motion.div
+              className="absolute -bottom-1/2 -right-1/2 w-full h-full rounded-full bg-gradient-to-tl from-cyan-500/20 via-transparent to-transparent blur-3xl"
+              animate={{ rotate: [360, 0] }}
+              transition={{ duration: 25, repeat: Infinity, ease: 'linear' }}
+            />
           </div>
           
-          {/* Corner ornaments - light mode */}
-          <div className="absolute top-3 left-3 w-5 h-5 border-l-2 border-t-2 border-[hsl(25,55%,55%)]/40 rounded-tl-sm pointer-events-none dark:hidden" />
-          <div className="absolute top-3 right-3 w-5 h-5 border-r-2 border-t-2 border-[hsl(25,55%,55%)]/40 rounded-tr-sm pointer-events-none dark:hidden" />
-          <div className="absolute bottom-3 left-3 w-5 h-5 border-l-2 border-b-2 border-[hsl(25,55%,55%)]/40 rounded-bl-sm pointer-events-none dark:hidden" />
-          <div className="absolute bottom-3 right-3 w-5 h-5 border-r-2 border-b-2 border-[hsl(25,55%,55%)]/40 rounded-br-sm pointer-events-none dark:hidden" />
+          {/* Top accent - copper for light, tier aurora for dark */}
+          <div 
+            className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-transparent via-[hsl(35,70%,50%)] to-transparent dark:hidden"
+          />
+          <div 
+            className="absolute top-0 inset-x-0 h-1.5 hidden dark:block"
+            style={{ background: `linear-gradient(90deg, transparent, ${darkAccent.primary}, ${darkAccent.secondary}, ${darkAccent.primary}, transparent)` }}
+          />
           
-          {/* Radial shimmer for "can claim" state */}
-          <RadialShimmer active={canClaim && !claimSuccess} />
+          {/* Specular - dark mode */}
+          <div className="hidden dark:block absolute top-2 left-8 right-8 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
           
-          {/* Floating coins celebration */}
-          <AnimatePresence>
-            {claimSuccess && <FloatingCoins tier={tier} count={8} />}
-          </AnimatePresence>
+          {/* Close button */}
+          <button
+            onClick={handleDismiss}
+            className={cn(
+              "absolute top-4 right-4 z-20 p-2 rounded-full transition-all",
+              "bg-[hsl(38,40%,92%)] hover:bg-[hsl(38,40%,88%)] text-[hsl(25,30%,40%)]",
+              "dark:bg-white/5 dark:hover:bg-white/10 dark:text-white/50 dark:hover:text-white/70"
+            )}
+          >
+            <X className="w-4 h-4" />
+          </button>
+
           
-          {/* Content container */}
-          <div className="relative z-10 p-6">
-            {/* Header */}
-            <div className="flex items-center gap-4 mb-6">
-              <TreasurySeal 
-                tier={tier} 
-                isSuccess={claimSuccess}
-                canClaim={canClaim}
-              />
+          {/* Content */}
+          <div className="relative z-10 p-8 pt-10">
+            <div className="flex flex-col items-center mb-6">
+              <TreasureChest isOpen={claimSuccess} tier={tier} />
               
-              <div className="flex-1 min-w-0">
-                <h2 
-                  className={cn(
-                    "text-lg font-bold tracking-tight",
-                    // Light mode: Embossed sepia text
-                    "text-[hsl(25,35%,22%)]",
-                    "[text-shadow:0_1px_0_rgba(255,255,255,0.5),0_-1px_0_rgba(101,67,33,0.1)]",
-                    // Dark mode: Bright white
-                    "dark:text-white dark:[text-shadow:none]"
-                  )}
-                >
-                  {claimSuccess ? 'Claimed!' : 'Daily Bonus'}
-                </h2>
-                <p 
-                  className={cn(
-                    "text-sm mt-0.5",
-                    "text-[hsl(25,25%,45%)] dark:text-white/60"
-                  )}
-                >
-                  {tierConfig.label} · <span className="font-semibold">+{claimAmount}</span> credits
-                </p>
-              </div>
+              <motion.h2
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className={cn(
+                  "mt-5 text-xl font-bold tracking-tight",
+                  "text-[hsl(25,40%,20%)] [text-shadow:0_1px_0_rgba(255,255,255,0.6)]",
+                  "dark:text-white dark:[text-shadow:none]"
+                )}
+              >
+                {claimSuccess ? 'Reward Claimed!' : 'Daily Treasure'}
+              </motion.h2>
               
-              {/* Status badge */}
-              {canClaim ? <ReadyBadge /> : <CountdownBadge tier={tier} />}
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.15 }}
+                className="text-sm mt-1 text-[hsl(25,25%,50%)] dark:text-white/50"
+              >
+                {claimSuccess ? 'Added to your balance' : 'Your daily reward awaits'}
+              </motion.p>
             </div>
             
-            {/* Main content area */}
             {isLoading ? (
               <div className="flex items-center justify-center py-12">
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ repeat: Infinity, duration: 1.2, ease: 'linear' }}
-                >
-                  <Loader2 
-                    className="h-8 w-8" 
-                    style={{ color: accent.primary }}
-                  />
+                <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1.2, ease: 'linear' }}>
+                  <Loader2 className="w-10 h-10 text-[hsl(35,70%,45%)] dark:hidden" />
+                  <Loader2 className="w-10 h-10 hidden dark:block" style={{ color: darkAccent.primary }} />
                 </motion.div>
               </div>
             ) : claimSuccess ? (
-              <SuccessDisplay claimAmount={claimAmount} tier={tier} />
+              <SuccessState amount={claimAmount} tier={tier} />
             ) : canClaim ? (
-              <motion.div 
-                initial={{ opacity: 0, y: 12 }}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
-                className="space-y-4"
+                transition={{ delay: 0.2 }}
+                className="space-y-6"
               >
-                <ClaimButton
-                  onClick={handleClaim}
-                  isClaiming={isClaiming}
-                  claimAmount={claimAmount}
-                  tier={tier}
-                />
-                
+                <RewardDisplay amount={claimAmount} tier={tier} isSuccess={false} />
+                <ClaimButton onClick={handleClaim} isClaiming={isClaiming} amount={claimAmount} tier={tier} />
                 <button
-                  onClick={() => { setDismissed(true); setIsOpen(false); }}
-                  className={cn(
-                    "w-full text-sm py-2 font-medium transition-colors",
-                    "text-[hsl(25,20%,50%)] hover:text-[hsl(25,25%,35%)]",
-                    "dark:text-white/40 dark:hover:text-white/70"
-                  )}
+                  onClick={handleDismiss}
+                  className="w-full text-sm py-2 font-medium transition-colors text-[hsl(25,20%,55%)] hover:text-[hsl(25,25%,40%)] dark:text-white/40 dark:hover:text-white/60"
                 >
                   Remind me later
                 </button>
               </motion.div>
             ) : (
-              <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-center py-6"
-              >
-                <div 
-                  className={cn(
-                    "w-14 h-14 rounded-xl mx-auto mb-4 flex items-center justify-center",
-                    // Light mode: Muted parchment
-                    "bg-gradient-to-b from-[hsl(38,35%,94%)] to-[hsl(35,30%,90%)]",
-                    "border border-[hsl(30,25%,78%)]",
-                    "shadow-[inset_0_1px_0_rgba(255,255,255,0.5),0_2px_4px_rgba(101,67,33,0.08)]",
-                    // Dark mode: Subtle glass
-                    "dark:bg-white/[0.04] dark:border-white/10"
-                  )}
-                >
-                  <Clock className="h-6 w-6 text-[hsl(25,25%,55%)] dark:text-white/40" />
-                </div>
-                <p className="text-sm font-medium text-[hsl(25,25%,45%)] dark:text-white/50">
-                  Come back tomorrow for more credits
-                </p>
-              </motion.div>
+              <AlreadyClaimedState />
             )}
           </div>
           
-          {/* Specular edge highlight - dark mode */}
-          <div className="absolute top-0 left-4 right-4 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent pointer-events-none hidden dark:block" />
-        </div>
+          {/* Bottom line */}
+          <div className="absolute bottom-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-[hsl(35,50%,70%)] to-transparent dark:via-[rgba(139,92,246,0.2)]" />
+        </motion.div>
       </DialogContent>
     </Dialog>
   );
 }
 
+export const DailyClaimModal = memo(DailyClaimModalComponent);
 export { useDailyClaimModal } from '@/hooks/useDailyClaimModal';
-
 export default DailyClaimModal;

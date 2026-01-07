@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
-import { ShoppingBag, Globe, Link, Zap, Timer } from 'lucide-react';
+import { ShoppingBag, Globe, Link } from 'lucide-react';
 import { useToast } from '@/hooks/useToast';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useSessionStorage } from '@/hooks/useSessionStorage';
@@ -39,7 +39,7 @@ import {
   CardNumber,
   GatewayBadge,
 } from '@/components/ui/result-card-parts';
-import { CreditSummary, BatchConfirmDialog, BATCH_CONFIRM_THRESHOLD, EffectiveRateBadge } from '@/components/credits';
+import { CreditSummary, BatchConfirmDialog, BATCH_CONFIRM_THRESHOLD, EffectiveRateBadge, BatchConfigCard } from '@/components/credits';
 import { useGatewayCreditRates } from '@/hooks/useGatewayCreditRates';
 import { cn } from '@/lib/utils';
 
@@ -693,7 +693,7 @@ export function ShopifyChargePanel() {
         <GatewayUnavailableMessage gateway={gatewayStatus} />
       )}
 
-      {/* Unified Gateway + Cost Card (same as Auth panel) */}
+      {/* Unified Gateway + Cost Card (same styling as Auth panel via BatchConfigCard) */}
       {batchComplete && liveCardsCount > 0 ? (
         <CreditSummary
           liveCardsCount={liveCardsCount}
@@ -701,128 +701,19 @@ export function ShopifyChargePanel() {
           newBalance={balance}
         />
       ) : (
-        <div className={cn(
-          "rounded-xl overflow-hidden",
-          "bg-gray-50 border border-gray-100",
-          "dark:bg-white/[0.02] dark:border-white/[0.06]"
-        )}>
-          {/* Gateway Section */}
-          <div className="p-3 border-b border-gray-100 dark:border-white/[0.06]">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] font-medium text-gray-400 dark:text-white/40 uppercase tracking-wide">
-                Gateway
-              </span>
-              {gatewayStatus && (
-                <GatewayStatusIndicator
-                  state={gatewayStatus.state}
-                  healthStatus={gatewayStatus.healthStatus}
-                  reason={gatewayStatus.maintenanceReason}
-                  size="sm"
-                />
-              )}
-            </div>
-            
-            <div className="flex items-center justify-between">
-              <span className="text-[13px] font-medium text-gray-700 dark:text-white/80">
-                Auto Shopify
-              </span>
-              {pricing && (
-                <EffectiveRateBadge 
-                  pricing={{ approved: pricing.approved, live: null }} 
-                  gatewayId="auto-shopify-1"
-                  showTooltip={true}
-                />
-              )}
-            </div>
-
-            {/* Speed info - Auto Shopify is always 1 parallel, ~5.5s per request */}
-            <div className="flex items-center gap-3 mt-2 text-[10px] text-gray-400 dark:text-white/40">
-              <span className="flex items-center gap-1">
-                <Zap className="w-3 h-3 text-amber-500" />
-                1 parallel
-              </span>
-              <span className="flex items-center gap-1">
-                <Timer className="w-3 h-3 text-sky-500" />
-                ~5.5s/card
-              </span>
-            </div>
-          </div>
-
-          {/* Cost Section - Only show if authenticated and has cards */}
-          {isAuthenticated && cardCount > 0 && (() => {
-            // Shopify only has APPROVED status (no LIVE distinction)
-            const approvedRate = pricing?.approved || effectiveRate;
-            const estimatedCost = Math.ceil(cardCount * approvedRate);
-            const hasSufficientCredits = balance >= estimatedCost;
-            const shortfall = hasSufficientCredits ? 0 : estimatedCost - balance;
-            const percentage = estimatedCost > 0 ? Math.min((balance / estimatedCost) * 100, 100) : 100;
-
-            return (
-              <div className="p-3">
-                {/* Stats row */}
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-4">
-                    <div>
-                      <p className="text-[10px] text-gray-400 dark:text-white/40 uppercase tracking-wide">Cost</p>
-                      <p className="text-sm font-bold tabular-nums text-gray-900 dark:text-white">
-                        {estimatedCost.toLocaleString()}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] text-gray-400 dark:text-white/40 uppercase tracking-wide">Balance</p>
-                      <p className={cn(
-                        "text-sm font-bold tabular-nums",
-                        hasSufficientCredits ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"
-                      )}>
-                        {balance.toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
-                  {/* Status badge */}
-                  <div className={cn(
-                    "px-2 py-0.5 rounded text-[10px] font-medium",
-                    hasSufficientCredits 
-                      ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" 
-                      : "bg-amber-500/10 text-amber-600 dark:text-amber-400"
-                  )}>
-                    {hasSufficientCredits ? "Ready" : `-${shortfall.toLocaleString()}`}
-                  </div>
-                </div>
-
-                {/* Progress bar */}
-                <div className="h-1 rounded-full bg-gray-200 dark:bg-white/[0.08] overflow-hidden mb-2">
-                  <div 
-                    className={cn(
-                      "h-full rounded-full transition-all duration-500",
-                      hasSufficientCredits ? "bg-emerald-500" : "bg-amber-500"
-                    )}
-                    style={{ width: `${percentage}%` }}
-                  />
-                </div>
-
-                {/* Footer */}
-                <div className="flex items-center justify-between text-[10px]">
-                  <div className="flex items-center gap-2 text-gray-400 dark:text-white/40">
-                    <span className="flex items-center gap-1">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                      Appr: {approvedRate}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <span className="h-1.5 w-1.5 rounded-full bg-gray-300 dark:bg-white/20" />
-                      Dead: 0
-                    </span>
-                  </div>
-                  {!hasSufficientCredits && (
-                    <span className="text-amber-600 dark:text-amber-400 flex items-center gap-1">
-                      <AlertTriangle className="h-3 w-3" />
-                      May stop early
-                    </span>
-                  )}
-                </div>
-              </div>
-            );
-          })()}
-        </div>
+        <BatchConfigCard
+          sites={[{ id: 'auto-shopify-1', label: 'Auto Shopify' }]}
+          selectedSite="auto-shopify-1"
+          onSiteChange={() => {}} // No-op since only one gateway
+          getGateway={getGateway}
+          isLoading={isLoading}
+          speedConfig={{ concurrency: 1, delay: 5500 }}
+          cardCount={cardCount}
+          balance={balance}
+          effectiveRate={effectiveRate}
+          isAuthenticated={isAuthenticated}
+          pricing={pricing}
+        />
       )}
     </div>
   );

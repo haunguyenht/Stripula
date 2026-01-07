@@ -172,9 +172,10 @@ function RippleSpinner({ size = 'md', className }) {
       {/* Center droplet */}
       <motion.div
         className={cn(
+          // Center droplet (bg-none resets light gradient)
           'absolute w-2 h-2 rounded-full z-10',
           'bg-gradient-to-br from-[#b4784a] to-[#8b5a2b]',
-          'dark:from-violet-400 dark:to-cyan-400',
+          'dark:bg-none dark:bg-gradient-to-br dark:from-violet-400 dark:to-cyan-400',
           'shadow-lg shadow-[#b4784a]/40 dark:shadow-violet-400/50'
         )}
         animate={{ 
@@ -235,9 +236,10 @@ function CoinSpinner({ size = 'md', className }) {
         {/* Coin front face - Copper with embossed center */}
         <div 
           className={cn(
+            // Coin front face (bg-none resets light gradient)
             'absolute inset-0 rounded-full',
             'bg-gradient-to-br from-[hsl(28,75%,58%)] via-[hsl(25,72%,48%)] to-[hsl(22,68%,38%)]',
-            'dark:from-violet-400 dark:via-indigo-500 dark:to-cyan-500',
+            'dark:bg-none dark:bg-gradient-to-br dark:from-violet-400 dark:via-indigo-500 dark:to-cyan-500',
             'shadow-[inset_0_2px_4px_rgba(255,200,150,0.5),inset_0_-2px_4px_rgba(100,50,20,0.3),0_4px_16px_rgba(166,100,50,0.4)]',
             'dark:shadow-[inset_0_2px_4px_rgba(255,255,255,0.2),0_0_20px_rgba(139,92,246,0.4)]',
           )}
@@ -276,9 +278,10 @@ function CoinSpinner({ size = 'md', className }) {
         {/* Coin back face - Slightly darker */}
         <div 
           className={cn(
+            // Coin back face (bg-none resets light gradient)
             'absolute inset-0 rounded-full',
             'bg-gradient-to-br from-[hsl(25,70%,45%)] via-[hsl(22,68%,38%)] to-[hsl(20,65%,30%)]',
-            'dark:from-indigo-500 dark:via-purple-600 dark:to-pink-500',
+            'dark:bg-none dark:bg-gradient-to-br dark:from-indigo-500 dark:via-purple-600 dark:to-pink-500',
             'shadow-[inset_0_2px_4px_rgba(255,180,120,0.4),inset_0_-2px_4px_rgba(80,40,15,0.4),0_4px_16px_rgba(139,69,19,0.4)]',
             'dark:shadow-[inset_0_2px_4px_rgba(255,255,255,0.15),0_0_20px_rgba(236,72,153,0.4)]',
           )}
@@ -321,9 +324,10 @@ function OrbitalSpinner({ size = 'md', className }) {
         {/* Center nucleus */}
         <motion.div
           className={cn(
+            // Center nucleus (bg-none resets light gradient)
             'absolute top-1/2 left-1/2 w-3 h-3 -ml-1.5 -mt-1.5 rounded-full',
             'bg-gradient-to-br from-[#c49a6c] via-[#b4784a] to-[#8b5a2b]',
-            'dark:from-violet-300 dark:via-violet-500 dark:to-cyan-500',
+            'dark:bg-none dark:bg-gradient-to-br dark:from-violet-300 dark:via-violet-500 dark:to-cyan-500',
             'shadow-lg shadow-[#b4784a]/40 dark:shadow-violet-400/40'
           )}
           animate={{ scale: [1, 1.15, 1] }}
@@ -348,9 +352,10 @@ function OrbitalSpinner({ size = 'md', className }) {
           >
             <motion.div
               className={cn(
+                // Orbiting sphere (bg-none resets light gradient)
                 'absolute w-2 h-2 rounded-full',
                 'bg-gradient-to-br from-[#d4a574] via-[#b4784a] to-[#8b5a2b]',
-                'dark:from-cyan-300 dark:via-violet-400 dark:to-pink-400',
+                'dark:bg-none dark:bg-gradient-to-br dark:from-cyan-300 dark:via-violet-400 dark:to-pink-400',
                 'shadow-md shadow-[#b4784a]/50 dark:shadow-violet-400/40'
               )}
               style={{ top: 0, left: '50%', marginLeft: -4 }}

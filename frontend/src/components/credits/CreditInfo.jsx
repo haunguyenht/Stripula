@@ -220,12 +220,12 @@ export function CreditSummary({
   return (
     <div className={cn(
       "flex items-center justify-between px-3 py-2.5 rounded-xl text-xs",
-      // Light mode: OrangeAI warm gradient
+      // Light mode: OrangeAI warm gradient (bg-none resets light gradient)
       "bg-gradient-to-r from-amber-50 to-orange-50",
       "border border-amber-200/60",
       "shadow-sm",
-      // Dark mode: OPUX glass morphism
-      "dark:from-amber-500/10 dark:to-orange-500/10",
+      // Dark mode: OPUX glass morphism (bg-none resets light gradient)
+      "dark:bg-none dark:bg-gradient-to-r dark:from-amber-500/10 dark:to-orange-500/10",
       "dark:border-amber-500/20",
       "dark:backdrop-blur-sm dark:shadow-none",
       className

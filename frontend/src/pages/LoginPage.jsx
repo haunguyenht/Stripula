@@ -88,7 +88,7 @@ export function LoginPage() {
       >
         <div className="w-12 h-px bg-current" />
         <span className="text-[10px] tracking-[0.35em] uppercase" style={{ fontFamily: 'var(--font-mono)' }}>
-          Est. 2024
+          DEV BY HOWARD
         </span>
         <div className="w-12 h-px bg-current" />
       </motion.footer>
@@ -216,7 +216,7 @@ function DarkCard({ onSuccess, onError }) {
                 transition={{ duration: 2, repeat: Infinity }}
               />
               <p className="text-[10px] tracking-[0.3em] uppercase text-violet-300/60 font-mono">
-                Premium Validation
+                Best Card Check
               </p>
               <motion.div 
                 className="w-16 h-px"
@@ -267,7 +267,7 @@ function DarkCard({ onSuccess, onError }) {
 
               <p className="text-[9px] text-cyan-300/60 tracking-[0.25em] uppercase text-center mb-4 font-mono flex items-center justify-center gap-2">
                 <Shield className="w-3 h-3" />
-                Secure Access
+                Welcome
               </p>
               <div className="flex justify-center">
                 <TelegramLoginButton
@@ -287,8 +287,8 @@ function DarkCard({ onSuccess, onError }) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6, duration: 0.4 }}
           >
-            <AuroraFeaturePill icon={Sparkles} value="25" label="Free" color="cyan" delay={0} />
-            <AuroraFeaturePill icon={Clock} value="10" label="Daily" color="violet" delay={0.1} />
+            <AuroraFeaturePill icon={Sparkles} value="25" label="Free Credit" color="cyan" delay={0} />
+            <AuroraFeaturePill icon={Clock} value="10" label="Daily Claim" color="violet" delay={0.1} />
             <AuroraFeaturePill icon={Zap} value="0" label="Dead Fee" color="pink" delay={0.2} />
           </motion.div>
         </div>
@@ -299,7 +299,7 @@ function DarkCard({ onSuccess, onError }) {
           <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-500/20 to-transparent" />
           
           <div className="flex items-center justify-between text-[9px] font-mono tracking-wider">
-            <span className="text-cyan-400/40">MEMBER ACCESS</span>
+            <span className="text-cyan-400/40">DEV BY HOWARD</span>
             <div className="flex gap-1.5">
               {[...Array(4)].map((_, i) => (
                 <motion.div 
@@ -315,7 +315,7 @@ function DarkCard({ onSuccess, onError }) {
                 />
               ))}
             </div>
-            <span className="text-violet-400/40">ENCRYPTED</span>
+            <span className="text-violet-400/40">DEV BY HOWARD</span>
           </div>
         </div>
       </div>
@@ -526,7 +526,7 @@ function LightCard({ onSuccess, onError }) {
                 className="text-[11px] tracking-[0.25em] uppercase text-[hsl(25,30%,45%)]"
                 style={{ fontFamily: 'var(--font-mono)' }}
               >
-                Card Validation Bureau
+                Best Card Check
               </p>
               <div className="w-8 h-px bg-[hsl(25,40%,60%)]/30" />
             </div>
@@ -571,7 +571,7 @@ function LightCard({ onSuccess, onError }) {
                     className="text-[9px] uppercase tracking-[0.2em] text-[hsl(25,50%,45%)] font-medium"
                     style={{ fontFamily: 'var(--font-mono)' }}
                   >
-                    Secure Access
+                    Welcome
                   </span>
                 </div>
               </div>

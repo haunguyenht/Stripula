@@ -27,7 +27,7 @@ import {
   NavPillNav,
   NavDropdown,
   MobileNavItem,
-  UserPill,
+  UserPillCyberpunk,
   ActionsPill,
 } from './components';
 
@@ -110,8 +110,8 @@ export function TopTabBar({
         )}
       </div>
 
-      {/* Right: User Profile - Minimal */}
-      <UserPill user={user} onNavigate={handleNavigate} />
+      {/* Right: User Profile - Cyberpunk Variant */}
+      <UserPillCyberpunk user={user} onNavigate={handleNavigate} />
     </motion.header>
   );
 }

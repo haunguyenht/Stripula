@@ -3,17 +3,15 @@ import * as TabsPrimitive from "@radix-ui/react-tabs"
 import { cn } from "@/lib/utils.js"
 
 /**
- * Tabs Component - Dual Theme Design System
+ * Tabs Component - Liquid Glass Design System
  * 
- * LIGHT MODE: Vintage Banking
- * - List: Aged parchment with decorative border
- * - Trigger: Copper foil active state with embossed effect
- * - Smooth transitions with vintage feel
+ * LIGHT MODE: Vintage Parchment
+ * - List: Aged parchment with subtle border
+ * - Trigger: Cream active state with embossed effect
  * 
- * DARK MODE: Liquid Aurora
- * - List: PREMIUM Liquid glass container with aurora tint
- * - Trigger: Aurora indigo glow on active state with neon pulse
- * - Active indicator: Multi-layer aurora glow effect
+ * DARK MODE: Liquid Glass
+ * - List: Frosted glass container
+ * - Trigger: Aurora glow on active with subtle animation
  */
 
 const Tabs = TabsPrimitive.Root
@@ -23,19 +21,17 @@ const TabsList = React.forwardRef(({ className, ...props }, ref) => (
     ref={ref}
     className={cn(
       // Base styles
-      "inline-flex h-10 items-center justify-center p-1",
-      // Light mode: Vintage Banking - aged parchment container
-      "rounded-xl bg-gradient-to-b from-[hsl(38,35%,93%)] to-[hsl(38,30%,90%)]",
-      "text-[hsl(25,35%,35%)]",
-      "border border-[hsl(30,28%,80%)]",
-      "shadow-[inset_0_1px_0_rgba(255,255,255,0.6),inset_0_-1px_0_rgba(101,67,33,0.05),0_2px_6px_rgba(101,67,33,0.08)]",
-      // Dark mode: PREMIUM Liquid glass container with aurora tint
-      "dark:rounded-xl",
-      "dark:bg-none dark:bg-[rgba(15,18,25,0.8)]",
-      "dark:backdrop-blur-[60px] dark:backdrop-saturate-[200%]",
-      "dark:border dark:border-[hsl(0_0%_100%/0.1)]",
-      "dark:text-white/60",
-      "dark:shadow-[0_0_0_1px_rgba(139,92,246,0.08),inset_0_1px_0_rgba(255,255,255,0.08),0_4px_16px_rgba(0,0,0,0.3)]",
+      "inline-flex h-9 sm:h-10 items-center justify-center p-1 gap-0.5",
+      "rounded-xl",
+      // Light mode: Vintage parchment style (bg-none resets light gradient)
+      "bg-gradient-to-b from-[hsl(38,30%,94%)] to-[hsl(35,25%,90%)]",
+      "border border-[hsl(30,25%,78%)]",
+      "shadow-[inset_0_1px_0_rgba(255,255,255,0.7),0_1px_2px_rgba(101,67,33,0.08)]",
+      // Dark mode: Liquid glass (bg-none resets light gradient)
+      "dark:bg-none dark:from-transparent dark:to-transparent",
+      "dark:bg-[rgba(255,255,255,0.03)] dark:backdrop-blur-xl",
+      "dark:border-[rgba(255,255,255,0.06)]",
+      "dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_4px_12px_rgba(0,0,0,0.3)]",
       className
     )}
     {...props}
@@ -43,37 +39,91 @@ const TabsList = React.forwardRef(({ className, ...props }, ref) => (
 ))
 TabsList.displayName = TabsPrimitive.List.displayName
 
-const TabsTrigger = React.forwardRef(({ className, ...props }, ref) => (
-  <TabsPrimitive.Trigger
-    ref={ref}
-    className={cn(
-      // Base styles
-      "inline-flex items-center justify-center whitespace-nowrap px-3 py-1.5 text-sm font-medium transition-all duration-200",
-      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(25,75%,45%)]/20",
-      "disabled:pointer-events-none disabled:opacity-50",
-      // Light mode: Vintage Banking - copper foil active state
-      "rounded-lg",
-      "text-[hsl(25,35%,40%)]",
-      "[text-shadow:0_1px_0_rgba(255,255,255,0.3)] dark:[text-shadow:none]",
-      "hover:text-[hsl(25,70%,40%)] hover:bg-[hsl(38,40%,95%)]",
-      "data-[state=active]:bg-gradient-to-b data-[state=active]:from-[hsl(40,50%,98%)] data-[state=active]:to-[hsl(38,45%,96%)]",
-      "data-[state=active]:text-[hsl(25,55%,35%)]",
-      "data-[state=active]:shadow-[0_1px_3px_rgba(101,67,33,0.12),inset_0_1px_0_rgba(255,255,255,0.8)]",
-      "data-[state=active]:border data-[state=active]:border-[hsl(30,30%,78%)]",
-      // Dark mode: PREMIUM Aurora active with enhanced neon glow
-      "dark:text-white/60",
-      "dark:hover:bg-white/[0.08] dark:hover:text-white/90",
-      "dark:focus-visible:ring-violet-500/30",
-      "dark:data-[state=active]:bg-none dark:data-[state=active]:bg-gradient-to-b dark:data-[state=active]:from-[rgba(139,92,246,0.25)] dark:data-[state=active]:to-[rgba(139,92,246,0.18)]",
-      "dark:data-[state=active]:text-white",
-      "dark:data-[state=active]:border-transparent",
-      "dark:data-[state=active]:shadow-[0_0_20px_rgba(139,92,246,0.4),0_0_40px_-10px_rgba(34,211,238,0.2),inset_0_1px_0_rgba(255,255,255,0.12)]",
-      className
-    )}
-    {...props}
-  />
-))
+const TabsTrigger = React.forwardRef(({ className, ...props }, ref) => {
+  return (
+    <TabsPrimitive.Trigger
+      ref={ref}
+      className={cn(
+        // Base styles
+        "relative inline-flex items-center justify-center whitespace-nowrap",
+        "px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-medium tracking-wide",
+        "rounded-lg transition-all duration-300 ease-out",
+        "focus-visible:outline-none",
+        "disabled:pointer-events-none disabled:opacity-50",
+        // Light mode inactive - very muted
+        "[text-shadow:0_1px_0_rgba(255,255,255,0.3)]",
+        "opacity-60 hover:opacity-80",
+        // Light active state - border and shadow only (bg in CSS)
+        "data-[state=active]:opacity-100",
+        "data-[state=active]:border data-[state=active]:border-[hsl(30,35%,78%)]",
+        "data-[state=active]:shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_2px_4px_rgba(101,67,33,0.12),0_0_0_1px_rgba(180,130,70,0.1)]",
+        // Dark mode overrides
+        "dark:[text-shadow:none]",
+        "dark:opacity-40 dark:hover:opacity-60",
+        // Dark active state - border and shadow only (bg in CSS)
+        "dark:data-[state=active]:opacity-100",
+        "dark:data-[state=active]:border-[rgba(139,92,246,0.3)]",
+        "dark:data-[state=active]:shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_0_20px_-5px_rgba(139,92,246,0.35),0_0_8px_-2px_rgba(34,211,238,0.15)]",
+        // Use custom class for text colors and backgrounds
+        "tabs-trigger-text",
+        className
+      )}
+      {...props}
+    />
+  );
+})
 TabsTrigger.displayName = TabsPrimitive.Trigger.displayName
+
+// Add global styles for tabs (injected once) - handles colors and backgrounds to avoid tailwind-merge
+if (typeof document !== 'undefined') {
+  const styleId = 'tabs-trigger-styles';
+  if (!document.getElementById(styleId)) {
+    const style = document.createElement('style');
+    style.id = styleId;
+    style.textContent = `
+      /* Light mode text colors */
+      .tabs-trigger-text {
+        color: hsl(25, 25%, 50%);
+        background: transparent;
+      }
+      .tabs-trigger-text:hover {
+        color: hsl(25, 35%, 40%);
+        background: hsl(40, 30%, 91%);
+      }
+      .tabs-trigger-text[data-state="active"] {
+        color: hsl(25, 50%, 28%);
+        font-weight: 600;
+        background: linear-gradient(to bottom, hsl(42, 50%, 98%), hsl(40, 45%, 95%));
+      }
+      
+      /* Dark mode text colors and cyber background */
+      .dark .tabs-trigger-text {
+        color: rgba(255, 255, 255, 0.35);
+        background: transparent;
+      }
+      .dark .tabs-trigger-text:hover {
+        color: rgba(255, 255, 255, 0.55);
+        background: rgba(255, 255, 255, 0.03);
+      }
+      .dark .tabs-trigger-text[data-state="active"] {
+        color: rgba(255, 255, 255, 0.95);
+        font-weight: 500;
+        text-shadow: 0 0 12px rgba(139, 92, 246, 0.4);
+        background: 
+          linear-gradient(135deg, rgba(139, 92, 246, 0.12) 0%, rgba(34, 211, 238, 0.06) 50%, rgba(139, 92, 246, 0.08) 100%),
+          repeating-linear-gradient(
+            0deg,
+            transparent,
+            transparent 2px,
+            rgba(139, 92, 246, 0.03) 2px,
+            rgba(139, 92, 246, 0.03) 4px
+          );
+        background-size: 100% 100%, 100% 100%;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+}
 
 const TabsContent = React.forwardRef(({ className, ...props }, ref) => (
   <TabsPrimitive.Content
