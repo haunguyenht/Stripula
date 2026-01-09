@@ -161,15 +161,7 @@ export function TierInfoCard({ tier, className }) {
         }}
       />
       
-      {/* Tile pattern (dark only) */}
-      <div 
-        className="absolute inset-0 opacity-0 dark:opacity-[0.03] pointer-events-none"
-        style={{ 
-          backgroundImage: 'url(/bg-tile.webp)',
-          backgroundSize: '200px 200px',
-          backgroundRepeat: 'repeat'
-        }}
-      />
+
       
       {/* Tier gradient accent bar - copper for light */}
       <div className={cn(

@@ -39,7 +39,7 @@ import {
   CardNumber,
   GatewayBadge,
 } from '@/components/ui/result-card-parts';
-import { CreditSummary, BatchConfirmDialog, BATCH_CONFIRM_THRESHOLD, EffectiveRateBadge, BatchConfigCard } from '@/components/credits';
+import { CreditSummary, EffectiveRateBadge, BatchConfigCard } from '@/components/credits';
 import { useGatewayCreditRates } from '@/hooks/useGatewayCreditRates';
 import { cn } from '@/lib/utils';
 
@@ -60,9 +60,6 @@ export function ShopifyChargePanel() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [batchComplete, setBatchComplete] = useState(false);
-  const [showBatchConfirm, setShowBatchConfirm] = useState(false);
-  const [batchConfirmResolve, setBatchConfirmResolve] = useState(null);
-  const [pendingBatchInfo, setPendingBatchInfo] = useState(null);
 
   const abortRef = useRef(false);
   const abortControllerRef = useRef(null);
@@ -129,7 +126,16 @@ export function ShopifyChargePanel() {
 
   const clearCards = useCallback(() => {
     setCards('');
+    setBatchComplete(false);
   }, [setCards]);
+
+  // Handle card input changes - reset batch complete to show cost estimator
+  const handleCardsChange = useCallback((value) => {
+    setCards(value);
+    if (batchComplete) {
+      setBatchComplete(false);
+    }
+  }, [setCards, batchComplete]);
 
   const clearResults = useCallback(() => {
     setCardResults([]);
@@ -168,22 +174,6 @@ export function ShopifyChargePanel() {
     setFilter(f);
     setPage(1);
   }, []);
-
-  const needsBatchConfirmation = useCallback((count) => count > BATCH_CONFIRM_THRESHOLD, []);
-
-  const handleBatchConfirm = useCallback(() => {
-    if (batchConfirmResolve) batchConfirmResolve(true);
-    setShowBatchConfirm(false);
-    setBatchConfirmResolve(null);
-    setPendingBatchInfo(null);
-  }, [batchConfirmResolve]);
-
-  const handleBatchCancel = useCallback(() => {
-    if (batchConfirmResolve) batchConfirmResolve(false);
-    setShowBatchConfirm(false);
-    setBatchConfirmResolve(null);
-    setPendingBatchInfo(null);
-  }, [batchConfirmResolve]);
 
   // Validate Shopify URL
   const isValidShopifyUrl = useMemo(() => {
@@ -259,21 +249,6 @@ export function ShopifyChargePanel() {
       const tierLimitMsg = getTierLimitExceededMessage(totalCards, limitStatus.limit, userTier);
       toastError(tierLimitMsg.message);
       return;
-    }
-
-    if (isAuthenticated && needsBatchConfirmation(totalCards)) {
-      const confirmed = await new Promise((resolve) => {
-        setPendingBatchInfo({
-          cardCount: totalCards,
-          balance,
-          effectiveRate,
-          gatewayName: 'Auto Shopify'
-        });
-        setBatchConfirmResolve(() => resolve);
-        setShowBatchConfirm(true);
-      });
-
-      if (!confirmed) return;
     }
 
     setIsLoading(true);
@@ -656,7 +631,7 @@ export function ShopifyChargePanel() {
       {/* Card Input */}
       <CardInputSection
         cards={cards}
-        onCardsChange={setCards}
+        onCardsChange={handleCardsChange}
         onCardsBlur={handleCardsBlur}
         onImport={handleImport}
         onClear={clearCards}
@@ -772,16 +747,6 @@ export function ShopifyChargePanel() {
   return (
     <>
       <Celebration trigger={celebrationTrigger} />
-      <BatchConfirmDialog
-        open={showBatchConfirm}
-        onOpenChange={setShowBatchConfirm}
-        cardCount={pendingBatchInfo?.cardCount || 0}
-        balance={pendingBatchInfo?.balance || balance}
-        effectiveRate={pendingBatchInfo?.effectiveRate || effectiveRate}
-        gatewayName={pendingBatchInfo?.gatewayName || 'Auto Shopify'}
-        onConfirm={handleBatchConfirm}
-        onCancel={handleBatchCancel}
-      />
       <TwoPanelLayout
         configPanel={configContent}
         resultsPanel={resultsContent}

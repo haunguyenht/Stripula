@@ -20,119 +20,119 @@ export const cardVariants = cva(
   {
     variants: {
     variant: {
-      // Default - Vintage parchment light / Premium liquid glass dark
+      // Default - Vintage parchment light / Cyberpunk glass dark
       default: [
         // Light mode: Cream parchment with copper-tinted border (rgba format for tailwind-merge)
         'bg-[rgba(250,248,244,1)] border border-[hsl(30,25%,82%)]',
         'shadow-[0_2px_8px_rgba(139,90,43,0.06),0_1px_2px_rgba(139,90,43,0.04)]',
         'hover:shadow-[0_4px_16px_rgba(139,90,43,0.1),0_2px_4px_rgba(139,90,43,0.06)]',
         'hover:border-[hsl(25,35%,75%)]',
-        // Dark mode: Pure liquid glass - no purple (rgba format for tailwind-merge)
-        'dark:bg-[rgba(255,255,255,0.025)] dark:backdrop-blur-[50px] dark:backdrop-saturate-[150%]',
-        'dark:border dark:border-white/[0.08]',
-        'dark:shadow-[0_8px_32px_rgba(0,0,0,0.4),0_2px_8px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.1)]',
-        'dark:hover:bg-[rgba(255,255,255,0.04)] dark:hover:border-white/[0.12]',
-        'dark:hover:shadow-[0_12px_48px_rgba(0,0,0,0.5),0_4px_12px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.12)]',
+        // Dark mode: Cyberpunk glass with subtle neon edge
+        'dark:bg-[rgba(8,12,20,0.85)] dark:backdrop-blur-[50px] dark:backdrop-saturate-[150%]',
+        'dark:border dark:border-[rgba(0,240,255,0.08)]',
+        'dark:shadow-[0_8px_32px_rgba(0,0,0,0.45),0_2px_8px_rgba(0,0,0,0.25),0_0_1px_rgba(0,240,255,0.15),inset_0_1px_0_rgba(255,255,255,0.05)]',
+        'dark:hover:bg-[rgba(10,15,25,0.9)] dark:hover:border-[rgba(0,240,255,0.15)]',
+        'dark:hover:shadow-[0_12px_48px_rgba(0,0,0,0.55),0_4px_12px_rgba(0,0,0,0.3),0_0_20px_-6px_rgba(0,240,255,0.12),inset_0_1px_0_rgba(255,255,255,0.06)]',
       ].join(' '),
       
-      // Elevated - Vintage certificate paper / Premium elevated liquid glass
+      // Elevated - Vintage certificate paper / Cyberpunk glass panel
       elevated: [
         // Light mode: Cream with warm shadow depth (rgba format for tailwind-merge)
         'bg-[rgba(252,250,247,1)] border border-[hsl(30,25%,80%)]',
         'shadow-[0_4px_16px_rgba(139,90,43,0.08),0_8px_32px_rgba(139,90,43,0.04),inset_0_1px_0_rgba(255,255,255,0.9)]',
         'hover:shadow-[0_8px_24px_rgba(139,90,43,0.12),0_12px_48px_rgba(139,90,43,0.06),inset_0_1px_0_rgba(255,255,255,0.95)]',
         'hover:border-[hsl(25,40%,70%)]',
-        // Dark mode: Premium elevated liquid glass - no purple (rgba format)
-        'dark:bg-[rgba(255,255,255,0.035)] dark:backdrop-blur-[50px] dark:backdrop-saturate-[150%]',
-        'dark:border dark:border-white/[0.1]',
-        'dark:shadow-[0_16px_48px_rgba(0,0,0,0.4),0_4px_16px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.12),inset_0_-1px_0_rgba(0,0,0,0.05)]',
-        'dark:hover:bg-[rgba(255,255,255,0.05)] dark:hover:border-white/[0.14]',
-        'dark:hover:shadow-[0_20px_64px_rgba(0,0,0,0.5),0_6px_20px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.15),inset_0_-1px_0_rgba(0,0,0,0.08)]',
+        // Dark mode: Cyberpunk glass panel with subtle neon accents
+        'dark:bg-[rgba(8,12,20,0.88)] dark:backdrop-blur-[50px] dark:backdrop-saturate-[160%]',
+        'dark:border dark:border-[rgba(0,240,255,0.12)]',
+        'dark:shadow-[0_16px_48px_rgba(0,0,0,0.5),0_4px_16px_rgba(0,0,0,0.3),0_0_1px_rgba(0,240,255,0.2),inset_0_1px_0_rgba(255,255,255,0.06),inset_0_-1px_0_rgba(0,0,0,0.1)]',
+        'dark:hover:bg-[rgba(10,15,25,0.92)] dark:hover:border-[rgba(0,240,255,0.2)]',
+        'dark:hover:shadow-[0_20px_64px_rgba(0,0,0,0.6),0_6px_20px_rgba(0,0,0,0.35),0_0_25px_-8px_rgba(0,240,255,0.15),0_0_15px_-4px_rgba(255,0,128,0.1),inset_0_1px_0_rgba(255,255,255,0.08),inset_0_-1px_0_rgba(0,0,0,0.12)]',
       ].join(' '),
       
-      // Result - Aged paper texture for list items
+      // Result - Aged paper texture for list items / Cyberpunk card dark
       result: [
         // Light mode: Subtle parchment with fine border (rgba format)
         'bg-[rgba(250,248,246,1)] border border-[hsl(30,20%,85%)]',
         'shadow-[0_1px_4px_rgba(139,90,43,0.04),0_1px_2px_rgba(139,90,43,0.02)]',
         'hover:shadow-[0_2px_8px_rgba(139,90,43,0.08),0_2px_4px_rgba(139,90,43,0.04)]',
         'hover:bg-[rgba(249,246,241,1)] hover:border-[hsl(25,30%,78%)]',
-        // Dark mode: Subtle liquid glass (rgba format)
-        'dark:bg-[rgba(255,255,255,0.02)] dark:backdrop-blur-[32px] dark:backdrop-saturate-[180%]',
-        'dark:border dark:border-white/[0.05]',
-        'dark:shadow-[0_4px_24px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.06)]',
-        'dark:hover:bg-[rgba(255,255,255,0.035)] dark:hover:border-white/[0.08]',
-        'dark:hover:shadow-[0_8px_32px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.1)]',
+        // Dark mode: Cyberpunk result card with subtle neon
+        'dark:bg-[rgba(8,12,20,0.75)] dark:backdrop-blur-[32px] dark:backdrop-saturate-[180%]',
+        'dark:border dark:border-[rgba(0,240,255,0.06)]',
+        'dark:shadow-[0_4px_24px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.04)]',
+        'dark:hover:bg-[rgba(10,15,25,0.85)] dark:hover:border-[rgba(0,240,255,0.12)]',
+        'dark:hover:shadow-[0_8px_32px_rgba(0,0,0,0.5),0_0_15px_-5px_rgba(0,240,255,0.1),inset_0_1px_0_rgba(255,255,255,0.06)]',
       ].join(' '),
       
-      // Flat - Muted parchment
+      // Flat - Muted parchment / Subtle cyberpunk
       flat: [
         // Light mode: Warm off-white with subtle border (rgba format)
         'bg-[rgba(246,243,238,1)] border border-[hsl(30,20%,88%)] rounded-xl',
         'hover:border-[hsl(25,25%,82%)] hover:bg-[rgba(245,241,234,1)]',
-        // Dark mode: Very subtle liquid glass (rgba format)
-        'dark:bg-[rgba(255,255,255,0.015)] dark:backdrop-blur-[24px]',
-        'dark:border dark:border-white/[0.04]',
-        'dark:hover:bg-[rgba(255,255,255,0.025)] dark:hover:border-white/[0.06]',
+        // Dark mode: Subtle cyberpunk glass
+        'dark:bg-[rgba(8,12,20,0.6)] dark:backdrop-blur-[24px]',
+        'dark:border dark:border-[rgba(0,240,255,0.05)]',
+        'dark:hover:bg-[rgba(10,15,25,0.7)] dark:hover:border-[rgba(0,240,255,0.1)]',
       ].join(' '),
       
       // Ghost - transparent
       ghost: 'bg-transparent',
       
-      // Panel - Premium vintage stationery / Premium liquid glass panel
+      // Panel - Premium vintage stationery / Cyberpunk glass panel
       panel: [
         // Light mode: Rich cream with copper-tinted shadow (rgba format)
         'bg-[rgba(252,250,247,1)] border border-[hsl(30,25%,82%)]',
         'shadow-[0_2px_12px_rgba(139,90,43,0.06),0_4px_24px_rgba(139,90,43,0.04),inset_0_1px_0_rgba(255,255,255,0.8)]',
-        // Dark mode: Premium liquid glass - no purple (rgba format)
-        'dark:bg-[rgba(255,255,255,0.03)] dark:backdrop-blur-[50px] dark:backdrop-saturate-[150%]',
-        'dark:border dark:border-white/[0.08]',
-        'dark:shadow-[0_12px_40px_rgba(0,0,0,0.4),0_4px_12px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.1),inset_0_-1px_0_rgba(0,0,0,0.05)]',
+        // Dark mode: Cyberpunk glass panel
+        'dark:bg-[rgba(8,12,20,0.85)] dark:backdrop-blur-[50px] dark:backdrop-saturate-[150%]',
+        'dark:border dark:border-[rgba(0,240,255,0.1)]',
+        'dark:shadow-[0_12px_40px_rgba(0,0,0,0.45),0_4px_12px_rgba(0,0,0,0.25),0_0_1px_rgba(0,240,255,0.15),inset_0_1px_0_rgba(255,255,255,0.05),inset_0_-1px_0_rgba(0,0,0,0.08)]',
       ].join(' '),
 
-      // Glass - Translucent parchment / Premium frosted glass
+      // Glass - Translucent parchment / Cyberpunk frosted glass
       glass: [
         // Light mode: Semi-transparent cream with blur (rgba format)
         'bg-[rgba(250,248,244,0.8)] backdrop-blur-2xl border border-[rgba(214,205,195,0.6)]',
         'shadow-[0_4px_16px_rgba(139,90,43,0.06)]',
         'hover:shadow-[0_8px_24px_rgba(139,90,43,0.1)]',
         'hover:bg-[rgba(250,248,244,0.9)]',
-        // Dark mode: Premium frosted glass - no purple (rgba format)
-        'dark:bg-[rgba(255,255,255,0.03)] dark:backdrop-blur-[60px] dark:backdrop-saturate-[150%]',
-        'dark:border dark:border-white/[0.1]',
-        'dark:shadow-[0_16px_48px_rgba(0,0,0,0.4),0_4px_16px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.12)]',
-        'dark:hover:bg-[rgba(255,255,255,0.045)] dark:hover:border-white/[0.14]',
-        'dark:hover:shadow-[0_20px_64px_rgba(0,0,0,0.5),0_6px_20px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.15)]',
+        // Dark mode: Cyberpunk frosted glass with neon accents
+        'dark:bg-[rgba(8,12,20,0.8)] dark:backdrop-blur-[60px] dark:backdrop-saturate-[150%]',
+        'dark:border dark:border-[rgba(0,240,255,0.12)]',
+        'dark:shadow-[0_16px_48px_rgba(0,0,0,0.45),0_4px_16px_rgba(0,0,0,0.25),0_0_1px_rgba(0,240,255,0.2),inset_0_1px_0_rgba(255,255,255,0.06)]',
+        'dark:hover:bg-[rgba(10,15,25,0.88)] dark:hover:border-[rgba(0,240,255,0.2)]',
+        'dark:hover:shadow-[0_20px_64px_rgba(0,0,0,0.55),0_6px_20px_rgba(0,0,0,0.3),0_0_25px_-8px_rgba(0,240,255,0.15),inset_0_1px_0_rgba(255,255,255,0.08)]',
       ].join(' '),
 
-      // Liquid - Premium vintage / Premium liquid glass
+      // Liquid - Premium vintage / Cyberpunk liquid glass
       liquid: [
         // Light mode: Fine stationery with warm undertones (rgba format)
         'bg-[rgba(252,250,246,1)] border border-[hsl(28,30%,80%)]',
         'shadow-[0_4px_20px_rgba(139,90,43,0.08),0_8px_40px_rgba(139,90,43,0.04)]',
         'hover:shadow-[0_8px_32px_rgba(139,90,43,0.12),0_16px_56px_rgba(139,90,43,0.06)]',
         'hover:border-[hsl(25,45%,65%)]',
-        // Dark mode: Premium liquid glass - no purple (rgba format)
-        'dark:bg-[rgba(255,255,255,0.03)] dark:backdrop-blur-[50px] dark:backdrop-saturate-[150%]',
-        'dark:border dark:border-white/[0.08]',
-        'dark:shadow-[0_16px_48px_rgba(0,0,0,0.4),0_4px_16px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.1),inset_0_-1px_0_rgba(0,0,0,0.05)]',
-        'dark:hover:bg-[rgba(255,255,255,0.045)] dark:hover:border-white/[0.12]',
-        'dark:hover:shadow-[0_20px_64px_rgba(0,0,0,0.5),0_6px_20px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.14),inset_0_-1px_0_rgba(0,0,0,0.08)]',
+        // Dark mode: Cyberpunk liquid glass
+        'dark:bg-[rgba(8,12,20,0.85)] dark:backdrop-blur-[50px] dark:backdrop-saturate-[150%]',
+        'dark:border dark:border-[rgba(0,240,255,0.1)]',
+        'dark:shadow-[0_16px_48px_rgba(0,0,0,0.45),0_4px_16px_rgba(0,0,0,0.25),0_0_1px_rgba(0,240,255,0.18),inset_0_1px_0_rgba(255,255,255,0.05),inset_0_-1px_0_rgba(0,0,0,0.08)]',
+        'dark:hover:bg-[rgba(10,15,25,0.9)] dark:hover:border-[rgba(0,240,255,0.18)]',
+        'dark:hover:shadow-[0_20px_64px_rgba(0,0,0,0.55),0_6px_20px_rgba(0,0,0,0.3),0_0_25px_-8px_rgba(0,240,255,0.12),0_0_15px_-4px_rgba(255,0,128,0.08),inset_0_1px_0_rgba(255,255,255,0.08),inset_0_-1px_0_rgba(0,0,0,0.1)]',
       ].join(' '),
 
-      // Aurora - Full aurora glow effect (dark) / Copper foil highlight (light)
+      // Aurora - Full neon glow effect (dark) / Copper foil highlight (light)
       aurora: [
         // Light mode: Premium cream with copper foil edge hint (rgba format)
         'bg-[rgba(252,250,247,1)] border border-[hsl(25,50%,70%)]',
         'shadow-[0_4px_20px_rgba(180,100,50,0.1),0_8px_40px_rgba(139,90,43,0.06)]',
         'hover:shadow-[0_8px_32px_rgba(180,100,50,0.15),0_16px_56px_rgba(139,90,43,0.08)]',
         'hover:border-[hsl(25,60%,60%)]',
-        // Dark mode: Prominent aurora glow effect (rgba format)
-        'dark:bg-[rgba(255,255,255,0.03)] dark:backdrop-blur-[40px] dark:backdrop-saturate-[180%]',
-        'dark:border dark:border-white/[0.08]',
-        'dark:shadow-[0_16px_48px_rgba(0,0,0,0.5),0_0_80px_-20px_rgba(139,92,246,0.2),0_0_60px_-15px_rgba(34,211,238,0.15),0_0_40px_-10px_rgba(236,72,153,0.1),inset_0_1px_0_rgba(255,255,255,0.1)]',
-        'dark:hover:bg-[rgba(255,255,255,0.05)] dark:hover:border-white/[0.12]',
-        'dark:hover:shadow-[0_20px_64px_rgba(0,0,0,0.6),0_0_100px_-20px_rgba(139,92,246,0.25),0_0_80px_-15px_rgba(34,211,238,0.2),0_0_60px_-10px_rgba(236,72,153,0.15),inset_0_1px_0_rgba(255,255,255,0.15)]',
+        // Dark mode: Cyberpunk neon glow effect
+        'dark:bg-[rgba(8,12,20,0.88)] dark:backdrop-blur-[40px] dark:backdrop-saturate-[180%]',
+        'dark:border dark:border-[rgba(0,240,255,0.15)]',
+        'dark:shadow-[0_16px_48px_rgba(0,0,0,0.55),0_0_60px_-15px_rgba(0,240,255,0.2),0_0_40px_-10px_rgba(255,0,128,0.12),0_0_1px_rgba(0,240,255,0.25),inset_0_1px_0_rgba(255,255,255,0.06)]',
+        'dark:hover:bg-[rgba(10,15,25,0.92)] dark:hover:border-[rgba(0,240,255,0.25)]',
+        'dark:hover:shadow-[0_20px_64px_rgba(0,0,0,0.65),0_0_80px_-15px_rgba(0,240,255,0.25),0_0_50px_-10px_rgba(255,0,128,0.18),0_0_1px_rgba(0,240,255,0.35),inset_0_1px_0_rgba(255,255,255,0.1)]',
       ].join(' '),
 
       // Ultra-tight - Compact vintage
@@ -189,8 +189,8 @@ export const cardVariants = cva(
       selected: {
         true: [
           'ring-2 ring-primary/20 border-primary/30',
-          'dark:ring-violet-500/30 dark:border-violet-500/40',
-          'dark:shadow-[0_8px_32px_rgba(0,0,0,0.5),0_0_30px_-5px_rgba(139,92,246,0.25)]',
+          'dark:ring-[rgba(0,240,255,0.3)] dark:border-[rgba(0,240,255,0.4)]',
+          'dark:shadow-[0_8px_32px_rgba(0,0,0,0.5),0_0_30px_-5px_rgba(0,240,255,0.25),0_0_20px_-4px_rgba(255,0,128,0.15)]',
         ].join(' '),
         false: '',
       },
@@ -201,25 +201,25 @@ export const cardVariants = cva(
       {
         variant: 'flat',
         selected: true,
-        className: 'border-primary/40 dark:border-violet-500/40',
+        className: 'border-primary/40 dark:border-[rgba(0,240,255,0.35)]',
       },
       // Add hover state for interactive result cards
       {
         variant: 'result',
         interactive: true,
-        className: 'hover:bg-accent/50 dark:hover:bg-white/[0.03]',
+        className: 'hover:bg-accent/50 dark:hover:bg-[rgba(0,240,255,0.04)]',
       },
-      // Liquid variant when selected - enhanced aurora glow
+      // Liquid variant when selected - enhanced neon glow
       {
         variant: 'liquid',
         selected: true,
-        className: 'dark:shadow-[0_16px_48px_rgba(0,0,0,0.5),0_0_80px_-15px_rgba(139,92,246,0.25),0_0_60px_-15px_rgba(34,211,238,0.2)]',
+        className: 'dark:shadow-[0_16px_48px_rgba(0,0,0,0.55),0_0_60px_-12px_rgba(0,240,255,0.25),0_0_40px_-10px_rgba(255,0,128,0.18)]',
       },
-      // Aurora variant when selected - maximum aurora effect
+      // Aurora variant when selected - maximum neon effect
       {
         variant: 'aurora',
         selected: true,
-        className: 'dark:shadow-[0_16px_48px_rgba(0,0,0,0.5),0_0_100px_-20px_rgba(139,92,246,0.3),0_0_80px_-15px_rgba(34,211,238,0.25),0_0_60px_-10px_rgba(236,72,153,0.2)]',
+        className: 'dark:shadow-[0_16px_48px_rgba(0,0,0,0.6),0_0_80px_-15px_rgba(0,240,255,0.3),0_0_50px_-10px_rgba(255,0,128,0.22),0_0_1px_rgba(0,240,255,0.4)]',
       },
     ],
     

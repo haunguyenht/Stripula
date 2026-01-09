@@ -161,7 +161,7 @@ export class YogatketClient {
                         success: false,
                         approved: false,
                         message: error.message || 'Card declined',
-                        declineCode: error.decline_code || error.code || 'unknown',
+                        declineCode: error.decline_code || error.code || 'card_declined',
                         raw: r2.body
                     };
                 }

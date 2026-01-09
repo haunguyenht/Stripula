@@ -208,14 +208,29 @@ export function CreditWarningBanner({
  * Themed for both OrangeAI (light) and OPUX glass (dark)
  */
 export function CreditSummary({
-  liveCardsCount,
+  liveCardsCount = 0,
+  approvedCardsCount = 0,
   creditsConsumed,
   newBalance,
   className
 }) {
-  if (liveCardsCount === 0) {
+  const totalBillableCards = liveCardsCount + approvedCardsCount;
+  
+  if (totalBillableCards === 0) {
     return null;
   }
+
+  // Build description text based on what was billed
+  const getDescriptionText = () => {
+    const parts = [];
+    if (approvedCardsCount > 0) {
+      parts.push(`${approvedCardsCount} CHARGED`);
+    }
+    if (liveCardsCount > 0) {
+      parts.push(`${liveCardsCount} LIVE`);
+    }
+    return parts.join(' + ');
+  };
 
   return (
     <div className={cn(
@@ -246,7 +261,7 @@ export function CreditSummary({
             {Math.ceil(creditsConsumed)} credits used
           </span>
           <span className="text-[10px] text-amber-600/70 dark:text-amber-400/70">
-            {liveCardsCount} LIVE card{liveCardsCount !== 1 ? 's' : ''}
+            {getDescriptionText()}
           </span>
         </div>
       </div>

@@ -141,12 +141,20 @@ function TierLimitRow({ tier, limit, isCustom, onUpdate, isUpdating, index }) {
 export function TierLimitsConfig() {
   const { 
     limits, 
-    defaults, 
     metadata,
     isLoading, 
     error,
     refresh
   } = useCardInputLimits();
+
+  // Default limits fallback (used when limits not yet loaded)
+  const defaults = {
+    free: 500,
+    bronze: 1000,
+    silver: 2000,
+    gold: 5000,
+    diamond: 10000
+  };
 
   const [isUpdating, setIsUpdating] = useState({});
   const [isResetting, setIsResetting] = useState(false);
@@ -195,7 +203,7 @@ export function TierLimitsConfig() {
    * Handle update with confirmation
    */
   const handleUpdateWithConfirmation = useCallback(async (tier, newLimit) => {
-    const currentLimit = limits[tier];
+    const currentLimit = safeLimits[tier] || defaults[tier];
     
     const confirmed = await confirmation.confirm({
       title: 'Update Card Limit',
@@ -209,7 +217,7 @@ export function TierLimitsConfig() {
     }
 
     return handleUpdateLimit(tier, newLimit);
-  }, [limits, confirmation, handleUpdateLimit]);
+  }, [safeLimits, defaults, confirmation, handleUpdateLimit]);
 
   /**
    * Reset all limits to defaults
@@ -258,6 +266,9 @@ export function TierLimitsConfig() {
 
   // Check if any limits are custom
   const hasCustomLimits = TIER_ORDER.some(tier => metadata[tier]?.isCustom);
+
+  // Safe limits object (fallback to defaults if null)
+  const safeLimits = limits || defaults;
 
   if (isLoading) {
     return (
@@ -328,7 +339,7 @@ export function TierLimitsConfig() {
             <TierLimitRow
               key={tier}
               tier={tier}
-              limit={limits[tier] || defaults[tier]}
+              limit={safeLimits[tier] || defaults[tier]}
               defaultLimit={defaults[tier]}
               isCustom={metadata[tier]?.isCustom || false}
               onUpdate={handleUpdateWithConfirmation}

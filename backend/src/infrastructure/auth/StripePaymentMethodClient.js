@@ -1,3 +1,4 @@
+import process from 'node:process';
 import got from 'got';
 import { STRIPE_API } from '../../utils/constants.js';
 import { fingerprintGenerator } from '../../utils/FingerprintGenerator.js';
@@ -43,6 +44,22 @@ export class StripePaymentMethodClient {
         this.proxyManager = options.proxyManager || null;
         this.maxRetries = options.maxRetries || 3;
         this.retryDelay = options.retryDelay || 2000;
+        // Enable debug logging via env var
+        this.debug = options.debug || process.env.DEBUG_AUTH_GATEWAY === 'all' || process.env.DEBUG_STRIPE_PM === 'true';
+    }
+
+    /**
+     * Debug logger - only logs when debug mode is enabled
+     */
+    log(step, message, data = null) {
+        if (!this.debug) return;
+        const timestamp = new Date().toISOString();
+        const prefix = `[${timestamp}] [StripePaymentMethodClient] [${step}]`;
+        if (data) {
+            console.log(`${prefix} ${message}`, typeof data === 'string' ? data : JSON.stringify(data, null, 2));
+        } else {
+            console.log(`${prefix} ${message}`);
+        }
     }
 
     /**
@@ -107,20 +124,37 @@ export class StripePaymentMethodClient {
      * - Uses billingCountry from BIN data for better AVS matching
      */
     async createPaymentMethod(card, pkKey, options = {}) {
-        const { proxy, billingCountry = 'US' } = options;
+        const { billingCountry = 'US' } = options;
         let lastError = null;
+
+        this.log('CREATE_PM', `Starting PaymentMethod creation`, {
+            cardLast4: card.number?.slice(-4),
+            pkKeyPrefix: pkKey?.substring(0, 15) + '...',
+            billingCountry,
+            maxRetries: this.maxRetries
+        });
 
         // Retry loop - generate FRESH fingerprints AND get FRESH proxy on each attempt
         for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
             try {
+                this.log('CREATE_PM', `Attempt ${attempt}/${this.maxRetries}`);
+
                 // Get FRESH proxy for each attempt (critical for proxy rotation)
                 const proxyAgent = await this.getProxyAgent();
+                this.log('CREATE_PM', `Proxy agent`, { hasProxy: !!proxyAgent });
 
                 // Generate FRESH fingerprint for each attempt (critical for 492 bypass)
                 const fingerprint = fingerprintGenerator.generateFingerprint();
                 // Use billing details matching the card's BIN country for better AVS
                 const billing = this.generateBillingDetails(billingCountry);
                 const stripeIds = fingerprint.stripeIds;
+
+                this.log('CREATE_PM', `Generated fingerprint`, {
+                    guid: stripeIds.guid?.substring(0, 10) + '...',
+                    muid: stripeIds.muid?.substring(0, 10) + '...',
+                    sid: stripeIds.sid?.substring(0, 10) + '...',
+                    billingCountry: billing.country
+                });
 
                 // Generate unique session IDs for client attribution (matches 2025 success flow)
                 const sessionId = `${stripeIds.guid.slice(0, 8)}-${stripeIds.muid.slice(0, 4)}-${stripeIds.sid.slice(0, 4)}-${Date.now().toString(16)}`;
@@ -168,6 +202,8 @@ export class StripePaymentMethodClient {
                     'referrer': 'https://js.stripe.com'
                 });
 
+                this.log('CREATE_PM', `Sending request to Stripe API`);
+
                 const response = await got.post(this.endpoint, {
                     body: data.toString(),
                     headers: {
@@ -190,15 +226,22 @@ export class StripePaymentMethodClient {
                     ...(proxyAgent && { agent: { https: proxyAgent, http: proxyAgent } })
                 });
 
+                this.log('CREATE_PM', `Response received`, {
+                    statusCode: response.statusCode,
+                    contentLength: response.body?.length || 0
+                });
+
                 let responseData;
                 try {
                     responseData = JSON.parse(response.body);
                 } catch {
+                    this.log('CREATE_PM', `FAILED - Invalid JSON response`, { body: response.body?.substring(0, 500) });
                     return { success: false, error: 'Invalid JSON response' };
                 }
 
                 // Handle HTTP 492 - Stripe fingerprint blocking - RETRY
                 if (response.statusCode === 492) {
+                    this.log('CREATE_PM', `HTTP 492 - Fingerprint blocked, will retry`);
                     if (attempt < this.maxRetries) {
 
                         await this._sleep(2000);
@@ -216,6 +259,7 @@ export class StripePaymentMethodClient {
                 // Handle HTTP 429 - Rate Limited - RETRY
                 if (response.statusCode === 429) {
                     const retryAfter = parseInt(response.headers['retry-after'] || '5', 10) * 1000;
+                    this.log('CREATE_PM', `HTTP 429 - Rate limited, will retry after ${retryAfter}ms`);
                     if (attempt < this.maxRetries) {
 
                         await this._sleep(retryAfter);
@@ -232,6 +276,10 @@ export class StripePaymentMethodClient {
 
                 // Handle Stripe API errors - don't retry
                 if (response.statusCode !== 200) {
+                    this.log('CREATE_PM', `FAILED - Stripe API error`, {
+                        statusCode: response.statusCode,
+                        error: responseData.error
+                    });
                     return {
                         success: false,
                         error: responseData.error?.message || 'Unknown Stripe error',
@@ -241,6 +289,12 @@ export class StripePaymentMethodClient {
                 }
 
                 if (responseData.id) {
+                    this.log('CREATE_PM', `SUCCESS - PaymentMethod created`, {
+                        pmId: responseData.id,
+                        brand: responseData.card?.brand,
+                        last4: responseData.card?.last4,
+                        attempts: attempt
+                    });
                     return {
                         success: true,
                         pmId: responseData.id,
@@ -254,12 +308,18 @@ export class StripePaymentMethodClient {
                     };
                 }
 
+                this.log('CREATE_PM', `FAILED - No PM ID in response`, { responseData });
                 return {
                     success: false,
                     error: responseData.error?.message || 'Unknown Stripe error'
                 };
             } catch (error) {
                 lastError = error;
+                this.log('CREATE_PM', `Exception on attempt ${attempt}`, {
+                    message: error.message,
+                    code: error.code,
+                    cause: error.cause?.message
+                });
 
                 // Check if error is retryable
                 const isRetryable = this._isRetryableError(error);
@@ -280,6 +340,7 @@ export class StripePaymentMethodClient {
         }
 
         // All retries exhausted
+        this.log('CREATE_PM', `FAILED - All retries exhausted`, { lastError: lastError?.message });
         return {
             success: false,
             error: lastError?.message || 'Network error after retries',

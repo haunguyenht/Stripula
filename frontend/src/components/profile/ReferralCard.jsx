@@ -143,15 +143,7 @@ export function ReferralCard({ referral, className }) {
         }}
       />
       
-      {/* Tile pattern (dark only) */}
-      <div 
-        className="absolute inset-0 opacity-0 dark:opacity-[0.03] pointer-events-none"
-        style={{ 
-          backgroundImage: 'url(/bg-tile.webp)',
-          backgroundSize: '200px 200px',
-          backgroundRepeat: 'repeat'
-        }}
-      />
+
       
       {/* Decorative gradient blobs - copper for light */}
       <div className="absolute -top-16 -right-16 w-40 h-40 rounded-full blur-[60px] opacity-15 dark:opacity-30 bg-gradient-to-br from-[hsl(280,45%,55%)] via-[hsl(290,50%,50%)] to-[hsl(300,45%,45%)] dark:from-violet-500 dark:via-purple-500 dark:to-fuchsia-500" />

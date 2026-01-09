@@ -4,14 +4,37 @@ import { WooCommerceLoginClient } from '../infrastructure/auth/WooCommerceLoginC
 import { YogatketClient } from '../infrastructure/auth/YogatketClient.js';
 import { YogatketLoginClient } from '../infrastructure/auth/YogatketLoginClient.js';
 import { StripePaymentMethodClient } from '../infrastructure/auth/StripePaymentMethodClient.js';
+import { getSessionPool } from '../infrastructure/auth/SessionPool.js';
 import { DEFAULT_AUTH_SITE } from '../utils/constants.js';
 import { GatewayMessageFormatter } from '../utils/GatewayMessageFormatter.js';
+
+// Network/system error patterns - these should be ERROR status, not DECLINED
+const NETWORK_ERROR_PATTERNS = [
+    'timeout', 'etimedout', 'econnreset', 'econnrefused', 'enotfound',
+    'socket hang up', 'socket closed', 'network error', 'connection_error',
+    'epipe', 'ehostunreach', 'enetunreach', 'proxy', 'http_5', 'http_4',
+    'exception_', 'fetch_error', 'pay_page_error', 'reg_error', 'reg_fail',
+    'no_nonce', 'cloudflare', 'captcha', 'rate_limit', 'too_soon'
+];
+
+/**
+ * Check if error message indicates a network/system error (not a card decline)
+ */
+function isNetworkError(errorMsg) {
+    if (!errorMsg) return false;
+    const lower = errorMsg.toLowerCase();
+    return NETWORK_ERROR_PATTERNS.some(pattern => lower.includes(pattern));
+}
 
 /**
  * Auth Validator
  * Validates cards via WooCommerce registration + SetupIntent flow
  * or direct SetupIntent confirm flow (Yogateket-style)
  * Creates fresh session per card for rate-limit avoidance
+ * 
+ * Optimization: 
+ * - Caches static PK key after first extraction (only for sites that extract from page)
+ * - Uses session pool for sites with useSessionPool: true (pre-registers sessions in background)
  */
 export class AuthValidator {
     constructor(options = {}) {
@@ -19,6 +42,30 @@ export class AuthValidator {
         this.proxyManager = options.proxyManager || null;
         this.initClient();
         this.pmClient = options.pmClient || new StripePaymentMethodClient({ proxyManager: this.proxyManager });
+        
+        // Initialize session pool if configured
+        if (this.site.useSessionPool && this.site.type === 'woocommerce') {
+            this._initSessionPool();
+        }
+    }
+
+    _initSessionPool() {
+        const poolOptions = {
+            poolSize: this.site.sessionPoolSize || 5,
+            minReady: this.site.sessionPoolMinReady || 1,
+            refillConcurrency: this.site.sessionPoolConcurrency || 2
+        };
+        
+        // Factory function to create WooCommerceClient instances for pool
+        // Pool sessions skip the semaphore - pool manages its own concurrency
+        const clientFactory = () => new WooCommerceClient(this.site, { 
+            proxyManager: this.proxyManager, 
+            timeout: this.site.timeout,
+            skipSemaphore: true // Pool manages concurrency via refillConcurrency
+        });
+        
+        this.sessionPool = getSessionPool(this.site.id, clientFactory, poolOptions);
+        this.sessionPool.start();
     }
 
     initClient() {
@@ -27,9 +74,9 @@ export class AuthValidator {
         } else if (this.site.type === 'setupintent') {
             this.client = new YogatketClient(this.site, { proxyManager: this.proxyManager });
         } else if (this.site.type === 'woocommerce-login') {
-            this.wooClient = new WooCommerceLoginClient(this.site, { proxyManager: this.proxyManager });
+            this.wooClient = new WooCommerceLoginClient(this.site, { proxyManager: this.proxyManager, timeout: this.site.timeout });
         } else {
-            this.wooClient = new WooCommerceClient(this.site, { proxyManager: this.proxyManager });
+            this.wooClient = new WooCommerceClient(this.site, { proxyManager: this.proxyManager, timeout: this.site.timeout });
         }
     }
 
@@ -65,9 +112,25 @@ export class AuthValidator {
 
     /**
      * WooCommerce flow: Register -> Create PM -> Submit SetupIntent via AJAX
+     * Uses session pool if available for faster validation
      */
     async validateWooCommerce(cardInfo, fullCard, startTime) {
-        const registration = await this.wooClient.registerAndGetNonces();
+        let registration;
+        
+        // Try session pool first (pre-registered sessions)
+        if (this.sessionPool) {
+            registration = await this.sessionPool.getSession();
+            if (!registration) {
+                return AuthResult.error('SESSION_POOL_EMPTY', {
+                    card: fullCard,
+                    site: this.site.label,
+                    duration: Date.now() - startTime
+                });
+            }
+        } else {
+            // Fallback to on-demand registration
+            registration = await this.wooClient.registerAndGetNonces();
+        }
 
         if (!registration.success) {
             return AuthResult.error(`REG_FAIL: ${registration.error}`, {
@@ -77,8 +140,7 @@ export class AuthValidator {
             });
         }
 
-        // Use pkKey from registration result (extracted from page) or site config
-        const pkKey = registration.pkKey || this.site.pkKey;
+        const pkKey = this.site.pkKey || registration.pkKey;
         if (!pkKey) {
             return AuthResult.error('PK_KEY_NOT_FOUND', {
                 card: fullCard,
@@ -95,7 +157,16 @@ export class AuthValidator {
         );
 
         if (!pmResult.success) {
-            const parsed = GatewayMessageFormatter.parseDeclineFromText(pmResult.error);
+            const errorMsg = pmResult.error || 'Card declined';
+            // Check if this is a network/system error
+            if (isNetworkError(errorMsg)) {
+                return AuthResult.error(errorMsg, {
+                    card: fullCard,
+                    site: this.site.label,
+                    duration: Date.now() - startTime
+                });
+            }
+            const parsed = GatewayMessageFormatter.parseDeclineFromText(errorMsg);
             return AuthResult.declined(parsed.message, {
                 card: fullCard,
                 site: this.site.label,
@@ -104,10 +175,19 @@ export class AuthValidator {
             });
         }
 
+        // Use wooClient for submitSetupIntent (it only uses sessionData, not instance state)
         const authResult = await this.wooClient.submitSetupIntent(pmResult.pmId, registration);
 
         if (!authResult.success) {
             const errorMsg = authResult.message || authResult.error || 'Card declined';
+            // Check if this is a network/system error
+            if (isNetworkError(errorMsg)) {
+                return AuthResult.error(errorMsg, {
+                    card: fullCard,
+                    site: this.site.label,
+                    duration: Date.now() - startTime
+                });
+            }
             const parsed = GatewayMessageFormatter.parseDeclineFromText(errorMsg);
             return AuthResult.declined(parsed.message, {
                 card: fullCard,
@@ -138,8 +218,7 @@ export class AuthValidator {
             });
         }
 
-        // Use pkKey from login result (extracted from page) or site config
-        const pkKey = loginResult.pkKey || this.site.pkKey;
+        const pkKey = this.site.pkKey || loginResult.pkKey;
         if (!pkKey) {
             return AuthResult.error('PK_KEY_NOT_FOUND', {
                 card: fullCard,
@@ -156,7 +235,16 @@ export class AuthValidator {
         );
 
         if (!pmResult.success) {
-            const parsed = GatewayMessageFormatter.parseDeclineFromText(pmResult.error);
+            const errorMsg = pmResult.error || 'Card declined';
+            // Check if this is a network/system error
+            if (isNetworkError(errorMsg)) {
+                return AuthResult.error(errorMsg, {
+                    card: fullCard,
+                    site: this.site.label,
+                    duration: Date.now() - startTime
+                });
+            }
+            const parsed = GatewayMessageFormatter.parseDeclineFromText(errorMsg);
             return AuthResult.declined(parsed.message, {
                 card: fullCard,
                 site: this.site.label,
@@ -169,6 +257,14 @@ export class AuthValidator {
 
         if (!authResult.success) {
             const errorMsg = authResult.message || authResult.error || 'Card declined';
+            // Check if this is a network/system error
+            if (isNetworkError(errorMsg)) {
+                return AuthResult.error(errorMsg, {
+                    card: fullCard,
+                    site: this.site.label,
+                    duration: Date.now() - startTime
+                });
+            }
             const parsed = GatewayMessageFormatter.parseDeclineFromText(errorMsg);
             return AuthResult.declined(parsed.message, {
                 card: fullCard,
@@ -203,6 +299,14 @@ export class AuthValidator {
         // Handle declined cards
         if (!authResult.success || !authResult.approved) {
             const errorMsg = authResult.message || 'Card declined';
+            // Check if this is a network/system error
+            if (isNetworkError(errorMsg)) {
+                return AuthResult.error(errorMsg, {
+                    card: fullCard,
+                    site: this.site.label,
+                    duration: Date.now() - startTime
+                });
+            }
             const parsed = GatewayMessageFormatter.parseDeclineFromText(errorMsg);
             return AuthResult.declined(parsed.message, {
                 card: fullCard,

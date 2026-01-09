@@ -1,6 +1,24 @@
 import { ShopifyResult } from '../domain/ShopifyResult.js';
 import { AutoShopifyClient } from '../infrastructure/auth/AutoShopifyClient.js';
 
+// Network/system error patterns - these should be ERROR status, not DECLINED
+const NETWORK_ERROR_PATTERNS = [
+    'timeout', 'etimedout', 'econnreset', 'econnrefused', 'enotfound',
+    'socket hang up', 'socket closed', 'network error', 'connection_error',
+    'epipe', 'ehostunreach', 'enetunreach', 'proxy', 'http_5', 'http_4',
+    'exception_', 'fetch_error', 'service unavailable', 'cloudflare',
+    'rate_limit', 'rate limit', 'too_soon', 'cannot resolve'
+];
+
+/**
+ * Check if error message indicates a network/system error (not a card decline)
+ */
+function isNetworkError(errorMsg) {
+    if (!errorMsg) return false;
+    const lower = errorMsg.toLowerCase();
+    return NETWORK_ERROR_PATTERNS.some(pattern => lower.includes(pattern));
+}
+
 /**
  * Shopify Validator
  * Validates cards via Auto Shopify API (charge type)
@@ -54,9 +72,23 @@ export class ShopifyValidator {
             const result = await this.client.validateCard(cardInfo);
 
             if (!result.success) {
-                return ShopifyResult.error(result.error, {
+                // Network/system errors should be ERROR status
+                const errorMsg = result.error || 'Unknown error';
+                return ShopifyResult.error(errorMsg, {
                     card: fullCard,
                     site: this.shopifyUrl,
+                    duration: result.duration || (Date.now() - startTime)
+                });
+            }
+
+            // Check if the response indicates a network/system error (not a card decline)
+            const responseText = result.responseText || result.errorMessage || '';
+            if (!result.isApproved && !result.isCaptcha && !result.isSiteDead && isNetworkError(responseText)) {
+                return ShopifyResult.error(responseText, {
+                    card: fullCard,
+                    site: result.site || this.shopifyUrl,
+                    gateway: result.gateway,
+                    price: result.price,
                     duration: result.duration || (Date.now() - startTime)
                 });
             }

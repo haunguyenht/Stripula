@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
-import { Copy, Check, Globe, Building2, Zap } from 'lucide-react';
-import { AnimatePresence } from 'motion/react';
+import { Zap } from 'lucide-react';
 import { useToast } from '@/hooks/useToast';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useSessionStorage } from '@/hooks/useSessionStorage';
@@ -18,9 +17,7 @@ import { CardInputSection } from '@/components/ui/CardInputSection';
 
 import { TwoPanelLayout } from '../../layout/TwoPanelLayout';
 import { ResultsPanel, ResultItem, ProgressBar } from '../ResultsPanel';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { SpeedBadge } from '@/components/ui/TierSpeedControl';
+import { Badge } from '@/components/ui/badge';
 import { useSpeedConfig } from '@/hooks/useSpeedConfig';
 import { GatewayMessageFormatter } from '@/utils/gatewayMessage';
 import { Celebration, useCelebration } from '@/components/ui/Celebration';
@@ -42,10 +39,7 @@ import {
   CardNumber,
   GatewayBadge,
 } from '@/components/ui/result-card-parts';
-import { BrandIcon } from '@/components/ui/brand-icons';
-import { CreditSummary, BatchConfirmDialog, BATCH_CONFIRM_THRESHOLD, BatchConfigCard } from '@/components/credits';
-import { cn } from '@/lib/utils';
-import { toTitleCase } from '@/lib/utils/card-helpers';
+import { CreditSummary, BatchConfigCard } from '@/components/credits';
 
 export function StripeChargePanel() {
   const [cards, setCards] = useLocalStorage('stripeChargeCards', '');
@@ -62,9 +56,6 @@ export function StripeChargePanel() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [batchComplete, setBatchComplete] = useState(false);
-  const [showBatchConfirm, setShowBatchConfirm] = useState(false);
-  const [batchConfirmResolve, setBatchConfirmResolve] = useState(null);
-  const [pendingBatchInfo, setPendingBatchInfo] = useState(null);
 
   const abortRef = useRef(false);
   const abortControllerRef = useRef(null);
@@ -80,7 +71,9 @@ export function StripeChargePanel() {
     isAuthenticated,
     creditsConsumed,
     liveCardsCount,
+    approvedCardsCount,
     trackLiveCard,
+    trackApprovedCard,
     resetTracking,
     setBalance,
     refresh: refreshCredits
@@ -164,6 +157,7 @@ export function StripeChargePanel() {
       return;
     }
     setSelectedSite(siteId);
+    setBatchComplete(false); // Reset to show updated cost estimator
     try {
       await fetch('/api/charge/site', {
         method: 'POST',
@@ -187,32 +181,16 @@ export function StripeChargePanel() {
 
   const clearCards = useCallback(() => {
     setCards('');
+    setBatchComplete(false);
   }, [setCards]);
 
-  // Helper to check if batch confirmation is needed - Requirements: 13.1
-  const needsBatchConfirmation = useCallback((count) => {
-    return count > BATCH_CONFIRM_THRESHOLD;
-  }, []);
-
-  // Handle batch confirmation dialog confirm - Requirements: 13.4
-  const handleBatchConfirm = useCallback(() => {
-    if (batchConfirmResolve) {
-      batchConfirmResolve(true);
+  // Handle card input changes - reset batch complete to show cost estimator
+  const handleCardsChange = useCallback((value) => {
+    setCards(value);
+    if (batchComplete) {
+      setBatchComplete(false);
     }
-    setShowBatchConfirm(false);
-    setBatchConfirmResolve(null);
-    setPendingBatchInfo(null);
-  }, [batchConfirmResolve]);
-
-  // Handle batch confirmation dialog cancel - Requirements: 13.5
-  const handleBatchCancel = useCallback(() => {
-    if (batchConfirmResolve) {
-      batchConfirmResolve(false);
-    }
-    setShowBatchConfirm(false);
-    setBatchConfirmResolve(null);
-    setPendingBatchInfo(null);
-  }, [batchConfirmResolve]);
+  }, [setCards, batchComplete]);
 
   const handleCheckCards = async () => {
     if (isLoading) return;
@@ -249,27 +227,6 @@ export function StripeChargePanel() {
       return;
     }
 
-    // Show batch confirmation dialog for large batches - Requirements: 13.1, 13.4, 13.5
-    if (isAuthenticated && needsBatchConfirmation(totalCards)) {
-      const gatewayLabel = sites.find(s => s.id === selectedSite)?.label || selectedSite;
-
-      // Show dialog and wait for user response
-      const confirmed = await new Promise((resolve) => {
-        setPendingBatchInfo({
-          cardCount: totalCards,
-          balance,
-          effectiveRate,
-          gatewayName: gatewayLabel
-        });
-        setBatchConfirmResolve(() => resolve);
-        setShowBatchConfirm(true);
-      });
-
-      if (!confirmed) {
-        return; // User cancelled
-      }
-    }
-
     setIsLoading(true);
     setBatchComplete(false);
     resetTracking(); // Reset credit tracking for new batch
@@ -279,7 +236,7 @@ export function StripeChargePanel() {
     info(`Starting charge validation for ${totalCards} cards`);
 
     let currentCards = cards;
-    // Start from existing stats to accumulate
+    // Start from existing stats to accumulate for display
     let stats = {
       approved: cardStats.approved || 0,
       threeDS: cardStats.threeDS || 0,
@@ -287,6 +244,9 @@ export function StripeChargePanel() {
       error: cardStats.error || 0,
       total: cardStats.total || 0
     };
+    // Track batch-specific counts for credit toast (not accumulated)
+    let batchApproved = 0;
+    let batchLive = 0;
 
     try {
       abortControllerRef.current = new AbortController();
@@ -391,8 +351,9 @@ export function StripeChargePanel() {
             if (r.status === 'APPROVED') {
               celebrate();
               stats.approved++;
+              batchApproved++; // Track batch-specific count for toast
               // Track credit consumption with pricing_approved cost (Charge gateways bill for APPROVED)
-              trackLiveCard(pricing?.approved || effectiveRate);
+              trackApprovedCard(pricing?.approved || effectiveRate);
               // Live update balance if newBalance is provided (reconciliation from server)
               if (typeof r.newBalance === 'number') {
                 setBalance(r.newBalance);
@@ -400,6 +361,7 @@ export function StripeChargePanel() {
             } else if (r.status === '3DS_REQUIRED' || isLiveDecline) {
               celebrate(); // Celebrate for all live cards
               stats.threeDS++; // Count both 3DS and live declines as "Live"
+              batchLive++; // Track batch-specific count for toast
               // Track credit consumption with pricing_live cost (Charge gateways also bill for LIVE)
               trackLiveCard(pricing?.live || effectiveRate);
               // Live update balance if newBalance is provided (reconciliation from server)
@@ -483,12 +445,18 @@ export function StripeChargePanel() {
     if (!abortRef.current) {
       success(`Charge complete: ${stats.approved} approved, ${stats.threeDS} live, ${stats.declined} declined, ${stats.error} errors`);
       setBatchComplete(true);
-      // Show credit deduction toast if there were live cards - Requirements: 12.4
-      // For charge panel, both approved and 3DS/live declines consume credits
-      const totalLiveCards = stats.approved + stats.threeDS;
-      if (isAuthenticated && totalLiveCards > 0) {
-        const creditsUsed = Math.ceil(totalLiveCards * effectiveRate);
-        info(`${creditsUsed} credits deducted for ${totalLiveCards} live card${totalLiveCards > 1 ? 's' : ''}`);
+      // Show credit deduction toast for THIS BATCH only - Requirements: 12.4
+      // For charge panel, approved cards use pricing_approved, live cards use pricing_live
+      if (isAuthenticated && (batchApproved > 0 || batchLive > 0)) {
+        const approvedCredits = batchApproved > 0 ? Math.ceil(batchApproved * (pricing?.approved || effectiveRate)) : 0;
+        const liveCredits = batchLive > 0 ? Math.ceil(batchLive * (pricing?.live || effectiveRate)) : 0;
+        const totalCredits = approvedCredits + liveCredits;
+        
+        // Build descriptive message showing breakdown
+        const parts = [];
+        if (batchApproved > 0) parts.push(`${batchApproved} approved`);
+        if (batchLive > 0) parts.push(`${batchLive} live`);
+        info(`${totalCredits} credits deducted for ${parts.join(' + ')} card${(batchApproved + batchLive) > 1 ? 's' : ''}`);
       }
       refreshCredits().catch(() => {});
     }
@@ -634,7 +602,7 @@ export function StripeChargePanel() {
       {/* Card Input */}
       <CardInputSection
         cards={cards}
-        onCardsChange={setCards}
+        onCardsChange={handleCardsChange}
         onCardsBlur={handleCardsBlur}
         onImport={handleImport}
         onClear={clearCards}
@@ -661,9 +629,10 @@ export function StripeChargePanel() {
       )}
 
       {/* Unified Gateway + Cost Card */}
-      {batchComplete && liveCardsCount > 0 ? (
+      {batchComplete && (liveCardsCount > 0 || approvedCardsCount > 0) ? (
         <CreditSummary
           liveCardsCount={liveCardsCount}
+          approvedCardsCount={approvedCardsCount}
           creditsConsumed={creditsConsumed}
           newBalance={balance}
         />
@@ -680,6 +649,7 @@ export function StripeChargePanel() {
           effectiveRate={effectiveRate}
           isAuthenticated={isAuthenticated}
           pricing={pricing}
+          showApprovedPricing={true}
         />
       )}
 
@@ -741,17 +711,6 @@ export function StripeChargePanel() {
   return (
     <>
       <Celebration trigger={celebrationTrigger} />
-      {/* Batch Confirmation Dialog - Requirements: 13.1, 13.2, 13.3, 13.4, 13.5 */}
-      <BatchConfirmDialog
-        open={showBatchConfirm}
-        onOpenChange={setShowBatchConfirm}
-        cardCount={pendingBatchInfo?.cardCount || 0}
-        balance={pendingBatchInfo?.balance || balance}
-        effectiveRate={pendingBatchInfo?.effectiveRate || effectiveRate}
-        gatewayName={pendingBatchInfo?.gatewayName || 'Gateway'}
-        onConfirm={handleBatchConfirm}
-        onCancel={handleBatchCancel}
-      />
       <TwoPanelLayout
         configPanel={configContent}
         resultsPanel={resultsContent}
@@ -859,6 +818,7 @@ const ChargeResultItem = React.memo(function ChargeResultItem({ result, index, c
 
   const cardDisplay = result.fullCard || result.card || 'Unknown';
   const binData = result.binData;
+  const chargeAmount = result.chargeAmount;
 
   // Friendly message based on status - use GatewayMessageFormatter for LIVE declines
   const friendlyMessage = useMemo(() => {
@@ -900,7 +860,7 @@ const ChargeResultItem = React.memo(function ChargeResultItem({ result, index, c
   };
 
   const getBadgeLabel = () => {
-    if (isApproved) return 'CHARGED';
+    if (isApproved) return chargeAmount ? `CHARGED ${chargeAmount}` : 'CHARGED';
     if (is3DS) return 'LIVE 3DS';
     if (isLiveDecline) return 'LIVE';
     if (isDeclined) return 'DECLINED';

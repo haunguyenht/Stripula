@@ -21,6 +21,7 @@ const StripeOwn = lazy(() => import('../StripeOwn'));
 const StripeAuthPanel = lazy(() => import('../stripe/panels/StripeAuthPanel').then(m => ({ default: m.StripeAuthPanel })));
 const StripeChargePanel = lazy(() => import('../stripe/panels/StripeChargePanel').then(m => ({ default: m.StripeChargePanel })));
 const ShopifyChargePanel = lazy(() => import('../shopify/panels/ShopifyChargePanel').then(m => ({ default: m.ShopifyChargePanel })));
+const ChargeAVSPanel = lazy(() => import('../other/panels/ChargeAVSPanel').then(m => ({ default: m.ChargeAVSPanel })));
 const ProfilePage = lazy(() => import('@/pages/ProfilePage').then(m => ({ default: m.ProfilePage })));
 const LoginPage = lazy(() => import('@/pages/LoginPage').then(m => ({ default: m.LoginPage })));
 const AdminPage = lazy(() => import('@/pages/AdminPage').then(m => ({ default: m.AdminPage })));
@@ -175,7 +176,7 @@ function AppLayoutInner() {
         case 'other-sk-key-check':
           return <StripeOwn initialTab="keys" />;
         case 'other-charge-avs':
-          return <PlaceholderPage title="Charge AVS" description="Address verification service validation" Icon={MapPin} />;
+          return <ChargeAVSPanel />;
         case 'other-square-charge':
           return <PlaceholderPage title="Square Charge" description="Square payment validation" Icon={SquareStack} />;
         case 'profile':
@@ -203,16 +204,13 @@ function AppLayoutInner() {
   }
 
   // Show login page when not authenticated
+  // Note: LoginPage has its own themed background (DarkBackground/LightBackground)
+  // so we don't render AppBackground here to avoid duplicate animated backgrounds causing flickering
   if (!isAuthenticated) {
     return (
-      <div className="h-screen w-screen overflow-hidden flex flex-col bg-transparent">
-        <AppBackground />
-        <main className="flex-1 flex flex-col overflow-hidden relative z-0">
-          <Suspense fallback={<PageLoader label="Loading..." sublabel="Please wait" variant="orbit" />}>
-            <LoginPage />
-          </Suspense>
-        </main>
-      </div>
+      <Suspense fallback={<PageLoader label="Loading..." sublabel="Please wait" variant="orbit" />}>
+        <LoginPage />
+      </Suspense>
     );
   }
 

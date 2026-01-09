@@ -86,7 +86,7 @@ export class AuthController {
         // Track if stream is still open
         let streamClosed = false;
 
-        // Handle client disconnect
+        // Handle client disconnect - stop processing immediately
         req.on('close', () => {
             streamClosed = true;
             this.authService?.stopBatch();
@@ -94,10 +94,12 @@ export class AuthController {
 
         req.on('error', (err) => {
             streamClosed = true;
+            this.authService?.stopBatch();
         });
 
         res.on('error', (err) => {
             streamClosed = true;
+            this.authService?.stopBatch();
         });
 
         res.flushHeaders();
@@ -138,12 +140,17 @@ export class AuthController {
                     userId, // Pass userId for statistics tracking (Requirements 8.1, 8.2)
                     onProgress: (progress) => !streamClosed && sendEvent('progress', progress),
                     onResult: async (result) => {
-                        if (streamClosed || creditExhausted) return;
+                        // Skip all processing if client disconnected
+                        if (streamClosed) return;
+                        if (creditExhausted) return;
 
                         processedCards++;
 
                         // For LIVE cards (APPROVED in auth), deduct credits in real-time
                         if (result.status === 'APPROVED' && userId && this.creditManagerService) {
+                            // Double-check stream is still open before credit operations
+                            if (streamClosed) return;
+                            
                             // Auth validation: APPROVED = LIVE card
                             liveCount++;
                             
@@ -217,15 +224,6 @@ export class AuthController {
                 }
             }
 
-            // Release operation lock
-            if (userId && this.creditManagerService) {
-                try {
-                    await this.creditManagerService.releaseOperationLockByUser(userId, stopReason);
-                } catch (err) {
-                    // Lock release error
-                }
-            }
-
             if (!streamClosed) {
                 sendEvent('complete', {
                     ...result,
@@ -251,14 +249,6 @@ export class AuthController {
                 } catch {}
             }
             
-            // Release lock on error
-            if (userId && this.creditManagerService) {
-                try {
-                    await this.creditManagerService.releaseOperationLockByUser(userId, 'failed');
-                } catch (err) {
-                    // Lock release error
-                }
-            }
             if (!streamClosed) {
                 sendEvent('error', { message: error.message });
             }
@@ -277,19 +267,7 @@ export class AuthController {
      * POST /api/auth/stop
      */
     async stopBatch(req, res) {
-        const userId = req.user?.id;
-
         this.authService.stopBatch();
-
-        // Release operation lock so user can start new validation
-        if (userId && this.creditManagerService) {
-            try {
-                await this.creditManagerService.releaseOperationLockByUser(userId, 'cancelled');
-            } catch (err) {
-                // Lock release error
-            }
-        }
-
         res.json({ status: 'OK', message: 'Stop signal sent' });
     }
 

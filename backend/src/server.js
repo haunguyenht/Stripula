@@ -23,6 +23,7 @@ import { KeyCheckerService } from './services/KeyCheckerService.js';
 import { StripeAuthService } from './services/StripeAuthService.js';
 import { ShopifyChargeService } from './services/ShopifyChargeService.js';
 import { StripeChargeService } from './services/StripeChargeService.js';
+import { ChargeAVSService } from './services/ChargeAVSService.js';
 import { TelegramAuthService } from './services/TelegramAuthService.js';
 import { CreditManagerService } from './services/CreditManagerService.js';
 import { UserService } from './services/UserService.js';
@@ -45,6 +46,7 @@ import { ErrorReporterService } from './services/ErrorReporterService.js';
 import { AuthController } from './controllers/AuthController.js';
 import { ChargeController } from './controllers/ChargeController.js';
 import { ShopifyChargeController } from './controllers/ShopifyChargeController.js';
+import { ChargeAVSController } from './controllers/ChargeAVSController.js';
 import { ProxyController } from './controllers/ProxyController.js';
 import { SystemController } from './controllers/SystemController.js';
 import { TelegramAuthController } from './controllers/TelegramAuthController.js';
@@ -136,6 +138,13 @@ function createContainer() {
     });
 
     const chargeService = new StripeChargeService({
+        speedManager,
+        gatewayManager: gatewayManagerService,
+        dashboardService // Inject for statistics tracking
+    });
+
+    // Charge AVS Service (Qgiv with AVS validation)
+    const chargeAVSService = new ChargeAVSService({
         speedManager,
         gatewayManager: gatewayManagerService,
         dashboardService // Inject for statistics tracking
@@ -241,6 +250,12 @@ function createContainer() {
         creditManagerService,
         telegramBotService
     });
+    const chargeAVSController = new ChargeAVSController({
+        chargeAVSService,
+        creditManager: creditManagerService,
+        gatewayConfigService,
+        telegramBotService
+    });
     const proxyController = new ProxyController({});
     const systemController = new SystemController({
         tierLimitService,
@@ -339,6 +354,7 @@ function createContainer() {
             auth: authController,
             charge: chargeController,
             shopify: shopifyController,
+            chargeAVS: chargeAVSController,
             proxy: proxyController,
             system: systemController,
             telegramAuth: telegramAuthController,
@@ -474,12 +490,10 @@ function createApp(container) {
     app.post('/api/credits/claim-daily', authMiddleware.authenticate(), creditRoutes.claimDaily);
     app.get('/api/credits/claim-status', authMiddleware.authenticate(), creditRoutes.getClaimStatus);
     app.get('/api/credits/summary', authMiddleware.authenticate(), creditRoutes.getSummary);
-    app.post('/api/credits/release-lock', authMiddleware.authenticate(), creditRoutes.releaseLock);
 
     // ═══════════════════════════════════════════════════════════════
     // User routes - User profile and referrals
     // ═══════════════════════════════════════════════════════════════
-    app.get('/api/user/status', authMiddleware.authenticate(), creditRoutes.getOperationStatus);
     app.get('/api/user/profile', authMiddleware.authenticate(), userRoutes.getProfile);
     app.get('/api/user/referral', authMiddleware.authenticate(), userRoutes.getReferral);
     app.get('/api/user/notifications/stream', authMiddleware.authenticate(), userRoutes.notificationStream);
@@ -517,7 +531,6 @@ function createApp(container) {
     app.post('/api/auth/batch-stream',
         authMiddleware.authenticate(),
         creditMiddleware.checkCredits(GATEWAY_IDS.AUTH_1),
-        creditMiddleware.acquireLock(),
         authRoutes.checkBatchStream
     );
     app.post('/api/auth/stop', authMiddleware.optionalAuth(), authRoutes.stopBatch);
@@ -533,7 +546,6 @@ function createApp(container) {
     app.post('/api/charge/batch-stream',
         authMiddleware.authenticate(),
         creditMiddleware.checkCredits(GATEWAY_IDS.CHARGE_1),
-        creditMiddleware.acquireLock(),
         chargeRoutes.checkBatchStream
     );
     app.post('/api/charge/stop', authMiddleware.optionalAuth(), chargeRoutes.stopBatch);
@@ -547,7 +559,6 @@ function createApp(container) {
     app.post('/api/skbased/validate',
         authMiddleware.authenticate(),
         creditMiddleware.checkCredits(GATEWAY_IDS.SKBASED_CHARGE_1),
-        creditMiddleware.acquireLock(),
         skbasedRoutes.startValidation
     );
     app.post('/api/skbased/stop', authMiddleware.optionalAuth(), skbasedRoutes.stopBatch);
@@ -582,10 +593,17 @@ function createApp(container) {
     app.post('/api/shopify/batch-stream',
         authMiddleware.authenticate(),
         creditMiddleware.checkCredits(GATEWAY_IDS.AUTO_SHOPIFY_1),
-        creditMiddleware.acquireLock(),
         shopifyRoutes.checkBatchStream
     );
     app.post('/api/shopify/stop', authMiddleware.optionalAuth(), shopifyRoutes.stopBatch);
+
+    // ═══════════════════════════════════════════════════════════════
+    // Charge AVS routes - Qgiv AVS card validation
+    // Requires card format: number|mm|yy|cvv|zip
+    // Protected routes require authentication and credit check
+    // ═══════════════════════════════════════════════════════════════
+    const chargeAVSRoutes = container.controllers.chargeAVS.getRoutes();
+    app.use('/api/charge-avs', authMiddleware.authenticate(), chargeAVSRoutes);
 
     // ═══════════════════════════════════════════════════════════════
     // Proxy routes - Proxy testing

@@ -371,9 +371,8 @@ const AppBackground = memo(function AppBackground({ className }) {
   }
 
   // ============================================
-  // DARK MODE: Cyberpunk Premium Background (Optimized)
-  // Based on Material Design dark theme best practices
-  // Base: ~8% lightness for better readability
+  // DARK MODE: Cyberpunk Premium Background
+  // Enhanced with neon effects and animations
   // ============================================
   return (
     <div 
@@ -383,89 +382,130 @@ const AppBackground = memo(function AppBackground({ className }) {
       )}
       aria-hidden="true"
       style={{
-        // Optimized base: #121212 equivalent with blue-violet tint
-        // 8% lightness instead of 5% for better contrast
         background: `
           linear-gradient(180deg, 
-            hsl(230, 18%, 9%) 0%, 
-            hsl(235, 16%, 8%) 50%,
-            hsl(240, 14%, 7%) 100%
+            hsl(230, 20%, 6%) 0%, 
+            hsl(235, 18%, 5%) 50%,
+            hsl(240, 15%, 4%) 100%
           )
         `,
       }}
     >
-      {/* Layer 1: Subtle grid pattern - more visible */}
+      {/* Layer 1: Animated Neon Grid */}
       <div 
         className="absolute inset-0 pointer-events-none"
         style={{
           backgroundImage: `
-            linear-gradient(rgba(0, 255, 255, 0.04) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(0, 255, 255, 0.04) 1px, transparent 1px)
+            linear-gradient(rgba(0, 240, 255, 0.08) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(0, 240, 255, 0.08) 1px, transparent 1px)
           `,
-          backgroundSize: '50px 50px',
-          maskImage: 'radial-gradient(ellipse 90% 90% at 50% 50%, black 30%, transparent 75%)',
-          WebkitMaskImage: 'radial-gradient(ellipse 90% 90% at 50% 50%, black 30%, transparent 75%)',
+          backgroundSize: '60px 60px',
+          maskImage: 'radial-gradient(ellipse 100% 100% at 50% 50%, black 20%, transparent 70%)',
+          WebkitMaskImage: 'radial-gradient(ellipse 100% 100% at 50% 50%, black 20%, transparent 70%)',
         }}
       />
 
-      {/* Layer 2: Center ambient light - key for visibility */}
+      {/* Layer 2: Perspective Grid Floor Effect */}
       <div 
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] h-[80%] pointer-events-none"
+        className="absolute inset-x-0 bottom-0 h-[40%] pointer-events-none"
         style={{
           background: `
-            radial-gradient(ellipse 60% 50% at 50% 45%, rgba(100, 180, 255, 0.08) 0%, transparent 50%),
-            radial-gradient(ellipse 80% 70% at 50% 50%, rgba(139, 92, 246, 0.05) 0%, transparent 60%)
+            linear-gradient(transparent 0%, rgba(0, 240, 255, 0.03) 100%)
           `,
+          backgroundImage: `
+            linear-gradient(90deg, rgba(0, 240, 255, 0.1) 1px, transparent 1px)
+          `,
+          backgroundSize: '80px 100%',
+          transform: 'perspective(500px) rotateX(60deg)',
+          transformOrigin: 'bottom',
+          maskImage: 'linear-gradient(transparent 0%, black 30%, black 70%, transparent 100%)',
+          WebkitMaskImage: 'linear-gradient(transparent 0%, black 30%, black 70%, transparent 100%)',
+        }}
+      />
+
+      {/* Layer 3: Animated Cyan Neon Blob */}
+      {!prefersReducedMotion.current && (
+        <motion.div 
+          className="absolute -top-[15%] -right-[10%] w-[55%] h-[55%] pointer-events-none"
+          style={{
+            background: 'radial-gradient(ellipse at center, rgba(0, 240, 255, 0.2) 0%, rgba(0, 200, 255, 0.08) 40%, transparent 65%)',
+            filter: 'blur(80px)',
+          }}
+          animate={{
+            scale: [1, 1.1, 1],
+            opacity: [0.8, 1, 0.8],
+            x: [0, 20, 0],
+            y: [0, 15, 0],
+          }}
+          transition={{
+            duration: 8,
+            repeat: Infinity,
+            ease: 'easeInOut',
+          }}
+        />
+      )}
+
+      {/* Layer 4: Animated Pink/Magenta Neon Blob */}
+      {!prefersReducedMotion.current && (
+        <motion.div 
+          className="absolute -bottom-[20%] -left-[10%] w-[50%] h-[55%] pointer-events-none"
+          style={{
+            background: 'radial-gradient(ellipse at center, rgba(255, 0, 128, 0.18) 0%, rgba(180, 0, 255, 0.08) 45%, transparent 65%)',
+            filter: 'blur(75px)',
+          }}
+          animate={{
+            scale: [1, 1.15, 1],
+            opacity: [0.7, 1, 0.7],
+            x: [0, -15, 0],
+            y: [0, -20, 0],
+          }}
+          transition={{
+            duration: 10,
+            repeat: Infinity,
+            ease: 'easeInOut',
+            delay: 2,
+          }}
+        />
+      )}
+
+      {/* Layer 5: Violet accent glow */}
+      <div 
+        className="absolute top-[20%] left-[10%] w-[35%] h-[35%] pointer-events-none"
+        style={{
+          background: 'radial-gradient(ellipse at center, rgba(139, 92, 246, 0.12) 0%, transparent 60%)',
           filter: 'blur(60px)',
         }}
       />
 
-      {/* Layer 3: Neon glow - Cyan (top-right) - increased intensity */}
-      <div 
-        className="absolute -top-[10%] -right-[5%] w-[50%] h-[50%] pointer-events-none"
-        style={{
-          background: 'radial-gradient(ellipse at center, rgba(0, 255, 255, 0.18) 0%, rgba(0, 200, 255, 0.08) 35%, transparent 60%)',
-          filter: 'blur(70px)',
-        }}
-      />
+      {/* Layer 6: Animated Scan Line */}
+      {!prefersReducedMotion.current && (
+        <motion.div
+          className="absolute left-0 right-0 h-[2px] pointer-events-none"
+          style={{
+            background: 'linear-gradient(90deg, transparent 0%, rgba(0, 240, 255, 0.15) 20%, rgba(0, 240, 255, 0.4) 50%, rgba(0, 240, 255, 0.15) 80%, transparent 100%)',
+            boxShadow: '0 0 20px 2px rgba(0, 240, 255, 0.3)',
+          }}
+          animate={{
+            top: ['0%', '100%'],
+          }}
+          transition={{
+            duration: 8,
+            repeat: Infinity,
+            ease: 'linear',
+          }}
+        />
+      )}
 
-      {/* Layer 4: Neon glow - Magenta (bottom-left) - increased intensity */}
-      <div 
-        className="absolute -bottom-[15%] -left-[5%] w-[45%] h-[50%] pointer-events-none"
-        style={{
-          background: 'radial-gradient(ellipse at center, rgba(255, 0, 128, 0.15) 0%, rgba(200, 0, 100, 0.06) 40%, transparent 60%)',
-          filter: 'blur(65px)',
-        }}
-      />
-
-      {/* Layer 5: Violet accent (top-left) */}
-      <div 
-        className="absolute -top-[5%] -left-[5%] w-[40%] h-[40%] pointer-events-none"
-        style={{
-          background: 'radial-gradient(ellipse at center, rgba(139, 92, 246, 0.12) 0%, rgba(124, 58, 237, 0.04) 45%, transparent 65%)',
-          filter: 'blur(60px)',
-        }}
-      />
-
-      {/* Layer 6: Electric blue accent (bottom-right) */}
-      <div 
-        className="absolute bottom-[10%] -right-[5%] w-[35%] h-[40%] pointer-events-none"
-        style={{
-          background: 'radial-gradient(ellipse at center, rgba(59, 130, 246, 0.12) 0%, transparent 55%)',
-          filter: 'blur(50px)',
-        }}
-      />
-
-      {/* Layer 7: Subtle scan lines - reduced opacity */}
+      {/* Layer 7: Static Scan Lines Overlay */}
       <div 
         className="absolute inset-0 pointer-events-none"
         style={{
           backgroundImage: `repeating-linear-gradient(
             0deg,
             transparent,
-            transparent 3px,
-            rgba(0, 0, 0, 0.015) 3px,
-            rgba(0, 0, 0, 0.015) 4px
+            transparent 2px,
+            rgba(0, 0, 0, 0.03) 2px,
+            rgba(0, 0, 0, 0.03) 4px
           )`,
         }}
       />
@@ -475,75 +515,104 @@ const AppBackground = memo(function AppBackground({ className }) {
         className={cn(
           "absolute inset-0 bg-opux-grainy pointer-events-none",
           "transition-opacity duration-500 ease-out",
-          isVisible && grainyLoaded ? "opacity-15" : "opacity-0"
+          isVisible && grainyLoaded ? "opacity-12" : "opacity-0"
         )}
         style={{ mixBlendMode: 'overlay' }}
       />
 
-      {/* Layer 9: Top edge glow - cyan accent */}
+      {/* Layer 9: Top edge neon glow - stronger */}
       <div 
-        className="absolute inset-x-0 top-0 h-[1px] pointer-events-none"
+        className="absolute inset-x-0 top-0 h-[2px] pointer-events-none"
         style={{
-          background: 'linear-gradient(90deg, transparent 5%, rgba(0, 255, 255, 0.2) 25%, rgba(0, 255, 255, 0.35) 50%, rgba(0, 255, 255, 0.2) 75%, transparent 95%)',
-          boxShadow: '0 0 30px 3px rgba(0, 255, 255, 0.15), 0 0 60px 6px rgba(0, 255, 255, 0.08)',
+          background: 'linear-gradient(90deg, rgba(255, 0, 128, 0.5) 0%, rgba(0, 240, 255, 0.6) 30%, rgba(0, 240, 255, 0.8) 50%, rgba(0, 240, 255, 0.6) 70%, rgba(255, 0, 128, 0.5) 100%)',
+          boxShadow: '0 0 30px 5px rgba(0, 240, 255, 0.3), 0 0 60px 10px rgba(0, 240, 255, 0.15)',
         }}
       />
 
-      {/* Layer 10: Top specular gradient - brighter */}
+      {/* Layer 10: Bottom edge neon glow */}
       <div 
-        className="absolute inset-x-0 top-0 h-[40%] pointer-events-none"
+        className="absolute inset-x-0 bottom-0 h-[2px] pointer-events-none"
         style={{
-          background: 'linear-gradient(180deg, rgba(100, 200, 255, 0.06) 0%, rgba(139, 92, 246, 0.03) 30%, transparent 100%)',
+          background: 'linear-gradient(90deg, rgba(0, 240, 255, 0.4) 0%, rgba(255, 0, 128, 0.5) 30%, rgba(255, 0, 128, 0.7) 50%, rgba(255, 0, 128, 0.5) 70%, rgba(0, 240, 255, 0.4) 100%)',
+          boxShadow: '0 0 25px 4px rgba(255, 0, 128, 0.25), 0 0 50px 8px rgba(255, 0, 128, 0.1)',
         }}
       />
 
-      {/* Layer 11: Left edge accent - magenta */}
+      {/* Layer 11: Left edge neon accent */}
       <div 
-        className="absolute inset-y-0 left-0 w-[1px] pointer-events-none"
+        className="absolute inset-y-0 left-0 w-[2px] pointer-events-none"
         style={{
-          background: 'linear-gradient(180deg, transparent 15%, rgba(255, 0, 128, 0.2) 50%, transparent 85%)',
-          boxShadow: '0 0 20px 2px rgba(255, 0, 128, 0.12)',
+          background: 'linear-gradient(180deg, rgba(0, 240, 255, 0.6) 0%, rgba(255, 0, 128, 0.4) 50%, rgba(180, 0, 255, 0.5) 100%)',
+          boxShadow: '0 0 25px 3px rgba(255, 0, 128, 0.2)',
         }}
       />
 
-      {/* Layer 12: Right edge accent - cyan */}
+      {/* Layer 12: Right edge neon accent */}
       <div 
-        className="absolute inset-y-0 right-0 w-[1px] pointer-events-none"
+        className="absolute inset-y-0 right-0 w-[2px] pointer-events-none"
         style={{
-          background: 'linear-gradient(180deg, transparent 25%, rgba(0, 255, 255, 0.15) 55%, transparent 85%)',
-          boxShadow: '0 0 20px 2px rgba(0, 255, 255, 0.1)',
+          background: 'linear-gradient(180deg, rgba(255, 0, 128, 0.5) 0%, rgba(0, 240, 255, 0.5) 50%, rgba(0, 240, 255, 0.6) 100%)',
+          boxShadow: '0 0 25px 3px rgba(0, 240, 255, 0.2)',
         }}
       />
 
-      {/* Layer 13: Bottom depth gradient - softer */}
+      {/* Layer 13: Corner tech accents - top left */}
       <div 
-        className="absolute inset-x-0 bottom-0 h-[25%] pointer-events-none"
+        className="absolute top-0 left-0 w-20 h-20 pointer-events-none"
         style={{
-          background: 'linear-gradient(0deg, rgba(0, 0, 0, 0.25) 0%, transparent 100%)',
+          borderTop: '2px solid rgba(0, 240, 255, 0.6)',
+          borderLeft: '2px solid rgba(0, 240, 255, 0.6)',
+          boxShadow: '0 0 15px rgba(0, 240, 255, 0.3), inset 0 0 15px rgba(0, 240, 255, 0.1)',
         }}
       />
 
-      {/* Layer 14: Corner accent glows - brighter */}
+      {/* Layer 14: Corner tech accents - top right */}
       <div 
-        className="absolute top-0 right-0 w-[250px] h-[250px] pointer-events-none"
+        className="absolute top-0 right-0 w-20 h-20 pointer-events-none"
         style={{
-          background: 'radial-gradient(ellipse at 100% 0%, rgba(0, 255, 255, 0.1) 0%, transparent 55%)',
-        }}
-      />
-      <div 
-        className="absolute bottom-0 left-0 w-[250px] h-[250px] pointer-events-none"
-        style={{
-          background: 'radial-gradient(ellipse at 0% 100%, rgba(255, 0, 128, 0.08) 0%, transparent 55%)',
+          borderTop: '2px solid rgba(0, 240, 255, 0.6)',
+          borderRight: '2px solid rgba(0, 240, 255, 0.6)',
+          boxShadow: '0 0 15px rgba(0, 240, 255, 0.3), inset 0 0 15px rgba(0, 240, 255, 0.1)',
         }}
       />
 
-      {/* Layer 15: Vignette overlay - softer for better visibility */}
+      {/* Layer 15: Corner tech accents - bottom left */}
+      <div 
+        className="absolute bottom-0 left-0 w-20 h-20 pointer-events-none"
+        style={{
+          borderBottom: '2px solid rgba(255, 0, 128, 0.6)',
+          borderLeft: '2px solid rgba(255, 0, 128, 0.6)',
+          boxShadow: '0 0 15px rgba(255, 0, 128, 0.3), inset 0 0 15px rgba(255, 0, 128, 0.1)',
+        }}
+      />
+
+      {/* Layer 16: Corner tech accents - bottom right */}
+      <div 
+        className="absolute bottom-0 right-0 w-20 h-20 pointer-events-none"
+        style={{
+          borderBottom: '2px solid rgba(255, 0, 128, 0.6)',
+          borderRight: '2px solid rgba(255, 0, 128, 0.6)',
+          boxShadow: '0 0 15px rgba(255, 0, 128, 0.3), inset 0 0 15px rgba(255, 0, 128, 0.1)',
+        }}
+      />
+
+      {/* Layer 17: Center HUD circle accent */}
+      <div 
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] pointer-events-none opacity-20"
+        style={{
+          border: '1px solid rgba(0, 240, 255, 0.3)',
+          borderRadius: '50%',
+          boxShadow: '0 0 40px rgba(0, 240, 255, 0.1), inset 0 0 40px rgba(0, 240, 255, 0.05)',
+        }}
+      />
+
+      {/* Layer 18: Vignette overlay */}
       <div 
         className="absolute inset-0 pointer-events-none"
         style={{ 
           boxShadow: `
-            inset 0 0 200px 60px hsl(235, 20%, 5%),
-            inset 0 0 80px 20px hsl(240, 15%, 6%)
+            inset 0 0 250px 80px hsl(235, 25%, 3%),
+            inset 0 0 100px 30px hsl(240, 20%, 4%)
           `,
         }}
       />

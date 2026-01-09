@@ -214,6 +214,9 @@ export class YogatketLoginClient {
                     }
                 );
 
+                // Debug log for auth-3 response
+                console.log(`[auth-3] STRIPE RESPONSE: ${r4.body}`);
+
                 let responseData;
                 try {
                     responseData = JSON.parse(r4.body);
@@ -228,7 +231,7 @@ export class YogatketLoginClient {
                         success: false,
                         approved: false,
                         message: error.message || 'Card declined',
-                        declineCode: error.decline_code || error.code || 'unknown',
+                        declineCode: error.decline_code || error.code || 'card_declined',
                         raw: r4.body
                     };
                 }

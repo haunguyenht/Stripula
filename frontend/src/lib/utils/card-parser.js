@@ -175,7 +175,7 @@ export function parseCardLine(line) {
   const number = parts[0].replace(/\D/g, '');
   if (number.length < 13 || number.length > 19) return null;
 
-  let expMonth, expYear, cvv;
+  let expMonth, expYear, cvv, zip;
 
   // Check if second part is combined MMYY or MMYYYY
   if (parts[1].length === 4 && /^\d{4}$/.test(parts[1])) {
@@ -183,18 +183,22 @@ export function parseCardLine(line) {
     expMonth = parts[1].substring(0, 2);
     expYear = parts[1].substring(2, 4);
     cvv = parts[2] || '';
+    zip = parts[3] ? parts[3].trim() : '';
   } else if (parts[1].length === 6 && /^\d{6}$/.test(parts[1])) {
     // MMYYYY format
     expMonth = parts[1].substring(0, 2);
     expYear = parts[1].substring(4, 6);
     cvv = parts[2] || '';
+    zip = parts[3] ? parts[3].trim() : '';
   } else {
     // Separate MM and YY/YYYY - handle single-digit months
     const monthPart = parts[1].trim();
     expMonth = monthPart.padStart(2, '0');
     expYear = parts[2] ? parts[2].trim() : '';
-    // CVV is the 4th part - any trailing data after CVV is ignored
+    // CVV is the 4th part
     cvv = parts[3] ? parts[3].trim() : '';
+    // ZIP is the 5th part (for AVS validation)
+    zip = parts[4] ? parts[4].trim() : '';
   }
 
   // Normalize year to 2-digit format (handle 4-digit years like 2028 → 28)
@@ -212,13 +216,21 @@ export function parseCardLine(line) {
   // Extract only digits from CVV (ignore any trailing non-digit data)
   const cleanCvv = cvv.replace(/\D/g, '');
 
-  return {
+  // Build result object
+  const result = {
     number,
     expMonth: expMonth.padStart(2, '0'),
     expYear,
     cvv: cleanCvv,
     raw: trimmed,
   };
+
+  // Include zip if present (for AVS validation)
+  if (zip) {
+    result.zip = zip;
+  }
+
+  return result;
 }
 
 /**

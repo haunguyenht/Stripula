@@ -205,15 +205,7 @@ export function ProfileStats({ profile, className }) {
           }}
         />
         
-        {/* Tile pattern (dark only) */}
-        <div 
-          className="absolute inset-0 opacity-0 dark:opacity-[0.03] pointer-events-none"
-          style={{ 
-            backgroundImage: 'url(/bg-tile.webp)',
-            backgroundSize: '200px 200px',
-            backgroundRepeat: 'repeat'
-          }}
-        />
+
         
         {/* Ambient glow */}
         <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full blur-[60px] opacity-15 dark:opacity-30 bg-gradient-to-br from-[hsl(150,45%,45%)] to-[hsl(145,50%,35%)] dark:from-emerald-400 dark:to-green-500" />

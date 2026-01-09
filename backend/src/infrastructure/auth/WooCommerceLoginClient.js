@@ -219,12 +219,16 @@ export class WooCommerceLoginClient {
                 }
                 
                 const wcSuccess = data?.success === true;
-                const errorMessage = data?.data?.error?.message;
+                // Try multiple paths to find error message
+                const errorMessage = data?.data?.error?.message 
+                    || data?.data?.message 
+                    || data?.message
+                    || (typeof data?.data === 'string' ? data.data : null);
                 
                 return {
                     success: wcSuccess,
                     approved: wcSuccess,
-                    message: wcSuccess ? 'APPROVED' : (errorMessage || 'DECLINED'),
+                    message: wcSuccess ? 'APPROVED' : (errorMessage || 'Card declined'),
                     data,
                     raw: response.body
                 };

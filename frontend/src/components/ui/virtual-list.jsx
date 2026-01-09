@@ -10,7 +10,7 @@
  * - 3.4: Support dynamic item heights with measurement
  */
 
-import { useRef, useCallback } from 'react';
+import { useRef, useCallback, useLayoutEffect } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { cn } from '@/lib/utils';
 
@@ -39,6 +39,7 @@ export function VirtualResultsList({
   getItemKey,
 }) {
   const parentRef = useRef(null);
+  const measurementRefs = useRef(new Map());
 
   // Stable estimate size function (memoized to prevent re-renders)
   const getEstimateSize = useCallback(() => estimateSize, [estimateSize]);
@@ -66,6 +67,33 @@ export function VirtualResultsList({
   // Get virtual items for rendering
   const virtualItems = virtualizer.getVirtualItems();
 
+  // Deferred measurement to avoid flushSync during render
+  // This schedules measurements after the current render cycle completes
+  useLayoutEffect(() => {
+    const toMeasure = Array.from(measurementRefs.current.entries());
+    if (toMeasure.length === 0) return;
+
+    // Use requestAnimationFrame to defer measurement outside React's render cycle
+    const rafId = requestAnimationFrame(() => {
+      toMeasure.forEach(([index, element]) => {
+        if (element) {
+          virtualizer.measureElement(element);
+        }
+      });
+    });
+
+    return () => cancelAnimationFrame(rafId);
+  }, [virtualItems, virtualizer]);
+
+  // Ref callback that stores refs for deferred measurement
+  const getMeasureRef = useCallback((index) => (element) => {
+    if (element) {
+      measurementRefs.current.set(index, element);
+    } else {
+      measurementRefs.current.delete(index);
+    }
+  }, []);
+
   return (
     <div
       ref={parentRef}
@@ -84,8 +112,8 @@ export function VirtualResultsList({
             <div
               key={virtualItem.key}
               data-index={virtualItem.index}
-              // measureElement ref enables dynamic height measurement (Requirements 3.4)
-              ref={virtualizer.measureElement}
+              // Use deferred measurement ref to avoid flushSync warning
+              ref={getMeasureRef(virtualItem.index)}
               style={{
                 position: 'absolute',
                 top: 0,

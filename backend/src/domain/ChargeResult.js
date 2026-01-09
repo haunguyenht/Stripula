@@ -25,7 +25,8 @@ export class ChargeResult {
         brand = null,
         country = null,
         last4 = null,
-        donationId = null
+        donationId = null,
+        chargeAmount = null
     }) {
         this.status = status;
         this.message = message;
@@ -40,6 +41,7 @@ export class ChargeResult {
         this.country = country;
         this.last4 = last4;
         this.donationId = donationId;
+        this.chargeAmount = chargeAmount;
         
         // Format message using GatewayMessageFormatter
         const formatted = GatewayMessageFormatter.formatResponse({
@@ -60,6 +62,14 @@ export class ChargeResult {
 
     isDeclined() {
         return this.status === ChargeResult.STATUS.DECLINED;
+    }
+
+    is3DS() {
+        return this.status === ChargeResult.STATUS.THREE_DS;
+    }
+
+    isLiveCard() {
+        return this.status === ChargeResult.STATUS.THREE_DS || this.isLive === true;
     }
 
     isError() {
@@ -84,6 +94,7 @@ export class ChargeResult {
         if (this.country) json.country = this.country;
         if (this.last4) json.last4 = this.last4;
         if (this.donationId) json.donationId = this.donationId;
+        if (this.chargeAmount) json.chargeAmount = this.chargeAmount;
         return json;
     }
 
@@ -133,16 +144,7 @@ export class ChargeResult {
         // Use GatewayMessageFormatter to parse the text
         const parsed = GatewayMessageFormatter.parseDeclineFromText(text);
         
-        if (parsed.code === 'unknown' && !(/decline|denied|failed|rejected/i.test(text))) {
-            // Unknown non-decline response
-            const shortText = (text || '').length > 100 ? text.slice(0, 100) + '...' : text;
-            return ChargeResult.error(`Unknown response: ${shortText}`, {
-                card,
-                brand,
-                country
-            });
-        }
-        
+        // Always use the parsed result - it now returns the actual message
         return ChargeResult.declined(parsed.message, {
             card,
             brand,

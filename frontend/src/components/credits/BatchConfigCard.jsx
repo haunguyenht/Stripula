@@ -33,12 +33,19 @@ export function BatchConfigCard({
   effectiveRate = 1,
   isAuthenticated = false,
   pricing = null,
+  // Display options
+  showApprovedPricing = false, // Set to true for Charge gateways that have separate Approved pricing
   className,
 }) {
   // Get selected gateway status
   const selectedGatewayStatus = useMemo(() => {
     return getGateway?.(selectedSite);
   }, [getGateway, selectedSite]);
+
+  // Get selected site info (for chargeAmount)
+  const selectedSiteInfo = useMemo(() => {
+    return sites.find(s => s.id === selectedSite);
+  }, [sites, selectedSite]);
 
   // Normalize pricing - use API values only, no fallbacks
   const pricingConfig = useMemo(() => {
@@ -213,6 +220,24 @@ export function BatchConfigCard({
               <Timer className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-[hsl(200,50%,45%)] dark:text-sky-500" />
               {delay >= 1000 ? `${(delay / 1000).toFixed(1)}s` : `${delay}ms`}
             </span>
+            {/* Charge amount badge - only show if gateway has chargeAmount */}
+            {selectedSiteInfo?.chargeAmount && (
+              <span className={cn(
+                "inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-full",
+                "text-[9px] sm:text-[10px] font-semibold",
+                // Light mode - copper coin style
+                "bg-gradient-to-b from-[hsl(35,60%,92%)] to-[hsl(30,45%,88%)]",
+                "border border-[hsl(30,40%,75%)]",
+                "text-[hsl(25,55%,38%)]",
+                "shadow-[inset_0_1px_0_rgba(255,255,255,0.6),0_1px_2px_rgba(101,67,33,0.1)]",
+                // Dark mode - MUST reset gradient with dark:bg-none first
+                "dark:bg-none dark:bg-white/[0.06] dark:border-white/10 dark:text-emerald-400",
+                "dark:shadow-none"
+              )}>
+                <span className="text-emerald-600 dark:text-emerald-500">💳</span>
+                {selectedSiteInfo.chargeAmount}
+              </span>
+            )}
           </div>
         </div>
       )}
@@ -296,13 +321,25 @@ export function BatchConfigCard({
               "flex items-center gap-1.5 sm:gap-2",
               "text-[hsl(25,35%,45%)] dark:text-white/40"
             )}>
+              {/* Show Charged pricing only for Charge gateways with showApprovedPricing=true */}
+              {showApprovedPricing && pricingConfig.approved > 0 && pricingConfig.approved !== pricingConfig.live && (
+                <span className="flex items-center gap-0.5 sm:gap-1">
+                  <span className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-emerald-500 shadow-[0_0_4px_rgba(16,185,129,0.4)]" />
+                  ✓{pricingConfig.approved}
+                </span>
+              )}
               <span className="flex items-center gap-0.5 sm:gap-1">
-                <span className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-emerald-500 shadow-[0_0_4px_rgba(16,185,129,0.4)]" />
-                Live: {pricingConfig.live || pricingConfig.approved}
+                <span className={cn(
+                  "h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full shadow-[0_0_4px_rgba(16,185,129,0.4)]",
+                  showApprovedPricing && pricingConfig.approved > 0 && pricingConfig.approved !== pricingConfig.live
+                    ? "bg-orange-500"
+                    : "bg-emerald-500"
+                )} />
+                {showApprovedPricing ? "◐" : "✓"}{pricingConfig.live || pricingConfig.approved || effectiveRate}
               </span>
               <span className="flex items-center gap-0.5 sm:gap-1">
                 <span className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-[hsl(30,20%,70%)] dark:bg-white/20" />
-                Dead: 0
+                ✗0
               </span>
             </div>
             {!hasSufficientCredits && (

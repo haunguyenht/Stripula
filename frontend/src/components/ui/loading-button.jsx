@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Button, buttonVariants } from './Button';
+import { Button, buttonVariants } from './button';
 import { InlineSpinner } from './spinner';
 import { cn } from '@/lib/utils';
 

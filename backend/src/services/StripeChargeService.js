@@ -39,17 +39,19 @@ export class StripeChargeService extends EventEmitter {
     getAvailableSites() {
         return Object.values(CHARGE_SITES).map(site => ({
             id: site.id,
-            label: site.label
+            label: site.label,
+            chargeAmount: site.chargeAmount || null
         }));
     }
 
     setSite(siteId) {
         const site = Object.values(CHARGE_SITES).find(s => s.id === siteId);
-        if (site) {
+        if (site && site.id !== this.site?.id) {
             this.site = site;
-            this.validator = new ChargeGatewayValidator({
-                site
-            });
+            // Reset proxy config when site changes - will be set in processBatch
+            this._currentProxyConfig = undefined; // Use undefined to distinguish from "no proxy"
+            // Don't create validator here - let processBatch handle it with proxy config
+            this._needsValidatorRebuild = true;
         }
     }
 
@@ -200,21 +202,36 @@ export class StripeChargeService extends EventEmitter {
 
             // Retrieve proxy configuration from GatewayManager (Requirement 3.1 Proxy)
             const proxyConfig = this.gatewayManager.getProxyConfig(gatewayId);
-            if (proxyConfig) {
-                // Create a proxy manager wrapper for the gateway's proxy config
-                const gatewayProxyManager = this._createGatewayProxyManager(proxyConfig);
-                // Update validator with gateway proxy (Requirement 3.2 Proxy)
-                this.validator = new ChargeGatewayValidator({
-                    site: this.site,
-                    proxyManager: gatewayProxyManager
-                });
+            
+            // Rebuild validator if site changed or proxy config changed
+            const proxyConfigStr = proxyConfig ? JSON.stringify(proxyConfig) : null;
+            const currentProxyStr = this._currentProxyConfig ? JSON.stringify(this._currentProxyConfig) : null;
+            const proxyChanged = proxyConfigStr !== currentProxyStr;
+            
+            if (this._needsValidatorRebuild || proxyChanged) {
+                if (proxyConfig) {
+                    // Create a proxy manager wrapper for the gateway's proxy config
+                    const gatewayProxyManager = this._createGatewayProxyManager(proxyConfig);
+                    // Update validator with gateway proxy (Requirement 3.2 Proxy)
+                    this.validator = new ChargeGatewayValidator({
+                        site: this.site,
+                        proxyManager: gatewayProxyManager
+                    });
+                } else {
+                    // No proxy config
+                    this.validator = new ChargeGatewayValidator({
+                        site: this.site
+                    });
+                }
                 this._currentProxyConfig = proxyConfig;
-            } else {
-                this.validator = new ChargeGatewayValidator({
-                    site: this.site
-                });
-                this._currentProxyConfig = null;
+                this._needsValidatorRebuild = false;
             }
+        } else if (this._needsValidatorRebuild) {
+            // No gateway manager but site changed - rebuild validator
+            this.validator = new ChargeGatewayValidator({
+                site: this.site
+            });
+            this._needsValidatorRebuild = false;
         }
 
         this.abortFlag = false;

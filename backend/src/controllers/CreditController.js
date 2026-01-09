@@ -205,86 +205,6 @@ export class CreditController {
     }
 
     /**
-     * POST /api/credits/release-lock
-     * Force release any stale operation locks for the current user
-     * Useful when the frontend detects a stuck operation
-     */
-    async releaseLock(req, res) {
-        try {
-            const user = req.user;
-
-            if (!user) {
-                return res.status(401).json({
-                    status: 'ERROR',
-                    code: 'NOT_AUTHENTICATED',
-                    message: 'Not authenticated'
-                });
-            }
-
-            const result = await this.creditManagerService.releaseOperationLockByUser(user.id, 'failed');
-
-            res.json({
-                status: 'OK',
-                message: 'Operations released',
-                releasedCount: result.releasedCount
-            });
-        } catch (error) {
-
-            res.status(500).json({
-                status: 'ERROR',
-                code: 'INTERNAL_ERROR',
-                message: 'Failed to release lock'
-            });
-        }
-    }
-
-    /**
-     * GET /api/user/status
-     * Get active operations status for the user
-     * Used by frontend to check if operations are running in other tabs
-     * 
-     * Requirement: 14.12
-     */
-    async getOperationStatus(req, res) {
-        try {
-            const user = req.user;
-
-            if (!user) {
-                return res.status(401).json({
-                    status: 'ERROR',
-                    code: 'NOT_AUTHENTICATED',
-                    message: 'Not authenticated'
-                });
-            }
-
-            // Check for running operations
-            const runningStatus = await this.creditManagerService.hasRunningOperation(user.id);
-
-            // Get recent operations for context
-            const recentOperations = await this.creditManagerService.getActiveOperations(user.id);
-
-            res.json({
-                status: 'OK',
-                hasRunningOperation: runningStatus.hasRunning,
-                runningOperation: runningStatus.hasRunning ? {
-                    operationId: runningStatus.operationId,
-                    operationType: runningStatus.operationType,
-                    startedAt: runningStatus.startedAt,
-                    cardCount: runningStatus.cardCount
-                } : null,
-                recentOperations: recentOperations.slice(0, 5)
-            });
-        } catch (error) {
-
-            res.status(500).json({
-                status: 'ERROR',
-                code: 'INTERNAL_ERROR',
-                message: 'Failed to get operation status'
-            });
-        }
-    }
-
-    /**
      * Get route handlers
      */
     getRoutes() {
@@ -293,9 +213,7 @@ export class CreditController {
             getHistory: this.getHistory.bind(this),
             claimDaily: this.claimDaily.bind(this),
             getClaimStatus: this.getClaimStatus.bind(this),
-            getSummary: this.getSummary.bind(this),
-            getOperationStatus: this.getOperationStatus.bind(this),
-            releaseLock: this.releaseLock.bind(this)
+            getSummary: this.getSummary.bind(this)
         };
     }
 }

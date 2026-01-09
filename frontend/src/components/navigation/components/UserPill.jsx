@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
-import { NavPill } from './NavPill';
 import { getTierConfig } from '../config/tier-config';
-import { LogOut, ShieldCheck, Clock, Sparkles, User, ChevronDown } from 'lucide-react';
+import { LogOut, ShieldCheck, Sparkles, User, ChevronDown } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import {
@@ -19,13 +18,17 @@ import {
 } from '@/components/ui/tooltip';
 
 /**
- * UserPill - Obsidian Aurora Design System
+ * UserPill - Cyberpunk Design System
  * 
- * Premium user section featuring:
- * - Animated aurora ring around avatar
- * - Tier-based holographic effects
- * - Crystalline dropdown with aurora glow
- * - Prismatic hover effects
+ * Light Mode: Vintage Banking (Cream Paper + Copper Foil)
+ * - Copper foil gradients and metallic effects
+ * - Embossed text shadows
+ * - Wax seal icon styling
+ * 
+ * Dark Mode: Cyberpunk Neon
+ * - Electric cyan (#00f0ff) and hot pink (#ff0080)
+ * - Visible neon glow effects
+ * - Tech-inspired HUD styling
  */
 export function UserPill({ user, onNavigate }) {
   const { logout, tierExpiration } = useAuth();
@@ -46,21 +49,34 @@ export function UserPill({ user, onNavigate }) {
   };
 
   const handleLogout = async () => {
-    // Reset route to dashboard for next login
     localStorage.setItem('appActiveRoute', 'dashboard');
     await logout();
   };
 
-
   return (
     <div className="flex items-center gap-0.5 xs:gap-1 md:gap-2">
-      {/* Theme Toggle - Clean, no background */}
+      {/* ═══════════════════════════════════════════════════════════════════
+          THEME TOGGLE
+          ═══════════════════════════════════════════════════════════════════ */}
       <Tooltip>
         <TooltipTrigger asChild>
           <motion.div
-            className="p-1"
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
+            className={cn(
+              "p-1.5 rounded-full transition-all duration-300",
+              // Light mode: Wax seal container
+              "bg-gradient-to-b from-[hsl(40,45%,96%)] to-[hsl(38,40%,94%)]",
+              "border border-[hsl(30,30%,82%)]",
+              "shadow-[inset_0_1px_0_rgba(255,255,255,0.6),inset_0_-1px_0_rgba(101,67,33,0.08),0_1px_3px_rgba(101,67,33,0.1)]",
+              // Dark mode: Cyberpunk neon pill
+              "dark:bg-none dark:bg-[rgba(8,12,20,0.8)]",
+              "dark:backdrop-blur-xl dark:backdrop-saturate-150",
+              "dark:border-[rgba(0,240,255,0.2)]",
+              "dark:shadow-[0_0_1px_rgba(0,240,255,0.4),inset_0_1px_0_rgba(0,240,255,0.05)]",
+              "dark:hover:border-[rgba(0,240,255,0.5)] dark:hover:shadow-[0_0_15px_-4px_rgba(0,240,255,0.5)]",
+              "hover:scale-105 active:scale-95"
+            )}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
           >
             <ThemeToggle />
           </motion.div>
@@ -68,16 +84,20 @@ export function UserPill({ user, onNavigate }) {
         <TooltipContent 
           side="bottom" 
           className={cn(
-            "text-xs",
-            "dark:bg-[rgba(8,10,18,0.95)] dark:border-violet-500/20 dark:text-white",
-            "dark:shadow-[0_0_20px_-4px_rgba(139,92,246,0.3)]"
+            "text-xs font-medium",
+            "bg-[hsl(40,45%,97%)] border-[hsl(30,30%,80%)] text-[hsl(25,40%,30%)]",
+            "shadow-[0_4px_12px_rgba(101,67,33,0.15)]",
+            "dark:bg-[rgba(8,12,20,0.97)] dark:border-[rgba(0,240,255,0.3)] dark:text-[rgba(180,255,255,0.95)]",
+            "dark:shadow-[0_0_15px_-4px_rgba(0,240,255,0.4)]"
           )}
         >
           <p>Toggle theme</p>
         </TooltipContent>
       </Tooltip>
 
-      {/* Avatar - Clickable to Profile */}
+      {/* ═══════════════════════════════════════════════════════════════════
+          AVATAR
+          ═══════════════════════════════════════════════════════════════════ */}
       <Tooltip>
         <TooltipTrigger asChild>
           <motion.button
@@ -92,20 +112,20 @@ export function UserPill({ user, onNavigate }) {
             whileHover={{ scale: 1.08 }}
             whileTap={{ scale: 0.95 }}
           >
-            {/* Animated ring on hover - Light mode: copper, Dark mode: aurora */}
+            {/* Animated neon ring on hover */}
             <AnimatePresence>
               {isAvatarHovered && (
                 <motion.div
                   className={cn(
-                    "absolute -inset-1 rounded-full",
+                    "absolute -inset-1.5 rounded-full",
                     // Light mode: Copper foil glow
-                    "bg-gradient-to-r from-[hsl(25,70%,55%)] via-[hsl(30,65%,50%)] to-[hsl(25,70%,55%)]",
-                    // Dark mode: Aurora glow
-                    "dark:from-cyan-400 dark:via-violet-500 dark:to-pink-500"
+                    "bg-gradient-to-r from-[hsl(25,70%,55%)] via-[hsl(35,75%,52%)] to-[hsl(25,70%,55%)]",
+                    // Dark mode: Neon cyan/pink glow
+                    "dark:bg-none dark:bg-gradient-to-r dark:from-[rgba(0,240,255,1)] dark:via-[rgba(255,0,128,0.8)] dark:to-[rgba(0,240,255,1)]"
                   )}
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ 
-                    opacity: 0.6, 
+                    opacity: 0.8, 
                     scale: 1,
                     rotate: [0, 360]
                   }}
@@ -113,9 +133,9 @@ export function UserPill({ user, onNavigate }) {
                   transition={{
                     opacity: { duration: 0.2 },
                     scale: { duration: 0.2 },
-                    rotate: { duration: 3, repeat: Infinity, ease: 'linear' }
+                    rotate: { duration: 2, repeat: Infinity, ease: 'linear' }
                   }}
-                  style={{ filter: 'blur(4px)' }}
+                  style={{ filter: 'blur(6px)' }}
                 />
               )}
             </AnimatePresence>
@@ -126,24 +146,23 @@ export function UserPill({ user, onNavigate }) {
                 <motion.div
                   className={cn(
                     "absolute inset-0 flex items-center justify-center rounded-full z-10",
-                    // Light mode: translucent copper overlay
-                    "bg-[hsl(25,60%,45%)]/85",
-                    // Dark mode: translucent aurora overlay
-                    "dark:bg-gradient-to-br dark:from-cyan-500/90 dark:via-violet-500/90 dark:to-pink-500/90"
+                    // Light mode: Copper overlay
+                    "bg-gradient-to-b from-[hsl(25,65%,50%)] via-[hsl(30,70%,48%)] to-[hsl(25,60%,42%)]",
+                    // Dark mode: Neon overlay
+                    "dark:bg-none dark:bg-gradient-to-br dark:from-[rgba(0,240,255,0.95)] dark:via-[rgba(0,200,240,0.9)] dark:to-[rgba(255,0,128,0.8)]"
                   )}
                   initial={{ opacity: 0, scale: 0.5 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.5 }}
                   transition={{ type: "spring", stiffness: 400, damping: 25 }}
                 >
-                  <User className="h-4 w-4 text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]" />
+                  <User className="h-4 w-4 text-white dark:text-[rgba(10,15,20,1)] drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)]" />
                 </motion.div>
               )}
             </AnimatePresence>
             
-            {/* Avatar - Clean, with tier badge */}
+            {/* Avatar container */}
             <div className="relative">
-              {/* Avatar image or initial */}
               {photoUrl ? (
                 <img 
                   src={photoUrl} 
@@ -151,21 +170,28 @@ export function UserPill({ user, onNavigate }) {
                   className={cn(
                     "rounded-full object-cover transition-all duration-300",
                     "h-7 w-7 xs:h-8 xs:w-8 md:h-9 md:w-9",
-                    // Subtle ring only
-                    "ring-2 ring-white/20 dark:ring-white/10"
+                    // Light mode: Copper coin ring
+                    "ring-2 ring-[hsl(30,40%,75%)]",
+                    "shadow-[0_2px_6px_rgba(101,67,33,0.2)]",
+                    // Dark mode: Neon ring
+                    "dark:ring-[rgba(0,240,255,0.4)]",
+                    "dark:shadow-[0_0_15px_-4px_rgba(0,240,255,0.5)]"
                   )}
                 />
               ) : (
                 <div className={cn(
                   "flex items-center justify-center rounded-full font-bold transition-all duration-300",
                   "h-7 w-7 xs:h-8 xs:w-8 md:h-9 md:w-9",
-                  "text-xs",
-                  // Light mode
-                  "bg-gradient-to-br from-[hsl(25,70%,48%)] to-[hsl(22,65%,38%)] text-white",
-                  // Dark mode
-                  "dark:from-violet-500 dark:to-cyan-500",
-                  // Subtle ring
-                  "ring-2 ring-white/20 dark:ring-white/10"
+                  "text-xs text-white",
+                  // Light mode: Copper foil gradient
+                  "bg-gradient-to-b from-[hsl(25,65%,52%)] via-[hsl(30,70%,48%)] to-[hsl(25,60%,42%)]",
+                  "ring-2 ring-[hsl(30,40%,75%)]",
+                  "shadow-[inset_0_1px_0_rgba(255,255,255,0.3),inset_0_-1px_0_rgba(0,0,0,0.1),0_2px_6px_rgba(101,67,33,0.2)]",
+                  // Dark mode: Neon gradient
+                  "dark:bg-none dark:bg-gradient-to-br dark:from-[rgba(0,240,255,1)] dark:to-[rgba(255,0,128,0.9)]",
+                  "dark:ring-[rgba(0,240,255,0.4)]",
+                  "dark:shadow-[0_0_15px_-4px_rgba(0,240,255,0.6)]",
+                  "dark:text-[rgba(10,15,20,1)]"
                 )}
                 style={{ fontFamily: 'var(--font-heading)' }}
                 >
@@ -173,47 +199,43 @@ export function UserPill({ user, onNavigate }) {
                 </div>
               )}
               
-              {/* Tier badge - top right corner - small circular badge */}
+              {/* Tier badge - top right */}
               {TierIcon && user?.tier && user.tier !== 'free' && !isAvatarHovered && (
                 <motion.div 
                   className={cn(
                     "absolute -top-0.5 -right-0.5 flex items-center justify-center",
                     "h-3.5 w-3.5 xs:h-4 xs:w-4 md:h-[18px] md:w-[18px] rounded-full",
-                    // Light mode - subtle cream background
-                    "bg-[hsl(40,45%,96%)] border border-[hsl(30,30%,80%)]",
-                    "shadow-[0_1px_3px_rgba(0,0,0,0.1)]",
-                    // Dark mode - dark glass with subtle border
-                    "dark:bg-[rgba(20,22,30,0.95)] dark:border-white/20",
-                    "dark:shadow-[0_2px_8px_rgba(0,0,0,0.4)]"
+                    // Light mode: Wax seal badge
+                    "bg-gradient-to-b from-[hsl(40,50%,97%)] to-[hsl(38,45%,94%)]",
+                    "border border-[hsl(30,30%,78%)]",
+                    "shadow-[inset_0_1px_0_rgba(255,255,255,0.5),0_1px_3px_rgba(101,67,33,0.15)]",
+                    // Dark mode: Tech badge
+                    "dark:bg-none dark:bg-[rgba(8,12,20,0.95)]",
+                    "dark:border-[rgba(0,240,255,0.3)]",
+                    "dark:shadow-[0_0_8px_-2px_rgba(0,240,255,0.4)]"
                   )}
-                  animate={{ 
-                    scale: [1, 1.08, 1],
-                  }}
-                  transition={{ 
-                    duration: 2.5,
-                    repeat: Infinity,
-                    ease: 'easeInOut'
-                  }}
+                  animate={{ scale: [1, 1.08, 1] }}
+                  transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
                 >
                   <TierIcon className={cn(
                     "h-2 w-2 xs:h-2.5 xs:w-2.5 md:h-2.5 md:w-2.5",
-                    // Custom colors per tier for better visibility
-                    user?.tier === 'diamond' && "text-sky-400 dark:text-sky-300",
-                    user?.tier === 'gold' && "text-amber-500 dark:text-amber-400",
-                    user?.tier === 'silver' && "text-slate-400 dark:text-slate-300",
-                    user?.tier === 'bronze' && "text-orange-500 dark:text-orange-400",
+                    user?.tier === 'diamond' && "text-sky-500 dark:text-[rgba(0,240,255,1)] dark:drop-shadow-[0_0_4px_rgba(0,240,255,0.8)]",
+                    user?.tier === 'gold' && "text-amber-600 dark:text-amber-400 dark:drop-shadow-[0_0_4px_rgba(255,200,0,0.6)]",
+                    user?.tier === 'silver' && "text-slate-500 dark:text-slate-300",
+                    user?.tier === 'bronze' && "text-orange-600 dark:text-orange-400",
                   )} />
                 </motion.div>
               )}
               
-              {/* Status indicator - bottom right - hidden when hovered */}
+              {/* Status indicator - bottom right */}
               {!isAvatarHovered && (
                 showExpirationWarning ? (
                   <motion.div 
                     className={cn(
                       "absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full",
                       "bg-amber-500 dark:bg-amber-400",
-                      "ring-2 ring-background"
+                      "ring-2 ring-background",
+                      "dark:shadow-[0_0_10px_rgba(255,200,0,0.6)]"
                     )}
                     animate={{ scale: [1, 1.2, 1] }}
                     transition={{ duration: 1, repeat: Infinity }}
@@ -221,8 +243,9 @@ export function UserPill({ user, onNavigate }) {
                 ) : (
                   <div className={cn(
                     "absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full",
-                    "bg-emerald-500 dark:bg-emerald-400",
-                    "ring-2 ring-background"
+                    "bg-emerald-500 dark:bg-[rgba(0,255,150,1)]",
+                    "ring-2 ring-background",
+                    "dark:shadow-[0_0_10px_rgba(0,255,150,0.6)]"
                   )} />
                 )
               )}
@@ -234,8 +257,9 @@ export function UserPill({ user, onNavigate }) {
           className={cn(
             "text-xs font-medium",
             "bg-[hsl(40,45%,97%)] border-[hsl(30,30%,80%)] text-[hsl(25,40%,30%)]",
-            "dark:bg-[rgba(8,10,18,0.95)] dark:border-violet-500/20 dark:text-white",
-            "dark:shadow-[0_0_20px_-4px_rgba(139,92,246,0.3)]"
+            "shadow-[0_4px_12px_rgba(101,67,33,0.15)]",
+            "dark:bg-[rgba(8,12,20,0.97)] dark:border-[rgba(0,240,255,0.3)] dark:text-[rgba(180,255,255,0.95)]",
+            "dark:shadow-[0_0_15px_-4px_rgba(0,240,255,0.4)]"
           )}
         >
           <div className="flex items-center gap-1.5">
@@ -245,26 +269,37 @@ export function UserPill({ user, onNavigate }) {
         </TooltipContent>
       </Tooltip>
 
-      {/* User Dropdown - Chevron trigger */}
+      {/* ═══════════════════════════════════════════════════════════════════
+          USER DROPDOWN
+          ═══════════════════════════════════════════════════════════════════ */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <motion.button
             className={cn(
               "flex items-center cursor-pointer transition-all duration-300 outline-none",
-              "p-1 rounded-md",
+              "p-1.5 rounded-lg",
               // Light mode
-              "hover:bg-[hsl(38,35%,92%)]",
-              // Dark mode
-              "dark:hover:bg-white/10",
+              "bg-gradient-to-b from-[hsl(40,45%,96%)] to-[hsl(38,40%,94%)]",
+              "border border-[hsl(30,30%,82%)]",
+              "shadow-[inset_0_1px_0_rgba(255,255,255,0.5),0_1px_2px_rgba(101,67,33,0.08)]",
+              "hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.5),0_2px_4px_rgba(101,67,33,0.12)]",
+              // Dark mode: Cyberpunk pill
+              "dark:bg-none dark:bg-[rgba(8,12,20,0.8)]",
+              "dark:backdrop-blur-xl",
+              "dark:border-[rgba(0,240,255,0.2)]",
+              "dark:shadow-[0_0_1px_rgba(0,240,255,0.4),inset_0_1px_0_rgba(0,240,255,0.05)]",
+              "dark:hover:bg-[rgba(0,240,255,0.1)]",
+              "dark:hover:border-[rgba(0,240,255,0.5)]",
+              "dark:hover:shadow-[0_0_15px_-4px_rgba(0,240,255,0.5)]",
               "focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
             )}
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
           >
             <ChevronDown className={cn(
               "h-3.5 w-3.5 transition-colors",
-              "text-[hsl(25,30%,50%)]",
-              "dark:text-white/60 dark:hover:text-white"
+              "text-[hsl(25,35%,45%)]",
+              "dark:text-[rgba(0,240,255,0.7)] dark:hover:text-[rgba(0,240,255,1)]"
             )} />
           </motion.button>
         </DropdownMenuTrigger>
@@ -272,65 +307,59 @@ export function UserPill({ user, onNavigate }) {
         <DropdownMenuContent 
           align="end" 
           className={cn(
-            "w-56 p-3 overflow-hidden relative",
-            // Light mode: Vintage Banking
-            "bg-gradient-to-b from-[hsl(40,50%,97%)] to-[hsl(38,45%,95%)]",
-            "border-[hsl(30,35%,75%)]/50",
-            "shadow-[0_8px_32px_rgba(101,67,33,0.12)]",
+            "w-60 p-3 overflow-hidden relative",
             // ═══════════════════════════════════════════════════════════
-            // DARK MODE: Obsidian Aurora Crystalline Dropdown
+            // LIGHT MODE: Vintage Banking Certificate Style
             // ═══════════════════════════════════════════════════════════
-            "dark:bg-[rgba(6,8,16,0.97)]",
-            "dark:backdrop-blur-[100px] dark:backdrop-saturate-[220%]",
-            // Premium prismatic animated border
-            "dark:border-2 dark:border-transparent dark:rounded-2xl",
-            "dark:[background-image:linear-gradient(to_bottom,rgba(6,8,16,0.97),rgba(10,12,22,0.97)),linear-gradient(135deg,rgba(34,211,238,0.6),rgba(139,92,246,0.5),rgba(236,72,153,0.5),rgba(34,211,238,0.6))]",
-            "dark:[background-origin:border-box] dark:[background-clip:padding-box,border-box]",
-            // Multi-layered deep aurora glow - ENHANCED
-            "dark:shadow-[0_30px_70px_-12px_rgba(0,0,0,0.95),0_0_100px_-20px_rgba(139,92,246,0.4),0_0_60px_-15px_rgba(34,211,238,0.3),0_0_40px_-8px_rgba(236,72,153,0.25),inset_0_1px_0_rgba(255,255,255,0.1),inset_0_-1px_0_rgba(139,92,246,0.15)]"
+            "bg-gradient-to-b from-[hsl(40,50%,98%)] to-[hsl(38,45%,95%)]",
+            "border-2 border-[hsl(30,35%,78%)]",
+            "shadow-[inset_0_0_0_1px_hsl(38,45%,96%),inset_0_0_0_2px_hsl(30,30%,85%),0_8px_32px_rgba(101,67,33,0.15),0_2px_8px_rgba(101,67,33,0.1)]",
+            "rounded-xl",
+            // ═══════════════════════════════════════════════════════════
+            // DARK MODE: Cyberpunk Neon Panel
+            // ═══════════════════════════════════════════════════════════
+            "dark:bg-none dark:bg-[rgba(4,8,16,0.97)]",
+            "dark:backdrop-blur-2xl dark:backdrop-saturate-150",
+            "dark:border dark:border-[rgba(0,240,255,0.25)]",
+            // Neon glow
+            "dark:shadow-[0_0_2px_rgba(0,240,255,0.5),0_0_50px_-15px_rgba(0,240,255,0.3),0_0_35px_-10px_rgba(255,0,128,0.15),0_20px_50px_-10px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(0,240,255,0.1)]",
+            "dark:rounded-xl"
           )}
         >
-          {/* Inner aurora shimmer effect - ENHANCED */}
-          <div className="absolute inset-0 hidden dark:block overflow-hidden rounded-xl pointer-events-none">
+          {/* Light mode: Paper grain texture overlay */}
+          <div 
+            className="absolute inset-0 opacity-[0.03] pointer-events-none dark:hidden"
+            style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`
+            }}
+          />
+
+          {/* Dark mode: Tech corner accents */}
+          <div className="absolute top-0 left-0 w-5 h-5 hidden dark:block pointer-events-none">
+            <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-[rgba(0,240,255,0.7)] to-transparent" />
+            <div className="absolute top-0 left-0 w-px h-full bg-gradient-to-b from-[rgba(0,240,255,0.7)] to-transparent" />
+          </div>
+          <div className="absolute bottom-0 right-0 w-5 h-5 hidden dark:block pointer-events-none">
+            <div className="absolute bottom-0 right-0 w-full h-px bg-gradient-to-l from-[rgba(255,0,128,0.6)] to-transparent" />
+            <div className="absolute bottom-0 right-0 w-px h-full bg-gradient-to-t from-[rgba(255,0,128,0.6)] to-transparent" />
+          </div>
+
+          {/* Dark mode: Scan line effect */}
+          <div className="absolute inset-0 hidden dark:block overflow-hidden rounded-xl pointer-events-none opacity-20">
             <motion.div
-              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.04] to-transparent -translate-x-full"
-              animate={{ translateX: ['-100%', '200%'] }}
-              transition={{ duration: 2.5, repeat: Infinity, ease: 'linear', repeatDelay: 1.5 }}
-            />
-            {/* Animated aurora glow spots */}
-            <motion.div 
-              className="absolute -top-4 left-1/4 w-20 h-20 bg-cyan-500/15 blur-3xl rounded-full"
-              animate={{ 
-                scale: [1, 1.3, 1],
-                opacity: [0.15, 0.25, 0.15]
-              }}
-              transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-            />
-            <motion.div 
-              className="absolute -bottom-4 right-1/4 w-20 h-20 bg-violet-500/15 blur-3xl rounded-full"
-              animate={{ 
-                scale: [1.2, 1, 1.2],
-                opacity: [0.2, 0.12, 0.2]
-              }}
-              transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
-            />
-            <motion.div 
-              className="absolute top-1/2 -left-4 w-16 h-16 bg-pink-500/10 blur-2xl rounded-full"
-              animate={{ 
-                y: [-10, 10, -10],
-                opacity: [0.1, 0.18, 0.1]
-              }}
-              transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
+              className="absolute inset-0 bg-gradient-to-b from-transparent via-[rgba(0,240,255,0.1)] to-transparent h-[200%]"
+              animate={{ y: ['-100%', '0%'] }}
+              transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
             />
           </div>
 
-          {/* User Info Header Section */}
+          {/* ═══════════════════════════════════════════════════════════
+              USER INFO HEADER
+              ═══════════════════════════════════════════════════════════ */}
           <div className={cn(
-            "relative mb-2 pb-3",
-            // Light mode
-            "border-b border-[hsl(30,30%,85%)]",
-            // Dark mode
-            "dark:border-b dark:border-white/[0.08]"
+            "relative mb-3 pb-3",
+            "border-b-2 border-[hsl(30,30%,85%)]",
+            "dark:border-b dark:border-[rgba(0,240,255,0.15)]"
           )}>
             <div className="flex items-center gap-3">
               {/* Mini avatar */}
@@ -340,16 +369,21 @@ export function UserPill({ user, onNavigate }) {
                     src={photoUrl} 
                     alt={displayName}
                     className={cn(
-                      "h-10 w-10 rounded-xl object-cover",
-                      "ring-2 ring-[hsl(30,35%,85%)]",
-                      "dark:ring-white/10"
+                      "h-11 w-11 rounded-xl object-cover",
+                      "ring-2 ring-[hsl(30,35%,80%)]",
+                      "shadow-[inset_0_0_0_1px_rgba(255,255,255,0.3),0_2px_6px_rgba(101,67,33,0.15)]",
+                      "dark:ring-[rgba(0,240,255,0.3)]",
+                      "dark:shadow-[0_0_15px_-4px_rgba(0,240,255,0.4)]"
                     )}
                   />
                 ) : (
                   <div className={cn(
-                    "h-10 w-10 rounded-xl flex items-center justify-center font-bold text-sm",
-                    "bg-gradient-to-br from-[hsl(25,70%,48%)] to-[hsl(22,65%,38%)] text-white",
-                    "dark:from-cyan-500 dark:via-violet-500 dark:to-pink-500"
+                    "h-11 w-11 rounded-xl flex items-center justify-center font-bold text-sm text-white",
+                    "bg-gradient-to-b from-[hsl(25,65%,52%)] via-[hsl(30,70%,48%)] to-[hsl(25,60%,42%)]",
+                    "shadow-[inset_0_1px_0_rgba(255,255,255,0.25),inset_0_-1px_0_rgba(0,0,0,0.15),0_2px_6px_rgba(101,67,33,0.2)]",
+                    "dark:bg-none dark:bg-gradient-to-br dark:from-[rgba(0,240,255,1)] dark:to-[rgba(255,0,128,0.9)]",
+                    "dark:text-[rgba(10,15,20,1)]",
+                    "dark:shadow-[0_0_20px_-4px_rgba(0,240,255,0.6)]"
                   )}>
                     {displayName.charAt(0).toUpperCase()}
                   </div>
@@ -357,12 +391,13 @@ export function UserPill({ user, onNavigate }) {
                 {/* Online indicator */}
                 <motion.div 
                   className={cn(
-                    "absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full",
-                    "bg-emerald-500 dark:bg-emerald-400",
-                    "ring-2 ring-white dark:ring-[rgba(6,8,16,0.97)]",
-                    "dark:shadow-[0_0_10px_rgba(52,211,153,0.6)]"
+                    "absolute -bottom-1 -right-1 h-3.5 w-3.5 rounded-full",
+                    "bg-emerald-500 dark:bg-[rgba(0,255,150,1)]",
+                    "ring-2 ring-[hsl(40,50%,97%)]",
+                    "dark:ring-[rgba(4,8,16,0.97)]",
+                    "dark:shadow-[0_0_12px_rgba(0,255,150,0.7)]"
                   )}
-                  animate={{ scale: [1, 1.2, 1] }}
+                  animate={{ scale: [1, 1.15, 1] }}
                   transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
                 />
               </div>
@@ -371,25 +406,26 @@ export function UserPill({ user, onNavigate }) {
               <div className="flex-1 min-w-0">
                 <p className={cn(
                   "font-semibold text-sm truncate",
-                  "text-[hsl(25,35%,25%)]",
-                  "dark:text-white"
+                  "text-[hsl(25,40%,25%)]",
+                  "[text-shadow:0_1px_0_rgba(255,255,255,0.5)] dark:[text-shadow:0_0_8px_rgba(0,240,255,0.4)]",
+                  "dark:text-[rgba(180,255,255,1)]"
                 )}>
                   {displayName}
                 </p>
-                <div className="flex items-center gap-1.5 mt-0.5">
+                <div className="flex items-center gap-1.5 mt-1">
                   {TierIcon && (
                     <motion.div
                       animate={tier.iconAnimation}
                       transition={tier.iconTransition}
-                      className={cn(tier.color, "dark:drop-shadow-[0_0_4px_currentColor]")}
+                      className={cn(tier.color, "dark:drop-shadow-[0_0_6px_currentColor]")}
                     >
-                      <TierIcon className="h-3 w-3" />
+                      <TierIcon className="h-3.5 w-3.5" />
                     </motion.div>
                   )}
                   <span className={cn(
                     "text-xs font-medium capitalize",
                     tier.color,
-                    "dark:opacity-90"
+                    "[text-shadow:0_1px_0_rgba(255,255,255,0.3)] dark:[text-shadow:none]"
                   )}>
                     {user?.tier || 'Free'} Tier
                   </span>
@@ -398,112 +434,119 @@ export function UserPill({ user, onNavigate }) {
             </div>
           </div>
 
+          {/* ═══════════════════════════════════════════════════════════
+              ADMIN PANEL BUTTON
+              ═══════════════════════════════════════════════════════════ */}
           {isAdmin && (
             <DropdownMenuItem 
               onClick={handleAdminClick}
               className={cn(
-                "gap-3 py-3 px-3 rounded-xl cursor-pointer transition-all duration-300 relative",
-                "hover:bg-[hsl(38,40%,92%)]",
-                // Dark mode: Enhanced aurora hover with glow
-                "dark:hover:bg-gradient-to-r dark:hover:from-cyan-500/[0.18] dark:hover:via-violet-500/[0.12] dark:hover:to-transparent",
-                "dark:hover:shadow-[0_0_30px_-6px_rgba(34,211,238,0.6),inset_0_0_0_1px_rgba(34,211,238,0.25)]",
-                "group"
+                "gap-3 py-3 px-3 rounded-xl cursor-pointer transition-all duration-300 relative group",
+                // Light mode
+                "hover:bg-gradient-to-r hover:from-[hsl(38,45%,93%)] hover:to-[hsl(40,40%,95%)]",
+                "hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.5),0_1px_3px_rgba(101,67,33,0.08)]",
+                // Dark mode: Neon cyan hover
+                "dark:hover:bg-gradient-to-r dark:hover:from-[rgba(0,240,255,0.15)] dark:hover:to-[rgba(0,200,240,0.08)]",
+                "dark:hover:shadow-[0_0_20px_-5px_rgba(0,240,255,0.5),inset_0_0_0_1px_rgba(0,240,255,0.25)]"
               )}
             >
               <motion.div 
                 className={cn(
                   "flex h-10 w-10 items-center justify-center rounded-xl relative",
-                  "bg-[hsl(38,35%,90%)]",
-                  // Dark mode: Crystalline icon container with aurora gradient + PULSING GLOW
-                  "dark:bg-gradient-to-br dark:from-cyan-500/30 dark:via-violet-500/25 dark:to-cyan-500/30",
-                  "dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.2),0_0_24px_-4px_rgba(34,211,238,0.5)]",
-                  "dark:ring-1 dark:ring-cyan-400/25"
+                  // Light mode
+                  "bg-gradient-to-b from-[hsl(40,45%,95%)] to-[hsl(38,40%,92%)]",
+                  "border border-[hsl(30,30%,82%)]",
+                  "shadow-[inset_0_1px_0_rgba(255,255,255,0.5),inset_0_-1px_0_rgba(101,67,33,0.08),0_1px_3px_rgba(101,67,33,0.1)]",
+                  // Dark mode: Neon container
+                  "dark:bg-none dark:bg-[rgba(0,240,255,0.15)]",
+                  "dark:border-0 dark:ring-1 dark:ring-[rgba(0,240,255,0.3)]",
+                  "dark:shadow-[0_0_15px_-4px_rgba(0,240,255,0.5),inset_0_1px_0_rgba(0,240,255,0.2)]"
                 )}
-                whileHover={{ scale: 1.1, rotate: 5 }}
-                animate={{
-                  boxShadow: [
-                    'inset 0 1px 0 rgba(255,255,255,0.2), 0 0 24px -4px rgba(34,211,238,0.4)',
-                    'inset 0 1px 0 rgba(255,255,255,0.2), 0 0 32px -4px rgba(34,211,238,0.6)',
-                    'inset 0 1px 0 rgba(255,255,255,0.2), 0 0 24px -4px rgba(34,211,238,0.4)',
-                  ]
-                }}
-                transition={{ 
-                  boxShadow: { duration: 2, repeat: Infinity, ease: 'easeInOut' },
-                  scale: { type: "spring", stiffness: 400, damping: 17 },
-                  rotate: { type: "spring", stiffness: 400, damping: 17 }
-                }}
+                whileHover={{ scale: 1.08, rotate: 3 }}
               >
-                <ShieldCheck className="h-5 w-5 text-[hsl(25,40%,40%)] dark:text-cyan-400 dark:drop-shadow-[0_0_8px_rgba(34,211,238,0.7)]" />
+                <ShieldCheck className={cn(
+                  "h-5 w-5",
+                  "text-[hsl(25,50%,42%)]",
+                  "dark:text-[rgba(0,240,255,1)] dark:drop-shadow-[0_0_8px_rgba(0,240,255,0.8)]"
+                )} />
               </motion.div>
               <div className="flex-1">
                 <span className={cn(
-                  "text-sm font-semibold text-[hsl(25,35%,25%)]",
-                  "dark:text-white dark:group-hover:text-cyan-100",
-                  "transition-colors duration-200"
+                  "text-sm font-semibold transition-colors duration-200",
+                  "text-[hsl(25,40%,28%)]",
+                  "[text-shadow:0_1px_0_rgba(255,255,255,0.4)] dark:[text-shadow:none]",
+                  "dark:text-[rgba(180,255,255,1)] dark:group-hover:text-[rgba(200,255,255,1)]"
                 )}>
                   Admin Panel
                 </span>
-                <p className="text-[10px] text-[hsl(25,25%,50%)] dark:text-white/40 dark:group-hover:text-cyan-200/50 transition-colors">
+                <p className={cn(
+                  "text-[10px] transition-colors",
+                  "text-[hsl(25,25%,55%)]",
+                  "dark:text-[rgba(0,240,255,0.5)] dark:group-hover:text-[rgba(0,240,255,0.7)]"
+                )}>
                   Manage users & settings
                 </p>
               </div>
-              {/* Hover arrow indicator */}
-              <motion.div 
-                className="opacity-0 group-hover:opacity-100 transition-all duration-200"
-                initial={{ x: -4, opacity: 0 }}
-                whileHover={{ x: 0, opacity: 1 }}
-              >
-                <Sparkles className="h-4 w-4 text-cyan-400/80 dark:drop-shadow-[0_0_4px_rgba(34,211,238,0.5)]" />
+              <motion.div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                <Sparkles className={cn(
+                  "h-4 w-4",
+                  "text-[hsl(25,50%,50%)]",
+                  "dark:text-[rgba(0,240,255,1)] dark:drop-shadow-[0_0_6px_rgba(0,240,255,0.8)]"
+                )} />
               </motion.div>
             </DropdownMenuItem>
           )}
           
+          {/* ═══════════════════════════════════════════════════════════
+              SIGN OUT BUTTON
+              ═══════════════════════════════════════════════════════════ */}
           <DropdownMenuItem 
             onClick={handleLogout}
             className={cn(
-              "gap-3 py-3 px-3 rounded-xl cursor-pointer transition-all duration-300 relative mt-1.5",
-              "text-[hsl(0,55%,45%)] hover:bg-[hsl(0,50%,95%)]",
-              // Dark mode: Rose aurora hover with pulsing glow
-              "dark:text-rose-400",
-              "dark:hover:bg-gradient-to-r dark:hover:from-rose-500/[0.2] dark:hover:via-pink-500/[0.14] dark:hover:to-transparent",
-              "dark:hover:shadow-[0_0_30px_-6px_rgba(244,63,94,0.7),inset_0_0_0_1px_rgba(244,63,94,0.3)]",
-              "group"
+              "gap-3 py-3 px-3 rounded-xl cursor-pointer transition-all duration-300 relative mt-2 group",
+              // Light mode
+              "text-[hsl(0,50%,42%)]",
+              "hover:bg-gradient-to-r hover:from-[hsl(0,45%,95%)] hover:to-[hsl(0,40%,97%)]",
+              "hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.5),0_1px_3px_rgba(120,40,40,0.1)]",
+              // Dark mode: Neon pink hover
+              "dark:text-[rgba(255,100,150,1)]",
+              "dark:hover:bg-gradient-to-r dark:hover:from-[rgba(255,0,128,0.15)] dark:hover:to-[rgba(255,50,100,0.08)]",
+              "dark:hover:shadow-[0_0_20px_-5px_rgba(255,0,128,0.5),inset_0_0_0_1px_rgba(255,0,128,0.25)]"
             )}
           >
             <motion.div 
               className={cn(
                 "flex h-10 w-10 items-center justify-center rounded-xl relative",
-                "bg-[hsl(0,45%,92%)]",
-                // Dark mode: Rose crystalline container with PULSING GLOW
-                "dark:bg-gradient-to-br dark:from-rose-500/30 dark:via-pink-500/25 dark:to-rose-500/30",
-                "dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.15),0_0_24px_-4px_rgba(244,63,94,0.5)]",
-                "dark:ring-1 dark:ring-rose-400/25"
+                // Light mode
+                "bg-gradient-to-b from-[hsl(0,40%,96%)] to-[hsl(0,35%,93%)]",
+                "border border-[hsl(0,30%,82%)]",
+                "shadow-[inset_0_1px_0_rgba(255,255,255,0.5),inset_0_-1px_0_rgba(120,40,40,0.06),0_1px_3px_rgba(120,40,40,0.1)]",
+                // Dark mode: Neon pink container
+                "dark:bg-none dark:bg-[rgba(255,0,128,0.15)]",
+                "dark:border-0 dark:ring-1 dark:ring-[rgba(255,0,128,0.3)]",
+                "dark:shadow-[0_0_15px_-4px_rgba(255,0,128,0.5),inset_0_1px_0_rgba(255,0,128,0.2)]"
               )}
-              whileHover={{ scale: 1.1, rotate: -5 }}
-              animate={{
-                boxShadow: [
-                  'inset 0 1px 0 rgba(255,255,255,0.15), 0 0 24px -4px rgba(244,63,94,0.4)',
-                  'inset 0 1px 0 rgba(255,255,255,0.15), 0 0 32px -4px rgba(244,63,94,0.6)',
-                  'inset 0 1px 0 rgba(255,255,255,0.15), 0 0 24px -4px rgba(244,63,94,0.4)',
-                ]
-              }}
-              transition={{ 
-                boxShadow: { duration: 2.5, repeat: Infinity, ease: 'easeInOut', delay: 0.5 },
-                scale: { type: "spring", stiffness: 400, damping: 17 },
-                rotate: { type: "spring", stiffness: 400, damping: 17 }
-              }}
+              whileHover={{ scale: 1.08, rotate: -3 }}
             >
-              <LogOut className="h-5 w-5 dark:text-rose-400 dark:drop-shadow-[0_0_8px_rgba(244,63,94,0.7)]" />
+              <LogOut className={cn(
+                "h-5 w-5",
+                "text-[hsl(0,45%,45%)]",
+                "dark:text-[rgba(255,100,150,1)] dark:drop-shadow-[0_0_8px_rgba(255,0,128,0.8)]"
+              )} />
             </motion.div>
             <div className="flex-1">
               <span className={cn(
-                "text-sm font-semibold",
-                "dark:text-rose-400 dark:group-hover:text-rose-300",
-                "transition-colors duration-200"
+                "text-sm font-semibold transition-colors duration-200",
+                "[text-shadow:0_1px_0_rgba(255,255,255,0.4)] dark:[text-shadow:none]",
+                "dark:text-[rgba(255,150,180,1)] dark:group-hover:text-[rgba(255,180,200,1)]"
               )}>
                 Sign out
               </span>
-              <p className="text-[10px] text-[hsl(0,30%,55%)] dark:text-rose-400/50 dark:group-hover:text-rose-300/60 transition-colors">
+              <p className={cn(
+                "text-[10px] transition-colors",
+                "text-[hsl(0,30%,55%)]",
+                "dark:text-[rgba(255,0,128,0.5)] dark:group-hover:text-[rgba(255,0,128,0.7)]"
+              )}>
                 End your session
               </p>
             </div>

@@ -334,10 +334,15 @@ export const AUTH_SITES = {
         accountUrl: 'https://www.cancelcancerafrica.org/my-account/',
         paymentMethodUrl: 'https://www.cancelcancerafrica.org/my-account/add-payment-method/',
         ajaxUrl: 'https://www.cancelcancerafrica.org/wp-admin/admin-ajax.php',
+        pkKey: 'pk_live_Soug0XWw5V2JmpnWUpnrqNUz0006gfQ6CP',
+        timeout: 45000,
+        maxConcurrentRegistrations: 1, // For on-demand fallback only
+        useSessionPool: true, // Pre-register sessions in background
+        sessionPoolSize: 5, // Keep 5 sessions ready
+        sessionPoolConcurrency: 2, // 2 parallel workers refilling pool
         patterns: {
             registerNonce: /name="woocommerce-register-nonce" value="([a-f0-9]+)"/,
             setupIntentNonce: /"createAndConfirmSetupIntentNonce":"([^"]+)"/,
-            pkKey: /"key":"(pk_live_[^"]+)"/,
         },
         actions: {
             setupIntent: 'wc_stripe_create_and_confirm_setup_intent',
@@ -378,11 +383,13 @@ export const AUTO_SHOPIFY_API = {
 
 // Charge site configurations for donation-based validation
 // Gateway 1: Remember.org (Australia) - $1 donation charge via API
+// Gateway 2: Islamic Relief USA (Classy.org) - $1 donation charge via API
 export const CHARGE_SITES = {
     CHARGE_1: {
         id: GATEWAY_IDS.CHARGE_1,
         label: 'Gateway 1',
         type: 'remember-org',
+        chargeAmount: '$1',
         baseUrl: 'https://remember.org.au',
         donateUrl: 'https://remember.org.au/donate/',
         ajaxUrl: 'https://remember.org.au/wp-admin/admin-ajax.php',
@@ -392,22 +399,30 @@ export const CHARGE_SITES = {
     CHARGE_2: {
         id: GATEWAY_IDS.CHARGE_2,
         label: 'Gateway 2',
-        type: 'remember-org',
-        baseUrl: '',
-        donateUrl: '',
-        ajaxUrl: '',
-        pkKey: '',
-        campaignId: '',
+        type: 'irusa-classy',
+        chargeAmount: '$1',
+        baseUrl: 'https://donate.irusa.org',
+        checkoutUrl: 'https://donate.irusa.org/checkout',
+        apiUrl: 'https://donate.irusa.org/checkout/api',
+        pkKey: 'pk_live_h5ocNWNpicLCfBJvLialXsb900SaJnJscz',
+        campaignId: '577773',
+        organizationId: '50681',
+        designationId: '1835374',
+        recaptchaSiteKey: '6LcwtHkpAAAAABHUXtvKCZQ645083zUdeimy8NlP',
     },
     CHARGE_3: {
         id: GATEWAY_IDS.CHARGE_3,
         label: 'Gateway 3',
-        type: 'remember-org',
-        baseUrl: '',
-        donateUrl: '',
-        ajaxUrl: '',
-        pkKey: '',
-        campaignId: '',
+        type: 'nmdp-classy',
+        chargeAmount: '$1',
+        baseUrl: 'https://giving.nmdp.org',
+        checkoutUrl: 'https://giving.nmdp.org/checkout',
+        apiUrl: 'https://giving.nmdp.org/checkout/api',
+        pkKey: 'pk_live_h5ocNWNpicLCfBJvLialXsb900SaJnJscz',
+        campaignId: '601169',
+        organizationId: '85850',
+        designationId: '1840090',
+        recaptchaSiteKey: '6LcwtHkpAAAAABHUXtvKCZQ645083zUdeimy8NlP',
     },
 };
 
@@ -541,12 +556,19 @@ export const DEFAULT_PAYPAL_CHARGE_SITE = PAYPAL_CHARGE_SITES.PAYPAL_CHARGE_1;
 // ═══════════════════════════════════════════════════════════════
 
 // Charge AVS site configurations
+// Gateway: Qgiv (Fidya) - $1 donation charge with AVS validation
 export const CHARGE_AVS_SITES = {
     CHARGE_AVS_1: {
         id: GATEWAY_IDS.CHARGE_AVS_1,
         label: 'Charge AVS 1',
-        type: 'charge-avs',
-        description: 'Address verification service validation',
+        type: 'qgiv',
+        chargeAmount: '$1',
+        baseUrl: 'https://secure.qgiv.com',
+        formUrl: 'https://secure.qgiv.com/for/fidy/embed',
+        tokenizeUrl: 'https://secure.qgiv.com/api/v1/payment/tokenizePayment',
+        submitUrl: 'https://secure.qgiv.com/api/v1/submit',
+        formId: '1104493',
+        description: 'Qgiv AVS charge validation',
     },
 };
 

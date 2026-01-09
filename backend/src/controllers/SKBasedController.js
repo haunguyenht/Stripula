@@ -142,7 +142,7 @@ export class SKBasedController {
 
         let streamClosed = false;
 
-        // Handle client disconnect
+        // Handle client disconnect - stop processing immediately
         req.on('close', () => {
             streamClosed = true;
             this.skbasedService?.stopBatch();
@@ -150,10 +150,12 @@ export class SKBasedController {
 
         req.on('error', (err) => {
             streamClosed = true;
+            this.skbasedService?.stopBatch();
         });
 
         res.on('error', (err) => {
             streamClosed = true;
+            this.skbasedService?.stopBatch();
         });
 
         res.flushHeaders();
@@ -195,6 +197,9 @@ export class SKBasedController {
                     tier,
                     userId, // Pass userId for statistics tracking (Requirements 8.1, 8.2)
                     onProgress: (progress) => {
+                        // Skip if client disconnected
+                        if (streamClosed) return;
+                        
                         // Transform progress to match frontend expectations
                         // FE expects: { current, total, summary: { approved, live, die, error } }
                         const transformedProgress = {
@@ -210,12 +215,16 @@ export class SKBasedController {
                         sendEvent('progress', transformedProgress);
                     },
                     onResult: async (result) => {
+                        // Skip all processing if client disconnected
                         if (streamClosed) return;
 
                         // Deduct credits for APPROVED/LIVE cards
                         const isBillable = result.status === 'APPROVED' || result.status === 'LIVE';
                         
                         if (isBillable && userId && this.creditManagerService) {
+                            // Double-check stream is still open before credit operations
+                            if (streamClosed) return;
+                            
                             // APPROVED = charged, LIVE = 3DS required
                             const statusType = result.status === 'APPROVED' ? 'approved' : 'live';
                             
@@ -254,20 +263,12 @@ export class SKBasedController {
             // Handle gateway unavailable case
             if (result.unavailable) {
                 const reason = result.unavailableReason?.message || 'Gateway is currently unavailable';
-                stopReason = 'unavailable';
 
                 sendEvent('error', {
                     message: reason,
                     code: 'GATEWAY_UNAVAILABLE',
                     gatewayId
                 });
-
-                // Release lock
-                if (userId && this.creditManagerService) {
-                    try {
-                        await this.creditManagerService.releaseOperationLockByUser(userId, stopReason);
-                    } catch {}
-                }
 
                 if (!streamClosed) {
                     try { res.end(); } catch { }
@@ -286,13 +287,6 @@ export class SKBasedController {
                         declinedCount: result.stats?.declined || 0,
                         errorCount: result.stats?.errors || 0
                     });
-                } catch {}
-            }
-
-            // Release operation lock
-            if (userId && this.creditManagerService) {
-                try {
-                    await this.creditManagerService.releaseOperationLockByUser(userId, stopReason);
                 } catch {}
             }
 
@@ -316,13 +310,6 @@ export class SKBasedController {
                     });
                 } catch {}
             }
-            
-            // Release lock on error
-            if (userId && this.creditManagerService) {
-                try {
-                    await this.creditManagerService.releaseOperationLockByUser(userId, 'failed');
-                } catch {}
-            }
 
             sendEvent('error', { message: error.message });
         }
@@ -341,19 +328,7 @@ export class SKBasedController {
      * Stop the current batch validation
      */
     async stopBatch(req, res) {
-        const userId = req.user?.id;
-        
         this.skbasedService.stopBatch();
-        
-        // Release operation lock so user can start new validation
-        if (userId && this.creditManagerService) {
-            try {
-                await this.creditManagerService.releaseOperationLockByUser(userId, 'cancelled');
-            } catch (err) {
-                // Lock release error - ignore
-            }
-        }
-        
         res.json({ status: 'OK', message: 'Stop signal sent' });
     }
 

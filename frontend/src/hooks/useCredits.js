@@ -42,6 +42,7 @@ export function useCredits(options = {}) {
   
   const [creditsConsumed, setCreditsConsumed] = useState(0);
   const [liveCardsCount, setLiveCardsCount] = useState(0);
+  const [approvedCardsCount, setApprovedCardsCount] = useState(0);
 
   // Get gateway rate from real-time rates - no fallback
   const gatewayRate = useMemo(() => {
@@ -210,16 +211,37 @@ export function useCredits(options = {}) {
    * @param {number} [creditCost] - Optional specific credit cost (otherwise uses effectiveRate)
    */
   const trackLiveCard = useCallback((creditCost) => {
-    const cost = creditCost ?? effectiveRate;
-    if (cost === null) return; // Cannot track without rate
+    const cost = creditCost ?? effectiveRate ?? 0;
     
     setLiveCardsCount(prev => prev + 1);
-    setCreditsConsumed(prev => prev + cost);
-    // Optimistically update balance for live feedback
-    setCreditData(prev => ({
-      ...prev,
-      balance: Math.max(0, prev.balance - cost)
-    }));
+    if (cost > 0) {
+      setCreditsConsumed(prev => prev + cost);
+      // Optimistically update balance for live feedback
+      setCreditData(prev => ({
+        ...prev,
+        balance: Math.max(0, prev.balance - cost)
+      }));
+    }
+  }, [effectiveRate]);
+
+  /**
+   * Track credits consumed for an APPROVED/CHARGED card
+   * Call this when an APPROVED card is detected (separate from LIVE)
+   * Also optimistically updates balance for live UI feedback
+   * @param {number} [creditCost] - Optional specific credit cost (otherwise uses effectiveRate)
+   */
+  const trackApprovedCard = useCallback((creditCost) => {
+    const cost = creditCost ?? effectiveRate ?? 0;
+    
+    setApprovedCardsCount(prev => prev + 1);
+    if (cost > 0) {
+      setCreditsConsumed(prev => prev + cost);
+      // Optimistically update balance for live feedback
+      setCreditData(prev => ({
+        ...prev,
+        balance: Math.max(0, prev.balance - cost)
+      }));
+    }
   }, [effectiveRate]);
 
   // Sync balance to AuthContext navbar separately to avoid setState during render
@@ -235,6 +257,7 @@ export function useCredits(options = {}) {
   const resetTracking = useCallback(() => {
     setCreditsConsumed(0);
     setLiveCardsCount(0);
+    setApprovedCardsCount(0);
   }, []);
 
   /**
@@ -295,12 +318,14 @@ export function useCredits(options = {}) {
     // Tracking state
     creditsConsumed,
     liveCardsCount,
+    approvedCardsCount,
     
     // Methods
     calculateEstimatedCost,
     calculateActualCost,
     checkSufficientCredits,
     trackLiveCard,
+    trackApprovedCard,
     resetTracking,
     updateBalanceAfterBatch,
     setBalance,
@@ -321,11 +346,13 @@ export function useCredits(options = {}) {
     calculateActualCost,
     checkSufficientCredits,
     trackLiveCard,
+    trackApprovedCard,
     resetTracking,
     updateBalanceAfterBatch,
     setBalance,
     refresh,
-    isAuthenticated
+    isAuthenticated,
+    approvedCardsCount
   ]);
 }
 

@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { localBinLookupClient } from './LocalBinLookupClient.js';
 
 /**
  * Convert country code (ISO 3166-1 alpha-2) to flag emoji
@@ -18,7 +19,7 @@ function countryCodeToEmoji(countryCode) {
 
 /**
  * BIN Lookup Client
- * Caches results and uses fallback APIs for better coverage
+ * Uses local CSV database as primary source, falls back to external APIs
  */
 export class BinLookupClient {
     constructor() {
@@ -26,7 +27,7 @@ export class BinLookupClient {
     }
 
     /**
-     * Lookup BIN data - tries primary API first, then fallback
+     * Lookup BIN data - tries local database first, falls back to external APIs only if not found
      * @param {string} cardNumber - Full card number or first 6-8 digits
      * @returns {Promise<Object>}
      */
@@ -39,12 +40,17 @@ export class BinLookupClient {
             return this.cache.get(bin);
         }
         
-        // Try primary API first
-        let binData = await this._lookupPrimary(bin);
+        // Try local database first (primary source)
+        let binData = await this._lookupLocal(bin);
         
-        // If primary fails, try fallback
-        if (!binData || binData.error) {
-            binData = await this._lookupFallback(bin);
+        // Only fall back to external APIs if BIN not found in local database
+        if (binData && binData.error && binData.error.includes('not found')) {
+            binData = await this._lookupPrimary(bin);
+            
+            // If primary API fails, try fallback API
+            if (!binData || binData.error) {
+                binData = await this._lookupFallback(bin);
+            }
         }
         
         // Cache successful results
@@ -53,6 +59,19 @@ export class BinLookupClient {
         }
         
         return binData;
+    }
+
+    /**
+     * Local BIN lookup from CSV database
+     * @private
+     */
+    async _lookupLocal(bin) {
+        try {
+            const result = await localBinLookupClient.lookup(bin);
+            return result;
+        } catch (error) {
+            return { bin, error: `Local: ${error.message}` };
+        }
     }
 
     /**

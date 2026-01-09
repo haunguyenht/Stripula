@@ -75,6 +75,7 @@ export class ShopifyChargeController {
         
         let streamClosed = false;
         
+        // Handle client disconnect - stop processing immediately
         req.on('close', () => {
             streamClosed = true;
             this.shopifyChargeService?.stopBatch();
@@ -82,10 +83,12 @@ export class ShopifyChargeController {
         
         req.on('error', () => {
             streamClosed = true;
+            this.shopifyChargeService?.stopBatch();
         });
         
         res.on('error', () => {
             streamClosed = true;
+            this.shopifyChargeService?.stopBatch();
         });
         
         res.flushHeaders();
@@ -121,14 +124,19 @@ export class ShopifyChargeController {
                     tier,
                     shopifyUrl,
                     userId, // Pass userId for statistics tracking (Requirements 8.1, 8.2)
-                    onProgress: (progress) => sendEvent('progress', progress),
+                    onProgress: (progress) => !streamClosed && sendEvent('progress', progress),
                     onResult: async (result) => {
-                        if (streamClosed || creditExhausted) return;
+                        // Skip all processing if client disconnected
+                        if (streamClosed) return;
+                        if (creditExhausted) return;
                         
                         processedCards++;
                         
                         // For APPROVED cards (charge), deduct credits
                         if (result.status === 'APPROVED' && userId && this.creditManagerService) {
+                            // Double-check stream is still open before credit operations
+                            if (streamClosed) return;
+                            
                             liveCount++;
                             
                             const deductResult = await this.creditManagerService.deductSingleCardCredit(
@@ -195,13 +203,6 @@ export class ShopifyChargeController {
                 }
             }
 
-            // Release operation lock
-            if (userId && this.creditManagerService) {
-                try {
-                    await this.creditManagerService.releaseOperationLockByUser(userId, stopReason);
-                } catch {}
-            }
-
             sendEvent('complete', { 
                 ...result, 
                 creditsDeducted: totalCreditsDeducted,
@@ -225,11 +226,6 @@ export class ShopifyChargeController {
                 } catch {}
             }
             
-            if (userId && this.creditManagerService) {
-                try {
-                    await this.creditManagerService.releaseOperationLockByUser(userId, 'failed');
-                } catch {}
-            }
             sendEvent('error', { message: error.message });
         }
 
@@ -245,16 +241,7 @@ export class ShopifyChargeController {
      * Stop ongoing batch
      */
     async stopBatch(req, res) {
-        const userId = req.user?.id;
-
         this.shopifyChargeService.stopBatch();
-
-        if (userId && this.creditManagerService) {
-            try {
-                await this.creditManagerService.releaseOperationLockByUser(userId, 'cancelled');
-            } catch (err) {}
-        }
-
         res.json({ status: 'OK', message: 'Stop signal sent' });
     }
 

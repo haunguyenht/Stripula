@@ -188,19 +188,10 @@ export class ShopifyResult {
         // Parse decline code from response text
         const parsed = GatewayMessageFormatter.parseDeclineFromText(responseText);
         
-        if (parsed.code !== 'unknown') {
-            return ShopifyResult.declined(parsed.message, {
-                ...options,
-                declineCode: parsed.code,
-                gateway: apiResult.gateway,
-                price: apiResult.price
-            });
-        }
-
-        // Generic decline
-        return ShopifyResult.declined(responseText || 'Card declined', {
+        // Always use the parsed result - it now returns the actual message
+        return ShopifyResult.declined(parsed.message, {
             ...options,
-            declineCode: 'generic_decline',
+            declineCode: parsed.code,
             gateway: apiResult.gateway,
             price: apiResult.price
         });
@@ -241,23 +232,12 @@ export class ShopifyResult {
         if (errorMessage) {
             const parsed = GatewayMessageFormatter.parseDeclineFromText(errorMessage);
             
-            if (parsed.code !== 'unknown') {
-                return ShopifyResult.declined(parsed.message, {
-                    ...options,
-                    declineCode: parsed.code,
-                    supportedBrands: brands
-                });
-            }
-
-            // Generic decline
-            if (/decline|denied|rejected/i.test(errorMessage)) {
-                const genericParsed = GatewayMessageFormatter.getDeclineInfo('generic_decline');
-                return ShopifyResult.declined(genericParsed.message, {
-                    ...options,
-                    declineCode: 'generic_decline',
-                    supportedBrands: brands
-                });
-            }
+            // Always use the parsed result - it now returns the actual message
+            return ShopifyResult.declined(parsed.message, {
+                ...options,
+                declineCode: parsed.code,
+                supportedBrands: brands
+            });
         }
 
         // Success - card accepted

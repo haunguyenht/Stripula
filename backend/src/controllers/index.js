@@ -1,6 +1,7 @@
 export { AuthController } from './AuthController.js';
 export { ChargeController } from './ChargeController.js';
 export { ShopifyChargeController } from './ShopifyChargeController.js';
+export { ChargeAVSController } from './ChargeAVSController.js';
 export { ProxyController } from './ProxyController.js';
 export { SystemController } from './SystemController.js';
 export { TelegramAuthController } from './TelegramAuthController.js';

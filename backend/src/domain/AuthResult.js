@@ -163,7 +163,7 @@ export class AuthResult {
             // Use GatewayMessageFormatter to parse the raw response
             const parsed = GatewayMessageFormatter.parseDeclineFromText(rawStr);
             
-            if (parsed.code !== 'unknown') {
+            if (parsed.code !== 'card_declined' || parsed.message !== 'Card Declined') {
                 return AuthResult.declined(parsed.message, { 
                     card: cardInfo.fullCard,
                     declineCode: parsed.code 
@@ -187,7 +187,7 @@ export class AuthResult {
             // Check for Stripe error
             if (data.error) {
                 const error = data.error;
-                const code = error.decline_code || error.code || 'unknown';
+                const code = error.decline_code || error.code || 'card_declined';
                 // Use GatewayMessageFormatter for consistent message
                 const parsed = GatewayMessageFormatter.getDeclineInfo(code);
                 
@@ -235,7 +235,7 @@ export class AuthResult {
             // Use GatewayMessageFormatter to parse decline patterns
             const parsed = GatewayMessageFormatter.parseDeclineFromText(str);
             
-            if (parsed.code !== 'unknown') {
+            if (parsed.code !== 'card_declined' || parsed.message !== 'Card Declined') {
                 return AuthResult.declined(parsed.message, {
                     card: cardInfo.fullCard,
                     declineCode: parsed.code

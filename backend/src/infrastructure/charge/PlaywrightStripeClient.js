@@ -85,7 +85,7 @@ export class PlaywrightStripeClient {
     ];
 
     _classifyResponse(errorMsg) {
-        if (!errorMsg) return { status: 'Declined', code: 'unknown', originalMessage: null };
+        if (!errorMsg) return { status: 'Declined', code: 'card_declined', originalMessage: null };
         const lower = errorMsg.toLowerCase();
 
         for (const item of PlaywrightStripeClient.LIVE_PATTERNS) {

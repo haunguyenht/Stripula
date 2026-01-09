@@ -3,14 +3,17 @@ import { motion } from 'motion/react';
 import { cn } from '@/lib/utils';
 
 /**
- * NavPill - Dual Theme Design System
+ * NavPill - Cyberpunk Design System
  * 
  * LIGHT MODE: Vintage Banking
- * - Transparent base, copper accents on interaction
+ * - Cream parchment with copper accents
+ * - Embossed text shadows
  * 
- * DARK MODE: PREMIUM Liquid Aurora
- * - Enhanced glass morphism with aurora tints
- * - Crystalline edges with multi-layer glow
+ * DARK MODE: Cyberpunk Neon
+ * - Deep dark backgrounds with neon edge glow
+ * - Electric cyan (#00f0ff) and hot pink (#ff0080) accents
+ * - Visible glowing borders
+ * - Tech/sci-fi aesthetic
  */
 const NavPill = React.forwardRef(
   ({ 
@@ -26,11 +29,7 @@ const NavPill = React.forwardRef(
         className={cn(
           "nav-pill flex items-center",
           "h-7 xs:h-8 md:h-10",
-          // Light mode: Vintage Banking - transparent
           "rounded-lg md:rounded-xl bg-transparent border-0 shadow-none",
-          // ═══════════════════════════════════════════════════════════
-          // DARK MODE: PREMIUM Liquid Aurora Pill
-          // ═══════════════════════════════════════════════════════════
           "dark:rounded-lg md:dark:rounded-xl dark:bg-transparent",
           className
         )}
@@ -47,10 +46,7 @@ const NavPill = React.forwardRef(
 NavPill.displayName = 'NavPill';
 
 /**
- * NavPillButton - Dual Theme button variant
- * 
- * LIGHT MODE: Vintage Banking - copper foil hover
- * DARK MODE: PREMIUM Liquid Aurora - enhanced glow effects
+ * NavPillButton - Cyberpunk Neon Button
  */
 const NavPillButton = React.forwardRef(
   ({ children, className, delay = 0, ...props }, ref) => {
@@ -62,36 +58,41 @@ const NavPillButton = React.forwardRef(
           "h-7 xs:h-8 md:h-10 nav-pill relative",
           "flex items-center gap-1 xs:gap-1.5 md:gap-2",
           "px-1.5 xs:px-2 md:px-3",
-          "text-xs md:text-sm font-semibold",
-          // Light mode: Vintage Banking - sepia text, copper hover
-          "rounded-lg md:rounded-xl bg-transparent",
-          // Hover gradient in light mode - dark mode overrides are separate (no reset needed for hover-only)
-          "text-[hsl(25,35%,25%)] hover:text-[hsl(25,70%,40%)]",
-          "hover:bg-gradient-to-b hover:from-[hsl(38,45%,94%)] hover:to-[hsl(38,40%,91%)]",
-          "[text-shadow:0_1px_0_rgba(255,255,255,0.3)] dark:[text-shadow:none]",
+          "text-xs md:text-sm font-medium",
           "transition-all duration-300",
           // ═══════════════════════════════════════════════════════════
-          // DARK MODE: PREMIUM Liquid Aurora Button
+          // LIGHT MODE: Vintage Banking Glass
           // ═══════════════════════════════════════════════════════════
-          "dark:rounded-lg md:dark:rounded-xl",
-          // Enhanced glass background
-          "dark:bg-white/[0.04]",
-          // Crystalline border with aurora tint
-          "dark:border dark:border-white/[0.08]",
-          // Text with aurora tint
-          "dark:text-white/90",
-          // Hover: Enhanced aurora glow activation
-          "dark:hover:bg-gradient-to-r dark:hover:from-[rgba(139,92,246,0.12)] dark:hover:via-[rgba(34,211,238,0.08)] dark:hover:to-[rgba(139,92,246,0.12)]",
-          "dark:hover:border-[rgba(139,92,246,0.35)]",
-          "dark:hover:text-white",
-          "dark:hover:shadow-[0_0_24px_-4px_rgba(139,92,246,0.4),0_0_16px_-2px_rgba(34,211,238,0.25),inset_0_1px_0_rgba(255,255,255,0.1)]",
+          "rounded-lg md:rounded-xl",
+          "bg-gradient-to-b from-white/90 to-[hsl(40,40%,97%)]/80",
+          "border border-[hsl(30,25%,82%)]",
+          "text-[hsl(25,35%,30%)]",
+          "shadow-[0_2px_8px_rgba(0,0,0,0.05),inset_0_1px_0_rgba(255,255,255,0.8)]",
+          "[text-shadow:0_1px_0_rgba(255,255,255,0.5)]",
+          "hover:bg-gradient-to-b hover:from-white hover:to-[hsl(38,45%,95%)]/90",
+          "hover:border-[hsl(25,45%,70%)]",
+          "hover:text-[hsl(25,55%,38%)]",
+          "hover:shadow-[0_4px_12px_rgba(180,120,80,0.12)]",
+          // ═══════════════════════════════════════════════════════════
+          // DARK MODE: Clean Cyberpunk HUD
+          // ═══════════════════════════════════════════════════════════
+          "dark:bg-transparent",
+          "dark:border-0",
+          "dark:text-[rgba(120,200,230,0.9)]",
+          "dark:shadow-none",
+          "dark:[text-shadow:none]",
+          // Hover: Neon cyan glow
+          "dark:hover:bg-[rgba(0,240,255,0.1)]",
+          "dark:hover:text-[rgba(0,240,255,1)]",
+          "dark:hover:[text-shadow:0_0_10px_rgba(0,240,255,0.7)]",
+          "dark:hover:shadow-[0_0_15px_-4px_rgba(0,240,255,0.5)]",
           className
         )}
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1], delay }}
-        whileTap={{ scale: 0.97 }}
-        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
+        whileHover={{ scale: 1.01 }}
         {...props}
       >
         {children}
@@ -102,10 +103,8 @@ const NavPillButton = React.forwardRef(
 NavPillButton.displayName = 'NavPillButton';
 
 /**
- * NavPillNav - Dual Theme Navigation Container
- * 
- * LIGHT MODE: Vintage Banking - Cream paper with copper accents
- * DARK MODE: PREMIUM Liquid Aurora - Enhanced frosted glass with aurora edge
+ * NavPillNav - Cyberpunk HUD Navigation Container
+ * Floating panel with neon gradient border (cyan → pink)
  */
 const NavPillNav = React.forwardRef(
   ({ children, className, delay = 0.05, ...props }, ref) => {
@@ -116,25 +115,27 @@ const NavPillNav = React.forwardRef(
           "nav-pill relative flex items-center",
           // Mobile-first spacing
           "gap-0.5 xs:gap-0.5 md:gap-1",
-          "px-1 xs:px-1.5 md:px-2",
-          "py-0.5 xs:py-1 md:py-1.5",
-          "rounded-lg xs:rounded-xl md:rounded-2xl",
-          // Light mode: Floating cream paper with copper border (bg-none resets light gradient)
-          "bg-gradient-to-b from-[hsl(40,50%,97%)]/95 to-[hsl(38,45%,94%)]/90",
+          "px-1.5 xs:px-2 md:px-3",
+          "py-1 xs:py-1.5 md:py-2",
+          "rounded-xl xs:rounded-2xl md:rounded-full",
+          // ═══════════════════════════════════════════════════════════
+          // LIGHT MODE: Vintage Banking Glass Panel
+          // ═══════════════════════════════════════════════════════════
+          "bg-gradient-to-b from-white/95 to-[hsl(40,45%,97%)]/90",
           "backdrop-blur-md",
-          "border border-[hsl(30,35%,75%)]/50",
-          "shadow-[0_4px_20px_rgba(101,67,33,0.1),inset_0_1px_0_rgba(255,255,255,0.7)]",
+          "border border-[hsl(30,30%,80%)]",
+          "shadow-[0_4px_20px_-4px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.9)]",
           // ═══════════════════════════════════════════════════════════
-          // DARK MODE: PREMIUM Liquid Aurora Glass (bg-none resets light gradient)
+          // DARK MODE: Neon Gradient Border (Cyan → Pink)
           // ═══════════════════════════════════════════════════════════
-          "dark:rounded-lg xs:dark:rounded-xl md:dark:rounded-2xl",
-          // Enhanced liquid glass background (bg-none resets light gradient)
-          "dark:bg-none dark:bg-[rgba(12,14,22,0.85)]",
-          "dark:backdrop-blur-[80px] dark:backdrop-saturate-[200%]",
-          // Aurora-tinted border
-          "dark:border dark:border-[rgba(139,92,246,0.12)]",
-          // Multi-layer shadow with aurora edge glow
-          "dark:shadow-[0_0_0_1px_rgba(139,92,246,0.08),0_0_40px_-10px_rgba(139,92,246,0.15),0_0_30px_-8px_rgba(34,211,238,0.1),0_8px_32px_-4px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.08)]",
+          "dark:bg-none dark:bg-[rgba(10,15,25,0.4)]",
+          "dark:backdrop-blur-sm",
+          "dark:border-0",
+          // Gradient border using background-clip trick
+          "dark:p-[1.5px]",
+          "dark:[background:linear-gradient(90deg,rgba(0,240,255,0.8),rgba(180,0,255,0.6),rgba(255,0,128,0.7),rgba(0,240,255,0.8))_border-box]",
+          // Glow effect
+          "dark:shadow-[0_0_20px_-5px_rgba(0,240,255,0.5),0_0_30px_-8px_rgba(255,0,128,0.3)]",
           className
         )}
         initial={{ opacity: 0, y: -15, scale: 0.95 }}
@@ -142,7 +143,26 @@ const NavPillNav = React.forwardRef(
         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1], delay }}
         {...props}
       >
-        {children}
+        {/* Light mode: specular highlight */}
+        <div className={cn(
+          "absolute top-0 left-6 right-6 h-px rounded-full dark:hidden",
+          "bg-gradient-to-r from-transparent via-white/50 to-transparent"
+        )} />
+        
+        {/* Dark mode: Inner container to create gradient border effect */}
+        <div className={cn(
+          "hidden dark:flex items-center w-full h-full",
+          "bg-[rgba(8,12,20,0.95)] rounded-[inherit]",
+          "px-1 xs:px-1.5 md:px-2",
+          "gap-0.5 xs:gap-0.5 md:gap-1"
+        )}>
+          {children}
+        </div>
+        
+        {/* Light mode: show children directly */}
+        <div className="flex items-center gap-0.5 xs:gap-0.5 md:gap-1 dark:hidden">
+          {children}
+        </div>
       </motion.nav>
     );
   }

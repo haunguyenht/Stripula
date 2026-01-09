@@ -1,8 +1,8 @@
 /**
  * Credit Middleware
- * Handles credit verification, locking, and deduction for validation operations
+ * Handles credit verification and deduction for validation operations
  * 
- * Requirements: 4.3, 4.4, 13.4, 13.5
+ * Requirements: 4.3, 4.4
  */
 export class CreditMiddleware {
     constructor(options = {}) {
@@ -112,137 +112,6 @@ export class CreditMiddleware {
     }
 
     /**
-     * Acquire operation lock before starting batch operation
-     * Prevents concurrent operations from the same user
-     * 
-     * Requirements: 13.4, 13.5
-     * 
-     * @returns {Function} Express middleware function
-     */
-    acquireLock() {
-        return async (req, res, next) => {
-            try {
-                // Ensure user is authenticated
-                if (!req.user || !req.user.id) {
-                    return res.status(401).json({
-                        status: 'ERROR',
-                        code: 'AUTH_REQUIRED',
-                        message: 'Authentication required'
-                    });
-                }
-
-                const userId = req.user.id;
-                const operationType = req.creditInfo?.gatewayId || 'unknown';
-                const cardCount = req.creditInfo?.cardCount || this._getCardCount(req);
-
-                if (!this.creditManagerService) {
-                    // No credit manager, skip locking
-                    return next();
-                }
-
-                // Try to acquire lock
-                const lockResult = await this.creditManagerService.acquireOperationLock(
-                    userId,
-                    operationType,
-                    { cardCount }
-                );
-
-                if (!lockResult.success) {
-                    const statusCode = this._getLockErrorStatusCode(lockResult.error);
-                    return res.status(statusCode).json({
-                        status: 'ERROR',
-                        code: lockResult.error,
-                        message: lockResult.message,
-                        existingOperationId: lockResult.existingOperationId,
-                        existingOperationType: lockResult.existingOperationType
-                    });
-                }
-
-                // Attach lock info to request for cleanup
-                req.operationLock = {
-                    operationId: lockResult.operationId,
-                    lockKey: lockResult.lockKey
-                };
-
-                next();
-            } catch (error) {
-
-                return res.status(500).json({
-                    status: 'ERROR',
-                    code: 'INTERNAL_ERROR',
-                    message: 'Failed to acquire operation lock'
-                });
-            }
-        };
-    }
-
-    /**
-     * Release operation lock after batch completion
-     * Should be called in finally block or response handler
-     * 
-     * @param {string} status - Final status ('completed' or 'failed')
-     * @returns {Function} Express middleware function
-     */
-    releaseLock(status = 'completed') {
-        return async (req, res, next) => {
-            try {
-                if (!req.operationLock || !req.user?.id) {
-                    return next();
-                }
-
-                if (!this.creditManagerService) {
-                    return next();
-                }
-
-                await this.creditManagerService.releaseOperationLock(
-                    req.user.id,
-                    req.operationLock.operationId,
-                    status
-                );
-
-                // Clear lock info
-                req.operationLock = null;
-
-                next();
-            } catch (error) {
-
-                // Don't fail the request, just log the error
-                next();
-            }
-        };
-    }
-
-    /**
-     * Create a lock release function for use in controllers
-     * Returns a function that can be called to release the lock
-     * 
-     * @param {Object} req - Express request object
-     * @returns {Function} Async function to release lock
-     */
-    createLockReleaser(req) {
-        return async (status = 'completed') => {
-            if (!req.operationLock || !req.user?.id) {
-                return;
-            }
-
-            if (!this.creditManagerService) {
-                return;
-            }
-
-            try {
-                await this.creditManagerService.releaseOperationLock(
-                    req.user.id,
-                    req.operationLock.operationId,
-                    status
-                );
-                req.operationLock = null;
-            } catch (error) {
-
-            }
-        };
-    }
-
-    /**
      * Deduct credits after batch completion
      * 
      * New pricing model (fixed per status, no tier multipliers):
@@ -292,7 +161,6 @@ export class CreditMiddleware {
                 req.creditInfo.gatewayId,
                 counts,
                 {
-                    operationId: req.operationLock?.operationId,
                     description: options.description,
                     idempotencyKey: options.idempotencyKey,
                     requestId: req.headers['x-request-id'],
@@ -319,74 +187,6 @@ export class CreditMiddleware {
                 message: error.message
             };
         }
-    }
-
-    /**
-     * Create a batch completion handler that handles credit deduction
-     * This is used by controllers to wire credit deduction into batch completion
-     * 
-     * Pricing model:
-     * - Charge gateways (charge-*): passed cards → pricing_approved
-     * - Auth gateways (auth-*, shopify-*): passed cards → pricing_live
-     * 
-     * Requirements: 4.1, 4.2, 4.6
-     * 
-     * @param {Object} req - Express request object
-     * @param {Object} options - Handler options
-     * @param {string} options.billingType - 'approved' for charge gateways, 'live' for auth gateways
-     * @returns {Function} Handler function for batchComplete event
-     */
-    createBatchCompleteHandler(req, options = {}) {
-        const { onComplete, onError, billingType = 'live' } = options;
-
-        return async (batchResult) => {
-            const { liveCount = 0, stats, gatewayId, aborted, totalCards, processedCards, stopReason } = batchResult;
-
-            // Determine if batch was stopped early
-            const wasStopped = aborted || (totalCards && processedCards && processedCards < totalCards);
-
-            // Skip credit deduction if aborted with no cards processed or no user
-            if (!req.user?.id) {
-                if (onComplete) {
-                    onComplete(batchResult, null);
-                }
-                return;
-            }
-
-            try {
-                // Build status counts based on gateway billing type
-                // Charge gateways: passed cards are APPROVED (higher cost)
-                // Auth gateways: passed cards are LIVE (lower cost)
-                const statusCounts = billingType === 'approved' 
-                    ? { approved: liveCount, live: 0 }
-                    : { approved: 0, live: liveCount };
-
-                const deductionResult = await this.deductCreditsForLiveCards(req, statusCounts, {
-                    description: `Batch validation: ${liveCount} ${billingType.toUpperCase()} cards via ${gatewayId || req.creditInfo?.gatewayId}${wasStopped ? ` (stopped at ${processedCards}/${totalCards})` : ''}`,
-                    totalCards: totalCards || stats?.total,
-                    processedCards: processedCards || stats?.processed,
-                    wasStopped,
-                    stopReason: stopReason || (aborted ? 'user_cancelled' : null)
-                });
-
-                // Release operation lock
-                const releaseLock = this.createLockReleaser(req);
-                await releaseLock('completed');
-
-                if (onComplete) {
-                    onComplete(batchResult, deductionResult);
-                }
-            } catch (error) {
-
-                // Still release lock on error
-                const releaseLock = this.createLockReleaser(req);
-                await releaseLock('failed');
-
-                if (onError) {
-                    onError(error);
-                }
-            }
-        };
     }
 
     /**
@@ -421,24 +221,6 @@ export class CreditMiddleware {
         }
 
         return 0;
-    }
-
-    /**
-     * Get HTTP status code for lock errors
-     * 
-     * @private
-     * @param {string} errorCode - Error code from lock result
-     * @returns {number} HTTP status code
-     */
-    _getLockErrorStatusCode(errorCode) {
-        switch (errorCode) {
-            case 'CREDIT_OPERATION_LOCKED':
-                return 409; // Conflict
-            case 'CREDIT_LOCK_TIMEOUT':
-                return 503; // Service Unavailable
-            default:
-                return 400;
-        }
     }
 }
 

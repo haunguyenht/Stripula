@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
-import { Copy, Check, ShieldCheck, ShieldAlert, Globe, Building2 } from 'lucide-react';
-import { AnimatePresence } from 'motion/react';
+import { ShieldCheck } from 'lucide-react';
 import { useToast } from '@/hooks/useToast';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useSessionStorage } from '@/hooks/useSessionStorage';
@@ -19,10 +18,7 @@ import { CardInputSection } from '@/components/ui/CardInputSection';
 
 import { TwoPanelLayout } from '../../layout/TwoPanelLayout';
 import { ResultsPanel, ResultItem, ProgressBar } from '../ResultsPanel';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Label } from '@/components/ui/label';
-import { SpeedBadge } from '@/components/ui/TierSpeedControl';
 import { useSpeedConfig } from '@/hooks/useSpeedConfig';
 import { Celebration, useCelebration } from '@/components/ui/Celebration';
 import { 
@@ -40,10 +36,7 @@ import {
   CardNumber,
   GatewayBadge,
 } from '@/components/ui/result-card-parts';
-import { BrandIcon } from '@/components/ui/brand-icons';
-import { CreditSummary, BatchConfirmDialog, BATCH_CONFIRM_THRESHOLD, BatchConfigCard } from '@/components/credits';
-import { cn } from '@/lib/utils';
-import { toTitleCase } from '@/lib/utils/card-helpers';
+import { CreditSummary, BatchConfigCard } from '@/components/credits';
 
 export function StripeAuthPanel() {
   const [cards, setCards] = useLocalStorage('stripeAuthCards', '');
@@ -65,10 +58,6 @@ export function StripeAuthPanel() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [batchComplete, setBatchComplete] = useState(false);
-  // Batch confirmation dialog state - Requirements: 13.1, 13.2, 13.3, 13.4, 13.5
-  const [showBatchConfirm, setShowBatchConfirm] = useState(false);
-  const [batchConfirmResolve, setBatchConfirmResolve] = useState(null);
-  const [pendingBatchInfo, setPendingBatchInfo] = useState(null);
 
   const abortRef = useRef(false);
   const abortControllerRef = useRef(null);
@@ -175,9 +164,7 @@ export function StripeAuthPanel() {
   const handleAbort = useCallback(() => {
     abortRef.current = true;
     if (abortControllerRef.current) abortControllerRef.current.abort();
-    fetch('/api/auth/stop', {
-      method: 'POST'
-    }).catch(() => { });
+    fetch('/api/auth/stop', { method: 'POST' }).catch(() => {});
     setIsLoading(false);
     setCurrentItem(null);
   }, []);
@@ -207,9 +194,7 @@ export function StripeAuthPanel() {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
         // Stop backend processing when component unmounts during loading
-        fetch('/api/auth/stop', {
-          method: 'POST'
-        }).catch(() => { });
+        fetch('/api/auth/stop', { method: 'POST' }).catch(() => {});
       }
     };
   }, []);
@@ -221,6 +206,7 @@ export function StripeAuthPanel() {
       return;
     }
     setSelectedSite(siteId);
+    setBatchComplete(false); // Reset to show updated cost estimator
     try {
       await fetch('/api/auth/site', {
         method: 'POST',
@@ -245,7 +231,16 @@ export function StripeAuthPanel() {
 
   const clearCards = useCallback(() => {
     setCards('');
+    setBatchComplete(false);
   }, [setCards]);
+
+  // Handle card input changes - reset batch complete to show cost estimator
+  const handleCardsChange = useCallback((value) => {
+    setCards(value);
+    if (batchComplete) {
+      setBatchComplete(false);
+    }
+  }, [setCards, batchComplete]);
 
   // Sync stats with actual results on mount (fixes stale stats after refresh)
   useEffect(() => {
@@ -266,31 +261,6 @@ export function StripeAuthPanel() {
       }
     }
   }, []);
-
-  // Helper to check if batch confirmation is needed - Requirements: 13.1
-  const needsBatchConfirmation = useCallback((count) => {
-    return count > BATCH_CONFIRM_THRESHOLD;
-  }, []);
-
-  // Handle batch confirmation dialog confirm - Requirements: 13.4
-  const handleBatchConfirm = useCallback(() => {
-    if (batchConfirmResolve) {
-      batchConfirmResolve(true);
-    }
-    setShowBatchConfirm(false);
-    setBatchConfirmResolve(null);
-    setPendingBatchInfo(null);
-  }, [batchConfirmResolve]);
-
-  // Handle batch confirmation dialog cancel - Requirements: 13.5
-  const handleBatchCancel = useCallback(() => {
-    if (batchConfirmResolve) {
-      batchConfirmResolve(false);
-    }
-    setShowBatchConfirm(false);
-    setBatchConfirmResolve(null);
-    setPendingBatchInfo(null);
-  }, [batchConfirmResolve]);
 
   const handleCheckCards = async () => {
     if (isLoading) return;
@@ -325,27 +295,6 @@ export function StripeAuthPanel() {
       const tierLimitMsg = getTierLimitExceededMessage(totalCards, limitStatus.limit, userTier);
       toastError(tierLimitMsg.message);
       return;
-    }
-
-    // Show batch confirmation dialog for large batches - Requirements: 13.1, 13.4, 13.5
-    if (isAuthenticated && needsBatchConfirmation(totalCards)) {
-      const gatewayLabel = sites.find(s => s.id === selectedSite)?.label || selectedSite;
-
-      // Show dialog and wait for user response
-      const confirmed = await new Promise((resolve) => {
-        setPendingBatchInfo({
-          cardCount: totalCards,
-          balance,
-          effectiveRate,
-          gatewayName: gatewayLabel
-        });
-        setBatchConfirmResolve(() => resolve);
-        setShowBatchConfirm(true);
-      });
-
-      if (!confirmed) {
-        return; // User cancelled
-      }
     }
 
     setIsLoading(true);
@@ -582,9 +531,7 @@ export function StripeAuthPanel() {
   const handleStop = async () => {
     abortRef.current = true;
     if (abortControllerRef.current) abortControllerRef.current.abort();
-    await fetch('/api/auth/stop', {
-      method: 'POST'
-    });
+    await fetch('/api/auth/stop', { method: 'POST' }).catch(() => {});
     setIsLoading(false);
     setCurrentItem('Stopped');
     warning('Auth validation stopped');
@@ -710,7 +657,7 @@ export function StripeAuthPanel() {
       {/* Card Input */}
       <CardInputSection
         cards={cards}
-        onCardsChange={setCards}
+        onCardsChange={handleCardsChange}
         onCardsBlur={handleCardsBlur}
         onImport={handleImport}
         onClear={clearCards}
@@ -818,17 +765,6 @@ export function StripeAuthPanel() {
   return (
     <>
       <Celebration trigger={celebrationTrigger} />
-      {/* Batch Confirmation Dialog - Requirements: 13.1, 13.2, 13.3, 13.4, 13.5 */}
-      <BatchConfirmDialog
-        open={showBatchConfirm}
-        onOpenChange={setShowBatchConfirm}
-        cardCount={pendingBatchInfo?.cardCount || 0}
-        balance={pendingBatchInfo?.balance || balance}
-        effectiveRate={pendingBatchInfo?.effectiveRate || effectiveRate}
-        gatewayName={pendingBatchInfo?.gatewayName || 'Gateway'}
-        onConfirm={handleBatchConfirm}
-        onCancel={handleBatchCancel}
-      />
       <TwoPanelLayout
         configPanel={configContent}
         resultsPanel={resultsContent}

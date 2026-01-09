@@ -107,16 +107,19 @@ export function TwoPanelLayout({
             transition={{ duration: 0.3 }}
           >
             <div className={cn(
-              "rounded-xl overflow-hidden",
+              "rounded-xl overflow-hidden relative",
               // Light: Vintage parchment
               "bg-gradient-to-b from-[hsl(40,45%,98%)] to-[hsl(38,40%,96%)]",
               "border border-[hsl(30,30%,85%)]",
               "shadow-[0_2px_8px_-2px_rgba(101,67,33,0.08)]",
-              // Dark: Liquid glass
-              "dark:bg-none dark:bg-[rgba(15,18,25,0.85)]",
-              "dark:border-white/[0.08] dark:backdrop-blur-xl",
-              "dark:shadow-[0_4px_20px_-4px_rgba(0,0,0,0.4)]"
+              // Dark: Cyberpunk glass panel
+              "dark:bg-none dark:bg-[rgba(8,12,20,0.88)]",
+              "dark:border-[rgba(0,240,255,0.12)] dark:backdrop-blur-xl",
+              "dark:shadow-[0_4px_20px_-4px_rgba(0,0,0,0.5),0_0_1px_rgba(0,240,255,0.15)]"
             )}>
+              {/* Cyberpunk neon edge accents - dark mode only */}
+              <div className="absolute inset-x-0 top-0 h-px hidden dark:block bg-gradient-to-r from-transparent via-[rgba(0,240,255,0.35)] to-transparent" />
+              <div className="absolute inset-x-0 bottom-0 h-px hidden dark:block bg-gradient-to-r from-transparent via-[rgba(255,0,128,0.2)] to-transparent" />
               {/* Config Header - Clickable to toggle */}
               <button
                 onClick={() => setConfigExpanded(!configExpanded)}

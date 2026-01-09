@@ -309,10 +309,10 @@ export class GatewayMessageFormatter {
     static getDeclineInfo(code) {
         if (!code) {
             return {
-                code: 'unknown',
-                message: 'Unknown Error',
-                category: 'unknown',
-                severity: 'error'
+                code: 'card_declined',
+                message: 'Card Declined',
+                category: 'card_error',
+                severity: 'warning'
             };
         }
 
@@ -338,7 +338,7 @@ export class GatewayMessageFormatter {
         return {
             code: normalizedCode,
             message: this.humanize(code),
-            category: 'unknown',
+            category: 'card_error',
             severity: 'warning'
         };
     }
@@ -350,7 +350,7 @@ export class GatewayMessageFormatter {
      */
     static parseDeclineFromText(text) {
         if (!text) {
-            return this.getDeclineInfo('unknown');
+            return this.getDeclineInfo('card_declined');
         }
 
         const textStr = String(text);
@@ -379,10 +379,12 @@ export class GatewayMessageFormatter {
             return this.getDeclineInfo('generic_decline');
         }
 
+        // No pattern matched - return the original message with card_declined code
+        // This preserves the actual error message from the gateway
         return {
-            code: 'unknown',
-            message: this.truncateMessage(textStr),
-            category: 'unknown',
+            code: 'card_declined',
+            message: this.truncateMessage(textStr, 100),  // Keep more of the message
+            category: 'card_error',
             severity: 'warning'
         };
     }

@@ -126,21 +126,20 @@ export class ChargeController {
         // Track if stream is still open
         let streamClosed = false;
         
-        // Handle client disconnect
+        // Handle client disconnect - stop processing immediately
         req.on('close', () => {
-
             streamClosed = true;
             this.chargeService?.stopBatch();
         });
         
         req.on('error', (err) => {
-
             streamClosed = true;
+            this.chargeService?.stopBatch();
         });
         
         res.on('error', (err) => {
-
             streamClosed = true;
+            this.chargeService?.stopBatch();
         });
         
         res.flushHeaders();
@@ -184,9 +183,11 @@ export class ChargeController {
                     delayBetweenCards: 3000,
                     tier, // Pass tier for speed limiting (Requirement 3.1)
                     userId, // Pass userId for statistics tracking (Requirements 8.1, 8.2)
-                    onProgress: (progress) => sendEvent('progress', progress),
+                    onProgress: (progress) => !streamClosed && sendEvent('progress', progress),
                     onResult: async (result) => {
-                        if (streamClosed || creditExhausted) return;
+                        // Skip all processing if client disconnected
+                        if (streamClosed) return;
+                        if (creditExhausted) return;
                         
                         processedCards++;
                         
@@ -195,6 +196,9 @@ export class ChargeController {
                         const isBillable = result.status === 'APPROVED' || result.status === '3DS_REQUIRED' || isLiveDecline;
                         
                         if (isBillable && userId && this.creditManagerService) {
+                            // Double-check stream is still open before credit operations
+                            if (streamClosed) return;
+                            
                             // Charge uses pricing_approved for APPROVED, pricing_live for 3DS/live declines
                             const statusType = result.status === 'APPROVED' ? 'approved' : 'live';
                             
@@ -275,13 +279,6 @@ export class ChargeController {
                 }
             }
 
-            // Release operation lock
-            if (userId && this.creditManagerService) {
-                try {
-                    await this.creditManagerService.releaseOperationLockByUser(userId, stopReason);
-                } catch {}
-            }
-
             sendEvent('complete', { 
                 ...result, 
                 creditsDeducted: totalCreditsDeducted,
@@ -305,12 +302,6 @@ export class ChargeController {
                 } catch {}
             }
             
-            // Release lock on error
-            if (userId && this.creditManagerService) {
-                try {
-                    await this.creditManagerService.releaseOperationLockByUser(userId, 'failed');
-                } catch {}
-            }
             sendEvent('error', { message: error.message });
         }
 
@@ -327,20 +318,7 @@ export class ChargeController {
      * POST /api/charge/stop
      */
     async stopBatch(req, res) {
-        const userId = req.user?.id;
-
         this.chargeService.stopBatch();
-
-        // Release operation lock so user can start new validation
-        if (userId && this.creditManagerService) {
-            try {
-                await this.creditManagerService.releaseOperationLockByUser(userId, 'cancelled');
-
-            } catch (err) {
-
-            }
-        }
-
         res.json({ status: 'OK', message: 'Stop signal sent' });
     }
 

@@ -45,9 +45,7 @@ describe('Property 11: Sensitive Data Not Logged', () => {
             stopBatch: vi.fn()
         };
 
-        mockCreditManagerService = {
-            releaseOperationLockByUser: vi.fn().mockResolvedValue(true)
-        };
+        mockCreditManagerService = {};
 
         controller = new SKBasedController({
             skbasedService: mockSkbasedService,

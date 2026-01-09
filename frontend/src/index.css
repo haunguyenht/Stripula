@@ -801,50 +801,28 @@
   }
 
   /* Cyberpunk Premium Dark mode body - optimized ~8% lightness */
-  /* WebP with PNG fallback using image-set */
   .dark body,
   body.dark {
     background-color: hsl(230 18% 8%);
     background-image: 
       radial-gradient(ellipse 70% 50% at 50% 40%, rgba(100, 180, 255, 0.05) 0%, transparent 50%),
       radial-gradient(ellipse 50% 40% at 80% 15%, rgba(0, 255, 255, 0.04) 0%, transparent 45%),
-      radial-gradient(ellipse 40% 40% at 20% 85%, rgba(255, 0, 128, 0.03) 0%, transparent 45%),
-      url(/bg-tile.webp);
-    background-image: 
-      radial-gradient(ellipse 70% 50% at 50% 40%, rgba(100, 180, 255, 0.05) 0%, transparent 50%),
-      radial-gradient(ellipse 50% 40% at 80% 15%, rgba(0, 255, 255, 0.04) 0%, transparent 45%),
-      radial-gradient(ellipse 40% 40% at 20% 85%, rgba(255, 0, 128, 0.03) 0%, transparent 45%),
-      image-set(
-        url(/bg-tile.webp) type("image/webp"),
-        url(/bg-tile.png) type("image/png")
-      );
-    background-size: 100% 100%, 100% 100%, 100% 100%, 200px 200px;
-    background-repeat: no-repeat, no-repeat, no-repeat, repeat;
+      radial-gradient(ellipse 40% 40% at 20% 85%, rgba(255, 0, 128, 0.03) 0%, transparent 45%);
+    background-size: 100% 100%, 100% 100%, 100% 100%;
+    background-repeat: no-repeat, no-repeat, no-repeat;
     background-attachment: scroll;
     position: relative;
   }
 
-  /* Cyberpunk Background utilities - WebP optimized */
+  /* Cyberpunk Background utilities */
   .bg-opux-tile {
     background-color: hsl(230 18% 8%);
-    background-image: url(/bg-tile.webp);
-    background-image: image-set(
-      url(/bg-tile.webp) type("image/webp"),
-      url(/bg-tile.png) type("image/png")
-    );
-    background-size: 200px 200px;
-    background-repeat: repeat;
     /* will-change: auto - no animation needed for static background */
     will-change: auto;
     contain: paint;
   }
 
   .bg-opux-landscape {
-    background-image: url(/grainy-background-new.webp);
-    background-image: image-set(
-      url(/grainy-background-new.webp) type("image/webp"),
-      url(/bottom-section-bg.png) type("image/png")
-    );
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -872,11 +850,6 @@
 
   /* OPUX grainy overlay */
   .bg-opux-grainy {
-    background-image: url(/grainy-background-new.webp);
-    background-image: image-set(
-      url(/grainy-background-new.webp) type("image/webp"),
-      url(/grainy-background-new.png) type("image/png")
-    );
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
@@ -1823,13 +1796,6 @@
     position: absolute;
     inset: 0;
     border-radius: inherit;
-    background-image: url(/bg-tile.webp);
-    background-image: image-set(
-      url(/bg-tile.webp) type("image/webp"),
-      url(/bg-tile.png) type("image/png")
-    );
-    background-size: 200px 200px;
-    background-repeat: repeat;
     opacity: 0.03;
     pointer-events: none;
     mix-blend-mode: overlay;

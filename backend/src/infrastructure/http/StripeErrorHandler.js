@@ -182,8 +182,8 @@ export class StripeErrorHandler {
             return ValidationResult.error('Invalid card data provided');
         }
 
-        // Default error
-        return ValidationResult.error(message || 'Unknown error');
+        // Default error - show actual message if available
+        return ValidationResult.error(message || 'Card declined');
     }
 
     /**

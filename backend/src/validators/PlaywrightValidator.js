@@ -16,6 +16,24 @@ import { PlaywrightElementsClient } from '../infrastructure/charge/PlaywrightEle
 import { binLookupClient } from '../infrastructure/external/BinLookupClient.js';
 import { classifyDecline, isLiveCard } from '../utils/skbasedClassifier.js';
 
+// Network/system error patterns - these should be ERROR status, not DECLINED
+const NETWORK_ERROR_PATTERNS = [
+    'timeout', 'etimedout', 'econnreset', 'econnrefused', 'enotfound',
+    'socket hang up', 'socket closed', 'network error', 'connection_error',
+    'epipe', 'ehostunreach', 'enetunreach', 'proxy', 'http_5', 'http_4',
+    'exception_', 'fetch_error', 'browser', 'playwright', 'navigation',
+    'cloudflare', 'rate_limit', 'rate limit', 'too_soon', 'context'
+];
+
+/**
+ * Check if error message indicates a network/system error (not a card decline)
+ */
+function isNetworkError(errorMsg) {
+    if (!errorMsg) return false;
+    const lower = errorMsg.toLowerCase();
+    return NETWORK_ERROR_PATTERNS.some(pattern => lower.includes(pattern));
+}
+
 export class PlaywrightValidator {
     constructor(options = {}) {
         this.debug = options.debug ?? false;
@@ -233,6 +251,29 @@ export class PlaywrightValidator {
 
         // Declined - no BIN lookup needed for dead cards
         const declineClassification = classifyDecline(declineCode, result.cvc_check);
+        
+        // Check if the error message indicates a network/system error
+        const errorMessage = result.error || declineClassification.message || '';
+        if (isNetworkError(errorMessage) || isNetworkError(declineCode)) {
+            return new SKBasedResult({
+                status: 'ERROR',
+                code: declineCode || 'network_error',
+                message: errorMessage || 'Network error',
+                card: fullCard,
+                brand: null,
+                type: null,
+                country: null,
+                funding: null,
+                riskLevel: result.risk_level,
+                avsCheck: result.avs_check,
+                cvcCheck: result.cvc_check,
+                threeDs: result.threeDs,
+                declineCode: declineCode,
+                networkStatus: result.network_status,
+                timeTaken: result.time_taken
+            });
+        }
+        
         return new SKBasedResult({
             status: declineClassification.status === 'ERROR' ? 'ERROR' : 'DECLINED',
             code: declineCode || 'declined',

@@ -339,14 +339,7 @@ export function ProfilePage() {
                       backgroundRepeat: 'repeat'
                     }}
                   />
-                  <div 
-                    className="absolute inset-0 opacity-0 dark:opacity-[0.03] pointer-events-none"
-                    style={{ 
-                      backgroundImage: 'url(/bg-tile.webp)',
-                      backgroundSize: '200px 200px',
-                      backgroundRepeat: 'repeat'
-                    }}
-                  />
+
                   
                   {/* Gradient accent - copper for light, aurora for dark */}
                   <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[hsl(25,75%,45%)] via-[hsl(30,65%,50%)] to-[hsl(38,60%,55%)] dark:from-amber-500 dark:via-orange-500 dark:to-rose-500" />

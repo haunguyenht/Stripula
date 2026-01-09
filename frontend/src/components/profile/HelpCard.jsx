@@ -51,15 +51,7 @@ export function HelpCard({ className, telegramHandle = 'kennjkute' }) {
         }}
       />
       
-      {/* Tile pattern (dark only) */}
-      <div 
-        className="absolute inset-0 opacity-0 dark:opacity-[0.03] pointer-events-none"
-        style={{ 
-          backgroundImage: 'url(/bg-tile.webp)',
-          backgroundSize: '200px 200px',
-          backgroundRepeat: 'repeat'
-        }}
-      />
+
       
       {/* Decorative gradient blob - aged ink blue for light, animates on hover */}
       <motion.div 

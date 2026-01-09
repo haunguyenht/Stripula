@@ -2,6 +2,7 @@ export { KeyCheckerService } from './KeyCheckerService.js';
 export { StripeAuthService } from './StripeAuthService.js';
 export { ShopifyChargeService } from './ShopifyChargeService.js';
 export { StripeChargeService } from './StripeChargeService.js';
+export { ChargeAVSService } from './ChargeAVSService.js';
 export { SKBasedChargeService } from './SKBasedChargeService.js';
 export { TelegramAuthService } from './TelegramAuthService.js';
 export { TelegramBotService } from './TelegramBotService.js';
@@ -9,9 +10,6 @@ export { UserService, USER_TIERS, STARTER_CREDITS, REFERRAL_CREDITS, MAX_REFERRA
 export { 
     CreditManagerService, 
     TRANSACTION_TYPES, 
-    DEFAULT_PRICING,
-    OPERATION_STATUS,
-    CONCURRENCY_CONFIG,
     calculateCreditCost,
     calculateBatchCreditCost
 } from './CreditManagerService.js';
